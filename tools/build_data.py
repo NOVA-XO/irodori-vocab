@@ -40,10 +40,28 @@ def kana_of(entry):
     return jp.strip() if KANA_ONLY.match(jp) else ""
 
 
+def lesson0():
+    """«Хичээлээс гадуур» — Irodori эхлэхээс өмнө үзсэн кана дасгалын үгс.
+    PDF-д байхгүй тул гараар бичсэн lesson0.json-оос ирнэ, lesson = 0."""
+    p = os.path.join(HERE, "lesson0.json")
+    if not os.path.exists(p):
+        return []
+    src = json.load(io.open(p, encoding="utf-8"))
+    out = []
+    for i, e in enumerate(src["items"], 1):
+        out.append({
+            "id": "L00-%03d" % i, "lesson": 0, "section": "Хичээлээс гадуур",
+            "jp": e["jp"], "kana": e["kana"], "accent": "",
+            "romaji": e["romaji"], "mn": e["mn"], "ref": False,
+        })
+    return out
+
+
 def main():
     raw = json.load(io.open(RAW, encoding="utf-8"))
     out, review = [], []
     per = {}
+    out.extend(lesson0())
     for e in raw:
         les = e["lesson"]
         per[les] = per.get(les, 0) + 1

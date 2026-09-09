@@ -89,6 +89,15 @@ button:disabled{opacity:.5; cursor:default}
 }
 .seg button[aria-pressed="true"] b{color:#fff}
 
+/* Канагийн бүлгийн сонголт */
+.chip{
+  background:var(--card); border:1px solid var(--line); color:var(--ink-2);
+  padding:7px 12px; font-size:14px;
+}
+.chip i{font-style:normal; opacity:.6; font-size:12px}
+.chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
+.chip[aria-pressed="true"] i{opacity:.85}
+
 .modes{display:grid; gap:8px}
 .mode{
   text-align:left; background:var(--card); border:1px solid var(--line);
@@ -101,6 +110,12 @@ button:disabled{opacity:.5; cursor:default}
 .warn{
   margin-top:14px; padding:10px 12px; border-radius:10px; font-size:13px;
   background:var(--ng-bg); color:var(--ng); border:1px solid currentColor;
+}
+.diag{
+  margin-top:10px; padding:10px 12px; border-radius:10px; font-size:12px;
+  line-height:1.6; background:var(--card); border:1px solid var(--line);
+  color:var(--ink-2); white-space:pre-wrap; word-break:break-word;
+  max-height:280px; overflow:auto; font-family:ui-monospace,Consolas,monospace;
 }
 .src{margin-top:26px; font-size:12px; color:var(--ink-2); line-height:1.6}
 

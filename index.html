@@ -46,7 +46,22 @@
     <button class="mode" data-mode="listen"><b>Сонсох</b><span>Дуудлагыг сонсоод таана</span></button>
   </div>
 
+  <h2>Кана цээжлэх</h2>
+  <div class="row" id="kana-groups">
+    <button data-g="gojuon" class="chip"><span class="jp">五十音</span> <i>46</i></button>
+    <button data-g="dakuten" class="chip"><span class="jp">濁音</span> <i>25</i></button>
+    <button data-g="yoon" class="chip"><span class="jp">拗音</span> <i>36</i></button>
+  </div>
+  <div class="modes">
+    <button class="mode" data-k="h2k"><b class="jp">ひらがな → カタカナ</b><span>Хираганаас катаканыг таана</span></button>
+    <button class="mode" data-k="k2h"><b class="jp">カタカナ → ひらがな</b><span>Катаканаас хираганыг таана</span></button>
+    <button class="mode" data-k="sound"><b>Кана → авиа</b><span>Уншлагыг кириллээр таана</span></button>
+    <button class="mode" data-k="klisten"><b>Сонсоод таах</b><span>Дуудлагыг сонсоод канаг сонгоно</span></button>
+  </div>
+
   <div id="voice-warn" class="warn" hidden></div>
+  <div class="row"><button id="btn-diag" class="ghost sm">🔊 Дууг шалгах</button></div>
+  <pre id="diag" class="diag" hidden></pre>
   <p class="src">Эх сурвалж: <b>Irodori 入門 ことばリスト</b> (монгол орчуулга) — The Japan&nbsp;Foundation.
      Энэ апп нь зөвхөн хувийн давталтад зориулагдсан.</p>
 </section>

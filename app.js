@@ -137,8 +137,9 @@ function save(key, val) {
 }
 
 let progress = load(KEY_P, {});
-let settings = load(KEY_S, { lessons: [1, 2, 3], ref: false, script: 'kanji' });
+let settings = load(KEY_S, { lessons: [1, 2, 3], ref: false, script: 'kanji', kgroups: ['gojuon'] });
 if (!settings.script) settings.script = 'kanji';   // хуучин хадгалсан тохиргоог нөхнө
+if (!settings.kgroups) settings.kgroups = ['gojuon'];
 
 /* Асуултын нүүр талд юу харуулах вэ: ханзтай хэлбэр эсвэл кана уншлага.
    Нөгөө хэлбэрийг нь хариулт дээр үзүүлнэ. Ханзгүй үг (プレゼント, あめ) дээр
@@ -159,7 +160,8 @@ function grade(id, ok) {
 /* ══════════════════════ 4. Өгөгдөл ══════════════════════ */
 
 let ALL = [];                 // бүх үг
-let pool = [];                // сонгосон хичээлийн үг
+let KANA = [];                // 107 кана (хирагана · катакана · авиа)
+let pool = [];                // идэвхтэй багц (үг эсвэл кана)
 
 const inPool = it => settings.lessons.includes(it.lesson) && (settings.ref || !it.ref);
 const isDue = it => { const p = progress[it.id]; return p && p.d <= today(); };
@@ -215,15 +217,24 @@ function unlockSpeech() {
 document.addEventListener('pointerdown', unlockSpeech, { once: true });
 document.addEventListener('keydown', unlockSpeech, { once: true });
 
+/* Зарим браузер utterance-ыг хогийн цэвэрлэгчид өгөөд дуугаа тасалдаг тул
+   сүүлийн объектыг барьж үлдэнэ. */
+let lastUtterance = null;
+let lastSpeechError = '';
+
 function speak(text) {
   if (!canSpeak || !text) return;
-  speechSynthesis.cancel();
   const clean = text.replace(/[／/].*$/, '').replace(/[（(].*?[）)]/g, '').trim();
   if (!clean) return;
+  // cancel()-ыг ЗӨВХӨН яг ярьж байхад дуудна: чөлөөтэй үед дуудвал зарим
+  // утсан дээр араас нь ирэх speak() нь залгиж алддаг.
+  if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(clean);
   if (jaVoice) u.voice = jaVoice;
   u.lang = 'ja-JP';                            // хоолой олдоогүй ч систем сонгоно
   u.rate = 0.85;
+  u.onerror = e => { lastSpeechError = (e && e.error) || 'үл мэдэгдэх алдаа'; };
+  lastUtterance = u;
   speechSynthesis.speak(u);
 }
 
@@ -232,6 +243,8 @@ function speak(text) {
 const SESSION = 20;
 const $ = id => document.getElementById(id);
 let mode = 'flash', queue = [], cur = null, done = 0, okN = 0, ngN = 0, answered = false;
+let deck = 'vocab';           // 'vocab' | 'kana'
+let kmode = 'h2k';            // канагийн дасгал: h2k | k2h | sound | klisten
 
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
 
@@ -242,7 +255,23 @@ function buildQueue(onlyDue) {
   return due.concat(fresh, rest).slice(0, SESSION);
 }
 
+/** Кана дасгал. Бүх хувилбар 4 сонголттой тул mode = 'choice'. */
+function startKana(km) {
+  kmode = km;
+  deck = 'kana';
+  mode = 'choice';
+  pool = KANA.filter(i => settings.kgroups.includes(i.group));
+  if (pool.length < 4) { alert('Дор хаяж нэг бүлэг сонгоно уу.'); deck = 'vocab'; return; }
+  queue = buildQueue(false);
+  done = okN = ngN = 0;
+  show('study');
+  $('c-total').textContent = queue.length;
+  nextCard();
+}
+
 function startSession(m, onlyDue) {
+  deck = 'vocab';
+  rebuildPool();
   if (!pool.length) { alert('Эхлээд хичээл сонгоно уу.'); return; }
   mode = m;
   queue = buildQueue(!!onlyDue);
@@ -260,7 +289,22 @@ function nextCard() {
   for (const p of ['pane-flash', 'pane-choice', 'pane-type', 'pane-next']) $(p).hidden = true;
   $('answer').hidden = true;
   $('f-judge').hidden = true; $('f-show').hidden = false;
-  $('p-sub').textContent = 'L' + cur.lesson + (cur.ref ? ' · 参考' : '');
+  $('p-sub').textContent = deck === 'kana'
+    ? ({ gojuon: '五十音', dakuten: '濁音・半濁音', yoon: '拗音' })[cur.group]
+    : 'L' + cur.lesson + (cur.ref ? ' · 参考' : '');
+
+  if (deck === 'kana') {
+    // Бүх кана дасгал 4 сонголттой. «Сонсоод таах»-д асуултын нүүр нь дуу.
+    $('p-main').textContent = kmode === 'klisten' ? '🔊'
+      : (kmode === 'k2h' ? cur.kata : cur.hira);
+    $('p-main').className = 'prompt' + (kmode === 'klisten' ? '' : ' jp');
+    buildChoices();
+    $('pane-choice').hidden = false;
+    $('btn-speak').hidden = !canSpeak;
+    if (canSpeak) speak(cur.hira);
+    updateBar();
+    return;
+  }
 
   if (mode === 'flash') {
     $('p-main').textContent = faceOf(cur); $('p-main').className = 'prompt jp';
@@ -278,32 +322,47 @@ function nextCard() {
     $('p-main').textContent = '🔊'; $('p-main').className = 'prompt';
     buildChoices();
     $('pane-choice').hidden = false;
-    setTimeout(() => speak(cur.kana || cur.jp), 250);
   }
   // Дуудлагыг АВТОМАТААР сонсгоно — «бичих»-ээс бусад бүх горимд.
   // «Бичих»-д асуулт нь монгол утга, хариулт нь япон үг учраас урьдчилж
   // сонсговол хариултыг задалж өгнө: тэнд 🔊 товчийг ч нуух ба зөвхөн
   // хариулсны дараа сонсгоно.
+  //
+  // ЧУХАЛ: speak()-ыг setTimeout дотор биш, ЭНД шууд дуудна. nextCard нь
+  // үргэлж дарлагаас (mode товч эсвэл «Дараах») эхэлдэг тул ингэж дуудвал
+  // хэрэглэгчийн хүрэлтийн гинж тасрахгүй — iOS Safari зөвхөн тийм үед
+  // дуу гаргахыг зөвшөөрдөг.
   $('btn-speak').hidden = !canSpeak || mode === 'type';
-  if (canSpeak && mode !== 'type' && mode !== 'listen') {
-    setTimeout(() => speak(cur.kana || cur.jp), 250);
-  }
+  if (canSpeak && mode !== 'type') speak(cur.kana || cur.jp);
   updateBar();
+}
+
+/** Сонголтын товчин дээр бичигдэх текст = зөв хариулт. */
+function optText(it) {
+  if (deck !== 'kana') return it.mn || it.jp;
+  if (kmode === 'h2k') return it.kata;
+  if (kmode === 'k2h') return it.hira;
+  if (kmode === 'sound') return it.mn;
+  return it.hira;                                   // klisten
 }
 
 function buildChoices() {
   const box = $('choices');
   box.innerHTML = '';
-  const others = shuffle(ALL.filter(x => x.id !== cur.id && x.mn && x.mn !== cur.mn)).slice(0, 3);
+  const src = deck === 'kana' ? pool : ALL;
+  const want = optText(cur);
+  const others = shuffle(src.filter(x => x.id !== cur.id && optText(x) && optText(x) !== want)).slice(0, 3);
+  const jpFace = deck === 'kana' && kmode !== 'sound';
   shuffle([cur].concat(others)).forEach(opt => {
     const b = document.createElement('button');
-    b.textContent = opt.mn || opt.jp;
+    b.textContent = optText(opt);
+    if (jpFace) b.className = 'jpface';
     b.onclick = () => {
       if (answered) return;
       answered = true;
       const good = opt.id === cur.id;
       b.classList.add(good ? 'correct' : 'wrong');
-      if (!good) [...box.children].forEach(c => { if (c.textContent === (cur.mn || cur.jp)) c.classList.add('correct'); });
+      if (!good) [...box.children].forEach(c => { if (c.textContent === want) c.classList.add('correct'); });
       [...box.children].forEach(c => c.disabled = true);
       resolve(good);
     };
@@ -316,6 +375,13 @@ function reveal() {
   // хариулт дээр үгийг бүтнээр нь — ханз ба кана хоёуланг нь — үзүүлнэ.
   // Флашкарт, олон сонголтод асуулт нь үг байсан тул нөгөө хэлбэрийг л нэмнэ.
   const lines = [];
+  if (deck === 'kana') {
+    $('a-kana').textContent = cur.hira + ' ／ ' + cur.kata;
+    $('a-mn').textContent = cur.mn;
+    $('a-acc').textContent = '';
+    $('answer').hidden = false;
+    return;
+  }
   if (mode === 'type' || mode === 'listen') {
     lines.push(cur.jp);
     if (cur.kana && cur.kana !== cur.jp) lines.push(cur.kana);
@@ -383,6 +449,8 @@ function refreshHome() {
   $('inc-ref').checked = settings.ref;
   document.querySelectorAll('#seg-script button').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.s === settings.script));
+  document.querySelectorAll('#kana-groups .chip').forEach(b =>
+    b.setAttribute('aria-pressed', settings.kgroups.includes(b.dataset.g)));
 }
 
 function refreshStats() {
@@ -411,8 +479,16 @@ function refreshStats() {
 
 /* ══════════════════════ 8. Холбоос ══════════════════════ */
 
-document.querySelectorAll('.mode').forEach(b =>
+document.querySelectorAll('.mode[data-mode]').forEach(b =>
   b.onclick = () => startSession(b.dataset.mode, false));
+document.querySelectorAll('.mode[data-k]').forEach(b =>
+  b.onclick = () => startKana(b.dataset.k));
+document.querySelectorAll('#kana-groups .chip').forEach(b =>
+  b.onclick = () => {
+    const g = b.dataset.g, i = settings.kgroups.indexOf(g);
+    i < 0 ? settings.kgroups.push(g) : settings.kgroups.splice(i, 1);
+    save(KEY_S, settings); refreshHome();
+  });
 $('btn-review').onclick = () => startSession('choice', true);
 $('btn-home').onclick = () => { show('home'); refreshHome(); };
 $('btn-stats').onclick = () => { refreshStats(); show('stats'); };
@@ -435,6 +511,47 @@ $('t-check').onclick = () => {
 };
 $('btn-next').onclick = nextCard;
 $('btn-speak').onclick = () => speak(cur.kana || cur.jp);
+
+/* Дуу гарахгүй байвал ЯАГААДЫГ нь харуулна — таамаглахын оронд утас өөрөө
+   хариулна. Товчийг дарах нь өөрөө хүрэлт тул speak() энд хууль ёсны. */
+$('btn-diag').onclick = () => {
+  const box = $('diag');
+  box.hidden = false;
+  const L = [];
+  const put = t => { L.push(t); box.textContent = L.join('\n'); };
+
+  put('speechSynthesis: ' + (canSpeak ? 'дэмжинэ' : 'ДЭМЖИХГҮЙ'));
+  if (!canSpeak) { put('→ Энэ браузер дуу уншиж чадахгүй.'); return; }
+
+  const vs = speechSynthesis.getVoices();
+  put('нийт хоолой: ' + vs.length);
+  const ja = vs.filter(v => /^ja\b|^ja[-_]/i.test(v.lang));
+  put('япон хоолой: ' + (ja.length ? ja.map(v => v.name + ' [' + v.lang + ']').join(', ') : 'АЛГА'));
+  if (!ja.length && vs.length) {
+    put('→ Утсандаа япон хэлний дуу уншигч суулгах хэрэгтэй.');
+    put('   Android: Settings → Хэл ба оруулга → Text-to-speech → хэл нэмэх → 日本語');
+    put('   iPhone: Settings → Accessibility → Spoken Content → Voices → Japanese');
+  }
+  put('түгжээ тайлагдсан: ' + (speechUnlocked ? 'тийм' : 'үгүй'));
+  put('speaking=' + speechSynthesis.speaking + '  pending=' + speechSynthesis.pending);
+  put('— こんにちは хэлж үзэж байна…');
+
+  const u = new SpeechSynthesisUtterance('こんにちは');
+  if (ja.length) u.voice = ja[0];
+  u.lang = 'ja-JP';
+  const t0 = Date.now();
+  u.onstart = () => put('  ✓ эхэллээ (' + (Date.now() - t0) + ' ms)');
+  u.onend = () => put('  ✓ дууслаа — дуу СОНСОГДСОН байх ёстой');
+  u.onerror = e => put('  ✗ АЛДАА: ' + ((e && e.error) || '?'));
+  lastUtterance = u;
+  speechSynthesis.speak(u);
+  setTimeout(() => {
+    if (!L.some(x => x.indexOf('эхэллээ') >= 0 || x.indexOf('АЛДАА') >= 0)) {
+      put('  ✗ 3 секундэд юу ч болсонгүй — систем дуудлагыг хааж байна.');
+      put('    Утасны дууны түвшин ба чимээгүй горимыг шалгана уу.');
+    }
+  }, 3000);
+};
 
 $('btn-reset').onclick = () => {
   if (confirm('Бүх явцыг устгах уу? Буцаах боломжгүй.')) {
@@ -469,13 +586,17 @@ if (window.speechSynthesis) {
 function autoStart() {
   const s = (location.hash.match(/s=(kanji|kana)/) || [])[1];
   if (s) { settings.script = s; save(KEY_S, settings); refreshHome(); }
+  const k = (location.hash.match(/k=(h2k|k2h|sound|klisten)/) || [])[1];
+  if (k) { startKana(k); return; }
   const m = (location.hash.match(/m=(flash|choice|type|listen)/) || [])[1];
   if (m) startSession(m, false);
 }
 
-fetch('data/vocab.json')
-  .then(r => r.json())
-  .then(d => { ALL = d.items; show('home'); refreshHome(); autoStart(); })
+Promise.all([
+  fetch('data/vocab.json').then(r => r.json()),
+  fetch('data/kana.json').then(r => r.json()),
+])
+  .then(([v, k]) => { ALL = v.items; KANA = k.items; show('home'); refreshHome(); autoStart(); })
   .catch(() => {
     document.getElementById('home').innerHTML =
       '<p class="warn">Үгийн сан ачаалагдсангүй. <code>data/vocab.json</code> байгаа эсэхийг шалгана уу. ' +

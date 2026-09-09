@@ -1,0 +1,861 @@
+{
+ "count": 107,
+ "items": [
+  {
+   "hira": "あ",
+   "kata": "ア",
+   "romaji": "a",
+   "mn": "а",
+   "group": "gojuon",
+   "id": "K-001"
+  },
+  {
+   "hira": "い",
+   "kata": "イ",
+   "romaji": "i",
+   "mn": "и",
+   "group": "gojuon",
+   "id": "K-002"
+  },
+  {
+   "hira": "う",
+   "kata": "ウ",
+   "romaji": "u",
+   "mn": "у",
+   "group": "gojuon",
+   "id": "K-003"
+  },
+  {
+   "hira": "え",
+   "kata": "エ",
+   "romaji": "e",
+   "mn": "э",
+   "group": "gojuon",
+   "id": "K-004"
+  },
+  {
+   "hira": "お",
+   "kata": "オ",
+   "romaji": "o",
+   "mn": "о",
+   "group": "gojuon",
+   "id": "K-005"
+  },
+  {
+   "hira": "か",
+   "kata": "カ",
+   "romaji": "ka",
+   "mn": "ка",
+   "group": "gojuon",
+   "id": "K-006"
+  },
+  {
+   "hira": "き",
+   "kata": "キ",
+   "romaji": "ki",
+   "mn": "ки",
+   "group": "gojuon",
+   "id": "K-007"
+  },
+  {
+   "hira": "く",
+   "kata": "ク",
+   "romaji": "ku",
+   "mn": "ку",
+   "group": "gojuon",
+   "id": "K-008"
+  },
+  {
+   "hira": "け",
+   "kata": "ケ",
+   "romaji": "ke",
+   "mn": "кэ",
+   "group": "gojuon",
+   "id": "K-009"
+  },
+  {
+   "hira": "こ",
+   "kata": "コ",
+   "romaji": "ko",
+   "mn": "ко",
+   "group": "gojuon",
+   "id": "K-010"
+  },
+  {
+   "hira": "さ",
+   "kata": "サ",
+   "romaji": "sa",
+   "mn": "са",
+   "group": "gojuon",
+   "id": "K-011"
+  },
+  {
+   "hira": "し",
+   "kata": "シ",
+   "romaji": "shi",
+   "mn": "ши",
+   "group": "gojuon",
+   "id": "K-012"
+  },
+  {
+   "hira": "す",
+   "kata": "ス",
+   "romaji": "su",
+   "mn": "су",
+   "group": "gojuon",
+   "id": "K-013"
+  },
+  {
+   "hira": "せ",
+   "kata": "セ",
+   "romaji": "se",
+   "mn": "сэ",
+   "group": "gojuon",
+   "id": "K-014"
+  },
+  {
+   "hira": "そ",
+   "kata": "ソ",
+   "romaji": "so",
+   "mn": "со",
+   "group": "gojuon",
+   "id": "K-015"
+  },
+  {
+   "hira": "た",
+   "kata": "タ",
+   "romaji": "ta",
+   "mn": "та",
+   "group": "gojuon",
+   "id": "K-016"
+  },
+  {
+   "hira": "ち",
+   "kata": "チ",
+   "romaji": "chi",
+   "mn": "чи",
+   "group": "gojuon",
+   "id": "K-017"
+  },
+  {
+   "hira": "つ",
+   "kata": "ツ",
+   "romaji": "tsu",
+   "mn": "цу",
+   "group": "gojuon",
+   "id": "K-018"
+  },
+  {
+   "hira": "て",
+   "kata": "テ",
+   "romaji": "te",
+   "mn": "тэ",
+   "group": "gojuon",
+   "id": "K-019"
+  },
+  {
+   "hira": "と",
+   "kata": "ト",
+   "romaji": "to",
+   "mn": "то",
+   "group": "gojuon",
+   "id": "K-020"
+  },
+  {
+   "hira": "な",
+   "kata": "ナ",
+   "romaji": "na",
+   "mn": "на",
+   "group": "gojuon",
+   "id": "K-021"
+  },
+  {
+   "hira": "に",
+   "kata": "ニ",
+   "romaji": "ni",
+   "mn": "ни",
+   "group": "gojuon",
+   "id": "K-022"
+  },
+  {
+   "hira": "ぬ",
+   "kata": "ヌ",
+   "romaji": "nu",
+   "mn": "ну",
+   "group": "gojuon",
+   "id": "K-023"
+  },
+  {
+   "hira": "ね",
+   "kata": "ネ",
+   "romaji": "ne",
+   "mn": "нэ",
+   "group": "gojuon",
+   "id": "K-024"
+  },
+  {
+   "hira": "の",
+   "kata": "ノ",
+   "romaji": "no",
+   "mn": "но",
+   "group": "gojuon",
+   "id": "K-025"
+  },
+  {
+   "hira": "は",
+   "kata": "ハ",
+   "romaji": "ha",
+   "mn": "ха",
+   "group": "gojuon",
+   "id": "K-026"
+  },
+  {
+   "hira": "ひ",
+   "kata": "ヒ",
+   "romaji": "hi",
+   "mn": "хи",
+   "group": "gojuon",
+   "id": "K-027"
+  },
+  {
+   "hira": "ふ",
+   "kata": "フ",
+   "romaji": "fu",
+   "mn": "фу",
+   "group": "gojuon",
+   "id": "K-028"
+  },
+  {
+   "hira": "へ",
+   "kata": "ヘ",
+   "romaji": "he",
+   "mn": "хэ",
+   "group": "gojuon",
+   "id": "K-029"
+  },
+  {
+   "hira": "ほ",
+   "kata": "ホ",
+   "romaji": "ho",
+   "mn": "хо",
+   "group": "gojuon",
+   "id": "K-030"
+  },
+  {
+   "hira": "ま",
+   "kata": "マ",
+   "romaji": "ma",
+   "mn": "ма",
+   "group": "gojuon",
+   "id": "K-031"
+  },
+  {
+   "hira": "み",
+   "kata": "ミ",
+   "romaji": "mi",
+   "mn": "ми",
+   "group": "gojuon",
+   "id": "K-032"
+  },
+  {
+   "hira": "む",
+   "kata": "ム",
+   "romaji": "mu",
+   "mn": "му",
+   "group": "gojuon",
+   "id": "K-033"
+  },
+  {
+   "hira": "め",
+   "kata": "メ",
+   "romaji": "me",
+   "mn": "мэ",
+   "group": "gojuon",
+   "id": "K-034"
+  },
+  {
+   "hira": "も",
+   "kata": "モ",
+   "romaji": "mo",
+   "mn": "мо",
+   "group": "gojuon",
+   "id": "K-035"
+  },
+  {
+   "hira": "や",
+   "kata": "ヤ",
+   "romaji": "ya",
+   "mn": "я",
+   "group": "gojuon",
+   "id": "K-036"
+  },
+  {
+   "hira": "ゆ",
+   "kata": "ユ",
+   "romaji": "yu",
+   "mn": "ю",
+   "group": "gojuon",
+   "id": "K-037"
+  },
+  {
+   "hira": "よ",
+   "kata": "ヨ",
+   "romaji": "yo",
+   "mn": "ё",
+   "group": "gojuon",
+   "id": "K-038"
+  },
+  {
+   "hira": "ら",
+   "kata": "ラ",
+   "romaji": "ra",
+   "mn": "ра",
+   "group": "gojuon",
+   "id": "K-039"
+  },
+  {
+   "hira": "り",
+   "kata": "リ",
+   "romaji": "ri",
+   "mn": "ри",
+   "group": "gojuon",
+   "id": "K-040"
+  },
+  {
+   "hira": "る",
+   "kata": "ル",
+   "romaji": "ru",
+   "mn": "ру",
+   "group": "gojuon",
+   "id": "K-041"
+  },
+  {
+   "hira": "れ",
+   "kata": "レ",
+   "romaji": "re",
+   "mn": "рэ",
+   "group": "gojuon",
+   "id": "K-042"
+  },
+  {
+   "hira": "ろ",
+   "kata": "ロ",
+   "romaji": "ro",
+   "mn": "ро",
+   "group": "gojuon",
+   "id": "K-043"
+  },
+  {
+   "hira": "わ",
+   "kata": "ワ",
+   "romaji": "wa",
+   "mn": "ва",
+   "group": "gojuon",
+   "id": "K-044"
+  },
+  {
+   "hira": "を",
+   "kata": "ヲ",
+   "romaji": "wo",
+   "mn": "о",
+   "group": "gojuon",
+   "id": "K-045"
+  },
+  {
+   "hira": "ん",
+   "kata": "ン",
+   "romaji": "n",
+   "mn": "н",
+   "group": "gojuon",
+   "id": "K-046"
+  },
+  {
+   "hira": "が",
+   "kata": "ガ",
+   "romaji": "ga",
+   "mn": "га",
+   "group": "dakuten",
+   "id": "K-047"
+  },
+  {
+   "hira": "ぎ",
+   "kata": "ギ",
+   "romaji": "gi",
+   "mn": "ги",
+   "group": "dakuten",
+   "id": "K-048"
+  },
+  {
+   "hira": "ぐ",
+   "kata": "グ",
+   "romaji": "gu",
+   "mn": "гу",
+   "group": "dakuten",
+   "id": "K-049"
+  },
+  {
+   "hira": "げ",
+   "kata": "ゲ",
+   "romaji": "ge",
+   "mn": "гэ",
+   "group": "dakuten",
+   "id": "K-050"
+  },
+  {
+   "hira": "ご",
+   "kata": "ゴ",
+   "romaji": "go",
+   "mn": "го",
+   "group": "dakuten",
+   "id": "K-051"
+  },
+  {
+   "hira": "ざ",
+   "kata": "ザ",
+   "romaji": "za",
+   "mn": "за",
+   "group": "dakuten",
+   "id": "K-052"
+  },
+  {
+   "hira": "じ",
+   "kata": "ジ",
+   "romaji": "ji",
+   "mn": "жи",
+   "group": "dakuten",
+   "id": "K-053"
+  },
+  {
+   "hira": "ず",
+   "kata": "ズ",
+   "romaji": "zu",
+   "mn": "зу",
+   "group": "dakuten",
+   "id": "K-054"
+  },
+  {
+   "hira": "ぜ",
+   "kata": "ゼ",
+   "romaji": "ze",
+   "mn": "зэ",
+   "group": "dakuten",
+   "id": "K-055"
+  },
+  {
+   "hira": "ぞ",
+   "kata": "ゾ",
+   "romaji": "zo",
+   "mn": "зо",
+   "group": "dakuten",
+   "id": "K-056"
+  },
+  {
+   "hira": "だ",
+   "kata": "ダ",
+   "romaji": "da",
+   "mn": "да",
+   "group": "dakuten",
+   "id": "K-057"
+  },
+  {
+   "hira": "ぢ",
+   "kata": "ヂ",
+   "romaji": "ji",
+   "mn": "жи",
+   "group": "dakuten",
+   "id": "K-058"
+  },
+  {
+   "hira": "づ",
+   "kata": "ヅ",
+   "romaji": "zu",
+   "mn": "зу",
+   "group": "dakuten",
+   "id": "K-059"
+  },
+  {
+   "hira": "で",
+   "kata": "デ",
+   "romaji": "de",
+   "mn": "дэ",
+   "group": "dakuten",
+   "id": "K-060"
+  },
+  {
+   "hira": "ど",
+   "kata": "ド",
+   "romaji": "do",
+   "mn": "до",
+   "group": "dakuten",
+   "id": "K-061"
+  },
+  {
+   "hira": "ば",
+   "kata": "バ",
+   "romaji": "ba",
+   "mn": "ба",
+   "group": "dakuten",
+   "id": "K-062"
+  },
+  {
+   "hira": "び",
+   "kata": "ビ",
+   "romaji": "bi",
+   "mn": "би",
+   "group": "dakuten",
+   "id": "K-063"
+  },
+  {
+   "hira": "ぶ",
+   "kata": "ブ",
+   "romaji": "bu",
+   "mn": "бу",
+   "group": "dakuten",
+   "id": "K-064"
+  },
+  {
+   "hira": "べ",
+   "kata": "ベ",
+   "romaji": "be",
+   "mn": "бэ",
+   "group": "dakuten",
+   "id": "K-065"
+  },
+  {
+   "hira": "ぼ",
+   "kata": "ボ",
+   "romaji": "bo",
+   "mn": "бо",
+   "group": "dakuten",
+   "id": "K-066"
+  },
+  {
+   "hira": "ぱ",
+   "kata": "パ",
+   "romaji": "pa",
+   "mn": "па",
+   "group": "dakuten",
+   "id": "K-067"
+  },
+  {
+   "hira": "ぴ",
+   "kata": "ピ",
+   "romaji": "pi",
+   "mn": "пи",
+   "group": "dakuten",
+   "id": "K-068"
+  },
+  {
+   "hira": "ぷ",
+   "kata": "プ",
+   "romaji": "pu",
+   "mn": "пу",
+   "group": "dakuten",
+   "id": "K-069"
+  },
+  {
+   "hira": "ぺ",
+   "kata": "ペ",
+   "romaji": "pe",
+   "mn": "пэ",
+   "group": "dakuten",
+   "id": "K-070"
+  },
+  {
+   "hira": "ぽ",
+   "kata": "ポ",
+   "romaji": "po",
+   "mn": "по",
+   "group": "dakuten",
+   "id": "K-071"
+  },
+  {
+   "hira": "きゃ",
+   "kata": "キャ",
+   "romaji": "kya",
+   "mn": "кя",
+   "group": "yoon",
+   "id": "K-072"
+  },
+  {
+   "hira": "きゅ",
+   "kata": "キュ",
+   "romaji": "kyu",
+   "mn": "кю",
+   "group": "yoon",
+   "id": "K-073"
+  },
+  {
+   "hira": "きょ",
+   "kata": "キョ",
+   "romaji": "kyo",
+   "mn": "кё",
+   "group": "yoon",
+   "id": "K-074"
+  },
+  {
+   "hira": "しゃ",
+   "kata": "シャ",
+   "romaji": "sha",
+   "mn": "ша",
+   "group": "yoon",
+   "id": "K-075"
+  },
+  {
+   "hira": "しゅ",
+   "kata": "シュ",
+   "romaji": "shu",
+   "mn": "шу",
+   "group": "yoon",
+   "id": "K-076"
+  },
+  {
+   "hira": "しょ",
+   "kata": "ショ",
+   "romaji": "sho",
+   "mn": "шо",
+   "group": "yoon",
+   "id": "K-077"
+  },
+  {
+   "hira": "ちゃ",
+   "kata": "チャ",
+   "romaji": "cha",
+   "mn": "ча",
+   "group": "yoon",
+   "id": "K-078"
+  },
+  {
+   "hira": "ちゅ",
+   "kata": "チュ",
+   "romaji": "chu",
+   "mn": "чу",
+   "group": "yoon",
+   "id": "K-079"
+  },
+  {
+   "hira": "ちょ",
+   "kata": "チョ",
+   "romaji": "cho",
+   "mn": "чо",
+   "group": "yoon",
+   "id": "K-080"
+  },
+  {
+   "hira": "にゃ",
+   "kata": "ニャ",
+   "romaji": "nya",
+   "mn": "ня",
+   "group": "yoon",
+   "id": "K-081"
+  },
+  {
+   "hira": "にゅ",
+   "kata": "ニュ",
+   "romaji": "nyu",
+   "mn": "ню",
+   "group": "yoon",
+   "id": "K-082"
+  },
+  {
+   "hira": "にょ",
+   "kata": "ニョ",
+   "romaji": "nyo",
+   "mn": "нё",
+   "group": "yoon",
+   "id": "K-083"
+  },
+  {
+   "hira": "ひゃ",
+   "kata": "ヒャ",
+   "romaji": "hya",
+   "mn": "хя",
+   "group": "yoon",
+   "id": "K-084"
+  },
+  {
+   "hira": "ひゅ",
+   "kata": "ヒュ",
+   "romaji": "hyu",
+   "mn": "хю",
+   "group": "yoon",
+   "id": "K-085"
+  },
+  {
+   "hira": "ひょ",
+   "kata": "ヒョ",
+   "romaji": "hyo",
+   "mn": "хё",
+   "group": "yoon",
+   "id": "K-086"
+  },
+  {
+   "hira": "みゃ",
+   "kata": "ミャ",
+   "romaji": "mya",
+   "mn": "мя",
+   "group": "yoon",
+   "id": "K-087"
+  },
+  {
+   "hira": "みゅ",
+   "kata": "ミュ",
+   "romaji": "myu",
+   "mn": "мю",
+   "group": "yoon",
+   "id": "K-088"
+  },
+  {
+   "hira": "みょ",
+   "kata": "ミョ",
+   "romaji": "myo",
+   "mn": "мё",
+   "group": "yoon",
+   "id": "K-089"
+  },
+  {
+   "hira": "りゃ",
+   "kata": "リャ",
+   "romaji": "rya",
+   "mn": "ря",
+   "group": "yoon",
+   "id": "K-090"
+  },
+  {
+   "hira": "りゅ",
+   "kata": "リュ",
+   "romaji": "ryu",
+   "mn": "рю",
+   "group": "yoon",
+   "id": "K-091"
+  },
+  {
+   "hira": "りょ",
+   "kata": "リョ",
+   "romaji": "ryo",
+   "mn": "рё",
+   "group": "yoon",
+   "id": "K-092"
+  },
+  {
+   "hira": "ぎゃ",
+   "kata": "ギャ",
+   "romaji": "gya",
+   "mn": "гя",
+   "group": "yoon",
+   "id": "K-093"
+  },
+  {
+   "hira": "ぎゅ",
+   "kata": "ギュ",
+   "romaji": "gyu",
+   "mn": "гю",
+   "group": "yoon",
+   "id": "K-094"
+  },
+  {
+   "hira": "ぎょ",
+   "kata": "ギョ",
+   "romaji": "gyo",
+   "mn": "гё",
+   "group": "yoon",
+   "id": "K-095"
+  },
+  {
+   "hira": "じゃ",
+   "kata": "ジャ",
+   "romaji": "ja",
+   "mn": "жа",
+   "group": "yoon",
+   "id": "K-096"
+  },
+  {
+   "hira": "じゅ",
+   "kata": "ジュ",
+   "romaji": "ju",
+   "mn": "жу",
+   "group": "yoon",
+   "id": "K-097"
+  },
+  {
+   "hira": "じょ",
+   "kata": "ジョ",
+   "romaji": "jo",
+   "mn": "жо",
+   "group": "yoon",
+   "id": "K-098"
+  },
+  {
+   "hira": "ぢゃ",
+   "kata": "ヂャ",
+   "romaji": "ja",
+   "mn": "жа",
+   "group": "yoon",
+   "id": "K-099"
+  },
+  {
+   "hira": "ぢゅ",
+   "kata": "ヂュ",
+   "romaji": "ju",
+   "mn": "жу",
+   "group": "yoon",
+   "id": "K-100"
+  },
+  {
+   "hira": "ぢょ",
+   "kata": "ヂョ",
+   "romaji": "jo",
+   "mn": "жо",
+   "group": "yoon",
+   "id": "K-101"
+  },
+  {
+   "hira": "びゃ",
+   "kata": "ビャ",
+   "romaji": "bya",
+   "mn": "бя",
+   "group": "yoon",
+   "id": "K-102"
+  },
+  {
+   "hira": "びゅ",
+   "kata": "ビュ",
+   "romaji": "byu",
+   "mn": "бю",
+   "group": "yoon",
+   "id": "K-103"
+  },
+  {
+   "hira": "びょ",
+   "kata": "ビョ",
+   "romaji": "byo",
+   "mn": "бё",
+   "group": "yoon",
+   "id": "K-104"
+  },
+  {
+   "hira": "ぴゃ",
+   "kata": "ピャ",
+   "romaji": "pya",
+   "mn": "пя",
+   "group": "yoon",
+   "id": "K-105"
+  },
+  {
+   "hira": "ぴゅ",
+   "kata": "ピュ",
+   "romaji": "pyu",
+   "mn": "пю",
+   "group": "yoon",
+   "id": "K-106"
+  },
+  {
+   "hira": "ぴょ",
+   "kata": "ピョ",
+   "romaji": "pyo",
+   "mn": "пё",
+   "group": "yoon",
+   "id": "K-107"
+  }
+ ]
+}
