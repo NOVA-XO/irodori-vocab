@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+tools/vocab_raw.json
+tools/rejected.json
+.DS_Store

@@ -1,0 +1,155 @@
+/* いろどり 入門 — шинэ үг давтах апп
+   Өнгө нь хэвлэдэг хуудсуудтай (JPN-OUT-*) нийцүүлсэн: бэх #1c3350, өргөлт #2f5d8a */
+
+:root{
+  --ink:#1c3350; --ink-2:#4a5f7a; --accent:#2f5d8a; --line:#d6dee7;
+  --bg:#f7f9fb; --card:#ffffff; --ok:#1f7a4d; --ng:#b03030;
+  --ok-bg:#e6f4ec; --ng-bg:#fbeaea; --shadow:0 1px 3px rgba(28,51,80,.12);
+  --jp:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",sans-serif;
+  --ui:"Segoe UI","Noto Sans",system-ui,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --ink:#e8eef6; --ink-2:#9fb0c4; --accent:#7aa7d4; --line:#2b3a4d;
+    --bg:#141b24; --card:#1c2733; --ok:#5fd39a; --ng:#f08b8b;
+    --ok-bg:#163527; --ng-bg:#3a1e1e; --shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+}
+
+*{box-sizing:border-box}
+/* Зохиогчийн `display:grid` нь браузерын `[hidden]{display:none}`-ыг дардаг
+   (author > user-agent). Тиймээс hidden-ийг тодорхой давуутай болгоно. */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--ui);
+  font-size:16px; line-height:1.5;
+  padding:0 0 env(safe-area-inset-bottom);
+  -webkit-text-size-adjust:100%;
+}
+.jp{font-family:var(--jp)}
+
+/* ---------- толгой ---------- */
+.bar{
+  position:sticky; top:0; z-index:9; display:flex; align-items:center;
+  gap:8px; padding:10px 12px; background:var(--card);
+  border-bottom:1px solid var(--line);
+}
+.bar .title{flex:1; text-align:center; font-weight:600; font-family:var(--jp)}
+.bar .title small{color:var(--ink-2); font-weight:400}
+
+.screen{max-width:640px; margin:0 auto; padding:16px 14px 40px}
+h2{font-size:14px; text-transform:uppercase; letter-spacing:.06em;
+   color:var(--ink-2); margin:22px 0 8px; font-weight:600}
+
+/* ---------- товч ---------- */
+button{font:inherit; cursor:pointer; border-radius:10px; border:1px solid transparent}
+.primary{background:var(--accent); color:#fff; border:0; padding:12px 18px; font-weight:600}
+.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); padding:8px 12px}
+.ghost.sm{padding:6px 10px; font-size:14px}
+.ghost.danger{color:var(--ng); border-color:var(--ng)}
+.bar .ghost{border:0; font-size:20px; padding:4px 10px; color:var(--ink-2)}
+.big{width:100%; padding:15px; font-size:17px}
+.ok{background:var(--ok-bg); color:var(--ok); border:1px solid currentColor; font-weight:600}
+.ng{background:var(--ng-bg); color:var(--ng); border:1px solid currentColor; font-weight:600}
+button:disabled{opacity:.5; cursor:default}
+
+.row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.chk{display:flex; align-items:center; gap:6px; font-size:14px; color:var(--ink-2)}
+
+/* ---------- нүүр ---------- */
+.due{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:18px; text-align:center; box-shadow:var(--shadow);
+}
+.due-n{font-size:46px; font-weight:700; line-height:1; color:var(--accent)}
+.due-t{color:var(--ink-2); font-size:14px; margin:4px 0 14px}
+
+.lessons{display:grid; grid-template-columns:repeat(6,1fr); gap:6px}
+.lessons button{
+  padding:10px 0; background:var(--card); border:1px solid var(--line);
+  color:var(--ink-2); font-size:14px; border-radius:8px;
+}
+.lessons button[aria-pressed="true"]{
+  background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600;
+}
+.lessons button small{display:block; font-size:10px; opacity:.7}
+
+.modes{display:grid; gap:8px}
+.mode{
+  text-align:left; background:var(--card); border:1px solid var(--line);
+  padding:12px 14px; color:var(--ink);
+}
+.mode b{display:block; font-size:16px}
+.mode span{font-size:13px; color:var(--ink-2)}
+.mode:disabled{opacity:.45}
+
+.warn{
+  margin-top:14px; padding:10px 12px; border-radius:10px; font-size:13px;
+  background:var(--ng-bg); color:var(--ng); border:1px solid currentColor;
+}
+.src{margin-top:26px; font-size:12px; color:var(--ink-2); line-height:1.6}
+
+/* ---------- дасгал ---------- */
+.progress{height:4px; background:var(--line); border-radius:2px; overflow:hidden}
+#pbar{height:100%; width:0; background:var(--accent); transition:width .2s}
+.counter{display:flex; gap:10px; justify-content:flex-end; font-size:13px;
+         color:var(--ink-2); margin:6px 0 12px}
+.counter .ok,.counter .ng{background:none; border:0; padding:0; font-weight:600}
+
+.card{
+  position:relative; background:var(--card); border:1px solid var(--line);
+  border-radius:14px; padding:26px 18px; text-align:center;
+  box-shadow:var(--shadow); min-height:190px;
+  display:flex; flex-direction:column; justify-content:center; gap:6px;
+}
+.prompt-sub{font-size:12px; color:var(--ink-2)}
+.prompt{font-family:var(--jp); font-size:40px; line-height:1.25; font-weight:500;
+        word-break:break-word}
+.prompt.mn{font-family:var(--ui); font-size:26px}
+.speak{position:absolute; top:10px; right:10px; background:none; border:0;
+       font-size:22px; opacity:.65; padding:6px}
+.speak:hover{opacity:1}
+
+.answer{border-top:1px solid var(--line); margin-top:14px; padding-top:14px}
+.a-kana{font-family:var(--jp); font-size:24px; color:var(--accent)}
+.a-mn{font-size:19px; margin-top:4px}
+.a-acc{font-family:var(--jp); font-size:14px; color:var(--ink-2); margin-top:6px}
+
+.pane{margin-top:14px; display:grid; gap:10px}
+.choices{display:grid; gap:8px}
+.choices button{
+  background:var(--card); border:1px solid var(--line); color:var(--ink);
+  padding:14px; font-size:17px; text-align:left;
+}
+.choices button.jpface{font-family:var(--jp); font-size:22px}
+.choices button.correct{background:var(--ok-bg); border-color:var(--ok); color:var(--ok)}
+.choices button.wrong{background:var(--ng-bg); border-color:var(--ng); color:var(--ng)}
+
+#t-input{
+  width:100%; padding:14px; font-size:18px; border-radius:10px;
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+}
+.t-kana{font-family:var(--jp); font-size:30px; min-height:42px; text-align:center;
+        color:var(--accent)}
+.verdict{text-align:center; font-size:17px; font-weight:600}
+.verdict.ok{color:var(--ok)} .verdict.ng{color:var(--ng)}
+
+/* ---------- явц ---------- */
+.statsum{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
+.statsum div{background:var(--card); border:1px solid var(--line); border-radius:10px;
+             padding:12px 8px; text-align:center}
+.statsum b{display:block; font-size:22px; color:var(--accent)}
+.statsum span{font-size:11px; color:var(--ink-2)}
+.statles{display:grid; gap:5px}
+.statles .l{display:grid; grid-template-columns:38px 1fr 56px; gap:8px;
+            align-items:center; font-size:13px}
+.statles .track{height:8px; background:var(--line); border-radius:4px; overflow:hidden}
+.statles .fill{height:100%; background:var(--accent)}
+.statles .num{text-align:right; color:var(--ink-2); font-variant-numeric:tabular-nums}
+
+@media (max-width:380px){
+  .lessons{grid-template-columns:repeat(5,1fr)}
+  .prompt{font-size:34px}
+}
