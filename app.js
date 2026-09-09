@@ -109,8 +109,19 @@ const normRomaji = t => (t || '').toLowerCase().replace(/[^a-z]/g, '');
 function answerSet(item) {
   const set = new Set();
   const add = v => { if (v) set.add(v); };
-  for (const part of (item.kana || '').split(/[／/]/)) add(normKana(part));
-  for (const part of (item.jp || '').split(/[／/]/)) add(normKana(part));
+  // Хаалтанд байгаа хэсэг нь СОНГОЛТОТ: «おはよう（ございます）» дээр
+  // «おはよう» гэж бичихэд ч зөв. Тиймээс кана/ханз талд хоёулангийнх нь
+  // хувилбарыг нэмнэ — эс тэгвээс зөвхөн PDF-ийн яг тэр ромажи үсгээр
+  // (ohayoo) таарах ба хүн «ohayou» гэж бичихэд татгалзана.
+  const dropParen = t => t.replace(/[（(][^）)]*[）)]/g, '');
+  for (const part of (item.kana || '').split(/[／/]/)) {
+    add(normKana(part));
+    add(normKana(dropParen(part)));
+  }
+  for (const part of (item.jp || '').split(/[／/]/)) {
+    add(normKana(part));
+    add(normKana(dropParen(part)));
+  }
   const rom = item.romaji || '';
   for (const part of rom.split(/[／/]/)) {
     add(normRomaji(part));

@@ -14,9 +14,12 @@ const path = require('path');
 const src = fs.readFileSync(path.join(__dirname, '..', 'app.js'), 'utf8');
 const cut = src.indexOf('/* ══════════════════════ 3.');
 const head = src.slice(0, cut);
+// app.js нь хувилбараа өөрийн <script src> хаягаас уншдаг тул `document`
+// хэрэгтэй. Браузергүй орчинд хуурамчаар өгнө.
 const mod = {};
-new Function('exports', head + '\nexports.toKana=toKana;exports.normKana=normKana;' +
-  'exports.normRomaji=normRomaji;exports.answerSet=answerSet;exports.checkTyped=checkTyped;')(mod);
+new Function('exports', 'document', head + '\nexports.toKana=toKana;exports.normKana=normKana;' +
+  'exports.normRomaji=normRomaji;exports.answerSet=answerSet;exports.checkTyped=checkTyped;')(
+  mod, { currentScript: null });
 
 const data = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'vocab.json'), 'utf8'));
 const items = data.items;
