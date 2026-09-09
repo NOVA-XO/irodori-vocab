@@ -13,7 +13,7 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-09-10p';
+const VERSION = '2026-09-10q';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 
@@ -21,6 +21,7 @@ const CORE = [
   './', './index.html', './app.css', './app.js', './sync-config.js',
   './data/vocab.json', './data/kana.json',
   './icons/icon-192.png', './icons/icon-512.png',
+  './icons/favicon.svg', './icons/favicon-32.png',
 ];
 
 self.addEventListener('install', e => {
