@@ -8,10 +8,10 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="app.css?v=2026-09-10q">
+<link rel="stylesheet" href="app.css?v=2026-09-10r">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10q">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10q">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10r">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10r">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -37,6 +37,7 @@
   <button data-go="home">Нүүр</button>
   <button data-go="vocab">Үг цээжлэх</button>
   <button data-go="kana">Кана үсэг цээжлэх</button>
+  <button data-go="kanji">Ханз цээжлэх</button>
   <button data-go="stats">Явц</button>
 </nav>
 
@@ -69,6 +70,11 @@
       <span class="bc-jp jp">かな</span>
       <b>Кана үсэг цээжлэх</b>
       <span>Хирагана ба катакана · <i id="n-kana">…</i></span>
+    </button>
+    <button class="bigcard" data-go="kanji">
+      <span class="bc-jp jp">漢字</span>
+      <b>Ханз цээжлэх</b>
+      <span>Хичээлийн ханз ба JLPT N5–N2 · <i id="n-kanji">…</i></span>
     </button>
   </div>
 
@@ -153,6 +159,45 @@
   </div>
 </section>
 
+<!-- ═══════════════════ ХАНЗ ═══════════════════ -->
+<section id="kanji" class="screen" hidden>
+  <div class="step">1 · Аль ханзыг давтахаа сонго</div>
+  <div class="klist" id="kanji-src">
+    <button data-k="les">
+      <span class="tick">✓</span>
+      <span class="kname"><b>Хичээлийн ханз</b> сонгосон хичээлүүдэд гарсан</span>
+      <span class="kex jp">見 語 電</span><i id="n-kles">—</i>
+    </button>
+  </div>
+  <div class="klist" id="kanji-jlpt">
+    <button data-j="5"><span class="tick">✓</span>
+      <span class="kname"><b>JLPT N5</b> хамгийн анхны</span>
+      <span class="kex jp">日 月 山</span><i>79</i></button>
+    <button data-j="4"><span class="tick">✓</span>
+      <span class="kname"><b>JLPT N4</b></span>
+      <span class="kex jp">屋 借 転</span><i>166</i></button>
+    <button data-j="3"><span class="tick">✓</span>
+      <span class="kname"><b>JLPT N3</b></span>
+      <span class="kex jp">誤 疑 論</span><i>367</i></button>
+    <button data-j="2"><span class="tick">✓</span>
+      <span class="kname"><b>JLPT N2</b></span>
+      <span class="kex jp">爆 臓 籍</span><i>367</i></button>
+  </div>
+  <p class="hint" id="kanji-hint"></p>
+  <p class="hint">JLPT нь <b>2010 оноос хойш</b> ханзны албан ёсны жагсаалт
+     нийтлээгүй — N5–N2 нь өргөн хэрэглэгддэг албан бус хуваарь. Ханз бүрийн
+     хажууд Японы Боловсролын яамны албан ёсны <b>сургуулийн анги</b> ба
+     <b>зурлагын тоо</b> харагдана.</p>
+
+  <div class="step">2 · Дасгалаа сонго</div>
+  <div class="modes">
+    <button class="mode" data-kj="flash"><b>Флашкарт</b><span>Ханз харж утга, уншлагыг нь эргүүлж шалгана</span></button>
+    <button class="mode" data-kj="k2m"><b class="jp">漢字 → утга</b><span>Ханзыг харж утгыг нь сонгоно</span></button>
+    <button class="mode" data-kj="m2k"><b>Утга → <span class="jp">漢字</span></b><span>Утгыг харж ханзыг нь сонгоно</span></button>
+    <button class="mode" data-kj="read"><b>Уншлага</b><span>Ханзны 音読み-г сонгоно</span></button>
+  </div>
+</section>
+
 <!-- ═══════════════════ ДАСГАЛ ═══════════════════ -->
 <section id="study" class="screen" hidden>
   <div class="hud">
@@ -173,6 +218,7 @@
       <div class="a-kana" id="a-kana"></div>
       <div class="a-mn" id="a-mn"></div>
       <div class="a-acc" id="a-acc"></div>
+      <div class="a-kj" id="a-kj" hidden></div>
     </div>
   </div>
 
@@ -288,7 +334,7 @@
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10q"></script>
-<script src="app.js?v=2026-09-10q"></script>
+<script src="sync-config.js?v=2026-09-10r"></script>
+<script src="app.js?v=2026-09-10r"></script>
 </body>
 </html>

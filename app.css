@@ -255,6 +255,19 @@ button:disabled{opacity:.5; cursor:default}
 .acclab{display:block; font-family:inherit; font-size:10.5px; letter-spacing:.1em;
         text-transform:uppercase; color:var(--ink-2); margin-bottom:3px}
 
+/* Ханзны хариулт: 音/訓 уншлага ба жишээ үг */
+.prompt.kj{font-size:86px; line-height:1.05}
+.a-kj{margin-top:10px; font-size:14px; color:var(--ink-2); text-align:left}
+.a-kj > div{margin-top:3px}
+.a-kj b{display:inline-block; min-width:22px; color:var(--ink);
+        font-family:var(--jp); font-weight:600}
+.a-kj .jp{color:var(--ink); font-size:16px}
+.kws{margin-top:10px; border-top:1px solid var(--line); padding-top:8px}
+.kw{display:flex; flex-wrap:wrap; gap:4px 9px; align-items:baseline; margin-top:5px}
+.kw b{font-size:17px; min-width:0; color:var(--ink)}
+.kw > .jp{font-size:13px; color:var(--accent)}
+.kw span:last-child{font-size:13px; color:var(--ink-2)}
+
 /* Өргөлтийн зураглал: мора бүрийн ДЭЭР өндөр/нам түвшний хэвтээ зураас,
    өөрчлөгдөх газарт босоо холбоос. Дээд зураас = өндөр, доод нь = нам. */
 .pitch{display:inline-block; font-family:var(--jp); font-size:20px;
