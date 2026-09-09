@@ -8,7 +8,7 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="app.css?v=2026-09-10k">
+<link rel="stylesheet" href="app.css?v=2026-09-10l">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -142,9 +142,14 @@
 
 <!-- ═══════════════════ ДАСГАЛ ═══════════════════ -->
 <section id="study" class="screen" hidden>
-  <div class="progress"><div id="pbar"></div></div>
-  <div class="counter"><span id="c-done">0</span>/<span id="c-total">0</span>
-       <span class="ok" id="c-ok">0</span> <span class="ng" id="c-ng">0</span></div>
+  <div class="hud">
+    <svg class="ring" viewBox="0 0 44 44" aria-hidden="true">
+      <circle class="rtrack" cx="22" cy="22" r="19"></circle>
+      <circle class="rfill" id="pring" cx="22" cy="22" r="19"></circle>
+    </svg>
+    <div class="hudn"><span id="c-done">0</span><small>/<span id="c-total">0</span></small></div>
+    <div class="hudr"><span class="ok" id="c-ok">0</span><span class="ng" id="c-ng">0</span></div>
+  </div>
 
   <div class="card" id="card">
     <div class="prompt-sub" id="p-sub"></div>
@@ -270,7 +275,7 @@
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10k"></script>
-<script src="app.js?v=2026-09-10k"></script>
+<script src="sync-config.js?v=2026-09-10l"></script>
+<script src="app.js?v=2026-09-10l"></script>
 </body>
 </html>

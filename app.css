@@ -76,7 +76,13 @@ h2{font-size:14px; text-transform:uppercase; letter-spacing:.06em;
    color:var(--ink-2); margin:22px 0 8px; font-weight:600}
 
 /* ---------- товч ---------- */
-button{font:inherit; cursor:pointer; border-radius:10px; border:1px solid transparent}
+button{font:inherit; cursor:pointer; border-radius:10px; border:1px solid transparent;
+       transition:transform .12s ease, background-color .18s ease,
+                  border-color .18s ease, box-shadow .18s ease}
+/* Дарахад бага зэрэг дарагдана — хүрэлт бүр хариу өгсөн мэт мэдрэгдэнэ */
+button:active:not(:disabled){transform:scale(.975)}
+.choices button:active:not(:disabled),.bigcard:active,.mode:active:not(:disabled){
+  transform:scale(.99)}
 .primary{background:var(--accent); color:#fff; border:0; padding:12px 18px; font-weight:600}
 .ghost{background:transparent; color:var(--ink); border:1px solid var(--line); padding:8px 12px}
 .ghost.sm{padding:6px 10px; font-size:14px}
@@ -174,11 +180,20 @@ button:disabled{opacity:.5; cursor:default}
 .src{margin-top:26px; font-size:12px; color:var(--ink-2); line-height:1.6}
 
 /* ---------- дасгал ---------- */
-.progress{height:4px; background:var(--line); border-radius:2px; overflow:hidden}
-#pbar{height:100%; width:0; background:var(--accent); transition:width .2s}
-.counter{display:flex; gap:10px; justify-content:flex-end; font-size:13px;
-         color:var(--ink-2); margin:6px 0 12px}
-.counter .ok,.counter .ng{background:none; border:0; padding:0; font-weight:600}
+/* Явцыг зураас биш БӨГЖӨӨР. Тоо нь хажуудаа том, ✓/✗ нь баруун захад. */
+.hud{display:flex; align-items:center; gap:11px; margin:2px 0 14px}
+.ring{width:38px; height:38px; flex:none; transform:rotate(-90deg)}
+.ring circle{fill:none; stroke-width:3.5; stroke-linecap:round}
+.ring .rtrack{stroke:var(--line)}
+.ring .rfill{stroke:var(--accent);
+             transition:stroke-dashoffset .4s cubic-bezier(.4,0,.2,1)}
+.hudn{font-size:21px; font-weight:700; line-height:1;
+      font-variant-numeric:tabular-nums}
+.hudn small{font-size:13px; font-weight:400; color:var(--ink-2)}
+.hudr{margin-left:auto; display:flex; gap:12px; font-size:15px; font-weight:600;
+      font-variant-numeric:tabular-nums}
+.hudr .ok,.hudr .ng{background:none; border:0; padding:0}
+.hudr .ok{color:var(--ok)} .hudr .ng{color:var(--ng)}
 
 .card{
   position:relative; background:var(--card); border:1px solid var(--line);
@@ -186,6 +201,23 @@ button:disabled{opacity:.5; cursor:default}
   box-shadow:var(--shadow); min-height:190px;
   display:flex; flex-direction:column; justify-content:center; gap:6px;
 }
+/* Шинэ карт зөөлөн гарч ирнэ; хариу нээгдэхэд карт ЭРГЭНЭ. Хариултын
+   хэсэг эргэлтийн ХОЁРДУГААР хагаст л гарч ирснээр жинхэнэ эргэлт мэт
+   уншигдана — марк-апыг хоёр талтай болгож өөрчлөх шаардлагагүй. */
+.card.in{animation:cardIn .3s cubic-bezier(.2,.7,.3,1)}
+@keyframes cardIn{
+  from{opacity:0; transform:translateY(7px) scale(.994)}
+  to{opacity:1; transform:none}
+}
+.card.flip{animation:flipY .5s cubic-bezier(.45,.05,.25,1); transform-style:preserve-3d}
+@keyframes flipY{
+  0%{transform:perspective(900px) rotateY(0)}
+  50%{transform:perspective(900px) rotateY(-86deg)}
+  100%{transform:perspective(900px) rotateY(0)}
+}
+.card.flip .answer{animation:halfIn .5s ease both}
+@keyframes halfIn{0%,52%{opacity:0} 100%{opacity:1}}
+
 .prompt-sub{font-size:12px; color:var(--ink-2)}
 .prompt{font-family:var(--jp); font-size:40px; line-height:1.25; font-weight:500;
         word-break:break-word}
@@ -221,8 +253,23 @@ button:disabled{opacity:.5; cursor:default}
   padding:14px; font-size:17px; text-align:left;
 }
 .choices button.jpface{font-family:var(--jp); font-size:22px}
-.choices button.correct{background:var(--ok-bg); border-color:var(--ok); color:var(--ok)}
-.choices button.wrong{background:var(--ng-bg); border-color:var(--ng); color:var(--ng)}
+/* Зөв хариулт ЗҮҮНЭЭС БАРУУН ТИЙШ өнгөөр дүүрнэ — гэнэт солигдохоос
+   илүү тод мэдрэгдэнэ. Дэвсгэрийг нь давхаргаар будаж хэмжээг хөдөлгөнө. */
+.choices button.correct{
+  border-color:var(--ok); color:var(--ok);
+  background-image:linear-gradient(var(--ok-bg),var(--ok-bg));
+  background-repeat:no-repeat; background-size:0 100%;
+  animation:fillIn .34s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes fillIn{to{background-size:100% 100%}}
+.choices button.wrong{
+  background:var(--ng-bg); border-color:var(--ng); color:var(--ng);
+  animation:shake .32s ease;
+}
+@keyframes shake{
+  10%,90%{transform:translateX(-2px)} 30%,70%{transform:translateX(3px)}
+  50%{transform:translateX(-3px)}
+}
 
 #t-input{
   width:100%; padding:14px; font-size:18px; border-radius:10px;
@@ -301,5 +348,22 @@ button:disabled{opacity:.5; cursor:default}
     font-size:11px; line-height:15px; color:var(--ink-2);
     border:1px solid var(--line); border-radius:4px; text-align:center;
     vertical-align:middle;
+  }
+}
+
+/* Дэвсгэр дээрх маш нарийн мөхлөг — хавтгай өнгийг «цаас»-тай төстэй болгоно.
+   Хүрэлт нэвтэрдэг, зөвхөн харагдац. */
+body::after{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
+  opacity:.028; background-size:140px 140px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme:dark){ body::after{opacity:.05} }
+
+/* Хөдөлгөөн багасгахыг хүссэн хэрэглэгчид бүх анимацийг унтраана. */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
   }
 }

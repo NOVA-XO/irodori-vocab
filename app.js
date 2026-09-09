@@ -464,6 +464,9 @@ function nextCard() {
   if (!queue.length) { finish(); return; }
   cur = queue.shift();
   answered = false;
+  const card = $('card');
+  if (card) card.classList.remove('flip');
+  replay(card, 'in');
   for (const p of ['pane-flash', 'pane-choice', 'pane-type', 'pane-next']) $(p).hidden = true;
   $('answer').hidden = true;
   $('f-judge').hidden = true; $('f-show').hidden = false;
@@ -669,6 +672,7 @@ function reveal() {
     $('a-mn').textContent = cur.mn;
     $('a-acc').textContent = '';
     $('answer').hidden = false;
+    replay($('card'), 'flip');
     return;
   }
   if (mode === 'type' || mode === 'listen' || isRev()) {
@@ -683,6 +687,7 @@ function reveal() {
   $('a-acc').innerHTML = cur.accent
     ? '<span class="acclab">өргөлт</span>' + pitchHTML(cur.accent) : '';
   $('answer').hidden = false;
+  replay($('card'), 'flip');           // хариу нээгдэхэд карт эргэх хөдөлгөөн
 }
 
 function resolve(ok) {
@@ -704,9 +709,24 @@ function resolve(ok) {
   updateBar();
 }
 
+const RING_C = 2 * Math.PI * 19;          // r=19, index.html дэх дугуйтай таарна
+
 function updateBar() {
   const total = done + queue.length + 1;
-  $('pbar').style.width = (100 * done / Math.max(total, 1)) + '%';
+  const r = $('pring');
+  if (!r) return;
+  const p = Math.max(0, Math.min(1, done / Math.max(total, 1)));
+  r.style.strokeDasharray = RING_C;
+  r.style.strokeDashoffset = RING_C * (1 - p);
+}
+
+/* CSS хөдөлгөөнийг ДАХИН тоглуулах: класс хасаад reflow хийж буцааж нэмнэ.
+   Reflow-гүйгээр браузер өөрчлөлтийг «хэзээ ч болоогүй» гэж үзээд алгасдаг. */
+function replay(el, cls) {
+  if (!el) return;
+  el.classList.remove(cls);
+  void el.offsetWidth;
+  el.classList.add(cls);
 }
 
 const MODE_NAME = { flash: 'Флашкарт', choice: 'Олон сонголт',
