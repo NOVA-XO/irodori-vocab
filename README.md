@@ -72,14 +72,16 @@ python -m http.server 8765
 # http://localhost:8765
 ```
 
-Гүн холбоос: `index.html#m=type` (эсвэл `flash` · `choice` · `listen`) —
-шууд тэр горимоор эхэлнэ.
+Гүн холбоос: `index.html#m=type` (`flash` · `choice` · `listen`) эсвэл
+`index.html#k=h2k` (`k2h` · `sound` · `klisten`) — шууд тэр горимоор эхэлнэ.
+`&s=kana` нэмбэл үгийг канагаар харуулна.
 
 ## Бүтэц
 
 ```
 index.html · app.css · app.js      аппын бүх код (гаднын сан ашиглаагүй)
-x
+data/vocab.json                    1215 үг — 18 хичээл + L0
+data/kana.json                     107 кана — хирагана/катакана/авиа
 data/REVIEW.md                     PDF-ээс дутуу задарсан бичлэгүүд
 tools/extract_vocab.py             PDF -> vocab_raw.json  (PyMuPDF)
 tools/lesson0.json                 L0-ын үгс (гараар, PDF-д байхгүй)
@@ -120,7 +122,7 @@ PDF-ийн хавтгай текст дамп дээр **багана холил
 - **99.6%** нь кана уншлагаараа таарна
 - Кана уншлагагүй үлдсэн: **3**
 
-Дутуу задарсан **41 / 1175** (3.5%) бичлэгийг [`data/REVIEW.md`](data/REVIEW.md)-д
+Дутуу задарсан **41 / 1215** (3.4%) бичлэгийг [`data/REVIEW.md`](data/REVIEW.md)-д
 жагсаасан. Ихэнх нь худал дохио (`assortment`, `dumbbell`, `100` мэт англи/тоон
 утга), жинхэнэ засах нь ~10.
 
