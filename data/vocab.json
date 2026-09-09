@@ -1396,7 +1396,7 @@
    "kana": "おねがいします",
    "accent": "おねがいしま↓す",
    "romaji": "onegaishimasu",
-   "mn": "",
+   "mn": "Гуйя. (хүсэлт гаргахад)",
    "ref": false
   },
   {
@@ -3101,7 +3101,7 @@
    "kana": "ですか？",
    "accent": "で↓すか？",
    "romaji": "desu ka?",
-   "mn": "",
+   "mn": "…уу? …юу? (асуух хэлбэр)",
    "ref": true
   },
   {
@@ -3362,10 +3362,10 @@
    "lesson": 6,
    "section": "4",
    "jp": "しおから",
-   "kana": "shiokara (pickled seafood)",
-   "accent": "shiokara (pickled seafood)",
+   "kana": "しおから",
+   "accent": "",
    "romaji": "shiokara",
-   "mn": "",
+   "mn": "шиокара (давсалсан далайн хоол)",
    "ref": true
   },
   {
@@ -7050,7 +7050,7 @@
    "kana": "ゆっくりします",
    "accent": "ゆっく↓りします",
    "romaji": "yukkuri­shimasu",
-   "mn": "",
+   "mn": "тайвшрах, амрах",
    "ref": false
   },
   {
@@ -9173,7 +9173,7 @@
    "kana": "ちょっと、わからない",
    "accent": "ちょ↓っと、わから↓ない",
    "romaji": "chotto, wakaranai",
-   "mn": "",
+   "mn": "жаахан… мэдэхгүй ээ (зөөлөн татгалзах)",
    "ref": false
   },
   {
@@ -13540,7 +13540,7 @@
    "kana": "ね",
    "accent": "ね",
    "romaji": "ne",
-   "mn": "",
+   "mn": "…шүү дээ, …тийм үү? (баталгаажуулах бөөм)",
    "ref": false
   },
   {

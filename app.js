@@ -555,10 +555,15 @@ function buildChoices() {
 
   // 1) Сонголтууд СОНГОСОН хичээлээс л гарна — бүх 1215 үгээс биш.
   //    Багц хэт жижиг бол л бүхэлдээ өргөтгөнө.
-  let cand = pool.filter(x => x.id !== cur.id && optText(x) && optText(x) !== want);
+  // Урагш чиглэлд сонголтууд нь МОНГОЛ утга байх ёстой. `optText` нь утга
+  // дутуу үед япон үг рүү ухардаг тул тэр бичлэгүүдийг сандруулагчид
+  // оруулбал жагсаалтад япон үг холилдож, хариултыг задалж өгнө.
+  const usable = x => x.id !== cur.id && optText(x) && optText(x) !== want
+    && (deck === 'kana' || isRev() || !!(x.mn || '').trim());
+  let cand = pool.filter(usable);
   if (cand.length < 3) {
     const all = deck === 'kana' ? KANA : ALL;
-    cand = all.filter(x => x.id !== cur.id && optText(x) && optText(x) !== want);
+    cand = all.filter(usable);
   }
 
   // 2) ОЙРОЛЦОО дуудлагатайг нь сонгоно — эс тэгвээс таахад хэтэрхий амархан.

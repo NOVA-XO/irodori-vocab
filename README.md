@@ -172,6 +172,7 @@ data/kana.json                     107 кана — хирагана/катак�
 data/REVIEW.md                     PDF-ээс дутуу задарсан бичлэгүүд
 tools/extract_vocab.py             PDF -> vocab_raw.json  (PyMuPDF)
 tools/lesson0.json                 L0-ын үгс (гараар, PDF-д байхгүй)
+tools/fixes.json                   дутуу задарсан бичлэгийн гараар засвар
 tools/build_data.py                vocab_raw.json + lesson0 -> data/vocab.json
 tools/build_kana.py                -> data/kana.json (катакан нь кодын шилжилтээр)
 tools/build_audio.py               VOICEVOX -> audio/*.mp3 (өргөлтийг номоор)
@@ -210,7 +211,7 @@ PDF-ийн хавтгай текст дамп дээр **багана холил
 - **99.8%** нь кана уншлагаараа таарна
 - Кана уншлагагүй үлдсэн: **1**
 
-Дутуу задарсан **35 / 1232** (2.8%) бичлэгийг [`data/REVIEW.md`](data/REVIEW.md)-д
+Дутуу задарсан **29 / 1232** (2.4%) бичлэгийг [`data/REVIEW.md`](data/REVIEW.md)-д
 жагсаасан. Ихэнх нь худал дохио (`assortment`, `dumbbell`, `100` мэт англи/тоон
 утга), жинхэнэ засах нь ~10.
 

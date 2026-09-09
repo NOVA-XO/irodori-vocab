@@ -57,7 +57,18 @@ def lesson0():
     return out
 
 
+def load_fixes():
+    """Гараар хийсэн засвар. Түлхүүр нь «<хичээл>|<日本語>» — id нь задлалт
+    өөрчлөгдвөл шилждэг тул түүнийг ашиглахгүй."""
+    p = os.path.join(HERE, "fixes.json")
+    if not os.path.exists(p):
+        return {}
+    return json.load(io.open(p, encoding="utf-8")).get("items", {})
+
+
 def main():
+    fixes = load_fixes()
+    used = set()
     raw = json.load(io.open(RAW, encoding="utf-8"))
     out, review = [], []
     per = {}
@@ -79,6 +90,14 @@ def main():
         }
         if e["group"]:
             item["group"] = int(e["group"])   # үйл үгийн бүлэг 1/2/3
+
+        key = "%d|%s" % (les, item["jp"])
+        if key in fixes:
+            item.update(fixes[key])
+            used.add(key)
+            if "accent" in fixes[key]:        # засвар өргөлтийг сольсон бол
+                item["kana"] = fixes[key].get("kana", kana_of(item))
+            kana = item["kana"]
         out.append(item)
 
         why = []
@@ -109,7 +128,10 @@ def main():
                     % (it["id"], page, it["jp"] or "—", it["kana"] or "—",
                        it["mn"] or "—", " · ".join(why)))
 
-    print("items %d  review %d" % (len(out), len(review)))
+    unused = sorted(set(fixes) - used)
+    if unused:
+        print("АНХААР: fixes.json дэх дараах түлхүүр таарсангүй:", unused)
+    print("items %d  review %d  fixes %d" % (len(out), len(review), len(used)))
     print("lessons:", " ".join("L%d=%d" % (k, per[k]) for k in sorted(per)))
     print("no-kana %d   ref %d" % (sum(1 for i in out if not i["kana"]),
                                    sum(1 for i in out if i["ref"])))
