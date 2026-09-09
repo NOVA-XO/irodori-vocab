@@ -184,6 +184,22 @@ button:disabled{opacity:.5; cursor:default}
 .by b{font-weight:600; color:var(--ink); letter-spacing:.04em;
       text-transform:none}   /* нэрийг бичсэн хэлбэрээр нь үлдээнэ */
 
+/* GitHub-д дагах урилга — товч биш, тод шаардахгүй; хүрэхэд бага зэрэг өргөгдөнө. */
+.follow{
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  margin:10px auto 0; width:fit-content; max-width:100%;
+  padding:9px 15px; border:1px solid var(--line); border-radius:999px;
+  background:var(--card); color:var(--ink-2); font-size:13px;
+  text-decoration:none; box-shadow:var(--shadow);
+  transition:transform .16s ease, color .18s ease, border-color .18s ease,
+             box-shadow .18s ease;
+}
+.follow:hover{color:var(--ink); border-color:var(--accent);
+              transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.16)}
+.follow:active{transform:scale(.98)}
+.follow svg{flex:none}
+.follow i{font-style:normal; opacity:.6}
+
 /* ---------- дасгал ---------- */
 /* Явцыг зураас биш БӨГЖӨӨР. Тоо нь хажуудаа том, ✓/✗ нь баруун захад. */
 .hud{display:flex; align-items:center; gap:11px; margin:2px 0 14px}
