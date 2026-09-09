@@ -236,6 +236,8 @@ function refreshSync() {
   const box = document.getElementById('sync-box');
   if (!box) return;
   box.hidden = !syncOn;
+  const none = document.getElementById('sync-none');
+  if (none) none.hidden = syncOn;
   const el = document.getElementById('sync-code');
   if (el) el.textContent = syncCode || '— холбогдоогүй —';
 }
@@ -507,9 +509,28 @@ function finish() {
 
 /* ══════════════════════ 7. Дэлгэц солих ба нүүр ══════════════════════ */
 
+const SCREENS = ['home', 'vocab', 'kana', 'study', 'stats', 'profile'];
+let screen = 'home';
+
+const ICON_MENU = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
+const ICON_BACK = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
+
 function show(name) {
-  for (const s of ['home', 'study', 'stats']) $(s).hidden = (s !== name);
-  $('btn-home').style.visibility = name === 'home' ? 'hidden' : 'visible';
+  screen = name;
+  for (const s of SCREENS) $(s).hidden = (s !== name);
+  $('menu').hidden = true;
+  // Дасгал дунд байхад ☰ биш ‹ — нэг дарлагаар гарах боломж хэрэгтэй.
+  $('btn-menu').innerHTML = (name === 'study') ? ICON_BACK : ICON_MENU;
+  document.querySelectorAll('#menu button').forEach(b =>
+    b.setAttribute('aria-current', b.dataset.go === name));
+  window.scrollTo(0, 0);
+}
+
+function go(name) {
+  if (name === 'stats') refreshStats();
+  if (name === 'profile') refreshSync();
+  if (name === 'home' || name === 'vocab' || name === 'kana') refreshHome();
+  show(name);
 }
 
 function refreshHome() {
@@ -531,6 +552,12 @@ function refreshHome() {
     box.appendChild(b);
   }
   $('inc-ref').checked = settings.ref;
+  const nv = $('n-vocab'); if (nv) nv.textContent = ALL.length + ' үг';
+  const nk = $('n-kana'); if (nk) nk.textContent = KANA.length + ' кана';
+  const vh = $('vocab-hint');
+  if (vh) vh.textContent = pool.length
+    ? 'Сонгосон ' + pool.length + ' үгээс асууна.'
+    : 'Дор хаяж нэг хичээл сонгоно уу.';
   document.querySelectorAll('#seg-script button').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.s === settings.script));
   document.querySelectorAll('#kana-groups button').forEach(b =>
@@ -580,8 +607,16 @@ document.querySelectorAll('#kana-groups button').forEach(b =>
     save(KEY_S, settings); refreshHome();
   });
 $('btn-review').onclick = () => startSession('choice', true);
-$('btn-home').onclick = () => { show('home'); refreshHome(); };
-$('btn-stats').onclick = () => { refreshStats(); refreshSync(); show('stats'); };
+$('btn-menu').onclick = () => {
+  if (screen === 'study') { go('home'); return; }     // дасгал дундаас гарах
+  $('menu').hidden = !$('menu').hidden;
+};
+$('btn-profile').onclick = () => go('profile');
+document.querySelectorAll('#menu button, .bigcard').forEach(b =>
+  b.onclick = () => go(b.dataset.go));
+document.addEventListener('click', e => {                // гадуур дарвал цэс хаагдана
+  if (!$('menu').hidden && !e.target.closest('#menu, #btn-menu')) $('menu').hidden = true;
+});
 $('sel-all').onclick = () => { settings.lessons = [...new Set(ALL.map(i => i.lesson))]; save(KEY_S, settings); refreshHome(); };
 $('sel-none').onclick = () => { settings.lessons = []; save(KEY_S, settings); refreshHome(); };
 $('inc-ref').onchange = e => { settings.ref = e.target.checked; save(KEY_S, settings); refreshHome(); };
@@ -694,7 +729,10 @@ if (window.speechSynthesis) {
 function autoStart() {
   const s = (location.hash.match(/s=(kanji|kana)/) || [])[1];
   if (s) { settings.script = s; save(KEY_S, settings); refreshHome(); }
-  if (/\bstats\b/.test(location.hash)) { refreshStats(); refreshSync(); show('stats'); return; }
+  // Дэлгэцийн нэрийг ЯГ тэнцүүгээр шалгана: «#m=flash&s=kana» дотор «kana»
+  // гэсэн үг байгаа тул хэсэгчилж хайвал горим эхлэхийн оронд үсэрнэ.
+  const scr = location.hash.replace(/^#/, '');
+  if (['home', 'vocab', 'kana', 'stats', 'profile'].includes(scr)) { go(scr); return; }
   const k = (location.hash.match(/k=(h2k|k2h|sound|klisten)/) || [])[1];
   if (k) { startKana(k); return; }
   const m = (location.hash.match(/m=(flash|choice|type|listen)/) || [])[1];

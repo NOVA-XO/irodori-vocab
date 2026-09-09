@@ -10,44 +10,79 @@
 <body>
 
 <header class="bar">
-  <button id="btn-home" class="ghost" title="Нүүр">‹</button>
+  <button id="btn-menu" class="icon" title="Цэс" aria-label="Цэс">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
   <div class="title"><span class="jp">いろどり</span> <small>入門</small></div>
-  <button id="btn-stats" class="ghost" title="Явц">▦</button>
+  <button id="btn-profile" class="icon" title="Профайл" aria-label="Профайл">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+         stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="3.4"/>
+      <path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"/></svg>
+  </button>
 </header>
+
+<nav id="menu" class="menu" hidden>
+  <button data-go="home">Нүүр</button>
+  <button data-go="vocab">Үг цээжлэх</button>
+  <button data-go="kana">Кана үсэг цээжлэх</button>
+  <button data-go="stats">Явц</button>
+</nav>
 
 <!-- ═══════════════════ НҮҮР ═══════════════════ -->
 <section id="home" class="screen">
-
   <div id="due-card" class="due">
     <div class="due-n" id="due-n">—</div>
     <div class="due-t">өнөөдөр давтах үг</div>
     <button id="btn-review" class="primary big">Давталт эхлүүлэх</button>
   </div>
 
-  <h2>Хичээл</h2>
+  <div class="bigcards">
+    <button class="bigcard" data-go="vocab">
+      <span class="bc-jp jp">単語</span>
+      <b>Үг цээжлэх</b>
+      <span>Irodori 入門-ийн шинэ үгс · <i id="n-vocab">—</i></span>
+    </button>
+    <button class="bigcard" data-go="kana">
+      <span class="bc-jp jp">かな</span>
+      <b>Кана үсэг цээжлэх</b>
+      <span>Хирагана ба катакана · <i id="n-kana">—</i></span>
+    </button>
+  </div>
+
+  <div id="voice-warn" class="warn" hidden></div>
+  <p class="src">Эх сурвалж: <b>Irodori 入門 ことばリスト</b> (монгол орчуулга) — The Japan&nbsp;Foundation.
+     Энэ апп нь зөвхөн хувийн давталтад зориулагдсан.</p>
+</section>
+
+<!-- ═══════════════════ ҮГ ЦЭЭЖЛЭХ ═══════════════════ -->
+<section id="vocab" class="screen" hidden>
+  <div class="step">1 · Хичээлээ сонго</div>
   <div id="lessons" class="lessons"></div>
   <div class="row">
     <button id="sel-all" class="ghost sm">Бүгд</button>
     <button id="sel-none" class="ghost sm">Цэвэрлэх</button>
-    <label class="chk"><input type="checkbox" id="inc-ref"> <span>Лавлах үг (<span class="jp">参考語彙</span>) оруулах</span></label>
+    <label class="chk"><input type="checkbox" id="inc-ref"> <span>Лавлах үг (<span class="jp">参考語彙</span>)</span></label>
   </div>
+  <p class="hint" id="vocab-hint"></p>
 
-  <h2>Үгийг юугаар харуулах</h2>
+  <div class="step">2 · Үгийг юугаар харуулах</div>
   <div class="seg" id="seg-script">
     <button data-s="kanji"><b class="jp">漢字</b><span>名前 — ханзаар бичсэн хэлбэр</span></button>
     <button data-s="kana"><b class="jp">ひらがな</b><span>なまえ — зөвхөн кана уншлага</span></button>
   </div>
 
-  <h2>Дасгал</h2>
+  <div class="step">3 · Дасгалаа сонго</div>
   <div class="modes">
     <button class="mode" data-mode="flash"><b>Флашкарт</b><span>Карт эргүүлж өөрөө дүгнэнэ</span></button>
     <button class="mode" data-mode="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно</span></button>
     <button class="mode" data-mode="type"><b>Гараар бичих</b><span>Латинаар бичихэд кана болно</span></button>
-    <button class="mode" data-mode="listen"><b>Сонсох</b><span>Дуудлагыг сонсоод таана</span></button>
+    <button class="mode" data-mode="listen"><b>Сонсох</b><span>Дуудлагыг сонсоод утгыг таана</span></button>
   </div>
+</section>
 
-  <h2>Кана цээжлэх</h2>
-
+<!-- ═══════════════════ КАНА ═══════════════════ -->
+<section id="kana" class="screen" hidden>
   <div class="step">1 · Аль бүлгийг давтахаа сонго</div>
   <div class="klist" id="kana-groups">
     <button data-g="gojuon">
@@ -75,12 +110,6 @@
     <button class="mode" data-k="sound"><b>Кана → авиа</b><span>Кана харуулж, уншлагыг нь кириллээр сонгоно</span></button>
     <button class="mode" data-k="klisten"><b>Сонсоод таах</b><span>Дуудлагыг сонсоод аль кана болохыг сонгоно</span></button>
   </div>
-
-  <div id="voice-warn" class="warn" hidden></div>
-  <div class="row"><button id="btn-diag" class="ghost sm">🔊 Дууг шалгах</button></div>
-  <pre id="diag" class="diag" hidden></pre>
-  <p class="src">Эх сурвалж: <b>Irodori 入門 ことばリスト</b> (монгол орчуулга) — The Japan&nbsp;Foundation.
-     Энэ апп нь зөвхөн хувийн давталтад зориулагдсан.</p>
 </section>
 
 <!-- ═══════════════════ ДАСГАЛ ═══════════════════ -->
@@ -132,8 +161,13 @@
   <div id="stat-sum" class="statsum"></div>
   <h2>Хичээл тус бүрээр</h2>
   <div id="stat-lessons" class="statles"></div>
+</section>
+
+<!-- ═══════════════════ ПРОФАЙЛ ═══════════════════ -->
+<section id="profile" class="screen" hidden>
+  <h2>Хаяг · бүртгэл</h2>
+
   <div id="sync-box" hidden>
-    <h2>Төхөөрөмж хооронд нийлүүлэх</h2>
     <p class="hint">Явц энэ төхөөрөмжид хадгалагдана. Утас, компьютер хоёрын
       явцыг нийлүүлэхийг хүсвэл <b>нэг удаа код үүсгээд</b> нөгөө төхөөрөмж дээрээ
       тэр кодоо оруулна. Код бол түлхүүр — <b>хэн нэгэнд битгий өг</b>.</p>
@@ -146,6 +180,8 @@
     </div>
     <div id="sync-state" class="hint"></div>
   </div>
+  <p class="hint" id="sync-none" hidden>Синк тохируулаагүй байна — явц зөвхөн
+     энэ төхөөрөмжид хадгалагдана. Доорх нөөцлөх аргаар зөөж болно.</p>
 
   <h2>Нөөц</h2>
   <div class="row">
@@ -154,6 +190,10 @@
     <button id="btn-reset" class="ghost sm danger">Явцыг устгах</button>
   </div>
   <input type="file" id="file-import" accept="application/json" hidden>
+
+  <h2>Дуу</h2>
+  <div class="row"><button id="btn-diag" class="ghost sm">🔊 Дууг шалгах</button></div>
+  <pre id="diag" class="diag" hidden></pre>
 </section>
 
 <script src="sync-config.js"></script>
