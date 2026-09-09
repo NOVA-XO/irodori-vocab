@@ -180,13 +180,17 @@ function newCode() {
 }
 
 async function rpc(fn, body) {
+  // Supabase-д хоёр төрлийн түлхүүр бий:
+  //   хуучин `anon`  — JWT, «eyJ…» гэж эхэлнэ
+  //   шинэ `publishable` — «sb_publishable_…», JWT БИШ
+  // Authorization: Bearer толгойд JWT л хүлээж авдаг тул шинэ түлхүүрийг
+  // тэнд явуулбал задлах алдаа өгнө. Тиймээс зөвхөн JWT үед л нэмнэ.
+  const headers = { 'Content-Type': 'application/json', apikey: SYNC.key };
+  if (/^eyJ/.test(SYNC.key)) headers.Authorization = 'Bearer ' + SYNC.key;
+
   const r = await fetch(SYNC.url.replace(/\/+$/, '') + '/rest/v1/rpc/' + fn, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SYNC.key,
-      Authorization: 'Bearer ' + SYNC.key,
-    },
+    headers: headers,
     body: JSON.stringify(body),
   });
   if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text()).slice(0, 120));
@@ -690,6 +694,7 @@ if (window.speechSynthesis) {
 function autoStart() {
   const s = (location.hash.match(/s=(kanji|kana)/) || [])[1];
   if (s) { settings.script = s; save(KEY_S, settings); refreshHome(); }
+  if (/\bstats\b/.test(location.hash)) { refreshStats(); refreshSync(); show('stats'); return; }
   const k = (location.hash.match(/k=(h2k|k2h|sound|klisten)/) || [])[1];
   if (k) { startKana(k); return; }
   const m = (location.hash.match(/m=(flash|choice|type|listen)/) || [])[1];

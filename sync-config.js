@@ -12,6 +12,6 @@
  * төхөөрөмж дээр үлдэнэ), синкийн хэсэг нүүрэндээ гарахгүй.
  */
 window.SYNC_CONFIG = {
-  url: '',
-  key: ''
+  url: 'https://feyhowascekpdzjluqkr.supabase.co',
+  key: 'sb_publishable_iySsGVNtlMbikfW_BydZYQ_na6gwTTS'
 };
