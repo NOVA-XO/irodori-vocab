@@ -176,12 +176,18 @@ let settings = load(KEY_S, { lessons: [1, 2, 3], ref: false, script: 'kanji', kg
 if (!settings.script) settings.script = 'kanji';   // хуучин хадгалсан тохиргоог нөхнө
 if (!settings.kgroups) settings.kgroups = ['gojuon'];
 if (!settings.goal) settings.goal = 20;
+if (!settings.dir) settings.dir = 'jp2mn';
 
 /* Асуултын нүүр талд юу харуулах вэ: ханзтай хэлбэр эсвэл кана уншлага.
    Нөгөө хэлбэрийг нь хариулт дээр үзүүлнэ. Ханзгүй үг (プレゼント, あめ) дээр
    хоёул ижил гарах тул хариулт дээр давхардуулж харуулахгүй. */
 const faceOf = it => (settings.script === 'kana' && it.kana) ? it.kana : it.jp;
 const backOf = it => (settings.script === 'kana') ? it.jp : (it.kana || '');
+/* Урвуу чиглэл: монгол утгыг асууж, япон үгийг нь таалгана. Идэвхтэй санах
+   ойг илүү шалгадаг. Зөвхөн «флашкарт» ба «олон сонголт»-д үйлчилнэ —
+   «бичих» нь аль хэдийн урвуу, «сонсох» нь дуунаас эхэлдэг. */
+const isRev = () => deck === 'vocab' && settings.dir === 'mn2jp'
+  && (mode === 'flash' || mode === 'choice');
 
 function grade(id, ok) {
   const p = progress[id] || { b: 0, d: 0, n: 0, c: 0, w: 0 };
@@ -479,10 +485,12 @@ function nextCard() {
   }
 
   if (mode === 'flash') {
-    $('p-main').textContent = faceOf(cur); $('p-main').className = 'prompt jp';
+    $('p-main').textContent = isRev() ? (cur.mn || cur.jp) : faceOf(cur);
+    $('p-main').className = 'prompt' + (isRev() ? ' mn' : ' jp');
     $('pane-flash').hidden = false;
   } else if (mode === 'choice') {
-    $('p-main').textContent = faceOf(cur); $('p-main').className = 'prompt jp';
+    $('p-main').textContent = isRev() ? (cur.mn || cur.jp) : faceOf(cur);
+    $('p-main').className = 'prompt' + (isRev() ? ' mn' : ' jp');
     buildChoices();
     $('pane-choice').hidden = false;
   } else if (mode === 'type') {
@@ -504,14 +512,15 @@ function nextCard() {
   // үргэлж дарлагаас (mode товч эсвэл «Дараах») эхэлдэг тул ингэж дуудвал
   // хэрэглэгчийн хүрэлтийн гинж тасрахгүй — iOS Safari зөвхөн тийм үед
   // дуу гаргахыг зөвшөөрдөг.
-  $('btn-speak').hidden = !canHear(cur) || mode === 'type';
-  if (canHear(cur) && mode !== 'type') say(cur);
+  const hideSound = mode === 'type' || isRev();   // хариултыг задлахгүйн тулд
+  $('btn-speak').hidden = !canHear(cur) || hideSound;
+  if (canHear(cur) && !hideSound) say(cur);
   updateBar();
 }
 
 /** Сонголтын товчин дээр бичигдэх текст = зөв хариулт. */
 function optText(it) {
-  if (deck !== 'kana') return it.mn || it.jp;
+  if (deck !== 'kana') return isRev() ? faceOf(it) : (it.mn || it.jp);
   if (kmode === 'h2k') return it.kata;
   if (kmode === 'k2h') return it.hira;
   if (kmode === 'sound') return it.mn;
@@ -559,7 +568,7 @@ function buildChoices() {
   scored.sort((a, b) => a.d - b.d);
   const others = shuffle(scored.slice(0, 10).map(s => s.x)).slice(0, 3);
 
-  const jpFace = deck === 'kana' && kmode !== 'sound';
+  const jpFace = (deck === 'kana' && kmode !== 'sound') || isRev();
   // ↓ давхардсангүй эсэхийг buildChoices-ийн төгсгөлд дугаарлана
   shuffle([cur].concat(others)).forEach(opt => {
     const b = document.createElement('button');
@@ -657,7 +666,7 @@ function reveal() {
     $('answer').hidden = false;
     return;
   }
-  if (mode === 'type' || mode === 'listen') {
+  if (mode === 'type' || mode === 'listen' || isRev()) {
     lines.push(cur.jp);
     if (cur.kana && cur.kana !== cur.jp) lines.push(cur.kana);
   } else {
@@ -665,7 +674,7 @@ function reveal() {
     if (back && back !== faceOf(cur)) lines.push(back);
   }
   $('a-kana').textContent = lines.join('   ');
-  $('a-mn').textContent = cur.mn || '';
+  $('a-mn').textContent = isRev() ? '' : (cur.mn || '');
   $('a-acc').innerHTML = cur.accent
     ? '<span class="acclab">өргөлт</span>' + pitchHTML(cur.accent) : '';
   $('answer').hidden = false;
@@ -686,7 +695,7 @@ function resolve(ok) {
   }
   // Бусад горимд карт гармагц аль хэдийн сонсгосон тул дахин давтахгүй.
   // «Бичих»-д зөвхөн ЭНД сонсгоно — урьд нь сонсгосон бол хариулт задарна.
-  if (canHear(cur) && mode === 'type') { $('btn-speak').hidden = false; say(cur); }
+  if (canHear(cur) && (mode === 'type' || isRev())) { $('btn-speak').hidden = false; say(cur); }
   updateBar();
 }
 
@@ -799,6 +808,8 @@ function refreshHome() {
     : 'Дор хаяж нэг хичээл сонгоно уу.';
   document.querySelectorAll('#seg-script button').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.s === settings.script));
+  document.querySelectorAll('#seg-dir button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.d === settings.dir));
   document.querySelectorAll('#kana-groups button').forEach(b =>
     b.setAttribute('aria-pressed', settings.kgroups.includes(b.dataset.g)));
   // Сонголт нь доорх дасгалуудад ЯМАР нөлөө үзүүлэхийг тоогоор нь хэлнэ.
@@ -873,6 +884,8 @@ $('sel-none').onclick = () => { settings.lessons = []; save(KEY_S, settings); re
 $('inc-ref').onchange = e => { settings.ref = e.target.checked; save(KEY_S, settings); refreshHome(); };
 document.querySelectorAll('#seg-script button').forEach(b =>
   b.onclick = () => { settings.script = b.dataset.s; save(KEY_S, settings); refreshHome(); });
+document.querySelectorAll('#seg-dir button').forEach(b =>
+  b.onclick = () => { settings.dir = b.dataset.d; save(KEY_S, settings); refreshHome(); });
 
 $('f-show').onclick = () => { reveal(); $('f-show').hidden = true; $('f-judge').hidden = false; };
 document.querySelectorAll('#f-judge button').forEach(b =>
@@ -1063,6 +1076,8 @@ $('btn-offline').onclick = async () => {
 function autoStart() {
   const s = (location.hash.match(/s=(kanji|kana)/) || [])[1];
   if (s) { settings.script = s; save(KEY_S, settings); refreshHome(); }
+  const dr = (location.hash.match(/d=(jp2mn|mn2jp)/) || [])[1];
+  if (dr) { settings.dir = dr; save(KEY_S, settings); refreshHome(); }
   // Дэлгэцийн нэрийг ЯГ тэнцүүгээр шалгана: «#m=flash&s=kana» дотор «kana»
   // гэсэн үг байгаа тул хэсэгчилж хайвал горим эхлэхийн оронд үсэрнэ.
   const scr = location.hash.replace(/^#/, '');

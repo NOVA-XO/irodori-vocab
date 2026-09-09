@@ -51,20 +51,33 @@ def to_kata(s):
     return ''.join(out)
 
 
-def moras(s):
-    """Катакана мөрийг мора болгон хуваана. Жижиг кана өмнөхтэйгөө нийлнэ."""
-    out = []
-    for ch in s:
-        if out and ch in SMALL:
-            out[-1] += ch
-        else:
-            out.append(ch)
-    return out
-
-
 def is_kana_ch(ch):
     c = ord(ch)
     return 0x30A1 <= c <= 0x30FC and c != 0x30FB
+
+
+# «AquesTalk風記法» нь 長音符 «ー»-г хүлээж авдаггүй (UNKNOWN_TEXT алдаа),
+# уртатгалыг ЭГШГЭЭР нь бичих ёстой: ミャンマー -> ミャンマア.
+VOWEL_ROWS = {
+    'ア': 'アカサタナハマヤラワガザダバパャァヮヷ',
+    'イ': 'イキシチニヒミリヰギジヂビピィヸ',
+    'ウ': 'ウクスツヌフムユルグズヅブプュゥヴ',
+    'エ': 'エケセテネヘメレヱゲゼデベペェヹ',
+    'オ': 'オコソトノホモヨロヲゴゾドボポョォヺ',
+}
+VOWEL_OF = {c: v for v, row in VOWEL_ROWS.items() for c in row}
+
+
+def expand_choon(ms):
+    """«ー» мора бүрийг өмнөх морагийн эгшгээр солино."""
+    out = []
+    for m in ms:
+        if m == 'ー' or m == '〜':
+            v = VOWEL_OF.get(out[-1][-1]) if out else None
+            out.append(v if v else m)   # тодорхойгүй бол хэвээр (API няцаана)
+            continue
+        out.append(m)
+    return out
 
 
 # ── Номын өргөлтийн тэмдэглэгээг задлах ────────────────────────────────
@@ -146,26 +159,35 @@ def vv_accent(kata, speaker):
     return a
 
 
-def notation(accent_text, kana_text, speaker):
+def notation(accent_text, speaker):
     """Номын тэмдэглэгээг VOICEVOX-ийн «AquesTalk風記法» болгоно.
 
-    Жишээ:  ミャ↓ンマー          -> ミャ'ンマー
+    Жишээ:  ミャ↓ンマー          -> ミャ'ンマア
             ブラジル○           -> ブラジル'      (ганцаараа дуудахад ижил)
             なまえ○／おなまえ○   -> ナマエ'、オナマエ'
+
+    Ном ӨРГӨЛТ ЗААГААГҮЙ бол '' буцаана — тэр үед хөдөлгүүрийн өөрийн
+    тольд даалгах нь таамаглахаас дээр.
     """
-    src = accent_text or kana_text or ''
-    parts = []
-    for seg, sep in split_segments(src):
+    segs, marked = [], False
+    for seg, sep in split_segments(accent_text or ''):
         ms, drop = seg_accent(seg)
+        ms = expand_choon(ms)
         if not ms:
             continue
+        if drop is not None:
+            marked = True
+        segs.append((sep, ms, drop))
+    if not marked:
+        return ''            # ном огт заагаагүй — бүхэлд нь хөдөлгүүрт даалгана
+    parts = []
+    for sep, ms, drop in segs:
+        # Нэг хэсэг нь тэмдэглэгээгүй (ж: «おはよう（ございま↓す）» дэх «おはよう»)
+        # бол ЗӨВХӨН тэр хэсгийг хөдөлгүүрийн толиор нөхнө.
         if drop is None:
-            drop = vv_accent(''.join(ms), speaker)
-            if not drop:
-                drop = len(ms)          # мэдэгдэхгүй бол сүүлийн мора
+            drop = vv_accent(''.join(ms), speaker) or len(ms)
         drop = max(1, min(drop, len(ms)))
-        body = ''.join(ms[:drop]) + "'" + ''.join(ms[drop:])
-        parts.append((sep if parts else '') + body)
+        parts.append((sep if parts else '') + ''.join(ms[:drop]) + "'" + ''.join(ms[drop:]))
     return ''.join(parts)
 
 
@@ -196,8 +218,7 @@ def main():
     ap.add_argument('--force', action='store_true')
     a = ap.parse_args()
 
-    global ENGINE
-    ENGINE = a.engine
+    globals()['ENGINE'] = a.engine
 
     if a.list_speakers:
         with urllib.request.urlopen(ENGINE + '/speakers', timeout=30) as r:
@@ -242,7 +263,7 @@ def main():
             ok += 1
             continue
         try:
-            wav = synth(kata, notation(acc, raw, a.speaker), a.speaker, a.speed)
+            wav = synth(kata, notation(acc, a.speaker), a.speaker, a.speed)
             p = subprocess.run(
                 [ff, '-hide_banner', '-loglevel', 'error', '-y', '-i', 'pipe:0',
                  '-codec:a', 'libmp3lame', '-b:a', '48k', '-ac', '1', '-ar', '24000',

@@ -8,7 +8,7 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="app.css?v=2026-09-10i">
+<link rel="stylesheet" href="app.css?v=2026-09-10j">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -71,7 +71,8 @@
 
   <div id="voice-warn" class="warn" hidden></div>
   <p class="src">Эх сурвалж: <b>Irodori 入門 ことばリスト</b> (монгол орчуулга) — The Japan&nbsp;Foundation.
-     Энэ апп нь зөвхөн хувийн давталтад зориулагдсан.</p>
+     Энэ апп нь зөвхөн хувийн давталтад зориулагдсан.<br>
+     Дуудлага: <b>VOICEVOX:<span class="jp">四国めたん</span></b></p>
 </section>
 
 <!-- ═══════════════════ ҮГ ЦЭЭЖЛЭХ ═══════════════════ -->
@@ -91,7 +92,15 @@
     <button data-s="kana"><b class="jp">ひらがな</b><span>なまえ — зөвхөн кана уншлага</span></button>
   </div>
 
-  <div class="step">3 · Дасгалаа сонго</div>
+  <div class="step">3 · Чиглэл</div>
+  <div class="seg" id="seg-dir">
+    <button data-d="jp2mn"><b class="jp">日本語 → Монгол</b><span>Япон үгийг харж утгыг нь таана</span></button>
+    <button data-d="mn2jp"><b>Монгол → <span class="jp">日本語</span></b><span>Утгыг харж япон үгийг нь таана — илүү хүнд</span></button>
+  </div>
+  <p class="hint">Урвуу чиглэл нь идэвхтэй санах ойг илүү шалгадаг тул үг
+     тогтоход үр дүнтэй. «Флашкарт» ба «Олон сонголт» хоёрт үйлчилнэ.</p>
+
+  <div class="step">4 · Дасгалаа сонго</div>
   <div class="modes">
     <button class="mode" data-mode="flash"><b>Флашкарт</b><span>Карт эргүүлж өөрөө дүгнэнэ</span></button>
     <button class="mode" data-mode="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно</span></button>
@@ -261,7 +270,7 @@
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10i"></script>
-<script src="app.js?v=2026-09-10i"></script>
+<script src="sync-config.js?v=2026-09-10j"></script>
+<script src="app.js?v=2026-09-10j"></script>
 </body>
 </html>
