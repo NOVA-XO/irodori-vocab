@@ -1,7 +1,12 @@
+__pycache__/
+*.pyc
+tools/vocab_raw.json
+tools/rejected.json
+tools/report.txt
+tools/audio_failed.txt
+tools/speakers.txt
+.DS_Store
+
 # VOICEVOX хөдөлгүүр — 1.7 ГБ, зөвхөн дуу үүсгэхэд локал хэрэглэнэ.
 # Үүсгэсэн mp3 нь репод ОРНО, хөдөлгүүр өөрөө ОРОХГҮЙ.
 tools/_vv/
-tools/rejected.json
-tools/vocab_raw.json
-__pycache__/
-*.pyc
