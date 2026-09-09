@@ -6,6 +6,11 @@
  */
 'use strict';
 
+/* Хувилбарыг өөрийнхөө <script src="app.js?v=…"> хаягаас уншина — ингэснээр
+   ганц газарт (index.html) бичихэд хангалттай, хоёр тийш зөрөх аюулгүй. */
+const APP_VERSION = ((document.currentScript || {}).src || '').match(/[?&]v=([\w.\-]+)/);
+const VERSION = APP_VERSION ? APP_VERSION[1] : 'dev';
+
 /* ══════════════════════ 1. Латин → кана хөрвүүлэгч ══════════════════════ */
 
 const KANA_MAP = (() => {
@@ -612,6 +617,13 @@ $('btn-menu').onclick = () => {
   $('menu').hidden = !$('menu').hidden;
 };
 $('btn-profile').onclick = () => go('profile');
+
+$('app-ver').textContent = VERSION;
+/* Кэшийг тойрч ачаалах: hash биш ХАЙЛТЫН мөрийг өөрчилнө — hash солиход
+   браузер шинээр татдаггүй. reload(true) нь аль эрт хүчингүй болсон. */
+$('btn-reload').onclick = () => {
+  location.replace(location.pathname + '?r=' + Date.now());
+};
 document.querySelectorAll('#menu button, .bigcard').forEach(b =>
   b.onclick = () => go(b.dataset.go));
 document.addEventListener('click', e => {                // гадуур дарвал цэс хаагдана

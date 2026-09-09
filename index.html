@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1c3350">
 <title>いろどり 入門 — Шинэ үг</title>
-<link rel="stylesheet" href="app.css">
+<!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
+     тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
+     хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
+<link rel="stylesheet" href="app.css?v=2026-09-10a">
 </head>
 <body>
 
@@ -194,9 +197,14 @@
   <h2>Дуу</h2>
   <div class="row"><button id="btn-diag" class="ghost sm">🔊 Дууг шалгах</button></div>
   <pre id="diag" class="diag" hidden></pre>
+
+  <h2>Хувилбар</h2>
+  <p class="hint">Апп шинэчлэгдээгүй мэт санагдвал энд дарж кэшийг тойрч
+     дахин ачаална. Хувилбар: <b id="app-ver">—</b></p>
+  <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js"></script>
-<script src="app.js"></script>
+<script src="sync-config.js?v=2026-09-10a"></script>
+<script src="app.js?v=2026-09-10a"></script>
 </body>
 </html>
