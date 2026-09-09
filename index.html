@@ -47,16 +47,33 @@
   </div>
 
   <h2>Кана цээжлэх</h2>
-  <div class="row" id="kana-groups">
-    <button data-g="gojuon" class="chip"><span class="jp">五十音</span> <i>46</i></button>
-    <button data-g="dakuten" class="chip"><span class="jp">濁音</span> <i>25</i></button>
-    <button data-g="yoon" class="chip"><span class="jp">拗音</span> <i>36</i></button>
+
+  <div class="step">1 · Аль бүлгийг давтахаа сонго</div>
+  <div class="klist" id="kana-groups">
+    <button data-g="gojuon">
+      <span class="tick">✓</span>
+      <span class="kname"><b class="jp">五十音</b> үндсэн кана</span>
+      <span class="kex jp">あ か さ た な</span><i>46</i>
+    </button>
+    <button data-g="dakuten">
+      <span class="tick">✓</span>
+      <span class="kname"><b class="jp">濁音・半濁音</b> дуут тэмдэгтэй</span>
+      <span class="kex jp">が ざ だ ば ぱ</span><i>25</i>
+    </button>
+    <button data-g="yoon">
+      <span class="tick">✓</span>
+      <span class="kname"><b class="jp">拗音</b> хос кана</span>
+      <span class="kex jp">きゃ しゃ ちゃ</span><i>36</i>
+    </button>
   </div>
+  <p class="hint" id="kana-hint"></p>
+
+  <div class="step">2 · Дасгалаа сонго</div>
   <div class="modes">
-    <button class="mode" data-k="h2k"><b class="jp">ひらがな → カタカナ</b><span>Хираганаас катаканыг таана</span></button>
-    <button class="mode" data-k="k2h"><b class="jp">カタカナ → ひらがな</b><span>Катаканаас хираганыг таана</span></button>
-    <button class="mode" data-k="sound"><b>Кана → авиа</b><span>Уншлагыг кириллээр таана</span></button>
-    <button class="mode" data-k="klisten"><b>Сонсоод таах</b><span>Дуудлагыг сонсоод канаг сонгоно</span></button>
+    <button class="mode" data-k="h2k"><b class="jp">ひらがな → カタカナ</b><span>Хирагана харуулж, катаканыг нь сонгоно</span></button>
+    <button class="mode" data-k="k2h"><b class="jp">カタカナ → ひらがな</b><span>Катакана харуулж, хираганыг нь сонгоно</span></button>
+    <button class="mode" data-k="sound"><b>Кана → авиа</b><span>Кана харуулж, уншлагыг нь кириллээр сонгоно</span></button>
+    <button class="mode" data-k="klisten"><b>Сонсоод таах</b><span>Дуудлагыг сонсоод аль кана болохыг сонгоно</span></button>
   </div>
 
   <div id="voice-warn" class="warn" hidden></div>

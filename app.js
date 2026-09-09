@@ -529,8 +529,14 @@ function refreshHome() {
   $('inc-ref').checked = settings.ref;
   document.querySelectorAll('#seg-script button').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.s === settings.script));
-  document.querySelectorAll('#kana-groups .chip').forEach(b =>
+  document.querySelectorAll('#kana-groups button').forEach(b =>
     b.setAttribute('aria-pressed', settings.kgroups.includes(b.dataset.g)));
+  // Сонголт нь доорх дасгалуудад ЯМАР нөлөө үзүүлэхийг тоогоор нь хэлнэ.
+  const kn = KANA.filter(i => settings.kgroups.includes(i.group)).length;
+  const kh = $('kana-hint');
+  if (kh) kh.textContent = kn
+    ? 'Доорх 4 дасгал сонгосон ' + kn + ' канагаас л асууна.'
+    : 'Дор хаяж нэг бүлэг сонгоно уу — эс тэгвээс дасгал эхлэхгүй.';
 }
 
 function refreshStats() {
@@ -563,7 +569,7 @@ document.querySelectorAll('.mode[data-mode]').forEach(b =>
   b.onclick = () => startSession(b.dataset.mode, false));
 document.querySelectorAll('.mode[data-k]').forEach(b =>
   b.onclick = () => startKana(b.dataset.k));
-document.querySelectorAll('#kana-groups .chip').forEach(b =>
+document.querySelectorAll('#kana-groups button').forEach(b =>
   b.onclick = () => {
     const g = b.dataset.g, i = settings.kgroups.indexOf(g);
     i < 0 ? settings.kgroups.push(g) : settings.kgroups.splice(i, 1);
