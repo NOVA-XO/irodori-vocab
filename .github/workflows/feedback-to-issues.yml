@@ -25,13 +25,20 @@ jobs:
     steps:
       - name: Шинэ санал хүсэлтийг Issue болгох
         env:
-          SB_URL: ${{ secrets.SUPABASE_URL }}
-          SB_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SB_URL_RAW: ${{ secrets.SUPABASE_URL }}
+          SB_KEY_RAW: ${{ secrets.SUPABASE_SERVICE_KEY }}
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if [ -z "${SB_URL:-}" ] || [ -z "${SB_KEY:-}" ]; then
+
+          # Нууцыг хуулж тавихад зай, таб, шинэ мөр санамсаргүй ороод ирдэг.
+          # Тэр нь curl-д «Malformed input to a URL function» гэсэн алдаа өгнө,
+          # логт зөвхөн *** харагддаг тул шалтгаан нь олдоход хэцүү. Цэвэрлэнэ.
+          SB_URL="$(printf '%s' "${SB_URL_RAW:-}" | tr -d '[:space:]' | sed 's:/*$::')"
+          SB_KEY="$(printf '%s' "${SB_KEY_RAW:-}" | tr -d '[:space:]')"
+
+          if [ -z "$SB_URL" ] || [ -z "$SB_KEY" ]; then
             echo "SUPABASE_URL / SUPABASE_SERVICE_KEY тохируулаагүй байна."
             exit 0
           fi
@@ -42,48 +49,64 @@ jobs:
             -H "apikey: $SB_KEY" -H "Authorization: Bearer $SB_KEY" \
             -o pending.json
 
+          if ! jq -e 'type == "array"' pending.json > /dev/null 2>&1; then
+            echo "Supabase-аас жагсаалт ирсэнгүй:"
+            head -c 400 pending.json
+            exit 1
+          fi
+
           COUNT=$(jq 'length' pending.json)
           echo "хүлээгдэж буй: $COUNT"
-          [ "$COUNT" -eq 0 ] && exit 0
+          # `[ ... ] && exit 0` гэж бичвэл тэнцүү БИШ үед бүхэл мөр 1 буцааж,
+          # `set -e` ажлыг тасалдаг. Тиймээс бүтэн if ашиглана.
+          if [ "$COUNT" -eq 0 ]; then
+            echo "шинэ санал хүсэлт алга."
+            exit 0
+          fi
 
           for i in $(seq 0 $((COUNT - 1))); do
             ID=$(jq -r ".[$i].id" pending.json)
             KIND=$(jq -r ".[$i].kind" pending.json)
             BODY=$(jq -r ".[$i].body" pending.json)
-            CONTACT=$(jq -r ".[$i].contact // \"\"" pending.json)
+            CONTACT=$(jq -r '.['"$i"'].contact // ""' pending.json)
             CREATED=$(jq -r ".[$i].created_at" pending.json)
             META=$(jq -c ".[$i].meta" pending.json)
 
             case "$KIND" in
-              bug)  LABEL="bug";        PREFIX="Алдаа" ;;
+              bug)  LABEL="bug";         PREFIX="Алдаа" ;;
               idea) LABEL="enhancement"; PREFIX="Санал" ;;
-              *)    LABEL="question";   PREFIX="Санал хүсэлт" ;;
+              *)    LABEL="question";    PREFIX="Санал хүсэлт" ;;
             esac
 
             # Гарчиг = эхний мөр, 70 тэмдэгтээр таслав
             TITLE=$(printf '%s' "$BODY" | head -n 1 | cut -c1-70)
-            [ -z "$TITLE" ] && TITLE="(гарчиггүй)"
+            if [ -z "$TITLE" ]; then TITLE="(гарчиггүй)"; fi
 
             {
               printf '%s\n\n' "$BODY"
               printf -- '---\n'
               printf '_Аппын доторх санал хүсэлтийн хэсгээс автоматаар._\n'
-              printf '· илгээсэн: `%s`\n' "$CREATED"
-              [ -n "$CONTACT" ] && printf '· холбоо барих: `%s`\n' "$CONTACT"
-              printf '· орчин: `%s`\n' "$META"
-              printf '· feedback id: `%s`\n' "$ID"
+              printf '* илгээсэн: `%s`\n' "$CREATED"
+              if [ -n "$CONTACT" ]; then
+                printf '* холбоо барих: `%s`\n' "$CONTACT"
+              fi
+              printf '* орчин: `%s`\n' "$META"
+              printf '* feedback id: `%s`\n' "$ID"
             } > issue.md
 
-            NUM=$(gh issue create --repo "$REPO" \
-                    --title "$PREFIX: $TITLE" \
-                    --body-file issue.md \
-                    --label "$LABEL" 2>/dev/null | grep -o '[0-9]\+$' || true)
+            # Шошго репод байхгүй бол gh алдаа өгдөг — тэр үед шошгогүйгээр
+            # дахин оролдоно. `|| true` нь set -e-г тасалдуулахгүй.
+            URL=$(gh issue create --repo "$REPO" --title "$PREFIX: $TITLE" \
+                    --body-file issue.md --label "$LABEL" 2>/dev/null || true)
+            if [ -z "$URL" ]; then
+              URL=$(gh issue create --repo "$REPO" --title "$PREFIX: $TITLE" \
+                      --body-file issue.md)
+            fi
 
-            if [ -z "${NUM:-}" ]; then
-              # Шошго байхгүй бол шошгогүйгээр дахин оролдоно
-              NUM=$(gh issue create --repo "$REPO" \
-                      --title "$PREFIX: $TITLE" --body-file issue.md \
-                    | grep -o '[0-9]\+$')
+            NUM=$(printf '%s' "$URL" | grep -o '[0-9][0-9]*$' || true)
+            if [ -z "$NUM" ]; then
+              echo "Issue үүссэн эсэхийг тогтоож чадсангүй: $URL"
+              continue
             fi
             echo "feedback $ID -> issue #$NUM"
 
