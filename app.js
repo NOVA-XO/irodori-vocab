@@ -306,7 +306,8 @@ function pickVoice() {
   jaVoice = vs.find(v => /^ja\b|^ja[-_]/i.test(v.lang)) || null;
 
   const warn = document.getElementById('voice-warn');
-  if (!canSpeak) {
+  if (AUDIO_IDS && AUDIO_IDS.size) { warn.hidden = true; }  // бичлэг бий — TTS хэрэггүй
+  else if (!canSpeak) {
     warn.hidden = false;
     warn.textContent = 'Энэ браузер дуу уншихыг дэмжихгүй тул «Сонсох» горим ажиллахгүй.';
   } else if (!jaVoice && vs.length) {
@@ -318,7 +319,8 @@ function pickVoice() {
   } else {
     warn.hidden = true;                       // жагсаалт хараахан дүүрээгүй ч байж болно
   }
-  document.querySelector('[data-mode="listen"]').disabled = !canSpeak;
+  document.querySelector('[data-mode="listen"]').disabled =
+    !canSpeak && !(AUDIO_IDS && AUDIO_IDS.size);
 
   // Хоолой хожуу ирвэл ОДООГИЙН картын товчийг сэргээнэ.
   const b = document.getElementById('btn-speak');
@@ -329,8 +331,17 @@ function pickVoice() {
    Эхний хүрэлт дээр чимээгүй utterance явуулж «түгжээг» тайлна. */
 let speechUnlocked = false;
 function unlockSpeech() {
-  if (speechUnlocked || !canSpeak) return;
+  if (speechUnlocked) return;
   speechUnlocked = true;
+  // <audio>-г эхний ХҮРЭЛТИЙН дотор нэг удаа тоглуулбал iOS түүнийг «нээж»,
+  // цаашид программаас дуудахад зөвшөөрдөг болно.
+  try {
+    const p = ensurePlayer();
+    p.src = SILENT_WAV;
+    const r = p.play();
+    if (r && r.catch) r.catch(() => {});
+  } catch (e) { /* үл тоомсорлоно */ }
+  if (!canSpeak) return;
   try {
     const u = new SpeechSynthesisUtterance(' ');
     u.volume = 0;
@@ -360,6 +371,42 @@ function speak(text) {
   lastUtterance = u;
   speechSynthesis.speak(u);
 }
+
+/* ── Урьдчилан бэлдсэн бичлэг (VOICEVOX) ─────────────────────────────
+ * speechSynthesis нь (1) утсан дээр найдваргүй, (2) хэрэглэгчид япон хоолой
+ * байхгүй бол чимээгүй, (3) өргөлтийг буруу уншдаг. Тиймээс үг бүрийн
+ * дуудлагыг урьдчилан үүсгэж `audio/<id>.mp3` болгосон — өргөлтийг нь
+ * номын ↓○ тэмдэглэгээгээр удирдсан. Файл байвал ҮРГЭЛЖ түүнийг тоглуулж,
+ * зөвхөн байхгүй үед л TTS рүү шилжинэ. */
+let AUDIO_IDS = null;
+let player = null;
+const SILENT_WAV = 'data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAwF0AAIC7AAACABAAZGF0YQIAAAAAAA==';
+
+function ensurePlayer() {
+  if (!player) { player = new Audio(); player.preload = 'auto'; }
+  return player;
+}
+const hasAudio = id => !!(AUDIO_IDS && id && AUDIO_IDS.has(id));
+
+function playFile(id) {
+  if (!hasAudio(id)) return false;
+  try {
+    const p = ensurePlayer();
+    p.src = 'audio/' + id + '.mp3';
+    const r = p.play();
+    if (r && r.catch) r.catch(() => {});
+    return true;
+  } catch (e) { return false; }
+}
+
+/** Картын дуудлага: бичлэг байвал бичлэг, эс бөгөөс TTS. */
+function say(it) {
+  if (!it) return;
+  if (playFile(it.id)) return;
+  speak(deck === 'kana' ? it.hira : (it.kana || it.jp));
+}
+/** Энэ картыг сонсох боломж бий юу (бичлэг эсвэл TTS). */
+const canHear = it => hasAudio(it && it.id) || canSpeak;
 
 /* ══════════════════════ 6. Дасгалын хөдөлгүүр ══════════════════════ */
 
@@ -425,8 +472,8 @@ function nextCard() {
     $('p-main').className = 'prompt' + (kmode === 'klisten' ? '' : ' jp');
     buildChoices();
     $('pane-choice').hidden = false;
-    $('btn-speak').hidden = !canSpeak;
-    if (canSpeak) speak(cur.hira);
+    $('btn-speak').hidden = !canHear(cur);
+    if (canHear(cur)) say(cur);
     updateBar();
     return;
   }
@@ -457,8 +504,8 @@ function nextCard() {
   // үргэлж дарлагаас (mode товч эсвэл «Дараах») эхэлдэг тул ингэж дуудвал
   // хэрэглэгчийн хүрэлтийн гинж тасрахгүй — iOS Safari зөвхөн тийм үед
   // дуу гаргахыг зөвшөөрдөг.
-  $('btn-speak').hidden = !canSpeak || mode === 'type';
-  if (canSpeak && mode !== 'type') speak(cur.kana || cur.jp);
+  $('btn-speak').hidden = !canHear(cur) || mode === 'type';
+  if (canHear(cur) && mode !== 'type') say(cur);
   updateBar();
 }
 
@@ -639,7 +686,7 @@ function resolve(ok) {
   }
   // Бусад горимд карт гармагц аль хэдийн сонсгосон тул дахин давтахгүй.
   // «Бичих»-д зөвхөн ЭНД сонсгоно — урьд нь сонсгосон бол хариулт задарна.
-  if (canSpeak && mode === 'type') { $('btn-speak').hidden = false; speak(cur.kana || cur.jp); }
+  if (canHear(cur) && mode === 'type') { $('btn-speak').hidden = false; say(cur); }
   updateBar();
 }
 
@@ -741,6 +788,11 @@ function refreshHome() {
     b.setAttribute('aria-pressed', +b.dataset.goal === settings.goal));
   const nv = $('n-vocab'); if (nv) nv.textContent = ALL.length + ' үг';
   const nk = $('n-kana'); if (nk) nk.textContent = KANA.length + ' кана';
+  const ai = $('audio-info');
+  if (ai) ai.textContent = (AUDIO_IDS && AUDIO_IDS.size)
+    ? 'Дуудлага нь урьдчилан бэлдсэн ' + AUDIO_IDS.size + ' бичлэгээс гарна '
+      + '(VOICEVOX, өргөлтийг нь номоор тохируулсан).'
+    : 'Бэлдсэн бичлэг алга — браузерын өөрийн дуу уншигчийг ашиглана.';
   const vh = $('vocab-hint');
   if (vh) vh.textContent = pool.length
     ? 'Сонгосон ' + pool.length + ' үгээс асууна.'
@@ -874,7 +926,7 @@ document.addEventListener('keydown', e => {
     else if (!$('f-judge').hidden && (k === '2' || k === 'ArrowRight')) $('f-judge').children[1].click();
   }
 });
-$('btn-speak').onclick = () => speak(cur.kana || cur.jp);
+$('btn-speak').onclick = () => say(cur);
 
 /* Дуу гарахгүй байвал ЯАГААДЫГ нь харуулна — таамаглахын оронд утас өөрөө
    хариулна. Товчийг дарах нь өөрөө хүрэлт тул speak() энд хууль ёсны. */
@@ -963,6 +1015,49 @@ if (window.speechSynthesis) {
   speechSynthesis.onvoiceschanged = pickVoice;
 }
 
+/* ── Офлайн (service worker) ─────────────────────────────────────────
+ * file:// дээр ажиллахгүй тул протоколыг шалгана. Бүртгэл амжилтгүй бол
+ * апп хэвийн (зөвхөн онлайн) ажиллана — алдааг чимээгүй өнгөрөөнө. */
+const OFFLINE_OK = 'serviceWorker' in navigator && location.protocol.indexOf('http') === 0;
+if (OFFLINE_OK) {
+  window.addEventListener('load', () =>
+    navigator.serviceWorker.register('sw.js').then(swState).catch(swState));
+}
+function swState() {
+  const el = $('sw-state');
+  if (!el) return;
+  if (!OFFLINE_OK) { el.textContent = 'Энэ орчинд офлайн горим ажиллахгүй.'; return; }
+  navigator.serviceWorker.getRegistration().then(r => {
+    el.textContent = r && r.active
+      ? 'Офлайн горим идэвхтэй — интернэтгүй ч давтаж болно. Утсандаа суулгахын '
+        + 'тулд браузерын цэснээс «Нүүр дэлгэцэд нэмэх» гэж сонгоно уу.'
+      : 'Офлайн горим бэлтгэгдэж байна — хуудсыг нэг удаа дахин ачаална уу.';
+  }).catch(() => { el.textContent = 'Офлайн горимын төлөвийг тогтоож чадсангүй.'; });
+}
+
+/* Дууг БҮГДИЙГ нь урьдчилж татаж кэшлэнэ. Ингэснээр сүлжээгүй газар ч
+   дуудлага сонсогдоно. sw.js-ийн media кэштэй ижил нэрийг ашиглана. */
+$('btn-offline').onclick = async () => {
+  const el = $('dl-state');
+  if (!AUDIO_IDS || !AUDIO_IDS.size) { el.textContent = 'Бичлэг байхгүй байна.'; return; }
+  if (!window.caches) { el.textContent = 'Энэ браузер офлайн хадгалалтыг дэмжихгүй.'; return; }
+  const ids = [...AUDIO_IDS];
+  let n = 0, bad = 0;
+  el.textContent = 'Татаж байна… 0/' + ids.length;
+  try {
+    const c = await caches.open('media-v1');
+    for (let i = 0; i < ids.length; i += 12) {
+      await Promise.all(ids.slice(i, i + 12).map(id =>
+        c.add('audio/' + id + '.mp3').then(() => n++).catch(() => bad++)));
+      el.textContent = 'Татаж байна… ' + (n + bad) + '/' + ids.length;
+    }
+    el.textContent = 'Дууслаа: ' + n + ' бичлэг хадгалагдлаа'
+      + (bad ? ' · ' + bad + ' файл татагдсангүй' : '') + '.';
+  } catch (e) {
+    el.textContent = 'Татахад алдаа гарлаа: ' + e;
+  }
+};
+
 /* Гүн холбоос: index.html#m=type гэвэл шууд тэр горимоор эхэлнэ.
    Хавчуургаас шууд дасгал руу орох, мөн дэлгэцийг шалгахад хэрэгтэй. */
 function autoStart() {
@@ -981,9 +1076,12 @@ function autoStart() {
 Promise.all([
   fetch('data/vocab.json').then(r => r.json()),
   fetch('data/kana.json').then(r => r.json()),
+  // Бичлэгийн жагсаалт. Байхгүй бол апп TTS-ээр хэвийн ажиллана.
+  fetch('data/audio.json').then(r => r.ok ? r.json() : null).catch(() => null),
 ])
-  .then(([v, k]) => {
+  .then(([v, k, au]) => {
     ALL = v.items; KANA = k.items;
+    if (au && au.ids) { AUDIO_IDS = new Set(au.ids); pickVoice(); }
     refreshSync();
     // Ачаалахад нэг удаа татаж уусгана — өөр төхөөрөмж дээр давтсан нь орж ирнэ.
     if (syncOn && syncCode) syncNow(true).then(refreshHome);
