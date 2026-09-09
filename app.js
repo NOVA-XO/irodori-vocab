@@ -157,6 +157,85 @@ function grade(id, ok) {
   save(KEY_P, progress);
 }
 
+/* ══════════════════════ 3b. Төхөөрөмж хооронд нийлүүлэх ══════════════════════
+ *
+ * Хувийн мэдээлэл ХАДГАЛАХГҮЙ: зөвхөн санамсаргүй код ба «аль үгийг хэдэн
+ * удаа давтсан» гэсэн тоо. Код бол түлхүүр — апп өөрөө үүсгэнэ (хүн сонговол
+ * таамаглахад амархан болно).
+ *
+ * Дарж бичихгүй, УУСГАНА: id тус бүрээр илүү олон удаа давтсан бичлэгийг авна.
+ * Ингэснээр утас компьютерийнхээ явцыг (эсвэл эсрэгээр) устгахгүй.
+ */
+const SYNC = window.SYNC_CONFIG || {};
+const syncOn = !!(SYNC.url && SYNC.key);
+const KEY_C = 'irodori.synccode.v1';
+let syncCode = load(KEY_C, null);
+
+function newCode() {
+  const abc = 'abcdefghjkmnpqrstuvwxyz23456789';   // 0/o/1/l/i хассан
+  const a = new Uint8Array(12);
+  (crypto || window.crypto).getRandomValues(a);
+  const s = [...a].map(b => abc[b % abc.length]).join('');
+  return s.slice(0, 4) + '-' + s.slice(4, 8) + '-' + s.slice(8, 12);
+}
+
+async function rpc(fn, body) {
+  const r = await fetch(SYNC.url.replace(/\/+$/, '') + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SYNC.key,
+      Authorization: 'Bearer ' + SYNC.key,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + (await r.text()).slice(0, 120));
+  const t = await r.text();
+  return t ? JSON.parse(t) : null;
+}
+
+/** id тус бүрээр илүү давтсаныг нь авна; тэнцвэл илүү өндөр хайрцгийг. */
+function mergeProgress(a, b) {
+  const out = Object.assign({}, a);
+  for (const id in b) {
+    const x = out[id], y = b[id];
+    if (!x) { out[id] = y; continue; }
+    if ((y.n || 0) > (x.n || 0) || ((y.n || 0) === (x.n || 0) && (y.b || 0) > (x.b || 0))) {
+      out[id] = y;
+    }
+  }
+  return out;
+}
+
+function syncSay(msg) {
+  const el = document.getElementById('sync-state');
+  if (el) el.textContent = msg;
+}
+
+async function syncNow(quiet) {
+  if (!syncOn || !syncCode) return;
+  try {
+    if (!quiet) syncSay('нийлүүлж байна…');
+    const remote = await rpc('get_progress', { p_code: syncCode });
+    const merged = mergeProgress(progress, remote || {});
+    progress = merged;
+    save(KEY_P, progress);
+    await rpc('put_progress', { p_code: syncCode, p_data: merged });
+    syncSay('нийлүүлсэн: ' + new Date().toLocaleTimeString() +
+            ' · ' + Object.keys(merged).length + ' карт');
+  } catch (e) {
+    syncSay('алдаа: ' + e.message);
+  }
+}
+
+function refreshSync() {
+  const box = document.getElementById('sync-box');
+  if (!box) return;
+  box.hidden = !syncOn;
+  const el = document.getElementById('sync-code');
+  if (el) el.textContent = syncCode || '— холбогдоогүй —';
+}
+
 /* ══════════════════════ 4. Өгөгдөл ══════════════════════ */
 
 let ALL = [];                 // бүх үг
@@ -418,6 +497,7 @@ function updateBar() {
 
 function finish() {
   show('home'); refreshHome();
+  if (syncOn && syncCode) syncNow(true);      // дасгал дуусмагц чимээгүй нийлүүлнэ
   alert('Дууслаа!  ✓ ' + okN + '   ✗ ' + ngN);
 }
 
@@ -491,7 +571,7 @@ document.querySelectorAll('#kana-groups .chip').forEach(b =>
   });
 $('btn-review').onclick = () => startSession('choice', true);
 $('btn-home').onclick = () => { show('home'); refreshHome(); };
-$('btn-stats').onclick = () => { refreshStats(); show('stats'); };
+$('btn-stats').onclick = () => { refreshStats(); refreshSync(); show('stats'); };
 $('sel-all').onclick = () => { settings.lessons = [...new Set(ALL.map(i => i.lesson))]; save(KEY_S, settings); refreshHome(); };
 $('sel-none').onclick = () => { settings.lessons = []; save(KEY_S, settings); refreshHome(); };
 $('inc-ref').onchange = e => { settings.ref = e.target.checked; save(KEY_S, settings); refreshHome(); };
@@ -565,6 +645,24 @@ $('btn-export').onclick = () => {
   a.download = 'irodori-progress-' + new Date().toISOString().slice(0, 10) + '.json';
   a.click();
 };
+$('btn-sync-new').onclick = () => {
+  if (syncCode && !confirm('Шинэ код үүсгэвэл хуучин кодтой холбоо тасарна. Үргэлжлүүлэх үү?')) return;
+  syncCode = newCode(); save(KEY_C, syncCode); refreshSync();
+  syncSay('код үүслээ — нөгөө төхөөрөмж дээрээ энэ кодыг оруулна уу');
+  syncNow(true);
+};
+$('btn-sync-link').onclick = () => {
+  const c = (prompt('Нөгөө төхөөрөмж дээрх кодоо оруулна уу:') || '').trim().toLowerCase();
+  if (!c) return;
+  syncCode = c; save(KEY_C, syncCode); refreshSync();
+  syncNow().then(() => { refreshStats(); refreshHome(); });
+};
+$('btn-sync-now').onclick = () => syncNow().then(() => { refreshStats(); refreshHome(); });
+$('btn-sync-off').onclick = () => {
+  if (!confirm('Энэ төхөөрөмжийг салгах уу? Явц энд үлдэнэ, зөвхөн нийлүүлэлт зогсоно.')) return;
+  syncCode = null; save(KEY_C, null); refreshSync(); syncSay('салгалаа');
+};
+
 $('btn-import').onclick = () => $('file-import').click();
 $('file-import').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
@@ -596,7 +694,13 @@ Promise.all([
   fetch('data/vocab.json').then(r => r.json()),
   fetch('data/kana.json').then(r => r.json()),
 ])
-  .then(([v, k]) => { ALL = v.items; KANA = k.items; show('home'); refreshHome(); autoStart(); })
+  .then(([v, k]) => {
+    ALL = v.items; KANA = k.items;
+    refreshSync();
+    // Ачаалахад нэг удаа татаж уусгана — өөр төхөөрөмж дээр давтсан нь орж ирнэ.
+    if (syncOn && syncCode) syncNow(true).then(refreshHome);
+    show('home'); refreshHome(); autoStart();
+  })
   .catch(() => {
     document.getElementById('home').innerHTML =
       '<p class="warn">Үгийн сан ачаалагдсангүй. <code>data/vocab.json</code> байгаа эсэхийг шалгана уу. ' +

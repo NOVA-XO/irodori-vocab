@@ -177,6 +177,13 @@ button:disabled{opacity:.5; cursor:default}
 .statles .fill{height:100%; background:var(--accent)}
 .statles .num{text-align:right; color:var(--ink-2); font-variant-numeric:tabular-nums}
 
+.hint{font-size:12.5px; color:var(--ink-2); line-height:1.6; margin:6px 0}
+.synccode{
+  font-family:ui-monospace,Consolas,monospace; font-size:19px; letter-spacing:.08em;
+  background:var(--card); border:1px solid var(--line); border-radius:10px;
+  padding:12px; text-align:center; user-select:all; word-break:break-all;
+}
+
 @media (max-width:380px){
   .lessons{grid-template-columns:repeat(5,1fr)}
   .prompt{font-size:34px}

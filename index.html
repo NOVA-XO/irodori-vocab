@@ -115,6 +115,22 @@
   <div id="stat-sum" class="statsum"></div>
   <h2>Хичээл тус бүрээр</h2>
   <div id="stat-lessons" class="statles"></div>
+  <div id="sync-box" hidden>
+    <h2>Төхөөрөмж хооронд нийлүүлэх</h2>
+    <p class="hint">Явц энэ төхөөрөмжид хадгалагдана. Утас, компьютер хоёрын
+      явцыг нийлүүлэхийг хүсвэл <b>нэг удаа код үүсгээд</b> нөгөө төхөөрөмж дээрээ
+      тэр кодоо оруулна. Код бол түлхүүр — <b>хэн нэгэнд битгий өг</b>.</p>
+    <div class="synccode" id="sync-code">—</div>
+    <div class="row">
+      <button id="btn-sync-new" class="ghost sm">Шинэ код үүсгэх</button>
+      <button id="btn-sync-link" class="ghost sm">Кодоор холбох</button>
+      <button id="btn-sync-now" class="ghost sm">Одоо нийлүүлэх</button>
+      <button id="btn-sync-off" class="ghost sm danger">Салгах</button>
+    </div>
+    <div id="sync-state" class="hint"></div>
+  </div>
+
+  <h2>Нөөц</h2>
   <div class="row">
     <button id="btn-export" class="ghost sm">Явцыг хадгалах (.json)</button>
     <button id="btn-import" class="ghost sm">Сэргээх</button>
@@ -123,6 +139,7 @@
   <input type="file" id="file-import" accept="application/json" hidden>
 </section>
 
+<script src="sync-config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
