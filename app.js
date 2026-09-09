@@ -177,8 +177,9 @@ if (!settings.script) settings.script = 'kanji';   // хуучин хадгал�
 if (!settings.kgroups) settings.kgroups = ['gojuon'];
 if (!settings.goal) settings.goal = 20;
 if (!settings.dir) settings.dir = 'jp2mn';
-if (settings.kjles === undefined) settings.kjles = true;   // хичээлийн ханз
-if (!settings.kjn) settings.kjn = [5];                     // JLPT түвшин
+if (!settings.kjn) settings.kjn = [5];        // JLPT түвшин (JLPT дэлгэц)
+if (!settings.what) settings.what = 'word';   // Irodori: шинэ үг | шинэ ханз
+if (!settings.book) settings.book = 'starter';
 
 /* Асуултын нүүр талд юу харуулах вэ: ханзтай хэлбэр эсвэл кана уншлага.
    Нөгөө хэлбэрийг нь хариулт дээр үзүүлнэ. Ханзгүй үг (プレゼント, あめ) дээр
@@ -432,12 +433,11 @@ const canHear = it => (deck === 'kanji')
 const fmtKun = r => r.indexOf('.') < 0 ? r
   : r.slice(0, r.indexOf('.')) + '(' + r.slice(r.indexOf('.') + 1) + ')';
 
-/** Ханзны багц: сонгосон хичээлүүдийн ханз + сонгосон JLPT түвшин. */
-function kanjiPool() {
+/** Ханзны багц. src: 'les' = сонгосон хичээлүүдийнх · 'jlpt' = сонгосон түвшин. */
+function kanjiPool(src) {
+  if (src === 'jlpt') return KANJI.filter(k => k.n && settings.kjn.includes(k.n));
   const les = settings.lessons || [];
-  return KANJI.filter(k =>
-    (settings.kjles && k.l && k.l.some(x => les.includes(x))) ||
-    (k.n && settings.kjn.includes(k.n)));
+  return KANJI.filter(k => k.l && k.l.some(x => les.includes(x)));
 }
 
 /** Ханзны дуудлага: жишээ үгийнх нь бичлэгийг ашиглана (шинэ файл хэрэггүй). */
@@ -476,18 +476,19 @@ function startKana(km) {
 }
 
 /** Ханзны дасгал. km: flash | k2m | m2k | read */
-function startKanji(km) {
+function startKanji(km, src) {
   kmode = km;
   deck = 'kanji';
   mode = (km === 'flash') ? 'flash' : 'choice';
-  pool = kanjiPool();
+  pool = kanjiPool(src);
   if (pool.length < 4) {
-    alert('Дор хаяж нэг эх сурвалж сонгоно уу (хичээл эсвэл JLPT түвшин).');
+    alert(src === 'jlpt' ? 'Дор хаяж нэг түвшин сонгоно уу.'
+                         : 'Сонгосон хичээлүүдэд ханз хангалтгүй байна.');
     deck = 'vocab'; return;
   }
   queue = buildQueue(false);
   done = okN = ngN = 0; missed = [];
-  settings.last = { deck: 'kanji', k: km }; save(KEY_S, settings);
+  settings.last = { deck: 'kanji', k: km, src: src }; save(KEY_S, settings);
   show('study');
   $('c-total').textContent = queue.length;
   nextCard();
@@ -745,15 +746,20 @@ function reveal() {
     $('a-kana').textContent = kmode === 'm2k' ? cur.c : '';
     $('a-mn').textContent = cur.mn;
     $('a-acc').innerHTML = '';
+    // Уншлагын мөр бүрд өөрийн 🔊 — 音 ба 訓 нь тусдаа бичлэгтэй
+    // (JO-/JK-<юникод>). Ханзны нүүрэн дэх 🔊 нь жишээ ҮГИЙГ сонсгоно.
+    const code = cur.id.split('-')[1];
+    const play = id => hasAudio(id)
+      ? '<button class="rsp" data-a="' + id + '" title="Сонсох">🔊</button>' : '';
     const on = cur.on.length ? '<div><b>音</b> <span class="jp">' +
-      esc(cur.on.join('・')) + '</span></div>' : '';
+      esc(cur.on.join('・')) + '</span>' + play('JO-' + code) + '</div>' : '';
     const kun = cur.kun.length ? '<div><b>訓</b> <span class="jp">' +
-      esc(cur.kun.map(fmtKun).join('・')) + '</span></div>' : '';
+      esc(cur.kun.map(fmtKun).join('・')) + '</span>' + play('JK-' + code) + '</div>' : '';
     let words = '';
     for (const w of (cur.w || []).slice(0, 3)) {
       words += '<div class="kw"><b class="jp">' + esc(w.jp) + '</b>' +
         '<span class="jp">' + esc(w.kana) + '</span>' +
-        '<span>' + esc(w.mn) + '</span></div>';
+        '<span>' + esc(w.mn) + '</span>' + play(w.id) + '</div>';
     }
     const box = $('a-kj');
     box.innerHTML = on + kun + (words ? '<div class="kws">' + words + '</div>' : '');
@@ -869,7 +875,7 @@ function finish() {
 
 /* ══════════════════════ 7. Дэлгэц солих ба нүүр ══════════════════════ */
 
-const SCREENS = ['home', 'vocab', 'kana', 'kanji', 'study', 'done', 'stats', 'profile'];
+const SCREENS = ['home', 'irodori', 'jlpt', 'kana', 'study', 'done', 'stats', 'profile'];
 let screen = 'home';
 
 const ICON_MENU = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
@@ -889,7 +895,7 @@ function show(name) {
 function go(name) {
   if (name === 'stats') refreshStats();
   if (name === 'profile') refreshSync();
-  if (['home', 'vocab', 'kana', 'kanji'].includes(name)) refreshHome();
+  if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
   show(name);
 }
 
@@ -928,20 +934,28 @@ function refreshHome() {
     b.setAttribute('aria-pressed', +b.dataset.goal === settings.goal));
   const nv = $('n-vocab'); if (nv) nv.textContent = ALL.length + ' үг';
   const nk = $('n-kana'); if (nk) nk.textContent = KANA.length + ' кана';
-  const nj = $('n-kanji'); if (nj) nj.textContent = KANJI.length + ' ханз';
-  const kles = KANJI.filter(k => k.l && k.l.some(x => (settings.lessons || []).includes(x)));
-  const nkl = $('n-kles'); if (nkl) nkl.textContent = kles.length;
-  document.querySelectorAll('#kanji-src button').forEach(b =>
-    b.setAttribute('aria-pressed', !!settings.kjles));
-  document.querySelectorAll('#kanji-jlpt button').forEach(b =>
+  const nj = $('n-kanji');
+  if (nj) nj.textContent = KANJI.filter(k => k.n).length + ' ханз';
+  const nkl = $('n-kles');
+  if (nkl) nkl.textContent = kanjiPool('les').length + ' ханз';
+  document.querySelectorAll('#jlpt-levels button').forEach(b =>
     b.setAttribute('aria-pressed', settings.kjn.includes(+b.dataset.j)));
-  const jh = $('kanji-hint');
+  const jh = $('jlpt-hint');
   if (jh) {
-    const n = kanjiPool().length;
+    const n = kanjiPool('jlpt').length;
     jh.textContent = n
       ? 'Доорх дасгал сонгосон ' + n + ' ханзаас асууна.'
-      : 'Дор хаяж нэг эх сурвалж сонгоно уу — эс тэгвээс дасгал эхлэхгүй.';
+      : 'Дор хаяж нэг түвшин сонгоно уу — эс тэгвээс дасгал эхлэхгүй.';
   }
+  // Irodori: «шинэ үг» / «шинэ ханз» сонголтоор доорх алхмууд солигдоно.
+  document.querySelectorAll('#seg-what button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.w === settings.what));
+  document.querySelectorAll('#seg-book button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.b === settings.book));
+  document.querySelectorAll('#seg-jwhat button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.w === 'kanji'));
+  const ww = $('wrap-word'), wk = $('wrap-kanji');
+  if (ww && wk) { ww.hidden = settings.what !== 'word'; wk.hidden = settings.what !== 'kanji'; }
   const ai = $('audio-info');
   if (ai) ai.textContent = (AUDIO_IDS && AUDIO_IDS.size)
     ? 'Дуудлага нь урьдчилан бэлдсэн ' + AUDIO_IDS.size + ' бичлэгээс гарна '
@@ -1001,15 +1015,18 @@ document.querySelectorAll('.mode[data-mode]').forEach(b =>
 document.querySelectorAll('.mode[data-k]').forEach(b =>
   b.onclick = () => startKana(b.dataset.k));
 document.querySelectorAll('.mode[data-kj]').forEach(b =>
-  b.onclick = () => startKanji(b.dataset.kj));
-document.querySelectorAll('#kanji-src button').forEach(b =>
-  b.onclick = () => { settings.kjles = !settings.kjles; save(KEY_S, settings); refreshHome(); });
-document.querySelectorAll('#kanji-jlpt button').forEach(b =>
+  b.onclick = () => startKanji(b.dataset.kj, 'les'));
+document.querySelectorAll('.mode[data-kj2]').forEach(b =>
+  b.onclick = () => startKanji(b.dataset.kj2, 'jlpt'));
+document.querySelectorAll('#jlpt-levels button').forEach(b =>
   b.onclick = () => {
     const n = +b.dataset.j, i = settings.kjn.indexOf(n);
     i < 0 ? settings.kjn.push(n) : settings.kjn.splice(i, 1);
     save(KEY_S, settings); refreshHome();
   });
+/* Irodori: «шинэ үг» эсвэл «шинэ ханз» — доорх алхмуудыг сольж харуулна. */
+document.querySelectorAll('#seg-what button').forEach(b =>
+  b.onclick = () => { settings.what = b.dataset.w; save(KEY_S, settings); refreshHome(); });
 document.querySelectorAll('#kana-groups button').forEach(b =>
   b.onclick = () => {
     const g = b.dataset.g, i = settings.kgroups.indexOf(g);
@@ -1058,7 +1075,7 @@ $('btn-next').onclick = nextCard;
 $('btn-continue').onclick = () => {
   const L = settings.last; if (!L) return;
   if (L.deck === 'kana') startKana(L.k);
-  else if (L.deck === 'kanji') startKanji(L.k);
+  else if (L.deck === 'kanji') startKanji(L.k, L.src);
   else startSession(L.m, false);
 };
 $('fin-retry').onclick = () => {
@@ -1070,7 +1087,7 @@ $('fin-retry').onclick = () => {
 $('fin-again').onclick = () => {
   const L = settings.last || {};
   if (L.deck === 'kana') startKana(L.k);
-  else if (L.deck === 'kanji') startKanji(L.k);
+  else if (L.deck === 'kanji') startKanji(L.k, L.src);
   else startSession(L.m || 'choice', false);
 };
 $('fin-home').onclick = () => go('home');
@@ -1099,6 +1116,13 @@ document.addEventListener('keydown', e => {
   }
 });
 $('btn-speak').onclick = () => say(cur);
+
+/* Ханзны хариулт доторх жижиг 🔊 товчнууд. Агуулга нь динамик тул
+   нэг удаагийн делегацлагдсан сонсогчоор барина. */
+$('a-kj').addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.rsp');
+  if (b) { e.stopPropagation(); playFile(b.dataset.a); }
+});
 
 /* Дуу гарахгүй байвал ЯАГААДЫГ нь харуулна — таамаглахын оронд утас өөрөө
    хариулна. Товчийг дарах нь өөрөө хүрэлт тул speak() энд хууль ёсны. */
@@ -1240,11 +1264,11 @@ function autoStart() {
   // Дэлгэцийн нэрийг ЯГ тэнцүүгээр шалгана: «#m=flash&s=kana» дотор «kana»
   // гэсэн үг байгаа тул хэсэгчилж хайвал горим эхлэхийн оронд үсэрнэ.
   const scr = location.hash.replace(/^#/, '');
-  if (['home', 'vocab', 'kana', 'kanji', 'stats', 'profile'].includes(scr)) { go(scr); return; }
+  if (['home', 'irodori', 'jlpt', 'kana', 'stats', 'profile'].includes(scr)) { go(scr); return; }
   const k = (location.hash.match(/k=(h2k|k2h|sound|klisten)/) || [])[1];
   if (k) { startKana(k); return; }
   const j = (location.hash.match(/j=(flash|k2m|m2k|read)/) || [])[1];
-  if (j) { startKanji(j); return; }
+  if (j) { startKanji(j, /jlpt/.test(location.hash) ? 'jlpt' : 'les'); return; }
   const m = (location.hash.match(/m=(flash|choice|type|listen)/) || [])[1];
   if (m) startSession(m, false);
 }

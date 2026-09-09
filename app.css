@@ -266,7 +266,11 @@ button:disabled{opacity:.5; cursor:default}
 .kw{display:flex; flex-wrap:wrap; gap:4px 9px; align-items:baseline; margin-top:5px}
 .kw b{font-size:17px; min-width:0; color:var(--ink)}
 .kw > .jp{font-size:13px; color:var(--accent)}
-.kw span:last-child{font-size:13px; color:var(--ink-2)}
+.kw > span:not(:last-child){font-size:13px}
+.kw span{font-size:13px; color:var(--ink-2)}
+.rsp{background:none; border:0; padding:0 4px; font-size:14px; opacity:.55;
+     line-height:1; vertical-align:middle}
+.rsp:hover{opacity:1}
 
 /* Өргөлтийн зураглал: мора бүрийн ДЭЭР өндөр/нам түвшний хэвтээ зураас,
    өөрчлөгдөх газарт босоо холбоос. Дээд зураас = өндөр, доод нь = нам. */

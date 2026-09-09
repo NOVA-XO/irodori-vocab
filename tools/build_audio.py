@@ -216,6 +216,7 @@ def main():
     ap.add_argument('--engine', default=ENGINE)
     ap.add_argument('--list-speakers', action='store_true')
     ap.add_argument('--force', action='store_true')
+    ap.add_argument('--bitrate', default='96k')
     a = ap.parse_args()
 
     globals()['ENGINE'] = a.engine
@@ -241,6 +242,14 @@ def main():
     vocab = json.load(io.open(os.path.join(ROOT, 'data', 'vocab.json'), encoding='utf-8'))
     kana = json.load(io.open(os.path.join(ROOT, 'data', 'kana.json'), encoding='utf-8'))
 
+    # ── Ханзны уншлага ────────────────────────────────────────────────
+    # Ганц ханзны дуудлага олон янз тул 音読み ба 訓読み-г ТУСДАА бичлэг
+    # болгоно: карт дээр мөр тус бүрийн хажууд 🔊 гарна.
+    #   JO-<юникод>  音読み  «ニチ、ジツ»
+    #   JK-<юникод>  訓読み  «ひ»        (цэгийг арилгаж бүтэн үг болгоно)
+    kanji_p = os.path.join(ROOT, 'data', 'kanji.json')
+    kanji = json.load(io.open(kanji_p, encoding='utf-8')) if os.path.exists(kanji_p) else {'items': []}
+
     jobs = []
     for it in vocab['items']:
         say = it.get('kana') or it.get('jp') or ''
@@ -250,6 +259,14 @@ def main():
                      it.get('accent', ''), say))
     for it in kana['items']:
         jobs.append((it['id'], it['kata'], '', it['hira']))
+    for it in kanji['items']:
+        code = it['id'].split('-')[1]
+        on = [r for r in it['on'][:3] if r]
+        kun = [r.replace('.', '') for r in it['kun'][:3] if r]
+        if on:
+            jobs.append(('JO-' + code, to_kata('、'.join(on)), '', ''))
+        if kun:
+            jobs.append(('JK-' + code, to_kata('、'.join(kun)), '', ''))
 
     if a.limit:
         jobs = jobs[:a.limit]
@@ -266,7 +283,7 @@ def main():
             wav = synth(kata, notation(acc, a.speaker), a.speaker, a.speed)
             p = subprocess.run(
                 [ff, '-hide_banner', '-loglevel', 'error', '-y', '-i', 'pipe:0',
-                 '-codec:a', 'libmp3lame', '-b:a', '48k', '-ac', '1', '-ar', '24000',
+                 '-codec:a', 'libmp3lame', '-b:a', a.bitrate, '-ac', '1', '-ar', '24000',
                  '-f', 'mp3', dst],
                 input=wav, capture_output=True)
             if p.returncode != 0 or not os.path.exists(dst):

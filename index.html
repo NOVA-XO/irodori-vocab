@@ -8,10 +8,10 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="app.css?v=2026-09-10r">
+<link rel="stylesheet" href="app.css?v=2026-09-10s">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10r">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10r">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10s">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10s">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -35,9 +35,9 @@
 
 <nav id="menu" class="menu" hidden>
   <button data-go="home">Нүүр</button>
-  <button data-go="vocab">Үг цээжлэх</button>
-  <button data-go="kana">Кана үсэг цээжлэх</button>
-  <button data-go="kanji">Ханз цээжлэх</button>
+  <button data-go="irodori">Irodori сурах бичиг</button>
+  <button data-go="jlpt">JLPT бэлтгэл</button>
+  <button data-go="kana">Кана үсэг</button>
   <button data-go="stats">Явц</button>
 </nav>
 
@@ -61,20 +61,20 @@
   </div>
 
   <div class="bigcards">
-    <button class="bigcard" data-go="vocab">
-      <span class="bc-jp jp">単語</span>
-      <b>Үг цээжлэх</b>
-      <span>Irodori 入門-ийн шинэ үгс · <i id="n-vocab">…</i></span>
+    <button class="bigcard" data-go="irodori">
+      <span class="bc-jp jp">いろどり</span>
+      <b>Irodori сурах бичиг</b>
+      <span>Ном ба хичээлээ сонгож шинэ үг, шинэ ханзаа давтана · <i id="n-vocab">…</i></span>
+    </button>
+    <button class="bigcard" data-go="jlpt">
+      <span class="bc-jp">N5</span>
+      <b>JLPT бэлтгэл</b>
+      <span>N5–N2 түвшний ханз · <i id="n-kanji">…</i></span>
     </button>
     <button class="bigcard" data-go="kana">
       <span class="bc-jp jp">かな</span>
-      <b>Кана үсэг цээжлэх</b>
+      <b>Кана үсэг</b>
       <span>Хирагана ба катакана · <i id="n-kana">…</i></span>
-    </button>
-    <button class="bigcard" data-go="kanji">
-      <span class="bc-jp jp">漢字</span>
-      <b>Ханз цээжлэх</b>
-      <span>Хичээлийн ханз ба JLPT N5–N2 · <i id="n-kanji">…</i></span>
     </button>
   </div>
 
@@ -94,9 +94,16 @@
   </a>
 </section>
 
-<!-- ═══════════════════ ҮГ ЦЭЭЖЛЭХ ═══════════════════ -->
-<section id="vocab" class="screen" hidden>
-  <div class="step">1 · Хичээлээ сонго</div>
+<!-- ═══════════════════ IRODORI ═══════════════════ -->
+<section id="irodori" class="screen" hidden>
+  <div class="step">1 · Ном</div>
+  <div class="seg" id="seg-book">
+    <button data-b="starter"><b class="jp">入門</b><span>Суурь шат (A1) · 1232 үг</span></button>
+    <button data-b="el1" disabled><b class="jp">初級1</b><span>Анхан шат 1 (A2) · удахгүй</span></button>
+    <button data-b="el2" disabled><b class="jp">初級2</b><span>Анхан шат 2 (A2) · удахгүй</span></button>
+  </div>
+
+  <div class="step">2 · Хичээл</div>
   <div id="lessons" class="lessons"></div>
   <div class="row">
     <button id="sel-all" class="ghost sm">Бүгд</button>
@@ -105,27 +112,83 @@
   </div>
   <p class="hint" id="vocab-hint"></p>
 
-  <div class="step">2 · Үгийг юугаар харуулах</div>
-  <div class="seg" id="seg-script">
-    <button data-s="kanji"><b class="jp">漢字</b><span>名前 — ханзаар бичсэн хэлбэр</span></button>
-    <button data-s="kana"><b class="jp">ひらがな</b><span>なまえ — зөвхөн кана уншлага</span></button>
+  <div class="step">3 · Юу давтах вэ</div>
+  <div class="seg" id="seg-what">
+    <button data-w="word"><b>Шинэ үг</b><span>Тухайн хичээлийн шинэ үгс</span></button>
+    <button data-w="kanji"><b>Шинэ ханз</b><span>Тэдгээр үгэнд гарсан ханз · <i id="n-kles">—</i></span></button>
   </div>
 
-  <div class="step">3 · Чиглэл</div>
-  <div class="seg" id="seg-dir">
-    <button data-d="jp2mn"><b class="jp">日本語 → Монгол</b><span>Япон үгийг харж утгыг нь таана</span></button>
-    <button data-d="mn2jp"><b>Монгол → <span class="jp">日本語</span></b><span>Утгыг харж япон үгийг нь таана — илүү хүнд</span></button>
-  </div>
-  <p class="hint">Урвуу чиглэл нь идэвхтэй санах ойг илүү шалгадаг тул үг
-     тогтоход үр дүнтэй. «Флашкарт» ба «Олон сонголт» хоёрт үйлчилнэ.</p>
+  <div id="wrap-word">
+    <div class="step">4 · Үгийг юугаар харуулах</div>
+    <div class="seg" id="seg-script">
+      <button data-s="kanji"><b class="jp">漢字</b><span>名前 — ханзаар бичсэн хэлбэр</span></button>
+      <button data-s="kana"><b class="jp">ひらがな</b><span>なまえ — зөвхөн кана уншлага</span></button>
+    </div>
 
-  <div class="step">4 · Дасгалаа сонго</div>
+    <div class="step">5 · Чиглэл</div>
+    <div class="seg" id="seg-dir">
+      <button data-d="jp2mn"><b class="jp">日本語 → Монгол</b><span>Япон үгийг харж утгыг нь таана</span></button>
+      <button data-d="mn2jp"><b>Монгол → <span class="jp">日本語</span></b><span>Утгыг харж япон үгийг нь таана — илүү хүнд</span></button>
+    </div>
+
+    <div class="step">6 · Дасгал</div>
+    <div class="modes">
+      <button class="mode" data-mode="flash"><b>Флашкарт</b><span>Карт эргүүлж өөрөө дүгнэнэ</span></button>
+      <button class="mode" data-mode="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно</span></button>
+      <button class="mode" data-mode="type"><b>Гараар бичих</b><span>Латинаар бичихэд кана болно</span></button>
+      <button class="mode" data-mode="listen"><b>Сонсох</b><span>Дуудлагыг сонсоод утгыг таана</span></button>
+    </div>
+  </div>
+
+  <div id="wrap-kanji" hidden>
+    <div class="step">4 · Дасгал</div>
+    <div class="modes">
+      <button class="mode" data-kj="flash"><b>Флашкарт</b><span>Ханз харж утга, уншлагыг нь эргүүлж шалгана</span></button>
+      <button class="mode" data-kj="k2m"><b class="jp">漢字 → утга</b><span>Ханзыг харж утгыг нь сонгоно</span></button>
+      <button class="mode" data-kj="m2k"><b>Утга → <span class="jp">漢字</span></b><span>Утгыг харж ханзыг нь сонгоно</span></button>
+      <button class="mode" data-kj="read"><b>Уншлага</b><span>Ханзны 音読み-г сонгоно</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ JLPT ═══════════════════ -->
+<section id="jlpt" class="screen" hidden>
+  <div class="step">1 · Түвшин</div>
+  <div class="klist" id="jlpt-levels">
+    <button data-j="5"><span class="tick">✓</span>
+      <span class="kname"><b>N5</b> хамгийн анхны</span>
+      <span class="kex jp">日 月 山</span><i>79</i></button>
+    <button data-j="4"><span class="tick">✓</span>
+      <span class="kname"><b>N4</b></span>
+      <span class="kex jp">屋 借 転</span><i>166</i></button>
+    <button data-j="3"><span class="tick">✓</span>
+      <span class="kname"><b>N3</b></span>
+      <span class="kex jp">誤 疑 論</span><i>367</i></button>
+    <button data-j="2"><span class="tick">✓</span>
+      <span class="kname"><b>N2</b></span>
+      <span class="kex jp">爆 臓 籍</span><i>367</i></button>
+  </div>
+  <p class="hint" id="jlpt-hint"></p>
+
+  <div class="step">2 · Юу давтах вэ</div>
+  <div class="seg" id="seg-jwhat">
+    <button data-w="kanji"><b>Ханз</b><span>N5–N2-ын 979 ханз</span></button>
+    <button data-w="word" disabled><b>Үг</b><span>Удахгүй — доор тайлбарыг үзнэ үү</span></button>
+  </div>
+
+  <div class="step">3 · Дасгал</div>
   <div class="modes">
-    <button class="mode" data-mode="flash"><b>Флашкарт</b><span>Карт эргүүлж өөрөө дүгнэнэ</span></button>
-    <button class="mode" data-mode="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно</span></button>
-    <button class="mode" data-mode="type"><b>Гараар бичих</b><span>Латинаар бичихэд кана болно</span></button>
-    <button class="mode" data-mode="listen"><b>Сонсох</b><span>Дуудлагыг сонсоод утгыг таана</span></button>
+    <button class="mode" data-kj2="flash"><b>Флашкарт</b><span>Ханз харж утга, уншлагыг нь эргүүлж шалгана</span></button>
+    <button class="mode" data-kj2="k2m"><b class="jp">漢字 → утга</b><span>Ханзыг харж утгыг нь сонгоно</span></button>
+    <button class="mode" data-kj2="m2k"><b>Утга → <span class="jp">漢字</span></b><span>Утгыг харж ханзыг нь сонгоно</span></button>
+    <button class="mode" data-kj2="read"><b>Уншлага</b><span>Ханзны 音読み-г сонгоно</span></button>
   </div>
+
+  <p class="hint">JLPT нь <b>ханзны ч, үгийн ч албан ёсны жагсаалт нийтэлдэггүй</b> —
+     шалгалт нь «ерөнхий харилцааны чадвар»-ыг хэмждэг гэж тэд мэдэгддэг.
+     Эндхийн N5–N2 хуваарь нь өргөн хэрэглэгддэг албан бус жагсаалт.
+     Ханз бүрийн хажууд Японы Боловсролын яамны <b>албан ёсны сургуулийн анги</b>
+     ба зурлагын тоо харагдана.</p>
 </section>
 
 <!-- ═══════════════════ КАНА ═══════════════════ -->
@@ -156,45 +219,6 @@
     <button class="mode" data-k="k2h"><b class="jp">カタカナ → ひらがな</b><span>Катакана харуулж, хираганыг нь сонгоно</span></button>
     <button class="mode" data-k="sound"><b>Кана → авиа</b><span>Кана харуулж, уншлагыг нь кириллээр сонгоно</span></button>
     <button class="mode" data-k="klisten"><b>Сонсоод таах</b><span>Дуудлагыг сонсоод аль кана болохыг сонгоно</span></button>
-  </div>
-</section>
-
-<!-- ═══════════════════ ХАНЗ ═══════════════════ -->
-<section id="kanji" class="screen" hidden>
-  <div class="step">1 · Аль ханзыг давтахаа сонго</div>
-  <div class="klist" id="kanji-src">
-    <button data-k="les">
-      <span class="tick">✓</span>
-      <span class="kname"><b>Хичээлийн ханз</b> сонгосон хичээлүүдэд гарсан</span>
-      <span class="kex jp">見 語 電</span><i id="n-kles">—</i>
-    </button>
-  </div>
-  <div class="klist" id="kanji-jlpt">
-    <button data-j="5"><span class="tick">✓</span>
-      <span class="kname"><b>JLPT N5</b> хамгийн анхны</span>
-      <span class="kex jp">日 月 山</span><i>79</i></button>
-    <button data-j="4"><span class="tick">✓</span>
-      <span class="kname"><b>JLPT N4</b></span>
-      <span class="kex jp">屋 借 転</span><i>166</i></button>
-    <button data-j="3"><span class="tick">✓</span>
-      <span class="kname"><b>JLPT N3</b></span>
-      <span class="kex jp">誤 疑 論</span><i>367</i></button>
-    <button data-j="2"><span class="tick">✓</span>
-      <span class="kname"><b>JLPT N2</b></span>
-      <span class="kex jp">爆 臓 籍</span><i>367</i></button>
-  </div>
-  <p class="hint" id="kanji-hint"></p>
-  <p class="hint">JLPT нь <b>2010 оноос хойш</b> ханзны албан ёсны жагсаалт
-     нийтлээгүй — N5–N2 нь өргөн хэрэглэгддэг албан бус хуваарь. Ханз бүрийн
-     хажууд Японы Боловсролын яамны албан ёсны <b>сургуулийн анги</b> ба
-     <b>зурлагын тоо</b> харагдана.</p>
-
-  <div class="step">2 · Дасгалаа сонго</div>
-  <div class="modes">
-    <button class="mode" data-kj="flash"><b>Флашкарт</b><span>Ханз харж утга, уншлагыг нь эргүүлж шалгана</span></button>
-    <button class="mode" data-kj="k2m"><b class="jp">漢字 → утга</b><span>Ханзыг харж утгыг нь сонгоно</span></button>
-    <button class="mode" data-kj="m2k"><b>Утга → <span class="jp">漢字</span></b><span>Утгыг харж ханзыг нь сонгоно</span></button>
-    <button class="mode" data-kj="read"><b>Уншлага</b><span>Ханзны 音読み-г сонгоно</span></button>
   </div>
 </section>
 
@@ -334,7 +358,7 @@
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10r"></script>
-<script src="app.js?v=2026-09-10r"></script>
+<script src="sync-config.js?v=2026-09-10s"></script>
+<script src="app.js?v=2026-09-10s"></script>
 </body>
 </html>
