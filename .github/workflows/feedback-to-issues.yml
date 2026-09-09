@@ -43,6 +43,20 @@ jobs:
             exit 0
           fi
 
+          # Түлхүүрийн ТӨРЛИЙГ шалгана. Зөвхөн нэрийг нь хэвлэнэ — түлхүүр
+          # өөрөө хэзээ ч логт гарахгүй. Публик түлхүүр нь RLS-ийг тойрдоггүй
+          # тул хүснэгтээс ҮРГЭЛЖ хоосон жагсаалт ирдэг: алдаа мэт харагдахгүй,
+          # зүгээр л «шинэ санал алга» гэж дуусдаг. Тиймээс эндээс зогсооно.
+          case "$SB_KEY" in
+            eyJ*)             echo "түлхүүр: legacy JWT (service_role байх ёстой)" ;;
+            sb_secret_*)      echo "түлхүүр: sb_secret" ;;
+            sb_publishable_*)
+              echo "АЛДАА: SUPABASE_SERVICE_KEY-д ПУБЛИК түлхүүр хадгалагдсан байна."
+              echo "Supabase → Project Settings → API Keys → service_role (эсвэл sb_secret_…)"
+              exit 1 ;;
+            *)                echo "түлхүүр: тодорхойгүй хэлбэр" ;;
+          esac
+
           # issue_no хоосон буюу хараахан Issue болоогүй мөрүүд
           curl -sS -X GET \
             "$SB_URL/rest/v1/feedback?issue_no=is.null&order=created_at.asc&limit=50" \
