@@ -137,7 +137,14 @@ function save(key, val) {
 }
 
 let progress = load(KEY_P, {});
-let settings = load(KEY_S, { lessons: [1, 2, 3], ref: false });
+let settings = load(KEY_S, { lessons: [1, 2, 3], ref: false, script: 'kanji' });
+if (!settings.script) settings.script = 'kanji';   // хуучин хадгалсан тохиргоог нөхнө
+
+/* Асуултын нүүр талд юу харуулах вэ: ханзтай хэлбэр эсвэл кана уншлага.
+   Нөгөө хэлбэрийг нь хариулт дээр үзүүлнэ. Ханзгүй үг (プレゼント, あめ) дээр
+   хоёул ижил гарах тул хариулт дээр давхардуулж харуулахгүй. */
+const faceOf = it => (settings.script === 'kana' && it.kana) ? it.kana : it.jp;
+const backOf = it => (settings.script === 'kana') ? it.jp : (it.kana || '');
 
 function grade(id, ok) {
   const p = progress[id] || { b: 0, d: 0, n: 0, c: 0, w: 0 };
@@ -224,10 +231,10 @@ function nextCard() {
   $('p-sub').textContent = 'L' + cur.lesson + (cur.ref ? ' · 参考' : '');
 
   if (mode === 'flash') {
-    $('p-main').textContent = cur.jp; $('p-main').className = 'prompt jp';
+    $('p-main').textContent = faceOf(cur); $('p-main').className = 'prompt jp';
     $('pane-flash').hidden = false;
   } else if (mode === 'choice') {
-    $('p-main').textContent = cur.jp; $('p-main').className = 'prompt jp';
+    $('p-main').textContent = faceOf(cur); $('p-main').className = 'prompt jp';
     buildChoices();
     $('pane-choice').hidden = false;
   } else if (mode === 'type') {
@@ -266,7 +273,18 @@ function buildChoices() {
 }
 
 function reveal() {
-  $('a-kana').textContent = cur.kana || '';
+  // «Бичих» ба «Сонсох» горимд асуулт нь үг БАЙГААГҮЙ (монгол утга / дуу) тул
+  // хариулт дээр үгийг бүтнээр нь — ханз ба кана хоёуланг нь — үзүүлнэ.
+  // Флашкарт, олон сонголтод асуулт нь үг байсан тул нөгөө хэлбэрийг л нэмнэ.
+  const lines = [];
+  if (mode === 'type' || mode === 'listen') {
+    lines.push(cur.jp);
+    if (cur.kana && cur.kana !== cur.jp) lines.push(cur.kana);
+  } else {
+    const back = backOf(cur);
+    if (back && back !== faceOf(cur)) lines.push(back);
+  }
+  $('a-kana').textContent = lines.join('   ');
   $('a-mn').textContent = cur.mn || '';
   $('a-acc').textContent = cur.accent ? 'өргөлт: ' + cur.accent : '';
   $('answer').hidden = false;
@@ -322,6 +340,8 @@ function refreshHome() {
     box.appendChild(b);
   }
   $('inc-ref').checked = settings.ref;
+  document.querySelectorAll('#seg-script button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.s === settings.script));
 }
 
 function refreshStats() {
@@ -358,6 +378,8 @@ $('btn-stats').onclick = () => { refreshStats(); show('stats'); };
 $('sel-all').onclick = () => { settings.lessons = [...new Set(ALL.map(i => i.lesson))]; save(KEY_S, settings); refreshHome(); };
 $('sel-none').onclick = () => { settings.lessons = []; save(KEY_S, settings); refreshHome(); };
 $('inc-ref').onchange = e => { settings.ref = e.target.checked; save(KEY_S, settings); refreshHome(); };
+document.querySelectorAll('#seg-script button').forEach(b =>
+  b.onclick = () => { settings.script = b.dataset.s; save(KEY_S, settings); refreshHome(); });
 
 $('f-show').onclick = () => { reveal(); $('f-show').hidden = true; $('f-judge').hidden = false; };
 document.querySelectorAll('#f-judge button').forEach(b =>
@@ -404,6 +426,8 @@ if (window.speechSynthesis) {
 /* Гүн холбоос: index.html#m=type гэвэл шууд тэр горимоор эхэлнэ.
    Хавчуургаас шууд дасгал руу орох, мөн дэлгэцийг шалгахад хэрэгтэй. */
 function autoStart() {
+  const s = (location.hash.match(/s=(kanji|kana)/) || [])[1];
+  if (s) { settings.script = s; save(KEY_S, settings); refreshHome(); }
   const m = (location.hash.match(/m=(flash|choice|type|listen)/) || [])[1];
   if (m) startSession(m, false);
 }

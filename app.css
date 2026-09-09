@@ -76,6 +76,19 @@ button:disabled{opacity:.5; cursor:default}
 }
 .lessons button small{display:block; font-size:10px; opacity:.7}
 
+/* «漢字 / ひらがな» сонголт */
+.seg{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.seg button{
+  background:var(--card); border:1px solid var(--line); color:var(--ink-2);
+  padding:11px 12px; text-align:left;
+}
+.seg button b{display:block; font-size:19px; color:var(--ink)}
+.seg button span{font-size:12px}
+.seg button[aria-pressed="true"]{
+  background:var(--accent); border-color:var(--accent); color:#dbe8f5;
+}
+.seg button[aria-pressed="true"] b{color:#fff}
+
 .modes{display:grid; gap:8px}
 .mode{
   text-align:left; background:var(--card); border:1px solid var(--line);
