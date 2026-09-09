@@ -506,6 +506,66 @@ function buildChoices() {
   });
 }
 
+/* ── Өргөлтийн зураглал (高低アクセント) ────────────────────────────
+ * Irodori-гийн ことばリスト-д хэрэглэсэн тэмдэглэгээ:
+ *   ↓ — энэ тэмдгийн ӨМНӨХ мора хүртэл өндөр, дараа нь НАМ болж унана
+ *   ○ — 平板型: эхний мора нам, 2-роос эцэс хүртэл өндөр, унахгүй
+ *   △ — нийлмэл үгийн өргөлтийн хоёр хэсгийн ЗААГ
+ * Түүхий тэмдэгт харуулахын оронд мора бүрийн өндөр/намыг шугамаар зурна.
+ * Тэмдэглэгээгүй хэсгийг (ж: おはよう（ございま↓す） дэх «おはよう») ЗУРАХГҮЙ —
+ * ном тэнд өргөлт заагаагүй тул таамаглахгүй.
+ */
+var SMALL_KANA = 'ぁぃぅぇぉゃゅょゎァィゥェォャュョヮ';
+
+function esc(t) {
+  return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function pitchHTML(acc) {
+  if (!acc) return '';
+  var out = '', buf = '', i, ch;
+  for (i = 0; i < acc.length; i++) {
+    ch = acc[i];
+    // ／ △ （ ） зай — эдгээрийн хооронд өргөлт ДАХИН эхэлдэг тул тасална.
+    if ('／/△（）() 　'.indexOf(ch) >= 0) {
+      out += pitchSeg(buf); buf = '';
+      out += '<span class="pgap">' + (ch === '△' ? '・' : esc(ch)) + '</span>';
+    } else buf += ch;
+  }
+  out += pitchSeg(buf);
+  return '<span class="pitch">' + out + '</span>';
+}
+
+function pitchSeg(seg) {
+  var mora = [], drop = -1, flat = false, i, ch, c, isKana;
+  for (i = 0; i < seg.length; i++) {
+    ch = seg[i];
+    if (ch === '↓') { if (drop < 0) drop = countKana(mora); continue; }
+    if (ch === '○') { flat = true; continue; }
+    c = ch.charCodeAt(0);
+    isKana = c >= 0x3041 && c <= 0x30FC && c !== 0x30FB;
+    if (isKana && SMALL_KANA.indexOf(ch) >= 0 && mora.length)
+      mora[mora.length - 1].t += ch;                   // жижиг кана нь өмнөхтэйгөө НЭГ мора
+    else mora.push({ t: ch, kana: isKana });
+  }
+  var n = countKana(mora);
+  var plain = !n || (drop <= 0 && !flat);              // тэмдэглэгээгүй бол зурахгүй
+  var hiAt = function (k) {
+    return drop === 1 ? k === 1 : k > 1 && (drop < 0 || k <= drop);
+  };
+  var html = '', k = 0, cls;
+  for (i = 0; i < mora.length; i++) {
+    if (!mora[i].kana || plain) { html += '<span class="pn">' + esc(mora[i].t) + '</span>'; continue; }
+    k++;
+    cls = 'pm ' + (hiAt(k) ? 'hi' : 'lo');
+    if (k < n && hiAt(k) !== hiAt(k + 1)) cls += hiAt(k) ? ' dn' : ' up';
+    html += '<span class="' + cls + '">' + esc(mora[i].t) + '</span>';
+  }
+  return html;
+}
+
+function countKana(a) { var n = 0, i; for (i = 0; i < a.length; i++) if (a[i].kana) n++; return n; }
+
 function reveal() {
   // «Бичих» ба «Сонсох» горимд асуулт нь үг БАЙГААГҮЙ (монгол утга / дуу) тул
   // хариулт дээр үгийг бүтнээр нь — ханз ба кана хоёуланг нь — үзүүлнэ.
@@ -527,7 +587,8 @@ function reveal() {
   }
   $('a-kana').textContent = lines.join('   ');
   $('a-mn').textContent = cur.mn || '';
-  $('a-acc').textContent = cur.accent ? 'өргөлт: ' + cur.accent : '';
+  $('a-acc').innerHTML = cur.accent
+    ? '<span class="acclab">өргөлт</span>' + pitchHTML(cur.accent) : '';
   $('answer').hidden = false;
 }
 
@@ -635,11 +696,16 @@ function refreshStats() {
   const box = $('stat-lessons'); box.innerHTML = '';
   for (const l of [...new Set(ALL.map(i => i.lesson))].sort((a, b) => a - b)) {
     const items = ALL.filter(i => i.lesson === l && !i.ref);
+    // ХОЁР ДАВХАРГА: цайвар нь «нэг ч удаа үзсэн», тод нь «тогтсон» (3-р хайрцаг).
+    // Ганц давхаргатай үед эхний өдрүүдэд зураас огт хөдөлдөггүй байсан.
+    const seen = items.filter(i => ((progress[i.id] || {}).n || 0) > 0).length;
     const k = items.filter(i => (progress[i.id] || {}).b >= 3).length;
+    const w = x => (100 * x / Math.max(items.length, 1)) + '%';
     const d = document.createElement('div');
     d.className = 'l';
-    d.innerHTML = '<span>L' + l + '</span><span class="track"><span class="fill" style="width:' +
-      (100 * k / Math.max(items.length, 1)) + '%"></span></span>' +
+    d.innerHTML = '<span>L' + l + '</span><span class="track">' +
+      '<span class="seen" style="width:' + w(seen) + '"></span>' +
+      '<span class="fill" style="width:' + w(k) + '"></span></span>' +
       '<span class="num">' + k + '/' + items.length + '</span>';
     box.appendChild(d);
   }
