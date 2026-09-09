@@ -169,29 +169,61 @@ function rebuildPool() { pool = ALL.filter(inPool); }
 
 /* ══════════════════════ 5. Дуу (speechSynthesis) ══════════════════════ */
 
+const canSpeak = !!window.speechSynthesis;
 let jaVoice = null;
+
+/* Гар утсан дээр getVoices() ХОЙШЛОН дүүрдэг тул хоолой олдох хүртэл хүлээж
+   товчийг нуувал хэзээ ч гарч ирэхгүй. Мөн яг таарсан «ja» хоолой олдоогүй ч
+   lang="ja-JP" гэж өгвөл систем өөрөө япон хоолой сонгодог. Тиймээс товчийг
+   speechSynthesis байгаа бүх үед харуулна. */
 function pickVoice() {
-  const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
-  jaVoice = vs.find(v => /^ja(-|_)?/i.test(v.lang)) || null;
+  const vs = canSpeak ? speechSynthesis.getVoices() : [];
+  jaVoice = vs.find(v => /^ja\b|^ja[-_]/i.test(v.lang)) || null;
+
   const warn = document.getElementById('voice-warn');
-  if (!window.speechSynthesis) {
+  if (!canSpeak) {
     warn.hidden = false;
     warn.textContent = 'Энэ браузер дуу уншихыг дэмжихгүй тул «Сонсох» горим ажиллахгүй.';
-  } else if (!jaVoice) {
+  } else if (!jaVoice && vs.length) {
+    // Хоолой жагсаалт дүүрсэн ч япон нь алга — жинхэнэ дутагдал.
     warn.hidden = false;
-    warn.innerHTML = 'Япон хоолой олдсонгүй — «Сонсох» горим чимээгүй байна. ' +
+    warn.innerHTML = 'Япон хоолой олдсонгүй — дуу чимээгүй байж магадгүй. ' +
       'Windows: <b>Settings → Time &amp; language → Language &amp; region → 日本語 нэмэх → ' +
       'Language options → Speech</b> суулгаад браузераа дахин нээнэ үү.';
   } else {
-    warn.hidden = true;
+    warn.hidden = true;                       // жагсаалт хараахан дүүрээгүй ч байж болно
   }
-  document.querySelector('[data-mode="listen"]').disabled = !jaVoice;
+  document.querySelector('[data-mode="listen"]').disabled = !canSpeak;
+
+  // Хоолой хожуу ирвэл ОДООГИЙН картын товчийг сэргээнэ.
+  const b = document.getElementById('btn-speak');
+  if (b) b.hidden = !canSpeak || mode === 'type' && !answered;
 }
+
+/* Ихэнх гар утас эхний дуу гаргахын өмнө хэрэглэгчийн хүрэлт шаарддаг.
+   Эхний хүрэлт дээр чимээгүй utterance явуулж «түгжээг» тайлна. */
+let speechUnlocked = false;
+function unlockSpeech() {
+  if (speechUnlocked || !canSpeak) return;
+  speechUnlocked = true;
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    speechSynthesis.speak(u);
+  } catch (e) { /* үл тоомсорлоно */ }
+}
+document.addEventListener('pointerdown', unlockSpeech, { once: true });
+document.addEventListener('keydown', unlockSpeech, { once: true });
+
 function speak(text) {
-  if (!window.speechSynthesis || !jaVoice) return;
+  if (!canSpeak || !text) return;
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/[／/].*$/, '').replace(/[（(].*?[）)]/g, ''));
-  u.voice = jaVoice; u.lang = jaVoice.lang; u.rate = 0.85;
+  const clean = text.replace(/[／/].*$/, '').replace(/[（(].*?[）)]/g, '').trim();
+  if (!clean) return;
+  const u = new SpeechSynthesisUtterance(clean);
+  if (jaVoice) u.voice = jaVoice;
+  u.lang = 'ja-JP';                            // хоолой олдоогүй ч систем сонгоно
+  u.rate = 0.85;
   speechSynthesis.speak(u);
 }
 
@@ -248,7 +280,14 @@ function nextCard() {
     $('pane-choice').hidden = false;
     setTimeout(() => speak(cur.kana || cur.jp), 250);
   }
-  $('btn-speak').hidden = !jaVoice;
+  // Дуудлагыг АВТОМАТААР сонсгоно — «бичих»-ээс бусад бүх горимд.
+  // «Бичих»-д асуулт нь монгол утга, хариулт нь япон үг учраас урьдчилж
+  // сонсговол хариултыг задалж өгнө: тэнд 🔊 товчийг ч нуух ба зөвхөн
+  // хариулсны дараа сонсгоно.
+  $('btn-speak').hidden = !canSpeak || mode === 'type';
+  if (canSpeak && mode !== 'type' && mode !== 'listen') {
+    setTimeout(() => speak(cur.kana || cur.jp), 250);
+  }
   updateBar();
 }
 
@@ -300,7 +339,9 @@ function resolve(ok) {
   v.className = 'verdict ' + (ok ? 'ok' : 'ng');
   $('pane-next').hidden = false;
   if (!ok) queue.push(cur);                 // алдсан үгийг мөчлөгийн төгсгөлд эргүүлж тавина
-  if (jaVoice && mode !== 'listen') speak(cur.kana || cur.jp);
+  // Бусад горимд карт гармагц аль хэдийн сонсгосон тул дахин давтахгүй.
+  // «Бичих»-д зөвхөн ЭНД сонсгоно — урьд нь сонсгосон бол хариулт задарна.
+  if (canSpeak && mode === 'type') { $('btn-speak').hidden = false; speak(cur.kana || cur.jp); }
   updateBar();
 }
 
