@@ -290,7 +290,21 @@ function refreshSync() {
 
 /* ══════════════════════ 4. Өгөгдөл ══════════════════════ */
 
-let ALL = [];                 // бүх үг
+/* Ном тус бүр ТУСДАА файлтай — сонгосон номоо л татна (эхний ачаалал хөнгөн).
+   id-ийн угтвар ном бүрд өөр (L / E1 / E2) тул явц хольцолдохгүй. */
+const BOOK_FILE = { starter: 'data/vocab.json', el1: 'data/vocab-el1.json',
+                    el2: 'data/vocab-el2.json' };
+const BOOK_NAME = { starter: '入門', el1: '初級1', el2: '初級2' };
+const bookCache = {};
+
+function loadBook(b) {
+  if (bookCache[b]) { ALL = bookCache[b]; return Promise.resolve(true); }
+  return fetch(BOOK_FILE[b]).then(r => r.json()).then(d => {
+    bookCache[b] = d.items; ALL = d.items; return true;
+  }).catch(() => false);
+}
+
+let ALL = [];                 // ИДЭВХТЭЙ номын үгс
 let missed = [];              // энэ дасгалд алдсан үгс — төгсгөлд жагсаана
 let KANA = [];                // 107 кана (хирагана · катакана · авиа)
 let KANJI = [];               // 1027 ханз (хичээлийнх + JLPT N5–N2)
@@ -434,10 +448,13 @@ const fmtKun = r => r.indexOf('.') < 0 ? r
   : r.slice(0, r.indexOf('.')) + '(' + r.slice(r.indexOf('.') + 1) + ')';
 
 /** Ханзны багц. src: 'les' = сонгосон хичээлүүдийнх · 'jlpt' = сонгосон түвшин. */
+const BOOK_LKEY = { starter: 'l', el1: 'l1', el2: 'l2' };
+
 function kanjiPool(src) {
   if (src === 'jlpt') return KANJI.filter(k => k.n && settings.kjn.includes(k.n));
   const les = settings.lessons || [];
-  return KANJI.filter(k => k.l && k.l.some(x => les.includes(x)));
+  const key = BOOK_LKEY[settings.book] || 'l';
+  return KANJI.filter(k => k[key] && k[key].some(x => les.includes(x)));
 }
 
 /** Ханзны дуудлага: жишээ үгийнх нь бичлэгийг ашиглана (шинэ файл хэрэггүй). */
@@ -875,7 +892,7 @@ function finish() {
 
 /* ══════════════════════ 7. Дэлгэц солих ба нүүр ══════════════════════ */
 
-const SCREENS = ['home', 'irodori', 'jlpt', 'kana', 'study', 'done', 'stats', 'profile'];
+const SCREENS = ['home', 'irodori', 'jlpt', 'kana', 'study', 'done', 'feedback', 'stats', 'profile'];
 let screen = 'home';
 
 const ICON_MENU = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
@@ -894,7 +911,8 @@ function show(name) {
 
 function go(name) {
   if (name === 'stats') refreshStats();
-  if (name === 'profile') refreshSync();
+  if (name === 'profile') { refreshSync(); refreshUsage(); }
+  if (name === 'feedback') refreshFb();
   if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
   show(name);
 }
@@ -1027,6 +1045,15 @@ document.querySelectorAll('#jlpt-levels button').forEach(b =>
 /* Irodori: «шинэ үг» эсвэл «шинэ ханз» — доорх алхмуудыг сольж харуулна. */
 document.querySelectorAll('#seg-what button').forEach(b =>
   b.onclick = () => { settings.what = b.dataset.w; save(KEY_S, settings); refreshHome(); });
+document.querySelectorAll('#seg-book button').forEach(b =>
+  b.onclick = () => {
+    const nb = b.dataset.b;
+    if (nb === settings.book) return;
+    loadBook(nb).then(ok => {
+      if (!ok) { alert('Энэ номын үгсийг ачаалж чадсангүй.'); return; }
+      settings.book = nb; save(KEY_S, settings); refreshHome();
+    });
+  });
 document.querySelectorAll('#kana-groups button').forEach(b =>
   b.onclick = () => {
     const g = b.dataset.g, i = settings.kgroups.indexOf(g);
@@ -1211,6 +1238,108 @@ if (window.speechSynthesis) {
   speechSynthesis.onvoiceschanged = pickVoice;
 }
 
+/* ══════════════════════ 8b. Санал хүсэлт ба хэрэглээний тоо ══════════════
+ *
+ * Санал хүсэлт нь Supabase-ийн `feedback` хүснэгтэд орж, GitHub Action
+ * түүнийг 30 минут тутам уншиж Issue болгоно. Аппаас ШУУД GitHub API руу
+ * залгадаггүй: тэр нь токен шаардах ба статик сайтад тавьсан токеныг хэн ч
+ * хулгайлж репод дураараа бичих болно.
+ *
+ * Төхөөрөмжийн id нь ЗӨВХӨН давхардлыг арилгах ба спамаас сэргийлэхэд.
+ * Хувийн мэдээлэл биш — санамсаргүй тэмдэгтүүд, зөвхөн энэ браузерт.
+ */
+const NL = String.fromCharCode(10);
+const KEY_DEV = 'irodori.dev.v1';
+let devId = load(KEY_DEV, null);
+if (!devId) {
+  const a = new Uint8Array(16);
+  (crypto || window.crypto).getRandomValues(a);
+  devId = [...a].map(b => b.toString(36)).join('').slice(0, 22);
+  save(KEY_DEV, devId);
+}
+
+let fbKind = 'bug';
+
+function refreshFb() {
+  document.querySelectorAll('#seg-fb button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.k === fbKind));
+  const n = $('fb-n');
+  if (n) n.textContent = ($('fb-body').value || '').length;
+  const st = $('fb-state');
+  if (st && !syncOn) st.textContent =
+    'Шууд илгээх боломж тохируулаагүй байна — доорх GitHub холбоосыг ашиглана уу.';
+}
+
+/** GitHub дээр шууд нээх холбоосыг бичсэн зүйлээр урьдчилан дүүргэнэ. */
+function fbGhLink() {
+  const body = ($('fb-body').value || '').trim();
+  const title = body.split(NL)[0].slice(0, 70);
+  const q = 'title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+  $('fb-gh').href = 'https://github.com/NOVA-XO/irodori-vocab/issues/new?' + q;
+}
+
+async function sendFeedback() {
+  const st = $('fb-state');
+  const body = ($('fb-body').value || '').trim();
+  if (body.length < 3) { st.textContent = 'Тайлбараа бичнэ үү.'; return; }
+  if (!syncOn) { st.textContent = 'Шууд илгээх боломжгүй — GitHub холбоосыг ашиглана уу.'; return; }
+  const btn = $('fb-send');
+  btn.disabled = true; st.textContent = 'Илгээж байна…';
+  try {
+    // Орчны мэдээлэл — алдаа хайхад хэрэгтэй хамгийн бага хэмжээ.
+    const meta = { v: VERSION, ua: navigator.userAgent.slice(0, 160),
+                   w: innerWidth + 'x' + innerHeight, lang: navigator.language };
+    await rpc('add_feedback', {
+      p_kind: fbKind, p_body: body,
+      p_contact: ($('fb-contact').value || '').trim() || null,
+      p_meta: meta, p_dev: devId,
+    });
+    $('fb-body').value = ''; $('fb-contact').value = '';
+    refreshFb();
+    st.textContent = 'Баярлалаа — илгээгдлээ. Удахгүй GitHub дээр асуудал болж нэмэгдэнэ.';
+  } catch (e) {
+    st.textContent = 'Илгээж чадсангүй (' + e + '). Доорх GitHub холбоосоор бичиж болно.';
+  }
+  btn.disabled = false;
+}
+
+/** Апп нээгдэхэд ӨДӨРТ НЭГ УДАА — хэрэглээний тоо. Алдааг чимээгүй өнгөрөөнө. */
+function pingUsage() {
+  if (!syncOn) return;
+  const k = 'irodori.pinged.v1', t = String(today());
+  try {
+    if (localStorage.getItem(k) === t) return;
+    localStorage.setItem(k, t);
+  } catch (e) { /* хувийн горим */ }
+  rpc('ping', { p_dev: devId }).catch(() => {});
+}
+
+function refreshUsage() {
+  const box = $('use-stat'), note = $('use-note');
+  if (!box) return;
+  if (!syncOn) {
+    box.innerHTML = '';
+    note.textContent = 'Синк тохируулаагүй тул тоо цуглуулахгүй.';
+    return;
+  }
+  note.textContent = 'Ачаалж байна…';
+  rpc('usage_stats', {}).then(d => {
+    if (!d) throw new Error('хоосон');
+    box.innerHTML =
+      '<div><b>' + (d.devices || 0) + '</b><span>төхөөрөмж</span></div>' +
+      '<div><b>' + (d.active_7d || 0) + '</b><span>7 хоногт идэвхтэй</span></div>' +
+      '<div><b>' + (d.opens || 0) + '</b><span>нийт нээлт</span></div>' +
+      '<div><b>' + (d.feedback || 0) + '</b><span>санал хүсэлт</span></div>';
+    note.textContent = 'Өнөөдөр ' + (d.today_opens || 0) + ' удаа нээгдсэн. '
+      + 'Зөвхөн тоо — хувийн мэдээлэл, IP хадгалдаггүй.';
+  }).catch(() => { box.innerHTML = ''; note.textContent = 'Тоог авч чадсангүй.'; });
+}
+
+$('fb-send').onclick = sendFeedback;
+$('fb-body').addEventListener('input', () => { refreshFb(); fbGhLink(); });
+document.querySelectorAll('#seg-fb button').forEach(b =>
+  b.onclick = () => { fbKind = b.dataset.k; refreshFb(); });
+
 /* ── Офлайн (service worker) ─────────────────────────────────────────
  * file:// дээр ажиллахгүй тул протоколыг шалгана. Бүртгэл амжилтгүй бол
  * апп хэвийн (зөвхөн онлайн) ажиллана — алдааг чимээгүй өнгөрөөнө. */
@@ -1264,7 +1393,7 @@ function autoStart() {
   // Дэлгэцийн нэрийг ЯГ тэнцүүгээр шалгана: «#m=flash&s=kana» дотор «kana»
   // гэсэн үг байгаа тул хэсэгчилж хайвал горим эхлэхийн оронд үсэрнэ.
   const scr = location.hash.replace(/^#/, '');
-  if (['home', 'irodori', 'jlpt', 'kana', 'stats', 'profile'].includes(scr)) { go(scr); return; }
+  if (['home', 'irodori', 'jlpt', 'kana', 'feedback', 'stats', 'profile'].includes(scr)) { go(scr); return; }
   const k = (location.hash.match(/k=(h2k|k2h|sound|klisten)/) || [])[1];
   if (k) { startKana(k); return; }
   const j = (location.hash.match(/j=(flash|k2m|m2k|read)/) || [])[1];
@@ -1274,7 +1403,9 @@ function autoStart() {
 }
 
 Promise.all([
-  fetch('data/vocab.json').then(r => r.json()),
+  fetch(BOOK_FILE[settings.book] || BOOK_FILE.starter)
+    .then(r => r.json())
+    .catch(() => fetch(BOOK_FILE.starter).then(r => r.json())),
   fetch('data/kana.json').then(r => r.json()),
   fetch('data/kanji.json').then(r => r.json()),
   // Бичлэгийн жагсаалт. Байхгүй бол апп TTS-ээр хэвийн ажиллана.
@@ -1282,11 +1413,12 @@ Promise.all([
 ])
   .then(([v, k, kj, au]) => {
     ALL = v.items; KANA = k.items; KANJI = kj.items;
+    bookCache[v.book || 'starter'] = v.items;
     if (au && au.ids) { AUDIO_IDS = new Set(au.ids); pickVoice(); }
     refreshSync();
     // Ачаалахад нэг удаа татаж уусгана — өөр төхөөрөмж дээр давтсан нь орж ирнэ.
     if (syncOn && syncCode) syncNow(true).then(refreshHome);
-    show('home'); refreshHome(); autoStart();
+    show('home'); refreshHome(); autoStart(); pingUsage();
   })
   .catch(() => {
     document.getElementById('home').innerHTML =

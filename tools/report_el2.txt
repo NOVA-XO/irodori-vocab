@@ -1,0 +1,5 @@
+entries: 1786
+problems: 2
+
+L4  p13 '（ソースをかける）'  MISSING accent
+L16 p75 '（揺れがおさまる）'  MISSING accent

@@ -8,10 +8,10 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="app.css?v=2026-09-10s">
+<link rel="stylesheet" href="app.css?v=2026-09-10u">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10s">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10s">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10u">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10u">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,6 +38,7 @@
   <button data-go="irodori">Irodori сурах бичиг</button>
   <button data-go="jlpt">JLPT бэлтгэл</button>
   <button data-go="kana">Кана үсэг</button>
+  <button data-go="feedback">Санал хүсэлт</button>
   <button data-go="stats">Явц</button>
 </nav>
 
@@ -64,7 +65,7 @@
     <button class="bigcard" data-go="irodori">
       <span class="bc-jp jp">いろどり</span>
       <b>Irodori сурах бичиг</b>
-      <span>Ном ба хичээлээ сонгож шинэ үг, шинэ ханзаа давтана · <i id="n-vocab">…</i></span>
+      <span>Гурван ном · 4210 үг. Хичээлээ сонгож шинэ үг, шинэ ханзаа давтана</span>
     </button>
     <button class="bigcard" data-go="jlpt">
       <span class="bc-jp">N5</span>
@@ -77,6 +78,12 @@
       <span>Хирагана ба катакана · <i id="n-kana">…</i></span>
     </button>
   </div>
+
+  <button class="bigcard quiet" data-go="feedback">
+    <span class="bc-jp">💬</span>
+    <b>Санал хүсэлт</b>
+    <span>Алдаа мэдэгдэх, шинэ санаа хэлэх — шууд GitHub дээр очно</span>
+  </button>
 
   <div id="voice-warn" class="warn" hidden></div>
   <p class="src"><b>Үгний Шорон</b> — <span class="jp">Irodori 入門</span>-ийн шинэ үгийг
@@ -98,9 +105,9 @@
 <section id="irodori" class="screen" hidden>
   <div class="step">1 · Ном</div>
   <div class="seg" id="seg-book">
-    <button data-b="starter"><b class="jp">入門</b><span>Суурь шат (A1) · 1232 үг</span></button>
-    <button data-b="el1" disabled><b class="jp">初級1</b><span>Анхан шат 1 (A2) · удахгүй</span></button>
-    <button data-b="el2" disabled><b class="jp">初級2</b><span>Анхан шат 2 (A2) · удахгүй</span></button>
+    <button data-b="starter"><b class="jp">入門</b><span>Суурь шат · A1 · 1232 үг</span></button>
+    <button data-b="el1"><b class="jp">初級1</b><span>Анхан шат 1 · A2 · 1192 үг</span></button>
+    <button data-b="el2"><b class="jp">初級2</b><span>Анхан шат 2 · A2 · 1786 үг</span></button>
   </div>
 
   <div class="step">2 · Хичээл</div>
@@ -289,6 +296,43 @@
   <div class="row"><button id="fin-home" class="ghost sm">Нүүр</button></div>
 </section>
 
+<!-- ═══════════════════ САНАЛ ХҮСЭЛТ ═══════════════════ -->
+<section id="feedback" class="screen" hidden>
+  <h2>Санал хүсэлт</h2>
+  <p class="hint">Алдаа тааралдвал, эсвэл нэмээсэй гэсэн зүйл байвал энд бичнэ үү.
+     Илгээсэн зүйл тань <b>GitHub дээр асуудал (Issue) болж</b> автоматаар нэмэгдэнэ.
+     Бүртгэл шаардахгүй.</p>
+
+  <div class="step">Юуны тухай вэ</div>
+  <div class="seg" id="seg-fb">
+    <button data-k="bug"><b>Алдаа</b><span>Ажиллахгүй байгаа зүйл</span></button>
+    <button data-k="idea"><b>Санал</b><span>Нэмээсэй гэсэн зүйл</span></button>
+    <button data-k="other"><b>Бусад</b><span>Асуулт, тайлбар</span></button>
+  </div>
+
+  <div class="step">Тайлбар</div>
+  <textarea id="fb-body" rows="6" maxlength="2000"
+    placeholder="Эхний мөр нь гарчиг болно.&#10;&#10;Алдаа бол: юу хийхэд юу болсон бэ? Ямар төхөөрөмж, браузер вэ?"></textarea>
+  <div class="fb-count"><span id="fb-n">0</span>/2000</div>
+
+  <div class="step">Холбоо барих (заавал биш)</div>
+  <input id="fb-contact" type="text" maxlength="120" autocomplete="off"
+         placeholder="и-мэйл эсвэл GitHub нэр — хариу авахыг хүсвэл">
+
+  <div class="row"><button id="fb-send" class="primary big">Илгээх</button></div>
+  <p class="hint" id="fb-state"></p>
+
+  <h2>Өөрөө шууд бичих</h2>
+  <p class="hint">GitHub бүртгэлтэй бол шууд тэнд бичиж болно — тэгвэл яриа
+     үргэлжлүүлж, хариуг нь харах боломжтой.</p>
+  <div class="row">
+    <a class="ghost sm" id="fb-gh" target="_blank" rel="noopener noreferrer"
+       href="https://github.com/NOVA-XO/irodori-vocab/issues/new">GitHub дээр нээх</a>
+    <a class="ghost sm" target="_blank" rel="noopener noreferrer"
+       href="https://github.com/NOVA-XO/irodori-vocab/issues">Одоо байгаа асуудлууд</a>
+  </div>
+</section>
+
 <!-- ═══════════════════ ЯВЦ ═══════════════════ -->
 <section id="stats" class="screen" hidden>
   <h2>Явц</h2>
@@ -349,6 +393,10 @@
   <div id="dl-state" class="hint"></div>
   <pre id="diag" class="diag" hidden></pre>
 
+  <h2>Хэрэглээ</h2>
+  <div id="use-stat" class="statsum"></div>
+  <p class="hint" id="use-note">Ачаалж байна…</p>
+
   <h2>Офлайн</h2>
   <p class="hint" id="sw-state">Шалгаж байна…</p>
 
@@ -358,7 +406,7 @@
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10s"></script>
-<script src="app.js?v=2026-09-10s"></script>
+<script src="sync-config.js?v=2026-09-10u"></script>
+<script src="app.js?v=2026-09-10u"></script>
 </body>
 </html>

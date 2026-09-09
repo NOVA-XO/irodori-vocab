@@ -41,9 +41,16 @@ def is_kanji(ch):
     return 0x4E00 <= c <= 0x9FFF or 0x3400 <= c <= 0x4DBF
 
 
-def from_vocab():
+# Ном тус бүрийн хичээлийн тэмдэглэгээ ТУСДАА талбарт орно: аппад аль ном
+# сонгосноос хамаарч шүүнэ.  l = 入門 · l1 = 初級1 · l2 = 初級2
+VOCAB_FILES = [("l", "vocab.json"), ("l1", "vocab-el1.json"), ("l2", "vocab-el2.json")]
+
+
+def from_vocab(fname):
     """Ханз бүр АЛЬ хичээлүүдэд гарсан, ямар үгэнд орсныг цуглуулна."""
-    p = os.path.join(HERE, "..", "data", "vocab.json")
+    p = os.path.join(HERE, "..", "data", fname)
+    if not os.path.exists(p):
+        return {}
     d = json.load(io.open(p, encoding="utf-8"))
     got = collections.OrderedDict()
     for it in d["items"]:
@@ -102,9 +109,11 @@ def kanjidic(want):
 
 
 def main():
-    voc = from_vocab()
+    vocs = {key: from_vocab(f) for key, f in VOCAB_FILES}
     lv = jlpt_levels()
-    want = set(voc) | set(lv)
+    want = set(lv)
+    for v in vocs.values():
+        want |= set(v)
     kd = kanjidic(want)
     mn = {}
     for f in sorted(glob.glob(MN_GLOB)):
@@ -117,7 +126,7 @@ def main():
         k = kd.get(ch)
         if not k:
             continue                      # KANJIDIC2-д байхгүй ховор тэмдэгт
-        v = voc.get(ch)
+        pass
         it = {
             # Явцын id. Юникод кодоор хийвэл жагсаалт өөрчлөгдөхөд ч
             # ХЭЗЭЭ Ч шилжихгүй — хэрэглэгчийн явц алдагдахгүй.
@@ -133,9 +142,16 @@ def main():
             it["n"] = lv[ch]              # JLPT N-түвшин
         if k["grade"]:
             it["g"] = k["grade"]          # 文科省-ийн анги
-        if v:
-            it["l"] = sorted(v["lessons"])
-            it["w"] = v["words"]
+        # Жишээ үг: 入門-ийг эхэнд нь тавина (хамгийн энгийн нь), дараа нь бусад.
+        words = []
+        for key, _ in VOCAB_FILES:
+            v = vocs[key].get(ch)
+            if not v:
+                continue
+            it[key] = sorted(v["lessons"])
+            words.extend(v["words"])
+        if words:
+            it["w"] = words[:3]
         items.append(it)
         if not it["mn"]:
             missing.append(ch)
@@ -150,8 +166,9 @@ def main():
         }, f, ensure_ascii=False, separators=(",", ":"))
 
     per = collections.Counter(i.get("n", 0) for i in items)
-    inles = sum(1 for i in items if "l" in i)
-    print("kanji %d  (in lessons %d)" % (len(items), inles))
+    per_book = {k: sum(1 for i in items if k in i) for k, _ in VOCAB_FILES}
+    print("kanji %d  (starter %d, el1 %d, el2 %d)"
+          % (len(items), per_book["l"], per_book["l1"], per_book["l2"]))
     print("JLPT:", " ".join("N%d=%d" % (n, per[n]) for n in (5, 4, 3, 2) if per[n]),
           " no-level=%d" % per[0])
     print("missing mn: %d" % len(missing))

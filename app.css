@@ -370,6 +370,24 @@ button:disabled{opacity:.5; cursor:default}
 .lg i.s{opacity:.28}
 
 .hint{font-size:12.5px; color:var(--ink-2); line-height:1.6; margin:6px 0}
+
+/* ---------- санал хүсэлт ---------- */
+#fb-body{
+  width:100%; padding:12px; font:inherit; font-size:15px; line-height:1.5;
+  border-radius:10px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink); resize:vertical; min-height:120px;
+}
+#fb-contact{
+  width:100%; padding:11px 12px; font:inherit; font-size:15px;
+  border-radius:10px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink);
+}
+.fb-count{text-align:right; font-size:11.5px; color:var(--ink-2); margin-top:4px}
+/* Холбоос боловч товч шиг харагдана */
+a.ghost{display:inline-block; text-decoration:none}
+/* Нүүрэн дэх санал хүсэлтийн карт — үндсэн гурваас чимээгүй байх ёстой */
+.bigcard.quiet{margin-top:10px; opacity:.9}
+.bigcard.quiet .bc-jp{font-size:20px}
 .synccode{
   font-family:ui-monospace,Consolas,monospace; font-size:19px; letter-spacing:.08em;
   background:var(--card); border:1px solid var(--line); border-radius:10px;

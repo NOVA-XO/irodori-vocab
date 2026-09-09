@@ -1,0 +1,95 @@
+# Санал хүсэлтийг GitHub Issue болгоно.
+#
+# Яагаад аппаас шууд Issue үүсгэдэггүй вэ: GitHub API токен шаарддаг ба
+# статик сайтад тавьсан токеныг хэн ч хулгайлж репод дураараа бичих болно.
+# Тиймээс токен нь ЗӨВХӨН энд — GitHub-ийн шифрлэгдсэн Secrets дотор байна.
+#
+# Тохируулах (нэг удаа):
+#   Settings → Secrets and variables → Actions → New repository secret
+#     SUPABASE_URL          https://<төслийн-id>.supabase.co
+#     SUPABASE_SERVICE_KEY  Supabase → Project Settings → API keys → service_role
+#   service_role түлхүүрийг ХЭЗЭЭ Ч репод бичихгүй, хэнд ч илгээхгүй.
+name: feedback-to-issues
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'      # 30 минут тутам
+  workflow_dispatch:            # гараар ажиллуулах товч
+
+permissions:
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Шинэ санал хүсэлтийг Issue болгох
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SB_URL:-}" ] || [ -z "${SB_KEY:-}" ]; then
+            echo "SUPABASE_URL / SUPABASE_SERVICE_KEY тохируулаагүй байна."
+            exit 0
+          fi
+
+          # issue_no хоосон буюу хараахан Issue болоогүй мөрүүд
+          curl -sS -X GET \
+            "$SB_URL/rest/v1/feedback?issue_no=is.null&order=created_at.asc&limit=50" \
+            -H "apikey: $SB_KEY" -H "Authorization: Bearer $SB_KEY" \
+            -o pending.json
+
+          COUNT=$(jq 'length' pending.json)
+          echo "хүлээгдэж буй: $COUNT"
+          [ "$COUNT" -eq 0 ] && exit 0
+
+          for i in $(seq 0 $((COUNT - 1))); do
+            ID=$(jq -r ".[$i].id" pending.json)
+            KIND=$(jq -r ".[$i].kind" pending.json)
+            BODY=$(jq -r ".[$i].body" pending.json)
+            CONTACT=$(jq -r ".[$i].contact // \"\"" pending.json)
+            CREATED=$(jq -r ".[$i].created_at" pending.json)
+            META=$(jq -c ".[$i].meta" pending.json)
+
+            case "$KIND" in
+              bug)  LABEL="bug";        PREFIX="Алдаа" ;;
+              idea) LABEL="enhancement"; PREFIX="Санал" ;;
+              *)    LABEL="question";   PREFIX="Санал хүсэлт" ;;
+            esac
+
+            # Гарчиг = эхний мөр, 70 тэмдэгтээр таслав
+            TITLE=$(printf '%s' "$BODY" | head -n 1 | cut -c1-70)
+            [ -z "$TITLE" ] && TITLE="(гарчиггүй)"
+
+            {
+              printf '%s\n\n' "$BODY"
+              printf -- '---\n'
+              printf '_Аппын доторх санал хүсэлтийн хэсгээс автоматаар._\n'
+              printf '· илгээсэн: `%s`\n' "$CREATED"
+              [ -n "$CONTACT" ] && printf '· холбоо барих: `%s`\n' "$CONTACT"
+              printf '· орчин: `%s`\n' "$META"
+              printf '· feedback id: `%s`\n' "$ID"
+            } > issue.md
+
+            NUM=$(gh issue create --repo "$REPO" \
+                    --title "$PREFIX: $TITLE" \
+                    --body-file issue.md \
+                    --label "$LABEL" 2>/dev/null | grep -o '[0-9]\+$' || true)
+
+            if [ -z "${NUM:-}" ]; then
+              # Шошго байхгүй бол шошгогүйгээр дахин оролдоно
+              NUM=$(gh issue create --repo "$REPO" \
+                      --title "$PREFIX: $TITLE" --body-file issue.md \
+                    | grep -o '[0-9]\+$')
+            fi
+            echo "feedback $ID -> issue #$NUM"
+
+            # Дахин Issue үүсгэхгүйн тулд тэмдэглэнэ
+            curl -sS -X PATCH "$SB_URL/rest/v1/feedback?id=eq.$ID" \
+              -H "apikey: $SB_KEY" -H "Authorization: Bearer $SB_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{\"issue_no\": $NUM}" > /dev/null
+          done

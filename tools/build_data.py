@@ -18,10 +18,29 @@ import json
 import os
 import re
 
+import sys
+
 HERE = os.path.dirname(os.path.abspath(__file__))
-RAW = os.path.join(HERE, "vocab_raw.json")
-OUT = os.path.join(HERE, "..", "data", "vocab.json")
-REVIEW = os.path.join(HERE, "..", "data", "REVIEW.md")
+
+# Ном бүр ТУСДАА файлтай: апп зөвхөн сонгосон номоо татна (эхний ачаалал хөнгөн).
+# id-ийн угтвар ном бүрд өөр — 入門-ий id-г ХЭЗЭЭ Ч өөрчлөхгүй, эс тэгвээс
+# хэрэглэгчийн явц алдагдана.
+BOOKS = {
+    "starter": dict(raw="vocab_raw.json", out="vocab.json",
+                    review="REVIEW.md", idfmt="L%02d-%03d", lesson0=True, romaji=True),
+    "el1": dict(raw="vocab_raw_el1.json", out="vocab-el1.json",
+                review="REVIEW-el1.md", idfmt="E1-%02d-%03d", lesson0=False, romaji=False),
+    "el2": dict(raw="vocab_raw_el2.json", out="vocab-el2.json",
+                review="REVIEW-el2.md", idfmt="E2-%02d-%03d", lesson0=False, romaji=False),
+}
+BOOK = sys.argv[1] if len(sys.argv) > 1 else "starter"
+if BOOK not in BOOKS:
+    sys.exit("Ном: " + " | ".join(BOOKS))
+CFG = BOOKS[BOOK]
+
+RAW = os.path.join(HERE, CFG["raw"])
+OUT = os.path.join(HERE, "..", "data", CFG["out"])
+REVIEW = os.path.join(HERE, "..", "data", CFG["review"])
 
 ACCENT_MARKS = "↓○△"
 CYR = re.compile(r"[Ѐ-ӿ]")
@@ -60,7 +79,7 @@ def lesson0():
 def load_fixes():
     """Гараар хийсэн засвар. Түлхүүр нь «<хичээл>|<日本語>» — id нь задлалт
     өөрчлөгдвөл шилждэг тул түүнийг ашиглахгүй."""
-    p = os.path.join(HERE, "fixes.json")
+    p = os.path.join(HERE, "fixes.json" if BOOK == "starter" else "fixes_%s.json" % BOOK)
     if not os.path.exists(p):
         return {}
     return json.load(io.open(p, encoding="utf-8")).get("items", {})
@@ -72,13 +91,14 @@ def main():
     raw = json.load(io.open(RAW, encoding="utf-8"))
     out, review = [], []
     per = {}
-    out.extend(lesson0())
+    if CFG["lesson0"]:
+        out.extend(lesson0())
     for e in raw:
         les = e["lesson"]
         per[les] = per.get(les, 0) + 1
         kana = kana_of(e)
         item = {
-            "id": "L%02d-%03d" % (les, per[les]),
+            "id": CFG["idfmt"] % (les, per[les]),
             "lesson": les,
             "section": e["section"],
             "jp": BRACKET.sub("", e["jp"]).strip(),
@@ -107,14 +127,15 @@ def main():
             why.append("утга кирилл биш (англи тайлбар байж болно)")
         if not kana:
             why.append("кана уншлага алга")
-        if not item["romaji"]:
+        if CFG["romaji"] and not item["romaji"]:
             why.append("ромажи алга")
         if why:
             review.append((item, why, e["page"]))
 
     with io.open(OUT, "w", encoding="utf-8") as f:
-        json.dump({"source": "Irodori 入門 ことばリスト (Mongolian) — The Japan Foundation",
-                   "count": len(out), "items": out}, f, ensure_ascii=False, indent=1)
+        json.dump({"source": "Irodori ことばリスト (Mongolian) — The Japan Foundation",
+                   "book": BOOK, "count": len(out), "items": out},
+                  f, ensure_ascii=False, indent=1)
 
     with io.open(REVIEW, "w", encoding="utf-8") as f:
         f.write("# Гараар шалгах бичлэгүүд\n\n")
@@ -130,8 +151,8 @@ def main():
 
     unused = sorted(set(fixes) - used)
     if unused:
-        print("АНХААР: fixes.json дэх дараах түлхүүр таарсангүй:", unused)
-    print("items %d  review %d  fixes %d" % (len(out), len(review), len(used)))
+        print("WARN: unused fixes keys:", unused)
+    print("%s: items %d  review %d  fixes %d" % (BOOK, len(out), len(review), len(used)))
     print("lessons:", " ".join("L%d=%d" % (k, per[k]) for k in sorted(per)))
     print("no-kana %d   ref %d" % (sum(1 for i in out if not i["kana"]),
                                    sum(1 for i in out if i["ref"])))

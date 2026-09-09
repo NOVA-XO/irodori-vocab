@@ -239,7 +239,12 @@ def main():
     import imageio_ffmpeg
     ff = imageio_ffmpeg.get_ffmpeg_exe()
 
-    vocab = json.load(io.open(os.path.join(ROOT, 'data', 'vocab.json'), encoding='utf-8'))
+    # Гурван номын үг бүгд — id нь угтвараараа ялгагдана (L / E1 / E2).
+    vocab = {'items': []}
+    for f in ('vocab.json', 'vocab-el1.json', 'vocab-el2.json'):
+        p = os.path.join(ROOT, 'data', f)
+        if os.path.exists(p):
+            vocab['items'].extend(json.load(io.open(p, encoding='utf-8'))['items'])
     kana = json.load(io.open(os.path.join(ROOT, 'data', 'kana.json'), encoding='utf-8'))
 
     # ── Ханзны уншлага ────────────────────────────────────────────────
