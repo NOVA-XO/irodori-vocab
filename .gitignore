@@ -1,8 +1,8 @@
 __pycache__/
 *.pyc
-tools/vocab_raw.json
+tools/vocab_raw*.json
 tools/rejected.json
-tools/report.txt
+tools/report*.txt
 tools/audio_failed.txt
 tools/speakers.txt
 .DS_Store
