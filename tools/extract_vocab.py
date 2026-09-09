@@ -39,7 +39,11 @@ COL2, COL3, COL4 = 200.0, 300.0, 414.0
 Y_TOP, Y_BOTTOM = 150.0, 786.0
 WORD_SIZE = (11.0, 13.0)
 HEAD_SIZE = 13.0
-ROW_SPLIT = 18.0                      # үүнээс их зай = шинэ мөр
+ROW_SPLIT = 18.0
+# Нүд өөрийн мөрийн зангуунаас ДЭЭШ эхэлж болно: 3 мөрт монгол тайлбар мөрийн
+# голд төвлөрдөг тул эхний мөр нь үгийн мөрөөс 6-7 pt дээш гардаг (L3 «はじめまして»).
+# Хэт бага бол өмнөх мөрөнд унана, хэт их бол өмнөхийнхөө агуулгыг булаана.
+Y_TOL = 12.0                      # үүнээс их зай = шинэ мөр
 GREY = 10330018                       # #9D9FA2 — 参考語彙 (лавлах үгсийн сан)
 
 CYR = re.compile(r"[\u0400-\u04FF]")
@@ -118,7 +122,7 @@ def parse_page(spans, state, problems, page_no):
         c = col_of(s)
         if c == 1:
             continue
-        i = bisect.bisect_right(ys, s["y"] + 5.0) - 1
+        i = bisect.bisect_right(ys, s["y"] + Y_TOL) - 1
         if i < 0:
             problems.append("p%d col%d: span before first row: %r" % (page_no, c, s["text"]))
             continue
@@ -134,9 +138,15 @@ def parse_page(spans, state, problems, page_no):
     # (өргөлт нь харин 2 дахь мөртөө буусан байж болно, тиймээс c3-ыг тооцохгүй).
     merged = []
     for a in anchors:
-        if merged and not a["c2"] and not a["c4"]:
-            merged[-1]["w"].extend(a["w"])
-            merged[-1]["c3"].extend(a["c3"])
+        prev = "".join(x["text"] for x in sorted(merged[-1]["w"], key=lambda x: (round(x["y"]), x["x"]))).rstrip() if merged else ""
+        # PDF-д хоёр хэлбэртэй үгийг «着替える［2］／» гэж ／-ээр ТӨГСГӨЖ
+        # дараагийн мөрөнд үргэлжлүүлдэг — энэ бол тодорхой үргэлжлэлийн шинж.
+        cont = prev.endswith("／") or prev.endswith("/")
+        # Эсвэл үргэлжлэл мөр нь ромажи ч, утга ч ГҮЙ гарна.
+        empty = not a["c2"] and not a["c4"]
+        if merged and (cont or empty):
+            for k in ("w", "c2", "c3", "c4"):
+                merged[-1][k].extend(a[k])
         else:
             merged.append(a)
     anchors = merged

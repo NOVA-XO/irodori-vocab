@@ -447,12 +447,47 @@ function optText(it) {
   return it.hira;                                   // klisten
 }
 
+/** Зөрүүг хэмжих Левенштейн зай — ойролцоо дуудлагатайг олоход. */
+function editDist(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  let cur2 = new Array(n + 1);
+  for (let i = 1; i <= m; i++) {
+    cur2[0] = i;
+    for (let j = 1; j <= n; j++) {
+      cur2[j] = Math.min(prev[j] + 1, cur2[j - 1] + 1,
+                         prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    const t = prev; prev = cur2; cur2 = t;
+  }
+  return prev[n];
+}
+
+/** Ижил төстэй эсэхийг ЮУГААР харьцуулах вэ — уншлагаар. */
+const simKey = it => (deck === 'kana') ? (it.hira || '') : (it.kana || it.jp || '');
+
 function buildChoices() {
   const box = $('choices');
   box.innerHTML = '';
-  const src = deck === 'kana' ? pool : ALL;
   const want = optText(cur);
-  const others = shuffle(src.filter(x => x.id !== cur.id && optText(x) && optText(x) !== want)).slice(0, 3);
+
+  // 1) Сонголтууд СОНГОСОН хичээлээс л гарна — бүх 1215 үгээс биш.
+  //    Багц хэт жижиг бол л бүхэлдээ өргөтгөнө.
+  let cand = pool.filter(x => x.id !== cur.id && optText(x) && optText(x) !== want);
+  if (cand.length < 3) {
+    const all = deck === 'kana' ? KANA : ALL;
+    cand = all.filter(x => x.id !== cur.id && optText(x) && optText(x) !== want);
+  }
+
+  // 2) ОЙРОЛЦОО дуудлагатайг нь сонгоно — эс тэгвээс таахад хэтэрхий амархан.
+  //    Хамгийн ойрын 10-аас 3-ыг санамсаргүй авч, давтагдахаас сэргийлнэ.
+  const key = simKey(cur);
+  const scored = cand.map(x => ({ x: x, d: editDist(simKey(x), key) }));
+  scored.sort((a, b) => a.d - b.d);
+  const others = shuffle(scored.slice(0, 10).map(s => s.x)).slice(0, 3);
+
   const jpFace = deck === 'kana' && kmode !== 'sound';
   shuffle([cur].concat(others)).forEach(opt => {
     const b = document.createElement('button');
