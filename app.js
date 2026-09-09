@@ -152,10 +152,30 @@ function save(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* private mode */ }
 }
 
+const KEY_D = 'irodori.days.v1';
 let progress = load(KEY_P, {});
+/* Өдөр бүрийн хариултын тоо ба дараалсан өдрийн тоо. Явц (хайрцаг) удаан
+   хөдөлдөг тул ӨДӨР ТУТМЫН биелэлтийг тусад нь харуулах хэрэгтэй. */
+let days = load(KEY_D, { last: -1, streak: 0, n: 0 });
+const todayN = () => (days.last === today() ? days.n : 0);
+const streakN = () => {
+  const t = today();
+  return (days.last === t || days.last === t - 1) ? (days.streak || 0) : 0;
+};
+function tickDay() {
+  const t = today();
+  if (days.last !== t) {
+    // Өчигдөр давтсан бол цуврал үргэлжилнэ, тасарсан бол 1-ээс эхэлнэ.
+    days.streak = (days.last === t - 1) ? (days.streak || 0) + 1 : 1;
+    days.last = t; days.n = 0;
+  }
+  days.n++;
+  save(KEY_D, days);
+}
 let settings = load(KEY_S, { lessons: [1, 2, 3], ref: false, script: 'kanji', kgroups: ['gojuon'] });
 if (!settings.script) settings.script = 'kanji';   // хуучин хадгалсан тохиргоог нөхнө
 if (!settings.kgroups) settings.kgroups = ['gojuon'];
+if (!settings.goal) settings.goal = 20;
 
 /* Асуултын нүүр талд юу харуулах вэ: ханзтай хэлбэр эсвэл кана уншлага.
    Нөгөө хэлбэрийг нь хариулт дээр үзүүлнэ. Ханзгүй үг (プレゼント, あめ) дээр
@@ -171,6 +191,7 @@ function grade(id, ok) {
   p.d = today() + BOXES[p.b];
   progress[id] = p;
   save(KEY_P, progress);
+  tickDay();
 }
 
 /* ══════════════════════ 3b. Төхөөрөмж хооронд нийлүүлэх ══════════════════════
@@ -261,6 +282,7 @@ function refreshSync() {
 /* ══════════════════════ 4. Өгөгдөл ══════════════════════ */
 
 let ALL = [];                 // бүх үг
+let missed = [];              // энэ дасгалд алдсан үгс — төгсгөлд жагсаана
 let KANA = [];                // 107 кана (хирагана · катакана · авиа)
 let pool = [];                // идэвхтэй багц (үг эсвэл кана)
 
@@ -364,7 +386,8 @@ function startKana(km) {
   pool = KANA.filter(i => settings.kgroups.includes(i.group));
   if (pool.length < 4) { alert('Дор хаяж нэг бүлэг сонгоно уу.'); deck = 'vocab'; return; }
   queue = buildQueue(false);
-  done = okN = ngN = 0;
+  done = okN = ngN = 0; missed = [];
+  settings.last = { deck: 'kana', k: km }; save(KEY_S, settings);
   show('study');
   $('c-total').textContent = queue.length;
   nextCard();
@@ -377,7 +400,8 @@ function startSession(m, onlyDue) {
   mode = m;
   queue = buildQueue(!!onlyDue);
   if (!queue.length) { alert('Давтах үг алга. Шинэ хичээл сонгох эсвэл маргааш дахин үзнэ үү.'); return; }
-  done = okN = ngN = 0;
+  done = okN = ngN = 0; missed = [];
+  settings.last = { deck: 'vocab', m: m }; save(KEY_S, settings);
   show('study');
   $('c-total').textContent = queue.length;
   nextCard();
@@ -489,6 +513,7 @@ function buildChoices() {
   const others = shuffle(scored.slice(0, 10).map(s => s.x)).slice(0, 3);
 
   const jpFace = deck === 'kana' && kmode !== 'sound';
+  // ↓ давхардсангүй эсэхийг buildChoices-ийн төгсгөлд дугаарлана
   shuffle([cur].concat(others)).forEach(opt => {
     const b = document.createElement('button');
     b.textContent = optText(opt);
@@ -498,12 +523,19 @@ function buildChoices() {
       answered = true;
       const good = opt.id === cur.id;
       b.classList.add(good ? 'correct' : 'wrong');
-      if (!good) [...box.children].forEach(c => { if (c.textContent === want) c.classList.add('correct'); });
+      if (!good) {
+        [...box.children].forEach(c => { if (c.textContent === want) c.classList.add('correct'); });
+        // Доод талд наалдсан «Дараах» самбар зөв хариултыг халхалж мэднэ —
+        // намхан дэлгэц дээр харагдах болтол нь гүйлгэнэ.
+        const c = box.querySelector('.correct');
+        if (c) c.scrollIntoView({ block: 'center' });
+      }
       [...box.children].forEach(c => c.disabled = true);
       resolve(good);
     };
     box.appendChild(b);
   });
+  [...box.children].forEach((b, i) => b.dataset.k = i + 1);
 }
 
 /* ── Өргөлтийн зураглал (高低アクセント) ────────────────────────────
@@ -601,7 +633,10 @@ function resolve(ok) {
   v.textContent = ok ? '✓ Зөв' : '✗ Буруу';
   v.className = 'verdict ' + (ok ? 'ok' : 'ng');
   $('pane-next').hidden = false;
-  if (!ok) queue.push(cur);                 // алдсан үгийг мөчлөгийн төгсгөлд эргүүлж тавина
+  if (!ok) {
+    queue.push(cur);                          // алдсан үгийг мөчлөгийн төгсгөлд эргүүлж тавина
+    if (!missed.some(x => x.id === cur.id)) missed.push(cur);
+  }
   // Бусад горимд карт гармагц аль хэдийн сонсгосон тул дахин давтахгүй.
   // «Бичих»-д зөвхөн ЭНД сонсгоно — урьд нь сонсгосон бол хариулт задарна.
   if (canSpeak && mode === 'type') { $('btn-speak').hidden = false; speak(cur.kana || cur.jp); }
@@ -613,15 +648,41 @@ function updateBar() {
   $('pbar').style.width = (100 * done / Math.max(total, 1)) + '%';
 }
 
+const MODE_NAME = { flash: 'Флашкарт', choice: 'Олон сонголт',
+                    type: 'Гараар бичих', listen: 'Сонсох' };
+const KMODE_NAME = { h2k: 'ひらがな → カタカナ', k2h: 'カタカナ → ひらがな',
+                     sound: 'Кана → авиа', klisten: 'Сонсоод таах' };
+const labelOf = L => (L.deck === 'kana' ? KMODE_NAME[L.k] : MODE_NAME[L.m]) || '';
+
 function finish() {
-  show('home'); refreshHome();
   if (syncOn && syncCode) syncNow(true);      // дасгал дуусмагц чимээгүй нийлүүлнэ
-  alert('Дууслаа!  ✓ ' + okN + '   ✗ ' + ngN);
+  const tot = okN + ngN;
+  $('fin-pct').textContent = tot ? Math.round(100 * okN / tot) + '%' : '—';
+  $('fin-sum').textContent = '✓ ' + okN + '   ✗ ' + ngN;
+  const left = settings.goal - todayN();
+  $('fin-goal').textContent = left > 0
+    ? 'Өнөөдрийн зорилт хүртэл ' + left + ' хариулт үлдлээ (' + todayN() + '/' + settings.goal + ').'
+    : 'Өнөөдрийн зорилт биеллээ 🎉 (' + todayN() + '/' + settings.goal + ')';
+
+  const box = $('fin-missed'); box.innerHTML = '';
+  $('fin-h').hidden = !missed.length;
+  for (const it of missed) {
+    const face = deck === 'kana' ? (it.hira + ' ／ ' + it.kata) : it.jp;
+    const sub = deck === 'kana' ? (it.mn || '')
+      : ((it.kana && it.kana !== it.jp ? it.kana + ' · ' : '') + (it.mn || ''));
+    const d = document.createElement('div');
+    d.className = 'ms';
+    d.innerHTML = '<b class="jp">' + esc(face) + '</b><span>' + esc(sub) + '</span>';
+    box.appendChild(d);
+  }
+  $('fin-retry').hidden = !missed.length;
+  refreshHome();
+  show('done');
 }
 
 /* ══════════════════════ 7. Дэлгэц солих ба нүүр ══════════════════════ */
 
-const SCREENS = ['home', 'vocab', 'kana', 'study', 'stats', 'profile'];
+const SCREENS = ['home', 'vocab', 'kana', 'study', 'done', 'stats', 'profile'];
 let screen = 'home';
 
 const ICON_MENU = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
@@ -664,6 +725,20 @@ function refreshHome() {
     box.appendChild(b);
   }
   $('inc-ref').checked = settings.ref;
+  const st = $('streak-n'); if (st) st.textContent = streakN();
+  const gd = $('goal-done'); if (gd) gd.textContent = todayN();
+  const gn = $('goal-n'); if (gn) gn.textContent = settings.goal;
+  const gb = $('goal-bar');
+  if (gb) gb.style.width = Math.min(100, 100 * todayN() / settings.goal) + '%';
+  const bc = $('btn-continue');
+  if (bc) {
+    // Өдөр бүр ижил 3 алхмыг давтуулахгүйн тулд сүүлийн дасгалыг санана.
+    const L = settings.last;
+    bc.hidden = !L || !labelOf(L);
+    if (L && labelOf(L)) bc.textContent = 'Үргэлжлүүлэх · ' + labelOf(L);
+  }
+  document.querySelectorAll('#goal-pick button').forEach(b =>
+    b.setAttribute('aria-pressed', +b.dataset.goal === settings.goal));
   const nv = $('n-vocab'); if (nv) nv.textContent = ALL.length + ' үг';
   const nk = $('n-kana'); if (nk) nk.textContent = KANA.length + ' кана';
   const vh = $('vocab-hint');
@@ -759,6 +834,46 @@ $('t-check').onclick = () => {
   resolve(checkTyped($('t-input').value, cur));
 };
 $('btn-next').onclick = nextCard;
+
+$('btn-continue').onclick = () => {
+  const L = settings.last; if (!L) return;
+  L.deck === 'kana' ? startKana(L.k) : startSession(L.m, false);
+};
+$('fin-retry').onclick = () => {
+  if (!missed.length) return;
+  queue = shuffle(missed.slice());
+  missed = []; done = okN = ngN = 0;
+  show('study'); $('c-total').textContent = queue.length; nextCard();
+};
+$('fin-again').onclick = () => {
+  const L = settings.last;
+  (L && L.deck === 'kana') ? startKana(L.k) : startSession((L && L.m) || 'choice', false);
+};
+$('fin-home').onclick = () => go('home');
+document.querySelectorAll('#goal-pick button').forEach(b =>
+  b.onclick = () => { settings.goal = +b.dataset.goal; save(KEY_S, settings); refreshHome(); });
+
+/* Компьютер дээр гараас хариулах: 1–4 сонголт, Space хариу харах, Enter дараах.
+   Бичих горимд оролт идэвхтэй тул тэнд оролцохгүй. */
+document.addEventListener('keydown', e => {
+  if (screen !== 'study' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  const k = e.key;
+  if (!$('pane-next').hidden) {
+    if (k === 'Enter' || k === ' ') { e.preventDefault(); $('btn-next').click(); }
+    return;
+  }
+  if (!$('pane-choice').hidden && k >= '1' && k <= '4') {
+    const b = $('choices').children[+k - 1];
+    if (b) { e.preventDefault(); b.click(); }
+    return;
+  }
+  if (!$('pane-flash').hidden) {
+    if (!$('f-show').hidden && (k === ' ' || k === 'Enter')) { e.preventDefault(); $('f-show').click(); }
+    else if (!$('f-judge').hidden && (k === '1' || k === 'ArrowLeft')) $('f-judge').children[0].click();
+    else if (!$('f-judge').hidden && (k === '2' || k === 'ArrowRight')) $('f-judge').children[1].click();
+  }
+});
 $('btn-speak').onclick = () => speak(cur.kana || cur.jp);
 
 /* Дуу гарахгүй байвал ЯАГААДЫГ нь харуулна — таамаглахын оронд утас өөрөө

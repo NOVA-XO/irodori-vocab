@@ -8,7 +8,7 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="app.css?v=2026-09-10g">
+<link rel="stylesheet" href="app.css?v=2026-09-10h">
 </head>
 <body>
 
@@ -34,8 +34,19 @@
 
 <!-- ═══════════════════ НҮҮР ═══════════════════ -->
 <section id="home" class="screen">
+  <div class="today">
+    <div class="tstat"><b id="streak-n">0</b><span>өдөр дараалан</span></div>
+    <div class="tgoal">
+      <div class="tg-head"><span>Өнөөдрийн зорилт</span>
+        <b><span id="goal-done">0</span>/<span id="goal-n">20</span></b></div>
+      <div class="track"><span class="fill" id="goal-bar"></span></div>
+    </div>
+  </div>
+
+  <button id="btn-continue" class="primary big wide" hidden>Үргэлжлүүлэх</button>
+
   <div id="due-card" class="due">
-    <div class="due-n" id="due-n">—</div>
+    <div class="due-n" id="due-n">…</div>
     <div class="due-t">өнөөдөр давтах үг</div>
     <button id="btn-review" class="primary big">Давталт эхлүүлэх</button>
   </div>
@@ -44,12 +55,12 @@
     <button class="bigcard" data-go="vocab">
       <span class="bc-jp jp">単語</span>
       <b>Үг цээжлэх</b>
-      <span>Irodori 入門-ийн шинэ үгс · <i id="n-vocab">—</i></span>
+      <span>Irodori 入門-ийн шинэ үгс · <i id="n-vocab">…</i></span>
     </button>
     <button class="bigcard" data-go="kana">
       <span class="bc-jp jp">かな</span>
       <b>Кана үсэг цээжлэх</b>
-      <span>Хирагана ба катакана · <i id="n-kana">—</i></span>
+      <span>Хирагана ба катакана · <i id="n-kana">…</i></span>
     </button>
   </div>
 
@@ -158,6 +169,24 @@
   </div>
 </section>
 
+<!-- ═══════════════════ ДҮГНЭЛТ ═══════════════════ -->
+<section id="done" class="screen" hidden>
+  <div class="fin">
+    <div class="fin-pct" id="fin-pct">—</div>
+    <div class="fin-sub" id="fin-sum"></div>
+  </div>
+  <p class="hint" id="fin-goal"></p>
+
+  <h2 id="fin-h" hidden>Алдсан үгс</h2>
+  <div id="fin-missed" class="misslist"></div>
+
+  <div class="row2">
+    <button id="fin-retry" class="ghost big" hidden>Алдсаныг давтах</button>
+    <button id="fin-again" class="primary big">Дахин үзэх</button>
+  </div>
+  <div class="row"><button id="fin-home" class="ghost sm">Нүүр</button></div>
+</section>
+
 <!-- ═══════════════════ ЯВЦ ═══════════════════ -->
 <section id="stats" class="screen" hidden>
   <h2>Явц</h2>
@@ -191,6 +220,16 @@
   <p class="hint" id="sync-none" hidden>Синк тохируулаагүй байна — явц зөвхөн
      энэ төхөөрөмжид хадгалагдана. Доорх нөөцлөх аргаар зөөж болно.</p>
 
+  <h2>Өдрийн зорилт</h2>
+  <p class="hint">Өдөрт хэдэн хариулт өгөхөөр төлөвлөж байна вэ. Нүүрэн дээрх
+     зураас үүнээс хамаарна.</p>
+  <div class="row" id="goal-pick">
+    <button data-goal="10" class="ghost sm">10</button>
+    <button data-goal="20" class="ghost sm">20</button>
+    <button data-goal="30" class="ghost sm">30</button>
+    <button data-goal="50" class="ghost sm">50</button>
+  </div>
+
   <h2>Нөөц</h2>
   <div class="row">
     <button id="btn-export" class="ghost sm">Явцыг хадгалах (.json)</button>
@@ -209,7 +248,7 @@
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10g"></script>
-<script src="app.js?v=2026-09-10g"></script>
+<script src="sync-config.js?v=2026-09-10h"></script>
+<script src="app.js?v=2026-09-10h"></script>
 </body>
 </html>

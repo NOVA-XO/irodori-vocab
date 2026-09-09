@@ -233,6 +233,37 @@ button:disabled{opacity:.5; cursor:default}
 .verdict{text-align:center; font-size:17px; font-weight:600}
 .verdict.ok{color:var(--ok)} .verdict.ng{color:var(--ng)}
 
+/* ---------- өнөөдрийн явц ба дүгнэлт ---------- */
+.today{display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:center;
+       background:var(--card); border:1px solid var(--line); border-radius:12px;
+       padding:12px 14px; margin-bottom:10px}
+.tstat{text-align:center; min-width:64px}
+.tstat b{display:block; font-size:26px; line-height:1.1; color:var(--accent)}
+.tstat span{font-size:10.5px; color:var(--ink-2)}
+.tgoal .tg-head{display:flex; justify-content:space-between; align-items:baseline;
+                font-size:12.5px; color:var(--ink-2); margin-bottom:6px}
+.tgoal .tg-head b{color:var(--ink); font-variant-numeric:tabular-nums}
+.tgoal .track{height:8px; background:var(--line); border-radius:4px; overflow:hidden}
+.tgoal .fill{display:block; height:100%; width:0; background:var(--accent);
+             transition:width .25s}
+.wide{width:100%; margin-bottom:10px}
+
+.fin{background:var(--card); border:1px solid var(--line); border-radius:12px;
+     padding:22px 14px; text-align:center; margin-bottom:4px}
+.fin-pct{font-size:48px; font-weight:700; line-height:1; color:var(--accent)}
+.fin-sub{margin-top:8px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.misslist{display:grid; gap:6px; margin-bottom:14px}
+.ms{display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:baseline;
+    background:var(--card); border:1px solid var(--line); border-radius:9px;
+    padding:9px 12px}
+.ms b{font-size:19px}
+.ms span{font-size:13px; color:var(--ink-2)}
+
+/* Хариулсны дараа «Дараах» товч доод ирмэгт наалдана — сонголтын доор
+   гарч ирээд бүх агуулгыг доош түлхдэг байсныг зогсооно. */
+#pane-next{position:sticky; bottom:0; z-index:5; background:var(--bg);
+           padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
+
 /* ---------- явц ---------- */
 .statsum{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
 .statsum div{background:var(--card); border:1px solid var(--line); border-radius:10px;
@@ -262,4 +293,13 @@ button:disabled{opacity:.5; cursor:default}
 @media (max-width:380px){
   .lessons{grid-template-columns:repeat(5,1fr)}
   .prompt{font-size:34px}
+}
+
+@media (hover:hover) and (pointer:fine){
+  .choices button::before{
+    content:attr(data-k); display:inline-block; min-width:17px; margin-right:9px;
+    font-size:11px; line-height:15px; color:var(--ink-2);
+    border:1px solid var(--line); border-radius:4px; text-align:center;
+    vertical-align:middle;
+  }
 }
