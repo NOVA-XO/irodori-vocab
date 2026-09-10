@@ -1,4 +1,4 @@
-/* Үгний Шорон — үндсэн бүтэц ба 蒼 ЦЭНХЭР загвар
+/* Мартчихлаа — үндсэн бүтэц ба 蒼 ЦЭНХЭР загвар
  *
  * Энэ файл нь БҮТЭЦ (байрлал, хэмжээ, хөдөлгөөн) ба анхдагч **цэнхэр**
  * загварыг агуулна. Бусад загвар (`themes.css`) нь `html[data-theme=…]`
@@ -74,8 +74,6 @@ body{
   flex:1; text-align:center; font-family:var(--disp); font-weight:400;
   font-size:16px; letter-spacing:.14em; text-transform:uppercase;
 }
-.bar .title .skull{font-size:12px; vertical-align:2px; opacity:.8;
-                   letter-spacing:0; margin-left:2px}
 .bar .title small{color:var(--ink-2); font-weight:400; letter-spacing:.04em}
 .bar .icon{
   background:none; border:0; color:var(--ink-2); padding:6px 8px;
