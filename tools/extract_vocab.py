@@ -81,6 +81,8 @@ JP_STRICT = re.compile(chr(91) + chr(92) + 'u3040-' + chr(92) + 'u30FF' + chr(92
 LESSON_RE = re.compile(r"\bL(\d+)\s*-\s*(\d+)\b")
 CTRL = re.compile(r"[\x00-\x1f\x7f]")
 VERB_GROUP = re.compile(r"［([123])］")
+# Зөвхөн тоо, цэг, зайнаас тогтсон текст — бүлгийн ДУГААРЛАЛТ.
+NUM_ONLY = re.compile(r"^[0-9０-９.．\s]+$")
 
 
 def spans_of(page):
@@ -148,8 +150,24 @@ def parse_page(spans, state, problems, page_no):
         else:
             anchors.append({"y": s["y"], "last_y": s["y"], "w": [s]})
 
-    heads = [(s["y"], s["text"]) for s in body
-             if col_of(s) == 1 and s["size"] >= CFG["HEAD_SIZE"]]
+    # Бүлгийн гарчиг нь PDF-д хэд хэдэн span болж хуваагддаг
+    # («日» + «本に来» + «てどのぐらいですか？») тул y-ээр нэгтгэж, x-ээр
+    # эрэмбэлж БҮТНЭЭР нь холбоно. Эс тэгвэл section нь зөвхөн эхний
+    # хэсэг («日») болж хоцордог.
+    # Хажууд нь «1.» «2.» гэсэн ДУГААР мөн гарчгийн хэмжээтэй байдаг —
+    # түүнийг өнгөөр биш ТЕКСТЭЭР нь хасна: өнгө нь ном тус бүрд өөр
+    # (16775331 / 16776405) боловч зөвхөн тоо байх нь хаана ч адил.
+    head_spans = [s for s in body
+                  if col_of(s) == 1 and s["size"] >= CFG["HEAD_SIZE"]
+                  and not NUM_ONLY.match(s["text"].strip())]
+    hgroups = {}
+    for s in head_spans:
+        hgroups.setdefault(round(s["y"] / 4.0), []).append(s)
+    heads = []
+    for k in sorted(hgroups):
+        g = sorted(hgroups[k], key=lambda s: s["x"])
+        heads.append((min(s["y"] for s in g),
+                      clean("".join(s["text"] for s in g))))
 
     ys = [a["y"] for a in anchors]
     _ = ys
