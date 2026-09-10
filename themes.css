@@ -8,7 +8,7 @@
  *   space    宙  сансар — од, мананцар, гүн хөх
  *   mech     機  механик — ган, сараалж, аюулгүйн улбар шар
  *   anime    漫  аниме — цагаан, зузаан хар хүрээ, поп ягаан, растер цэг
- *   elec     電  цахилгаан — хар, хэлхээний зураас, гэрэлтэх фирүүз
+ *   rain     雨  бороо — үүлэрхэг саарал, норсон шил, урсах дусал
  *
  * Загвар бүр НЭГ өнгөний схемд амлалт өгнө. Тус бүрийг цайвар/харанхуй
  * болгож хоёр дахин үржүүлбэл арван палитр болж, аль нь ч сайн болохгүй.
@@ -25,12 +25,14 @@
    Гүн хөх хар дээр од. Хайрцгууд нь хөвж буй хавтан шиг — зөөлөн
    булан, гүн сүүдэр, цайвар хөх өнгө. */
 :root[data-theme="space"]{
-  --bg:#05070f; --card:#0d1220; --paper:#121a2c;
-  --ink:#e7ecf7; --ink-2:#93a0bd; --ink-3:#5c6885;
-  --line:#1a2338; --line-2:#2b3856;
-  --accent:#8fb8ff; --seal:#8fb8ff;
-  --ok:#6ee7b7; --ng:#fb7185;
-  --ok-bg:#0e2b24; --ng-bg:#2b1520;
+  /* Ягаан руу хэлбийсэн хар. Цэвэр хөх-хар нь хүйтэн, «мананцар»
+     мэдрэмж өгөхгүй. */
+  --bg:#07040f; --card:#130e26; --paper:#1b1438;
+  --ink:#ece9f7; --ink-2:#a99fc9; --ink-3:#6d6494;
+  --line:#241d40; --line-2:#3b3163;
+  --accent:#b79bff; --seal:#b79bff;
+  --ok:#5eead4; --ng:#fb7185;
+  --ok-bg:#0d2b2b; --ng-bg:#2b1520;
 
   --r:12px;
   --box-bg:var(--card); --box-bd:1px solid var(--line); --box-r:16px;
@@ -41,25 +43,45 @@
   --sel-bg:var(--accent); --sel-fg:#06101f;
   --h2-tt:none; --h2-ls:.03em; --h2-bd:0;
   --track-h:8px; --grain:0;
-  --fx1:#2a1a5e; --fx2:#123a6b; --fx3:#0d4c5c; --fx-op:.5;
+  --fx-op:0;              /* хөвөгч бөмбөлөг биш, доорх мананцар */
 }
 /* Одон орон. Гурван давхарга өөр өөр хурдаар хөвж, гүн үүсгэнэ. */
 :root[data-theme="space"] #bg{
   background-image:
     radial-gradient(circle at 18% 26%, rgba(255,255,255,.7) 0 1px, transparent 1.4px),
     radial-gradient(circle at 68% 61%, rgba(255,255,255,.5) 0 1px, transparent 1.4px),
-    radial-gradient(circle at 42% 84%, rgba(190,215,255,.6) 0 1px, transparent 1.4px);
+    radial-gradient(circle at 42% 84%, rgba(214,205,255,.6) 0 1px, transparent 1.4px);
   background-size:170px 170px, 250px 250px, 330px 330px;
   animation:stars 220s linear infinite;
 }
 @keyframes stars{to{background-position:170px 340px, -250px 500px, 330px -660px}}
+/* Мананцар: ягаан · магента · цэнхэр · фирүүз ХОЛИЛДСОН.
+   Гурван бүдгэрсэн бөмбөлгийн оронд НЭГ давхарга — олон радиал
+   градиент нэг элемент дээр. Утсан дээр хямд, өнгө нь баян. */
+:root[data-theme="space"] #bg i{display:none}
+:root[data-theme="space"] #bg::after{
+  content:''; position:absolute; inset:-22%;
+  background:
+    radial-gradient(42% 36% at 22% 26%, rgba(139,92,246,.34), transparent 70%),
+    radial-gradient(38% 30% at 79% 18%, rgba(236,72,153,.22), transparent 70%),
+    radial-gradient(46% 40% at 62% 76%, rgba(34,211,238,.18), transparent 70%),
+    radial-gradient(32% 28% at 10% 80%, rgba(99,102,241,.24), transparent 70%),
+    radial-gradient(30% 24% at 88% 58%, rgba(251,146,60,.10), transparent 70%);
+  filter:blur(26px);
+  animation:nebula 80s ease-in-out infinite alternate;
+}
+@keyframes nebula{to{transform:translate3d(4%,-3%,0) scale(1.14)}}
 :root[data-theme="space"] h2{font-size:16px; font-weight:600; color:var(--ink);
   margin:30px 0 12px; padding-bottom:0}
 :root[data-theme="space"] .step{text-transform:none; letter-spacing:.02em;
   color:var(--ink-2); font-size:12px}
-:root[data-theme="space"] .due-n{text-shadow:0 0 28px rgba(143,184,255,.45)}
-:root[data-theme="space"] .primary{box-shadow:0 0 28px rgba(143,184,255,.3);
-  font-weight:600; letter-spacing:0}
+:root[data-theme="space"] .due-n{text-shadow:0 0 30px rgba(183,155,255,.5)}
+/* Гол товч нь мананцрын өнгийг давтана — ягаанаас фирүүз рүү. */
+:root[data-theme="space"] .primary{
+  background:linear-gradient(115deg,#c4a6ff,#8fb8ff 55%,#5eead4);
+  color:#0b0718; box-shadow:0 0 30px rgba(160,130,255,.34);
+  font-weight:600; letter-spacing:0;
+}
 :root[data-theme="space"] .bigcards{grid-template-columns:1fr 1fr}
 :root[data-theme="space"] .bigcard:first-child,
 :root[data-theme="space"] .bigcard.quiet{grid-column:1 / -1}
@@ -69,7 +91,7 @@
 :root[data-theme="space"] .statsum div + div{border-left:0}
 :root[data-theme="space"] .tgoal .track,
 :root[data-theme="space"] .statles .track{border-radius:999px}
-:root[data-theme="space"] .hero .due{background:rgba(13,18,32,.66);
+:root[data-theme="space"] .hero .due{background:rgba(19,14,38,.62);
   -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px)}
 :root[data-theme="space"] .seal{display:none}
 
@@ -178,64 +200,69 @@
   -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
 :root[data-theme="anime"] .ring3d .c{border:2px solid var(--ink); opacity:.4}
 
-/* ══ 電 elec ═══════════════════════════════════════════════════════
-   Хэвлэмэл хэлхээ: хар суурь, нарийн гэрэлтэх зам, фирүүз өнгө.
-   Сансараас ялгаатай нь — зөөлөн мананцар биш, ХАТУУ шугам. */
-:root[data-theme="elec"]{
-  --bg:#04070a; --card:#0a1014; --paper:#0e1a1f;
-  --ink:#d8f5ee; --ink-2:#7fa89f; --ink-3:#4d6b66;
-  --line:#10232a; --line-2:#1c3d47;
-  --accent:#35f0c0; --seal:#35f0c0;
-  --ok:#7cf07c; --ng:#ff5d5d;
-  --ok-bg:#08251a; --ng-bg:#2a1113;
+/* ══ 雨 rain ═══════════════════════════════════════════════════════
+   Үүлэрхэг өдөр, цонхон дээрх бороо. Хүйтэн саарал-хөх, норсон
+   шилэн хавтан (`backdrop-filter`), ташуу урсах дусал.
 
-  --disp:var(--mono);
-  --jpd:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",
-        sans-serif;
+   Цайвар байхаар зориуд сонгов: тав дахь загвар нь бас харанхуй байвал
+   бүлэг тэнцвэргүй болно (宙 · 機 хоёр аль хэдийн харанхуй), мөн
+   борооны саарал нь удаан хугацаанд уншихад нүдэнд зөөлөн. */
+:root[data-theme="rain"]{
+  --bg:#dbe3e9; --card:#f2f6f9; --paper:#ffffff;
+  --ink:#1e2a33; --ink-2:#5c6b76; --ink-3:#8fa0ac;
+  --line:#c4d0d8; --line-2:#a8b7c2;
+  --accent:#2f7c8c; --seal:#2f7c8c;
+  --ok:#2f7d5b; --ng:#b34a4a;
+  --ok-bg:#e2f0e9; --ng-bg:#f6e5e5;
 
-  --r:2px;
-  --box-bg:var(--card); --box-bd:1px solid var(--line-2); --box-r:4px;
-  --box-sep:0; --box-pad:15px 14px;
-  --list-gap:8px; --list-top:0;
-  --elev:0 0 18px rgba(53,240,192,.09);
-  --btn-bg:var(--accent); --btn-fg:#04120e;
-  --sel-bg:var(--accent); --sel-fg:#04120e;
-  --h2-tt:uppercase; --h2-ls:.18em; --h2-bd:1px solid var(--line-2);
-  --track-h:6px; --grain:0;
-  --fx1:#0b4a3c; --fx2:#0a3a4a; --fx3:#123f2e; --fx-op:.4;
+  --r:10px;
+  --box-bg:rgba(255,255,255,.6);
+  --box-bd:1px solid rgba(255,255,255,.85);
+  --box-r:14px; --box-sep:0; --box-pad:16px 15px;
+  --list-gap:9px; --list-top:0;
+  --elev:0 6px 20px rgba(30,42,51,.1);
+  --btn-bg:var(--accent); --btn-fg:#ffffff;
+  --sel-bg:var(--accent); --sel-fg:#ffffff;
+  --h2-tt:uppercase; --h2-ls:.12em; --h2-bd:0;
+  --track-h:8px; --grain:.03;
+  --fx1:#b3c7d3; --fx2:#c6d4dc; --fx3:#9fb7c6; --fx-op:.6;
 }
-:root[data-theme="elec"] #bg{
+/* Хоёр давхарга дусал: ойрынх нь цайвар, хурдан; холынх нь бүдэг, удаан.
+   Хоёулаа НЭГ элемент дээр тул `background-position`-ыг хоёр утгаар
+   өгч параллакс гаргана. */
+:root[data-theme="rain"] #bg{
   background-image:
-    repeating-linear-gradient(0deg, rgba(53,240,192,.045) 0 1px, transparent 1px 36px),
-    repeating-linear-gradient(90deg, rgba(53,240,192,.045) 0 1px, transparent 1px 36px);
+    repeating-linear-gradient(101deg, rgba(255,255,255,.38) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(104deg, rgba(90,125,145,.13) 0 1px, transparent 1px 7px);
+  animation:rainfall 1.5s linear infinite;
 }
-/* Хэлхээгээр гүйх импульс. */
-:root[data-theme="elec"] #bg::after{
-  content:''; position:absolute; left:0; right:0; height:26vh;
-  background:linear-gradient(180deg,transparent,rgba(53,240,192,.055),transparent);
-  animation:pulse 7s linear infinite;
+@keyframes rainfall{to{background-position:-58px 260px, -96px 420px}}
+/* Норсон шил — зөвхөн ТОМ гадаргуу дээр. Бүх мөрөнд тавивал
+   `backdrop-filter` олон давхарга болж утсыг ачаална. */
+:root[data-theme="rain"] .hero .due,
+:root[data-theme="rain"] .card,
+:root[data-theme="rain"] .today,
+:root[data-theme="rain"] .fin,
+:root[data-theme="rain"] .bigcard{
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
 }
-@keyframes pulse{from{top:-26vh} to{top:100%}}
-:root[data-theme="elec"] .bar .title{font-family:var(--mono); letter-spacing:.2em}
-:root[data-theme="elec"] .due-n,
-:root[data-theme="elec"] .fin-pct{color:var(--accent);
-  text-shadow:0 0 26px rgba(53,240,192,.5)}
-:root[data-theme="elec"] .primary{box-shadow:0 0 22px rgba(53,240,192,.35);
-  font-weight:700; letter-spacing:.1em; text-transform:uppercase}
-:root[data-theme="elec"] .lessons button[aria-pressed="true"]{
-  box-shadow:0 0 14px rgba(53,240,192,.45)}
-:root[data-theme="elec"] .statsum div + div{border-left:0}
-:root[data-theme="elec"] .hero .due{background:rgba(10,16,20,.72);
-  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
-:root[data-theme="elec"] .seal{display:none}
+:root[data-theme="rain"] h2{color:var(--ink-2)}
+:root[data-theme="rain"] .step{color:var(--ink-3)}
+:root[data-theme="rain"] .due-n,
+:root[data-theme="rain"] .fin-pct{color:var(--accent)}
+:root[data-theme="rain"] .statsum div + div{border-left:0}
+:root[data-theme="rain"] .tgoal .track,
+:root[data-theme="rain"] .statles .track{border-radius:999px}
+:root[data-theme="rain"] .ring3d .c{background:rgba(255,255,255,.55); opacity:.5}
+:root[data-theme="rain"] .seal{display:none}
 
 /* 正/誤 нь minimal ба 機-д тохирно. Бусдад энгийн тэмдэг. */
 :root[data-theme="space"] .choices button.correct::after,
 :root[data-theme="anime"] .choices button.correct::after,
-:root[data-theme="elec"] .choices button.correct::after{content:'✓'}
+:root[data-theme="rain"] .choices button.correct::after{content:'✓'}
 :root[data-theme="space"] .choices button.wrong::after,
 :root[data-theme="anime"] .choices button.wrong::after,
-:root[data-theme="elec"] .choices button.wrong::after{content:'✕'}
+:root[data-theme="rain"] .choices button.wrong::after{content:'✕'}
 
 /* ── Загвар сонгох жагсаалт ──────────────────────────────────────── */
 .thlist{display:grid; gap:8px; margin-top:6px}
