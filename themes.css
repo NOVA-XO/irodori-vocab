@@ -1,10 +1,10 @@
 /* Загварууд (theme).
  *
- * `app.css` нь БҮТЭЦ ба анхдагч **minimal** загварыг агуулна. Энэ файл
+ * `app.css` нь БҮТЭЦ ба анхдагч **цэнхэр** загварыг агуулна. Энэ файл
  * нь `html[data-theme=…]` дээр ЗӨВХӨН токенуудыг дарж бичнэ — марк-ап ч,
  * байрлал ч давхардахгүй. Тиймээс шинэ загвар нэмэх нь ~40 мөр.
  *
- *   minimal  ─  цагаан, хайрцаггүй, өнгөгүй. Анхдагч.
+ *   blue     蒼  цэнхэр — гүн ус, удаан урсгал. Анхдагч.
  *   space    宙  сансар — од, мананцар, гүн хөх
  *   mech     機  механик — ган, сараалж, аюулгүйн улбар шар
  *   anime    漫  аниме — цагаан, зузаан хар хүрээ, поп ягаан, растер цэг
@@ -14,12 +14,53 @@
  * болгож хоёр дахин үржүүлбэл арван палитр болж, аль нь ч сайн болохгүй.
  */
 
-/* ── minimal (албадан) ────────────────────────────────────────────
-   `:root`-ын анхдагч утга нь өөрөө minimal тул энд нэмэх зүйл алга. */
-:root[data-theme="minimal"]{ --grain:0 }
-/* Хөвөгч хэлбэрүүд minimal-д хэрэггүй. `--fx-op:0` нь харагдахгүй
-   болгоно ч зурагдсаар байдаг — бүрэн устгах нь зөв. */
-:root[data-theme="minimal"] #bg{display:none}
+/* ── 蒼 цэнхэр (анхдагч) ──────────────────────────────────────────
+   `:root`-ын анхдагч утга нь өөрөө цэнхэр тул энд зөвхөн ДЭВСГЭР. */
+:root[data-theme="blue"]{ --grain:0 }
+/* Гүн ус: том, удаан эргэлдэх урсгал. Хоёр өөр давтамж давхарлаж,
+   гөлгөр градиентээс зайлсхийнэ. */
+:root[data-theme="blue"] #bg,
+:root:not([data-theme]) #bg{
+  background-color:#061523;
+  background-image:radial-gradient(120% 90% at 50% 0%,
+    rgba(37,99,140,.35), transparent 62%);
+}
+:root[data-theme="blue"] #bg i:nth-child(1),
+:root:not([data-theme]) #bg i:nth-child(1){
+  display:block; border-radius:0; filter:none; opacity:.5;
+  width:150vmax; height:110vmax; left:-30vmax; top:-26vmax;
+  background:#1d6f9e; mix-blend-mode:screen;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.004%200.009%27%20numOctaves%3D%275%27%20seed%3D%275%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.0%27%20amplitude%3D%271.5%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.004%200.009%27%20numOctaves%3D%275%27%20seed%3D%275%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.0%27%20amplitude%3D%271.5%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat; animation:wave1 130s ease-in-out infinite alternate;
+}
+:root[data-theme="blue"] #bg i:nth-child(2),
+:root:not([data-theme]) #bg i:nth-child(2){
+  display:block; border-radius:0; filter:none; opacity:.34;
+  width:140vmax; height:100vmax; right:-32vmax; bottom:-30vmax;
+  background:#12897f; mix-blend-mode:screen;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.008%200.003%27%20numOctaves%3D%275%27%20seed%3D%2761%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.2%27%20amplitude%3D%271.4%27%20offset%3D%27-0.13%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.008%200.003%27%20numOctaves%3D%275%27%20seed%3D%2761%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.2%27%20amplitude%3D%271.4%27%20offset%3D%27-0.13%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat; animation:wave2 170s ease-in-out infinite alternate;
+}
+:root[data-theme="blue"] #bg i:nth-child(3),
+:root:not([data-theme]) #bg i:nth-child(3){display:none}
+@keyframes wave1{to{transform:translate3d(3vmax,2vmax,0) scale(1.12)}}
+@keyframes wave2{to{transform:translate3d(-3vmax,-2vmax,0) scale(1.1)}}
+:root[data-theme="blue"] #bg::after,
+:root:not([data-theme]) #bg::after{
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(130% 90% at 50% 30%,
+    transparent 40%, rgba(2,9,16,.55) 80%, rgba(1,6,11,.85) 100%);
+}
+:root[data-theme="blue"] .statsum div + div{border-left:0}
+:root[data-theme="blue"] .tgoal .track,
+:root[data-theme="blue"] .statles .track{border-radius:999px}
+:root[data-theme="blue"] .hero .due{background:rgba(14,37,54,.68);
+  -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px)}
+:root[data-theme="blue"] .due-n,
+:root[data-theme="blue"] .fin-pct{color:var(--accent)}
+:root[data-theme="blue"] .seal{display:none}
 
 /* ══ 宙 space ══════════════════════════════════════════════════════
    Гүн хөх хар дээр од. Хайрцгууд нь хөвж буй хавтан шиг — зөөлөн
@@ -189,7 +230,26 @@
     repeating-linear-gradient(90deg, rgba(255,255,255,.028) 0 1px, transparent 1px 42px),
     repeating-linear-gradient(45deg, rgba(255,140,26,.022) 0 7px, transparent 7px 14px);
 }
-:root[data-theme="mech"] #bg i{display:none}
+/* Үрсэн ган: хэвтээ СУНГАСАН шуугиан. Ганцхан тор нь хэт цэвэрхэн,
+   «CAD зураг» мэт харагддаг — металл нь үргэлж зураастай. */
+:root[data-theme="mech"] #bg i:nth-child(1){
+  display:block; inset:0; width:100%; height:100%; left:0; top:0;
+  border-radius:0; filter:none; opacity:.26; animation:none;
+  background:#9aa3af; mix-blend-mode:overlay;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27600%27%20height%3D%27600%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.85%27%20numOctaves%3D%273%27%20seed%3D%2713%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.4%27%20amplitude%3D%271.3%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27600%27%20height%3D%27600%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27600%27%20height%3D%27600%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.85%27%20numOctaves%3D%273%27%20seed%3D%2713%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.4%27%20amplitude%3D%271.3%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27600%27%20height%3D%27600%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:cover; mask-size:cover;
+}
+/* Зэв, тос — цөөн газар бөөгнөрсөн бохирдол. */
+:root[data-theme="mech"] #bg i:nth-child(2){
+  display:block; border-radius:0; filter:none; opacity:.22; animation:none;
+  width:120vmax; height:90vmax; right:-24vmax; top:-14vmax;
+  background:#8a4a12; mix-blend-mode:screen;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.005%200.007%27%20numOctaves%3D%275%27%20seed%3D%2771%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%274.0%27%20amplitude%3D%271.6%27%20offset%3D%27-0.2%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.005%200.007%27%20numOctaves%3D%275%27%20seed%3D%2771%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%274.0%27%20amplitude%3D%271.6%27%20offset%3D%27-0.2%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+}
+:root[data-theme="mech"] #bg i:nth-child(3){display:none}
 :root[data-theme="mech"] h2::before{content:'// '; color:var(--accent)}
 :root[data-theme="mech"] .bar{border-bottom-width:2px}
 :root[data-theme="mech"] .bar .title{letter-spacing:.24em; font-family:var(--mono)}
@@ -229,7 +289,18 @@
   background-image:radial-gradient(circle, rgba(23,23,26,.09) 0 1.5px, transparent 1.7px);
   background-size:13px 13px;
 }
-:root[data-theme="anime"] #bg i{display:none}
+/* Цаасны ширхэг. Растер цэг нь тодорхой хэвээр — манга дээр тэр нь
+   ЗОРИУД жигд байдаг — харин цаас нь хэзээ ч цэвэр гөлгөр байдаггүй. */
+:root[data-theme="anime"] #bg i:nth-child(1){
+  display:block; inset:0; width:100%; height:100%; left:0; top:0;
+  border-radius:0; filter:none; opacity:.22; animation:none;
+  background:#8b8578; mix-blend-mode:multiply;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27420%27%20height%3D%27420%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%271.1%27%20numOctaves%3D%273%27%20seed%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%271.4%27%20amplitude%3D%271.0%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27420%27%20height%3D%27420%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27420%27%20height%3D%27420%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%271.1%27%20numOctaves%3D%273%27%20seed%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%271.4%27%20amplitude%3D%271.0%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27420%27%20height%3D%27420%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:420px 420px; mask-size:420px 420px;
+}
+:root[data-theme="anime"] #bg i:nth-child(2),
+:root[data-theme="anime"] #bg i:nth-child(3){display:none}
 :root[data-theme="anime"] #bg::after{
   content:''; position:absolute; inset:-30%;
   background:repeating-conic-gradient(from 0deg at 78% 12%,
@@ -289,13 +360,42 @@
 /* Хоёр давхарга дусал: ойрынх нь цайвар, хурдан; холынх нь бүдэг, удаан.
    Хоёулаа НЭГ элемент дээр тул `background-position`-ыг хоёр утгаар
    өгч параллакс гаргана. */
+/* Дусал нь ЖИГД БУС байх ёстой. Гурван зэрэгцээ градиент нь тэгш
+   зайтай тул «зураастай хальс» мэт харагдана — тиймээс:
+     · гурван давхарга, өөр өнцөг, өөр зай, өөр хурд (параллакс)
+     · дээр нь шилэн дээрх ДУСАЛ (өндөр давтамжтай фрактал толбо)
+   Бороо нь нүдэнд ойрхон учир хөдөлгөөн нь хурдан байх ёстой. */
 :root[data-theme="rain"] #bg{
   background-image:
-    repeating-linear-gradient(101deg, rgba(255,255,255,.38) 0 1px, transparent 1px 12px),
-    repeating-linear-gradient(104deg, rgba(90,125,145,.13) 0 1px, transparent 1px 7px);
-  animation:rainfall 1.5s linear infinite;
+    repeating-linear-gradient(99deg, rgba(255,255,255,.30) 0 1px, transparent 1px 17px),
+    repeating-linear-gradient(103deg, rgba(255,255,255,.20) 0 1px, transparent 1px 11px),
+    repeating-linear-gradient(106deg, rgba(86,120,142,.16) 0 1px, transparent 1px 6px);
+  animation:rainfall 1.35s linear infinite;
 }
-@keyframes rainfall{to{background-position:-58px 260px, -96px 420px}}
+@keyframes rainfall{to{background-position:-42px 190px, -66px 300px, -104px 470px}}
+/* Шилэн дээр наалдсан дусал — тод биш, гэрэл хугалсан толбо. */
+:root[data-theme="rain"] #bg i:nth-child(1){
+  display:block; inset:0; left:0; top:0; width:100%; height:100%;
+  border-radius:0; filter:none; opacity:.5; animation:none;
+  background:#ffffff; mix-blend-mode:overlay;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27340%27%20height%3D%27340%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.75%27%20numOctaves%3D%274%27%20seed%3D%2717%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%275.5%27%20amplitude%3D%272.0%27%20offset%3D%27-0.3%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27340%27%20height%3D%27340%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27340%27%20height%3D%27340%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.75%27%20numOctaves%3D%274%27%20seed%3D%2717%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%275.5%27%20amplitude%3D%272.0%27%20offset%3D%27-0.3%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27340%27%20height%3D%27340%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:340px 340px; mask-size:340px 340px;
+}
+/* Цонхны цаадах бүрхэг — үүлэрхэг өдрийн жигд бус гэрэл. */
+:root[data-theme="rain"] #bg i:nth-child(2){
+  display:block; border-radius:0; filter:none; opacity:.45; animation:none;
+  width:150vmax; height:110vmax; left:-26vmax; top:-30vmax;
+  background:#ffffff; mix-blend-mode:soft-light;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.004%200.006%27%20numOctaves%3D%275%27%20seed%3D%2783%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.6%27%20amplitude%3D%271.3%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.004%200.006%27%20numOctaves%3D%275%27%20seed%3D%2783%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.6%27%20amplitude%3D%271.3%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+}
+:root[data-theme="rain"] #bg i:nth-child(3){display:none}
+:root[data-theme="rain"] #bg::after{
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(130% 95% at 50% 25%,
+    transparent 45%, rgba(72,96,114,.28) 100%);
+}
 /* Норсон шил — зөвхөн ТОМ гадаргуу дээр. Бүх мөрөнд тавивал
    `backdrop-filter` олон давхарга болж утсыг ачаална. */
 :root[data-theme="rain"] .hero .due,
@@ -315,10 +415,12 @@
 :root[data-theme="rain"] .ring3d .c{background:rgba(255,255,255,.55); opacity:.5}
 :root[data-theme="rain"] .seal{display:none}
 
-/* 正/誤 нь minimal ба 機-д тохирно. Бусдад энгийн тэмдэг. */
+/* 正/誤 нь 機-д тохирно. Бусдад энгийн тэмдэг. */
+:root[data-theme="blue"] .choices button.correct::after,
 :root[data-theme="space"] .choices button.correct::after,
 :root[data-theme="anime"] .choices button.correct::after,
 :root[data-theme="rain"] .choices button.correct::after{content:'✓'}
+:root[data-theme="blue"] .choices button.wrong::after,
 :root[data-theme="space"] .choices button.wrong::after,
 :root[data-theme="anime"] .choices button.wrong::after,
 :root[data-theme="rain"] .choices button.wrong::after{content:'✕'}
