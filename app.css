@@ -39,6 +39,9 @@
   --h2-tt:uppercase; --h2-ls:.2em; --h2-bd:1px solid var(--line);
   --track-h:2px;
   --grain:.05;
+  /* Гүнтэй дэвсгэрийн гурван хэлбэрийн өнгө. 和-д маш бүдэг — цаасанд
+     бэх шингэж байгаа мэт төдий. Загвар бүр өөрөөр тодотгоно. */
+  --fx1:#e3d9c3; --fx2:#e9dfcb; --fx3:#dbcfb4; --fx-op:.5;
   /* Япон бичиг: ГОЛ дүр нь 明朝 (serif). Байхгүй бол системийн уншигдах
      фонт руу уруудна — том хэмжээнд ч эвдрэхгүй. */
   --jpd:"Noto Serif JP","Yu Mincho","YuMincho","Hiragino Mincho ProN",
@@ -72,7 +75,7 @@
 [hidden]{display:none !important}
 html,body{margin:0;padding:0}
 body{
-  background:var(--bg); color:var(--ink); font-family:var(--ui);
+  background:transparent; color:var(--ink); font-family:var(--ui);
   font-size:16px; line-height:1.62;
   padding:0 0 env(safe-area-inset-bottom);
   -webkit-text-size-adjust:100%;
@@ -149,7 +152,8 @@ body{
 .bigcard:hover::after{color:var(--accent); transform:translateX(4px)}
 .bigcard:hover .bc-jp{color:var(--accent)}
 
-.screen{max-width:660px; margin:0 auto; padding:18px 16px 56px}
+.screen{max-width:660px; margin:0 auto; padding:18px 16px 56px;
+        position:relative; z-index:1}
 /* Гарчиг — 間. Дээрээ өргөн зайтай, доороо нарийн шугамтай. */
 h2{
   font-family:var(--disp); font-size:12px; text-transform:var(--h2-tt);
@@ -573,6 +577,87 @@ a.ghost{display:inline-block; text-decoration:none}
     vertical-align:middle;
   }
 }
+
+
+/* ═══ Гүнтэй дэвсгэр ба 3D үгийн цагираг ═══════════════════════════
+ *
+ * Хоёулаа ЧИМЭГЛЭЛ тул `#bg`, `.ring3d` хоёрыг `aria-hidden` болгож,
+ * хөдөлгөөн унтраасан үед бүрэн устгана. Аль нь ч зайлшгүй мэдээлэл
+ * агуулахгүй — алга болсон ч апп бүрэн ажиллана.
+ */
+
+/* Дэвсгэр давхарга бүх агуулгын АРД байхын тулд өнгийг `html` дээр
+   тавьж, `body`-г тунгалаг болгоно. */
+html{background:var(--bg)}
+
+#bg{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
+#bg i{
+  position:absolute; display:block; border-radius:50%;
+  filter:blur(70px); opacity:var(--fx-op);
+}
+#bg i:nth-child(1){width:54vmax; height:54vmax; left:-18vmax; top:-20vmax;
+  background:var(--fx1); animation:drift1 34s ease-in-out infinite alternate}
+#bg i:nth-child(2){width:46vmax; height:46vmax; right:-16vmax; top:24vmax;
+  background:var(--fx2); animation:drift2 46s ease-in-out infinite alternate}
+#bg i:nth-child(3){width:40vmax; height:40vmax; left:10vmax; bottom:-18vmax;
+  background:var(--fx3); animation:drift3 40s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate3d(14vmax,9vmax,0) scale(1.16)}}
+@keyframes drift2{to{transform:translate3d(-12vmax,-11vmax,0) scale(.86)}}
+@keyframes drift3{to{transform:translate3d(9vmax,-8vmax,0) scale(1.1)}}
+
+/* Нүүрний баатар. Цагираг нь картаас ӨНДӨР тул дээр доогуур нь картууд
+   эргэлдэж харагдана — хайрцагтай загварт ч (弁当, 遊) далдрахгүй. */
+/* Цагирагийг баатрын хавтангийн ЯГ ард тавихыг оролдоод болиод байв:
+   хайрцагтай загварт (弁当, 遊) хавтан нь бүрэн бүрхэж, цагираг огт
+   харагдахгүй болно. Тиймээс цагираг ӨӨРИЙН зурвастай — хавтан нь
+   доод хэсэг дээр нь ДАВХАРЛАНА. Ингэснээр «ард нь» гэсэн мэдрэмж
+   хэвээр, гэхдээ загвар бүрд харагдана. */
+.hero{position:relative; padding:0 0 8px}
+/* Нүүрэн дээр л хавтан нь цагираг дээр давхарлана. Сонголтын
+   дэлгэцүүд дээр цагираг энгийн зурвас хэвээр. */
+.hero .ring3d{margin-bottom:-52px}
+.ringslot:empty{display:none}
+.ring3d{
+  position:relative; width:100%; height:198px; margin:0 auto;
+  z-index:0; perspective:1000px; pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
+}
+.hero .due{position:relative; z-index:1}
+.ring3d-in{
+  position:absolute; left:50%; top:50%; width:0; height:0;
+  transform-style:preserve-3d; animation:ringSpin 46s linear infinite;
+}
+/* Багахан налуу — картууд хавтгай биш, эргэлдэж байгаа нь мэдрэгдэнэ. */
+@keyframes ringSpin{
+  from{transform:rotateX(-9deg) rotateY(0)}
+  to{transform:rotateX(-9deg) rotateY(-360deg)}
+}
+.ring3d .c{
+  position:absolute; width:62px; height:86px; margin:-43px -31px;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  font-family:var(--jpd); font-size:19px; line-height:1.15; padding:4px;
+  color:var(--ink-2); background:var(--card);
+  border:1px solid var(--line); border-radius:var(--box-r);
+  opacity:.62; backface-visibility:hidden; overflow:hidden;
+}
+/* Дасгал эхлэхэд цагираг хурдсаад холдоно — карт нь «сугарч» гарсан мэт. */
+.ring3d.pull .ring3d-in{animation-duration:5s}
+.ring3d.pull{transition:opacity .5s ease, transform .5s ease;
+             opacity:0; transform:scale(.84)}
+
+/* Цагирагаас сугарч дасгалын карт болж томрох НИСДЭГ карт. */
+.flyer{
+  position:fixed; z-index:60; pointer-events:none;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  font-family:var(--jpd); color:var(--ink); background:var(--card);
+  border:1px solid var(--line-2); border-radius:var(--box-r);
+  box-shadow:0 20px 60px rgba(0,0,0,.34);
+}
+
+/* Хөдөлгөөн унтраасан — эсвэл систем нь «багасга» гэсэн. */
+.nofx #bg,.nofx .ring3d{display:none}
+@media (prefers-reduced-motion:reduce){ #bg,.ring3d{display:none} }
 
 /* Цаасны мөхлөг. 和紙 нь гөлгөр биш — энэ давхарга л «цаас»-ыг цаас
    болгодог. Хүрэлт нэвтэрдэг, зөвхөн харагдац. */

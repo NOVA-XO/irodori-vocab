@@ -170,6 +170,42 @@
 :root[data-theme="bento"] .choices button.wrong::after,
 :root[data-theme="play"] .choices button.wrong::after{content:'✕'}
 
+
+/* ── Дэвсгэрийн өнгө загвар тус бүрд ─────────────────────────────── */
+:root[data-theme="sumi"]{--fx1:#2b2417; --fx2:#221f16; --fx3:#33261a; --fx-op:.75}
+:root[data-theme="bento"]{--fx1:#1b3a6b; --fx2:#2c1c6e; --fx3:#0f4a5a; --fx-op:.55}
+:root[data-theme="play"]{--fx1:#d9f2c0; --fx2:#cfe9ff; --fx3:#ffe6c6; --fx-op:.6}
+/* 獄 — хөвөгч толбо биш, СКАНЕРЫН зураас. Бетон, төмөр сараалж. */
+:root[data-theme="prison"]{--fx-op:0}
+:root[data-theme="prison"] #bg{
+  background-image:repeating-linear-gradient(0deg,
+    rgba(255,255,255,.028) 0 1px, transparent 1px 4px);
+}
+:root[data-theme="prison"] #bg::after{
+  content:''; position:absolute; left:0; right:0; height:34vh;
+  background:linear-gradient(180deg,transparent,rgba(242,199,68,.05),transparent);
+  animation:scan 9s linear infinite;
+}
+@keyframes scan{from{top:-34vh} to{top:100%}}
+/* Цагирагийн карт загвар тус бүрд */
+:root[data-theme="bento"] .ring3d .c,
+:root[data-theme="play"] .ring3d .c{opacity:.5}
+:root[data-theme="prison"] .ring3d .c{border-width:2px; opacity:.5}
+
+
+/* Хайрцагтай загварт баатрын хавтан ХАГАС ТУНГАЛАГ болно — эс тэгвэл
+   ард нь эргэлдэх картууд бүрэн далдарч, цагираг байхын хэрэггүй.
+   Шилэн мэдрэмж нь 3D-тэй сайн зохирно. */
+:root[data-theme="bento"] .hero .due{
+  background:rgba(20,25,34,.7); -webkit-backdrop-filter:blur(9px);
+  backdrop-filter:blur(9px);
+}
+:root[data-theme="play"] .hero .due{
+  background:rgba(255,255,255,.76); -webkit-backdrop-filter:blur(7px);
+  backdrop-filter:blur(7px);
+}
+:root[data-theme="prison"] .hero .due{background:rgba(27,29,33,.78)}
+
 /* ── Загвар сонгох жагсаалт ──────────────────────────────────────── */
 .thlist{display:grid; gap:8px; margin-top:6px}
 .thlist button{

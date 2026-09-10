@@ -177,7 +177,8 @@ if (!settings.script) settings.script = 'kanji';   // хуучин хадгал�
 if (!settings.kgroups) settings.kgroups = ['gojuon'];
 if (!settings.goal) settings.goal = 20;
 if (!settings.dir) settings.dir = 'jp2mn';
-if (!settings.kjn) settings.kjn = [5];        // JLPT түвшин (JLPT дэлгэц)
+if (!settings.kjn) settings.kjn = [5];
+if (!('fx' in settings)) settings.fx = 1;     // чимэглэлийн хөдөлгөөн        // JLPT түвшин (JLPT дэлгэц)
 if (!settings.what) settings.what = 'word';   // Irodori: шинэ үг | шинэ ханз
 if (!settings.book) settings.book = 'starter';
 /* Хичээлийн сонголтыг НОМ ТУС БҮРД тусад нь хадгална. N5 нь 50 хичээлтэй,
@@ -526,9 +527,7 @@ function startKana(km) {
   queue = buildQueue(false);
   done = okN = ngN = 0; missed = [];
   settings.last = { deck: 'kana', k: km }; save(KEY_S, settings);
-  show('study');
-  $('c-total').textContent = queue.length;
-  nextCard();
+  enterStudy();
 }
 
 /** Ханзны дасгал. km: flash | k2m | m2k | read */
@@ -545,9 +544,7 @@ function startKanji(km, src) {
   queue = buildQueue(false);
   done = okN = ngN = 0; missed = [];
   settings.last = { deck: 'kanji', k: km, src: src }; save(KEY_S, settings);
-  show('study');
-  $('c-total').textContent = queue.length;
-  nextCard();
+  enterStudy();
 }
 
 function startSession(m, onlyDue, src) {
@@ -560,9 +557,7 @@ function startSession(m, onlyDue, src) {
   if (!queue.length) { alert('Давтах үг алга. Шинэ хичээл сонгох эсвэл маргааш дахин үзнэ үү.'); return; }
   done = okN = ngN = 0; missed = [];
   settings.last = { deck: 'vocab', m: m, src: wordSrc }; save(KEY_S, settings);
-  show('study');
-  $('c-total').textContent = queue.length;
-  nextCard();
+  enterStudy();
 }
 
 function nextCard() {
@@ -969,9 +964,9 @@ function go(name) {
   // Явц нь БҮХ санг харуулдаг тул нээхэд бусад номыг татна. Эхлээд
   // байгаагаараа зурж, ирсэн хойно нь дахин зурна — хоосон дэлгэц харагдахгүй.
   if (name === 'stats') { refreshStats(); loadAllBooks().then(refreshStats); }
-  if (name === 'profile') { refreshSync(); refreshUsage(); renderThemes(); }
+  if (name === 'profile') { refreshSync(); refreshUsage(); renderThemes(); applyFx(); }
   if (name === 'feedback') refreshFb();
-  if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
+  if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) { placeRing(name); refreshHome(); }
   show(name);
 }
 
@@ -1036,6 +1031,7 @@ function refreshHome() {
   }
   document.querySelectorAll('#goal-pick button').forEach(b =>
     b.setAttribute('aria-pressed', +b.dataset.goal === settings.goal));
+  buildRing();
   const nv = $('n-vocab'); if (nv) nv.textContent = ALL.length + ' үг';
   const nk = $('n-kana'); if (nk) nk.textContent = KANA.length + ' кана';
   const nj = $('n-kanji');
@@ -1394,6 +1390,10 @@ $('btn-sync-link').onclick = () => {
   syncNow().then(() => { refreshStats(); refreshHome(); });
 };
 $('btn-sync-now').onclick = () => syncNow().then(() => { refreshStats(); refreshHome(); });
+if ($('btn-fx')) $('btn-fx').onclick = () => {
+  settings.fx = settings.fx ? 0 : 1; save(KEY_S, settings);
+  applyFx(); refreshHome();
+};
 $('btn-sync-off').onclick = () => {
   if (!confirm('Энэ төхөөрөмжийг салгах уу? Явц энд үлдэнэ, зөвхөн нийлүүлэлт зогсоно.')) return;
   syncCode = null; save(KEY_C, null); refreshSync(); syncSay('салгалаа');
@@ -1475,6 +1475,134 @@ function renderThemes() {
     + '<span class="th-tick">\u2713</span></button>').join('');
   box.querySelectorAll('button').forEach(b =>
     b.onclick = () => { applyTheme(b.dataset.th); renderThemes(); });
+}
+
+/* ── Чимэглэл: гүнтэй дэвсгэр ба 3D үгийн цагираг ────────────────
+ *
+ * Нүүрэн дээр үгийн сангаас түүсэн картууд удаан эргэлдэнэ. Дасгал
+ * эхлэхэд урд талын карт нь СУГАРЧ гарч, дасгалын карт болж томордог —
+ * «энэ үгийг тэр овоолгоос сугалж авлаа» гэсэн мэдрэмж төрүүлнэ.
+ *
+ * Бүхэлдээ чимэглэл. Унтраасан ч, дэмжигдээгүй ч апп бүрэн ажиллана:
+ * `flyToCard` нь эхлэлийн хэмжээсгүй бол чимээгүй буцна.
+ */
+const RING_N = 14;          // цагирагийн карт
+const RING_R = 152;         // радиус, px
+
+/** Системийн «хөдөлгөөн багасга» нь ХЭРЭГЛЭГЧИЙН тохиргооноос дээгүүр. */
+function motionOK() {
+  if (!settings.fx) return false;
+  try { return !matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  catch (e) { return true; }
+}
+
+function applyFx() {
+  document.documentElement.classList.toggle('nofx', !motionOK());
+  const b = $('btn-fx');
+  if (b) b.textContent = settings.fx ? 'Хөдөлгөөн: асаалттай' : 'Хөдөлгөөн: унтраалттай';
+}
+
+/** Цагирагийн картуудыг одоогийн үгийн сангаас дүүргэнэ. */
+/** Цагирагийг идэвхтэй дэлгэцийн суудал руу зөөнө. */
+function placeRing(screen) {
+  const r = $('ring');
+  if (!r) return;
+  const slot = document.querySelector('#' + screen + ' .ringslot');
+  if (slot && r.parentNode !== slot) slot.appendChild(r);
+}
+
+function buildRing() {
+  const r = $('ring');
+  if (!r || !motionOK()) return;
+  const inn = r.firstElementChild;
+  const src = (activeWords().length ? activeWords() : ALL);
+  if (!src.length) { inn.innerHTML = ''; return; }
+  const pick = shuffle(src.slice()).slice(0, RING_N);
+  inn.innerHTML = pick.map((it, i) => {
+    // Урт үг картад багтахгүй тул эхний хэдэн тэмдэгтийг л авна.
+    const t = (settings.script === 'kana' ? (it.kana || it.jp) : (it.jp || it.kana)) || '';
+    return '<span class="c" style="transform:rotateY(' + (i * 360 / pick.length)
+      + 'deg) translateZ(' + RING_R + 'px)">' + esc(t.slice(0, 4)) + '</span>';
+  }).join('');
+}
+
+/** Картан дээр харагдах бичиг. Дасгалын төрлөөс хамаарна. */
+function dispText(it) {
+  if (!it) return '';
+  if (deck === 'kanji') return it.c || '';
+  if (deck === 'kana') return it.kata || it.hira || '';
+  return (settings.script === 'kana' ? (it.kana || it.jp) : (it.jp || it.kana)) || '';
+}
+
+/** Урд талын картыг олж, цагирагийг холдуулна. Хэмжээсийг нь буцаана.
+ *  `label` өгвөл тэр картын бичгийг СОЛИНО — ингэснээр сугалагдаж буй
+ *  карт нь дасгалд гарах яг тэр үг болно. */
+function ringPull(label) {
+  const r = $('ring');
+  if (!r || !motionOK()) return null;
+  // Эргэлдэж байгаа тул ХАМГИЙН ӨРГӨН харагдаж буй нь урд талынх.
+  let best = null, bestEl = null;
+  r.querySelectorAll('.c').forEach(c => {
+    const b = c.getBoundingClientRect();
+    if (b.width > 6 && (!best || b.width > best.w)) {
+      best = { left: b.left, top: b.top, w: b.width, h: b.height, text: c.textContent };
+      bestEl = c;
+    }
+  });
+  if (best && label) {
+    bestEl.textContent = label.slice(0, 4);
+    best.text = label;
+  }
+  if (best) {
+    r.classList.add('pull');
+    setTimeout(() => r.classList.remove('pull'), 700);
+  }
+  return best;
+}
+
+/** Сугалсан картыг дасгалын картын байрлал руу нисгэнэ. */
+function flyToCard(from) {
+  const card = $('card');
+  if (!from || !card || !motionOK() || !card.animate) return;
+  const to = card.getBoundingClientRect();
+  if (!to.width) return;
+  const fly = document.createElement('div');
+  fly.className = 'flyer';
+  fly.textContent = from.text;
+  document.body.appendChild(fly);
+  card.style.visibility = 'hidden';
+  let ended = false;
+  const end = () => {
+    if (ended) return;
+    ended = true;
+    fly.remove();
+    card.style.visibility = '';
+    replay(card, 'in');
+  };
+  // Өргөн/өндрийг ШУУД хөдөлгөнө — `scale` нь 62×86-аас 390×290 болоход
+  // үсгийг сунгаж гажуудуулна.
+  const an = fly.animate([
+    { left: from.left + 'px', top: from.top + 'px',
+      width: from.w + 'px', height: from.h + 'px',
+      fontSize: '19px', opacity: .85, transform: 'rotateY(-26deg)' },
+    { left: to.left + 'px', top: to.top + 'px',
+      width: to.width + 'px', height: to.height + 'px',
+      fontSize: '52px', opacity: 1, transform: 'rotateY(0deg)' },
+  ], { duration: 540, easing: 'cubic-bezier(.22,.8,.28,1)', fill: 'forwards' });
+  an.onfinish = end;
+  setTimeout(end, 900);      // WAAPI нь onfinish өгөхгүй байсан ч гацахгүй
+}
+
+/** Гурван эхлүүлэгчийн НИЙТЛЭГ төгсгөл. */
+function enterStudy() {
+  // `queue[0]` нь `nextCard()`-д гарах үг. Сугалагдах картыг ЯГ түүгээр
+  // бичнэ — эс тэгвэл нисэж ирсэн карт өөр үг харуулаад, буусны дараа
+  // огт өөр үг гарч ирнэ.
+  const from = ringPull(dispText(queue[0]));   // хэмжилт нь дэлгэц солихоос ӨМНӨ
+  show('study');
+  $('c-total').textContent = queue.length;
+  nextCard();
+  flyToCard(from);
 }
 
 const KEY_DEV = 'irodori.dev.v1';
@@ -1657,7 +1785,8 @@ Promise.all([
     refreshSync();
     // Ачаалахад нэг удаа татаж уусгана — өөр төхөөрөмж дээр давтсан нь орж ирнэ.
     if (syncOn && syncCode) syncNow(true).then(refreshHome);
-    applyTheme(curTheme()); show('home'); refreshHome(); autoStart(); pingUsage();
+    applyTheme(curTheme()); applyFx();
+    show('home'); refreshHome(); autoStart(); pingUsage();
   })
   .catch(() => {
     document.getElementById('home').innerHTML =

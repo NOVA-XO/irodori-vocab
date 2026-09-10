@@ -8,17 +8,17 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-10zb">
-<link rel="stylesheet" href="app.css?v=2026-09-10zb">
-<link rel="stylesheet" href="themes.css?v=2026-09-10zb">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-10zc">
+<link rel="stylesheet" href="app.css?v=2026-09-10zc">
+<link rel="stylesheet" href="themes.css?v=2026-09-10zc">
 <!-- Сонгосон загварыг CSS-ээс ӨМНӨ тавина. Эс тэгвэл хуудас эхлээд
      анхдагч 和-гаар нэг анивчаад дараа нь солигдоно. Тиймээс энэ нь
      app.js дотор биш, ЭНД байх ёстой. -->
 <script>try{var t=JSON.parse(localStorage.getItem("irodori.theme.v1")||'""');
 if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10zb">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10zb">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10zc">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10zc">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,6 +26,10 @@ if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 <meta name="apple-mobile-web-app-title" content="Шорон">
 </head>
 <body>
+
+<!-- Гүнтэй дэвсгэр: бүдгэрсэн гурван хэлбэр аажим хөвнө. Загвар бүрд
+     өөр өнгөтэй. Хөдөлгөөн унтраасан үед бүрэн алга болно. -->
+<div id="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 
 <header class="bar">
   <button id="btn-menu" class="icon" title="Цэс" aria-label="Цэс">
@@ -62,10 +66,17 @@ if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 
   <button id="btn-continue" class="primary big wide" hidden>Үргэлжлүүлэх</button>
 
-  <div id="due-card" class="due">
-    <div class="due-n" id="due-n">…</div>
-    <div class="due-t">өнөөдөр давтах үг</div>
-    <button id="btn-review" class="primary big">Давталт эхлүүлэх</button>
+  <!-- Үгийн сангийн 3D цагираг. Дасгал эхлэхэд урд талын карт нь
+       СУГАРЧ гарч, дасгалын карт болж томордог. -->
+  <div class="hero">
+    <div class="ringslot">
+      <div id="ring" class="ring3d" aria-hidden="true"><div class="ring3d-in"></div></div>
+    </div>
+    <div id="due-card" class="due">
+      <div class="due-n" id="due-n">…</div>
+      <div class="due-t">өнөөдөр давтах үг</div>
+      <button id="btn-review" class="primary big">Давталт эхлүүлэх</button>
+    </div>
   </div>
 
   <div class="bigcards">
@@ -112,6 +123,10 @@ if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 
 <!-- ═══════════════════ IRODORI ═══════════════════ -->
 <section id="irodori" class="screen" hidden>
+  <!-- Цагирагийн суудал. Цагираг НЭГ л ширхэг байх бөгөөд идэвхтэй
+       дэлгэцийн суудал руу зөөгдөнө — эс тэгвэл дасгал сонгох
+       дэлгэцээс эхлүүлэхэд сугалах карт олдохгүй. -->
+  <div class="ringslot"></div>
   <div class="step">一 · Ном</div>
   <div class="seg" id="seg-book">
     <button data-b="starter"><b class="jp">入門</b><span>Суурь шат · A1 · 1232 үг</span></button>
@@ -169,6 +184,10 @@ if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 
 <!-- ═══════════════════ JLPT ═══════════════════ -->
 <section id="jlpt" class="screen" hidden>
+  <!-- Цагирагийн суудал. Цагираг НЭГ л ширхэг байх бөгөөд идэвхтэй
+       дэлгэцийн суудал руу зөөгдөнө — эс тэгвэл дасгал сонгох
+       дэлгэцээс эхлүүлэхэд сугалах карт олдохгүй. -->
+  <div class="ringslot"></div>
   <div class="step">一 · Түвшин</div>
   <div class="klist" id="jlpt-levels">
     <button data-j="5"><span class="tick">✓</span>
@@ -234,6 +253,10 @@ if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 
 <!-- ═══════════════════ КАНА ═══════════════════ -->
 <section id="kana" class="screen" hidden>
+  <!-- Цагирагийн суудал. Цагираг НЭГ л ширхэг байх бөгөөд идэвхтэй
+       дэлгэцийн суудал руу зөөгдөнө — эс тэгвэл дасгал сонгох
+       дэлгэцээс эхлүүлэхэд сугалах карт олдохгүй. -->
+  <div class="ringslot"></div>
   <div class="step">一 · Аль бүлгийг давтахаа сонго</div>
   <div class="klist" id="kana-groups">
     <button data-g="gojuon">
@@ -410,6 +433,14 @@ if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <p class="hint" id="sync-none" hidden>Синк тохируулаагүй байна — явц зөвхөн
      энэ төхөөрөмжид хадгалагдана. Доорх нөөцлөх аргаар зөөж болно.</p>
 
+  <h2>Хөдөлгөөн</h2>
+  <p class="hint">Нүүрэн дэх 3D үгийн цагираг ба хөвөгч дэвсгэр.
+     Утас халаах, батарей идэх юм шиг санагдвал унтраа.
+     Системийн «хөдөлгөөн багасгах» тохиргоог үргэлж дагана.</p>
+  <div class="row">
+    <button id="btn-fx" class="ghost sm">…</button>
+  </div>
+
   <h2>Өдрийн зорилт</h2>
   <p class="hint">Өдөрт хэдэн хариулт өгөхөөр төлөвлөж байна вэ. Нүүрэн дээрх
      зураас үүнээс хамаарна.</p>
@@ -450,7 +481,7 @@ if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10zb"></script>
-<script src="app.js?v=2026-09-10zb"></script>
+<script src="sync-config.js?v=2026-09-10zc"></script>
+<script src="app.js?v=2026-09-10zc"></script>
 </body>
 </html>
