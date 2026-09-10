@@ -6,7 +6,6 @@
  *
  *   blue     蒼  цэнхэр — гүн ус, удаан урсгал. Анхдагч.
  *   space    宙  сансар — од, мананцар, гүн хөх
- *   mech     機  механик — ган, сараалж, аюулгүйн улбар шар
  *   anime    漫  аниме — цагаан, зузаан хар хүрээ, поп ягаан, растер цэг
  *   rain     雨  бороо — үүлэрхэг саарал, норсон шил, урсах дусал
  *
@@ -32,7 +31,7 @@
   background:#1d6f9e; mix-blend-mode:screen;
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.004%200.009%27%20numOctaves%3D%275%27%20seed%3D%275%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.0%27%20amplitude%3D%271.5%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.004%200.009%27%20numOctaves%3D%275%27%20seed%3D%275%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.0%27%20amplitude%3D%271.5%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
   -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
-  mask-repeat:no-repeat; animation:wave1 130s ease-in-out infinite alternate;
+  mask-repeat:no-repeat; animation:wave1 40s ease-in-out infinite alternate;
 }
 :root[data-theme="blue"] #bg i:nth-child(2),
 :root:not([data-theme]) #bg i:nth-child(2){
@@ -41,7 +40,7 @@
   background:#12897f; mix-blend-mode:screen;
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.008%200.003%27%20numOctaves%3D%275%27%20seed%3D%2761%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.2%27%20amplitude%3D%271.4%27%20offset%3D%27-0.13%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.008%200.003%27%20numOctaves%3D%275%27%20seed%3D%2761%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.2%27%20amplitude%3D%271.4%27%20offset%3D%27-0.13%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
   -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
-  mask-repeat:no-repeat; animation:wave2 170s ease-in-out infinite alternate;
+  mask-repeat:no-repeat; animation:wave2 54s ease-in-out infinite alternate;
 }
 :root[data-theme="blue"] #bg i:nth-child(3),
 :root:not([data-theme]) #bg i:nth-child(3){display:none}
@@ -111,7 +110,7 @@
     radial-gradient(circle at 68.6% 6.0%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px),
     radial-gradient(circle at 96.3% 94.6%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px);
   background-size:317px 317px, 190px 190px;
-  animation:stars 300s linear infinite;
+  animation:stars 90s linear infinite;
 }
 @keyframes stars{to{background-position:317px 634px, -190px 570px}}
 
@@ -128,7 +127,7 @@
     radial-gradient(circle at 82.1% 51.4%, rgba(150,180,255,.16) 0 3.20px, transparent 3.55px),
     radial-gradient(circle at 62.6% 37.4%, rgba(150,180,255,.16) 0 3.20px, transparent 3.55px);
   background-size:523px 523px, 523px 523px;
-  animation:twinkle 7s ease-in-out infinite alternate;
+  animation:twinkle 4.5s ease-in-out infinite alternate;
 }
 @keyframes twinkle{from{opacity:.55} to{opacity:1}}
 
@@ -145,19 +144,19 @@
   width:150vmax; height:105vmax; left:-38vmax; top:-30vmax; opacity:.5;
   background:#a8215f;
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.008%200.013%27%20numOctaves%3D%275%27%20seed%3D%2711%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.4%27%20amplitude%3D%271.5%27%20offset%3D%27-0.14%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.008%200.013%27%20numOctaves%3D%275%27%20seed%3D%2711%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.4%27%20amplitude%3D%271.5%27%20offset%3D%27-0.14%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  animation:neb1 150s ease-in-out infinite alternate;
+  animation:neb1 46s ease-in-out infinite alternate;
 }
 :root[data-theme="space"] #bg i:nth-child(2){
   width:130vmax; height:95vmax; right:-34vmax; top:6vmax; opacity:.4;
   background:#0d7f96;
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.011%200.007%27%20numOctaves%3D%275%27%20seed%3D%2729%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.0%27%20amplitude%3D%271.4%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.011%200.007%27%20numOctaves%3D%275%27%20seed%3D%2729%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.0%27%20amplitude%3D%271.4%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  animation:neb2 190s ease-in-out infinite alternate;
+  animation:neb2 58s ease-in-out infinite alternate;
 }
 :root[data-theme="space"] #bg i:nth-child(3){
   width:140vmax; height:100vmax; left:-6vmax; bottom:-34vmax; opacity:.42;
   background:#5330b8;
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.010%27%20numOctaves%3D%276%27%20seed%3D%2747%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.6%27%20amplitude%3D%271.6%27%20offset%3D%27-0.16%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.010%27%20numOctaves%3D%276%27%20seed%3D%2747%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.6%27%20amplitude%3D%271.6%27%20offset%3D%27-0.16%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  animation:neb3 170s ease-in-out infinite alternate;
+  animation:neb3 52s ease-in-out infinite alternate;
 }
 @keyframes neb1{to{transform:translate3d(3vmax,-2vmax,0) scale(1.1)}}
 @keyframes neb2{to{transform:translate3d(-3vmax,2vmax,0) scale(1.13)}}
@@ -195,93 +194,6 @@
   -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px)}
 :root[data-theme="space"] .seal{display:none}
 
-/* ══ 機 mech ═══════════════════════════════════════════════════════
-   Инженерийн нарийвчлал. Судалгааны гол дүгнэлт (Teenage Engineering):
-   «ялгарал нь чимэглэлээс биш, МАТЕРИАЛААС гарна» — дугуй булан ч,
-   сүүдэр ч, градиент ч байхгүй, ирмэг бүр шулуун огтлол. Улбар шар нь
-   барилгын талбайн аюулгүйн өнгө: «анхаар» гэсэн ганц дохио.
-
-   Хуучин хувилбар 2px хүрээ, 4px шилжсэн сүүдэртэй байсан нь БРУТАЛИЗМ
-   байв — тэр нь өөр хэл. Одоо хайрцаггүй, зөвхөн үс шугам. */
-:root[data-theme="mech"]{
-  --bg:#0e1012; --card:#15181b; --paper:#1b1f23;
-  --ink:#e9ecef; --ink-2:#8b939b; --ink-3:#5b636b;
-  --line:#23282d; --line-2:#333a41;
-  --accent:#ff6a00; --seal:#ff6a00;          /* аюулгүйн улбар шар */
-  --ok:#7bc86c; --ng:#e5533d;
-  --ok-bg:#161d13; --ng-bg:#26150f;
-
-  --disp:var(--mono);
-  --jpd:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",
-        sans-serif;
-
-  --r:0;
-  --box-bg:transparent;                       /* хавтгай. Хавтан байхгүй */
-  --box-bd:0;
-  --box-r:0;
-  --box-sep:1px solid var(--line);            /* үс шугам, 2px биш */
-  --box-pad:16px 2px;
-  --list-gap:0;                               /* нягт, шугамаар тусгаарлана */
-  --list-top:1px solid var(--line);
-  --elev:none;                                /* сүүдэр ОГТ байхгүй */
-  --btn-bg:var(--accent); --btn-fg:#0e1012;
-  --sel-bg:var(--accent); --sel-fg:#0e1012;
-  --h2-tt:uppercase; --h2-ls:.2em; --h2-bd:1px solid var(--line);
-  --track-h:5px; --grain:0;
-  --fx-op:0;
-}
-/* Материал: үрсэн ган ба цөөн газрын зэв. Энэ хоёр л «машин» гэсэн
-   мэдрэмжийг үүрнэ — чимэглэл нэмэхгүй. */
-:root[data-theme="mech"] #bg{
-  background-image:
-    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 48px),
-    repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0 1px, transparent 1px 48px);
-}
-:root[data-theme="mech"] #bg i:nth-child(1){
-  display:block; inset:0; width:100%; height:100%; left:0; top:0;
-  border-radius:0; filter:none; opacity:.22; animation:none;
-  background:#9aa3af; mix-blend-mode:overlay;
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27600%27%20height%3D%27600%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.85%27%20numOctaves%3D%273%27%20seed%3D%2713%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.4%27%20amplitude%3D%271.3%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27600%27%20height%3D%27600%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27600%27%20height%3D%27600%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.85%27%20numOctaves%3D%273%27%20seed%3D%2713%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.4%27%20amplitude%3D%271.3%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27600%27%20height%3D%27600%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-size:cover; mask-size:cover;
-}
-:root[data-theme="mech"] #bg i:nth-child(2){
-  display:block; border-radius:0; filter:none; opacity:.16; animation:none;
-  width:120vmax; height:90vmax; right:-24vmax; top:-14vmax;
-  background:#8a4a12; mix-blend-mode:screen;
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.005%200.007%27%20numOctaves%3D%275%27%20seed%3D%2771%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%274.0%27%20amplitude%3D%271.6%27%20offset%3D%27-0.2%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.005%200.007%27%20numOctaves%3D%275%27%20seed%3D%2771%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%274.0%27%20amplitude%3D%271.6%27%20offset%3D%27-0.2%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
-  mask-repeat:no-repeat;
-}
-:root[data-theme="mech"] #bg i:nth-child(3){display:none}
-/* Толгойн доорх аюулгүйн туузан зураас — техникийн бичиг баримтын дохио. */
-:root[data-theme="mech"] .bar{
-  border-bottom:1px solid var(--line-2);
-  box-shadow:0 2px 0 -1px transparent,
-             0 3px 0 0 rgba(255,106,0,.55);
-}
-:root[data-theme="mech"] .bar .title{letter-spacing:.3em; font-family:var(--mono);
-  font-weight:300; font-size:14px}
-/* Гарчиг нь ХЭТ НИМГЭН. Шаардах биш, нарийн байдлаараа анхаарал татна. */
-:root[data-theme="mech"] h2{font-weight:300; font-size:11px}
-:root[data-theme="mech"] h2::before{
-  content:''; display:inline-block; width:7px; height:7px; margin-right:9px;
-  background:var(--accent); vertical-align:1px;
-}
-:root[data-theme="mech"] .step{font-family:var(--mono); font-weight:300;
-  font-size:10.5px; letter-spacing:.22em; color:var(--ink-3)}
-:root[data-theme="mech"] .primary{font-weight:400; letter-spacing:.22em;
-  text-transform:uppercase; font-size:13px; font-family:var(--mono)}
-:root[data-theme="mech"] .due-n,
-:root[data-theme="mech"] .fin-pct{color:var(--accent); font-weight:300}
-:root[data-theme="mech"] .statsum b,
-:root[data-theme="mech"] .tstat b{font-weight:300}
-:root[data-theme="mech"] .statsum div + div{border-left:1px solid var(--line)}
-:root[data-theme="mech"] .lessons button{border-color:var(--line-2)}
-:root[data-theme="mech"] .hero .due{background:transparent}
-:root[data-theme="mech"] .ring3d .c{border:1px solid var(--line-2);
-  background:rgba(21,24,27,.8); opacity:.55}
-:root[data-theme="mech"] .seal{border-width:1px; border-radius:0}
-
 /* ══ 漫 anime ══════════════════════════════════════════════════════
    Мангагийн хуудас. Судалгааны дөрвөн дүгнэлт:
      · Хүрээний зузаан нь ШАТЛАЛ үүсгэнэ. Бүгд ижил 3px байвал хуудас
@@ -291,7 +203,7 @@
        ба зураастай (kakeami) хувилбартай.
      · Хурдны шугам нь нэг ЦЭГ рүү нийлнэ, тэр цэгийн ойролцоо сийрэг. */
 :root[data-theme="anime"]{
-  --bg:#fffdf6; --card:#ffffff; --paper:#fffdf6;
+  --bg:#8fc9f0; --card:#ffffff; --paper:#fffdf6;
   --ink:#141417; --ink-2:#55555c; --ink-3:#93939b;
   --line:#e0ddd2; --line-2:#141417;
   --accent:#ff2e6a; --seal:#ff2e6a;
@@ -310,46 +222,48 @@
   --track-h:13px; --grain:0;
   --fx-op:0;
 }
-/* Screentone: жигд цэг (машинаар хийгддэг тул жигд байх нь ЗӨВ) +
-   доошоо нягтарсан хоёр дахь давхарга = тоны шилжилт. */
+/* Анимегийн дэвсгэр: ЦЭЛМЭГ ТЭНГЭР.
+   Өмнө нь растер цэг ба хурдны шугам байсан нь МАНГА-гийн хэл —
+   хэвлэмэл хуудас. «Аниме» гэдэг нь хөдөлгөөнт дүрс; түүний хамгийн
+   таних дүр нь тэнгэр, аажим хөвөх үүл. Хоёр давхарга үүл өөр өөр
+   хурдтай хөвж гүн үүсгэнэ. */
 :root[data-theme="anime"] #bg{
-  background-image:
-    radial-gradient(circle, rgba(20,20,23,.085) 0 1.5px, transparent 1.7px),
-    radial-gradient(circle, rgba(20,20,23,.10) 0 2.2px, transparent 2.4px);
-  background-size:13px 13px, 19px 19px;
-  -webkit-mask-image:none; mask-image:none;
+  background-image:linear-gradient(#7cc0ef 0%, #a9d8f5 42%,
+                                   #d9eef8 72%, #fdf6e3 100%);
+  animation:none;
 }
-/* Хурдны шугам: нэг цэг рүү нийлнэ. Тэр цэгийн ойролцоо СИЙРЭГ байх нь
-   чухал — эс тэгвэл дугуй толбо болно. */
-:root[data-theme="anime"] #bg::after{
-  content:''; position:absolute; inset:-40%;
-  background:repeating-conic-gradient(from 0deg at 76% 14%,
-    rgba(20,20,23,.055) 0 .3deg, transparent .3deg 2.2deg);
-  -webkit-mask-image:radial-gradient(38% 38% at 76% 14%,
-    transparent 0 22%, #000 60%);
-  mask-image:radial-gradient(38% 38% at 76% 14%,
-    transparent 0 22%, #000 60%);
-  animation:speed 55s linear infinite;
-}
-@keyframes speed{to{transform:rotate(360deg)}}
-/* Цаасны ширхэг + kakeami (зураастай) сүүдэр доод буланд. */
+:root[data-theme="anime"] #bg::after{content:none}
 :root[data-theme="anime"] #bg i:nth-child(1){
-  display:block; inset:0; width:100%; height:100%; left:0; top:0;
-  border-radius:0; filter:none; opacity:.2; animation:none;
-  background:#8b8578; mix-blend-mode:multiply;
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27420%27%20height%3D%27420%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%271.1%27%20numOctaves%3D%273%27%20seed%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%271.4%27%20amplitude%3D%271.0%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27420%27%20height%3D%27420%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27420%27%20height%3D%27420%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%271.1%27%20numOctaves%3D%273%27%20seed%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%271.4%27%20amplitude%3D%271.0%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27420%27%20height%3D%27420%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-size:420px 420px; mask-size:420px 420px;
+  display:block; border-radius:0; filter:none; opacity:.95;
+  left:0; top:4%; width:300%; height:46%;
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271400%27%20height%3D%27700%27%3E%3Cfilter%20id%3D%27c%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%20color-interpolation-filters%3D%27sRGB%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.0032%200.009%27%20numOctaves%3D%276%27%20seed%3D%274%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27matrix%27%20values%3D%270%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%201%200%200%200%200%27%20result%3D%27bump%27%2F%3E%3CfeComponentTransfer%20in%3D%27bump%27%20result%3D%27shape%27%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.8%27%20amplitude%3D%272.0%27%20offset%3D%27-0.36%27%2F%3E%3C%2FfeComponentTransfer%3E%3CfeDiffuseLighting%20in%3D%27shape%27%20surfaceScale%3D%274%27%20diffuseConstant%3D%271%27%20lighting-color%3D%27%23ffffff%27%20result%3D%27dif%27%3E%3CfeDistantLight%20azimuth%3D%27268%27%20elevation%3D%2774%27%2F%3E%3C%2FfeDiffuseLighting%3E%3CfeComposite%20in%3D%27dif%27%20in2%3D%27shape%27%20operator%3D%27in%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%271400%27%20height%3D%27700%27%20filter%3D%27url%28%23c%29%27%2F%3E%3C%2Fsvg%3E");
+  background-size:50% 100%; background-repeat:repeat-x;
+  mix-blend-mode:normal;
+  -webkit-mask-image:none; mask-image:none;
+  animation:drift-a 150s linear infinite;
 }
 :root[data-theme="anime"] #bg i:nth-child(2){
-  display:block; border-radius:0; filter:none; opacity:.5; animation:none;
-  left:0; bottom:0; width:70vmax; height:52vmax;
-  background:repeating-linear-gradient(46deg,
-    rgba(20,20,23,.1) 0 1px, transparent 1px 6px);
-  mix-blend-mode:multiply;
-  -webkit-mask-image:radial-gradient(80% 80% at 0% 100%, #000, transparent 72%);
-  mask-image:radial-gradient(80% 80% at 0% 100%, #000, transparent 72%);
+  display:block; border-radius:0; filter:none; opacity:.8;
+  left:0; top:26%; width:300%; height:40%;
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271400%27%20height%3D%27700%27%3E%3Cfilter%20id%3D%27c%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%20color-interpolation-filters%3D%27sRGB%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.0045%200.011%27%20numOctaves%3D%276%27%20seed%3D%2721%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27matrix%27%20values%3D%270%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%201%200%200%200%200%27%20result%3D%27bump%27%2F%3E%3CfeComponentTransfer%20in%3D%27bump%27%20result%3D%27shape%27%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.1%27%20amplitude%3D%272.1%27%20offset%3D%27-0.40%27%2F%3E%3C%2FfeComponentTransfer%3E%3CfeDiffuseLighting%20in%3D%27shape%27%20surfaceScale%3D%275%27%20diffuseConstant%3D%271%27%20lighting-color%3D%27%23ffffff%27%20result%3D%27dif%27%3E%3CfeDistantLight%20azimuth%3D%27268%27%20elevation%3D%2768%27%2F%3E%3C%2FfeDiffuseLighting%3E%3CfeComposite%20in%3D%27dif%27%20in2%3D%27shape%27%20operator%3D%27in%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%271400%27%20height%3D%27700%27%20filter%3D%27url%28%23c%29%27%2F%3E%3C%2Fsvg%3E");
+  background-size:50% 100%; background-repeat:repeat-x;
+  mix-blend-mode:normal;
+  -webkit-mask-image:none; mask-image:none;
+  animation:drift-b 78s linear infinite;
 }
-:root[data-theme="anime"] #bg i:nth-child(3){display:none}
+/* Хамгийн ойрын нимгэн үүл — хурдан өнгөрч гүн мэдрүүлнэ. */
+:root[data-theme="anime"] #bg i:nth-child(3){
+  display:block; border-radius:0; filter:blur(1px); opacity:.5;
+  left:0; top:52%; width:300%; height:30%;
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271200%27%20height%3D%27500%27%3E%3Cfilter%20id%3D%27c%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%20color-interpolation-filters%3D%27sRGB%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.014%27%20numOctaves%3D%276%27%20seed%3D%2757%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27matrix%27%20values%3D%270%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%201%200%200%200%200%27%20result%3D%27bump%27%2F%3E%3CfeComponentTransfer%20in%3D%27bump%27%20result%3D%27shape%27%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.6%27%20amplitude%3D%272.2%27%20offset%3D%27-0.46%27%2F%3E%3C%2FfeComponentTransfer%3E%3CfeDiffuseLighting%20in%3D%27shape%27%20surfaceScale%3D%273%27%20diffuseConstant%3D%271%27%20lighting-color%3D%27%23ffffff%27%20result%3D%27dif%27%3E%3CfeDistantLight%20azimuth%3D%27268%27%20elevation%3D%2780%27%2F%3E%3C%2FfeDiffuseLighting%3E%3CfeComposite%20in%3D%27dif%27%20in2%3D%27shape%27%20operator%3D%27in%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%271200%27%20height%3D%27500%27%20filter%3D%27url%28%23c%29%27%2F%3E%3C%2Fsvg%3E");
+  background-size:50% 100%; background-repeat:repeat-x;
+  mix-blend-mode:normal;
+  -webkit-mask-image:none; mask-image:none;
+  animation:drift-c 42s linear infinite;
+}
+@keyframes drift-a{to{transform:translateX(-50%)}}
+@keyframes drift-b{to{transform:translateX(-50%)}}
+@keyframes drift-c{to{transform:translateX(-50%)}}
 /* Шатлал: гол хайрцаг хамгийн зузаан, доод түвшин нимгэн. */
 :root[data-theme="anime"] .card,
 :root[data-theme="anime"] .hero .due{border-width:4px; box-shadow:6px 6px 0 var(--ink)}
@@ -461,7 +375,7 @@
 :root[data-theme="rain"] .ring3d .c{background:rgba(255,255,255,.55); opacity:.5}
 :root[data-theme="rain"] .seal{display:none}
 
-/* 正/誤 нь 機-д тохирно. Бусдад энгийн тэмдэг. */
+/* 正/誤 нь хатуу загварт л тохирно. Бусдад энгийн тэмдэг. */
 :root[data-theme="blue"] .choices button.correct::after,
 :root[data-theme="space"] .choices button.correct::after,
 :root[data-theme="anime"] .choices button.correct::after,
@@ -482,15 +396,6 @@
  * тооцохгүй.
  */
 
-/* 機 — үрсэн хөнгөн цагаан. Хэвтээ зураас, чиглэлтэй гялбаа. */
-:root[data-theme="mech"] #bg i:nth-child(1){
-  display:block; inset:0; width:100%; height:100%; left:0; top:0;
-  border-radius:0; filter:none; opacity:.2; animation:none;
-  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27420%27%20height%3D%27420%27%3E%3Cfilter%20id%3D%27m%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%20color-interpolation-filters%3D%27sRGB%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.004%200.97%27%20numOctaves%3D%274%27%20seed%3D%279%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27matrix%27%20values%3D%270%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%201%200%200%200%200%27%20result%3D%27bump%27%2F%3E%3CfeDiffuseLighting%20in%3D%27bump%27%20surfaceScale%3D%272%27%20diffuseConstant%3D%271%27%20lighting-color%3D%27%23b9c0c9%27%20result%3D%27dif%27%3E%3CfeDistantLight%20azimuth%3D%27235%27%20elevation%3D%2756%27%2F%3E%3C%2FfeDiffuseLighting%3E%3CfeSpecularLighting%20in%3D%27bump%27%20surfaceScale%3D%272%27%20specularConstant%3D%27.85%27%20specularExponent%3D%2724%27%20lighting-color%3D%27%23ffffff%27%20result%3D%27spc%27%3E%3CfeDistantLight%20azimuth%3D%27235%27%20elevation%3D%2756%27%2F%3E%3C%2FfeSpecularLighting%3E%3CfeComposite%20in%3D%27spc%27%20in2%3D%27dif%27%20operator%3D%27arithmetic%27%20k1%3D%270%27%20k2%3D%271%27%20k3%3D%271%27%20k4%3D%270%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27420%27%20height%3D%27420%27%20filter%3D%27url%28%23m%29%27%2F%3E%3C%2Fsvg%3E");
-  background-size:420px 420px; mix-blend-mode:soft-light;
-  -webkit-mask-image:none; mask-image:none;
-}
-
 /* 雨 — шилэн дээрх ус. Босго -> бөөрөнхийлөлт -> гэрэлтүүлэг.
    Гялбаа нь дуслыг ЭЗЭЛХҮҮНТЭЙ болгоно; хавтгай толбо биш. */
 :root[data-theme="rain"] #bg i:nth-child(1){
@@ -499,7 +404,9 @@
   background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27360%27%20height%3D%27360%27%3E%3Cfilter%20id%3D%27d%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%20color-interpolation-filters%3D%27sRGB%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.075%27%20numOctaves%3D%272%27%20seed%3D%277%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27matrix%27%20values%3D%270%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%201%200%200%200%200%27%20result%3D%27bump%27%2F%3E%3CfeComponentTransfer%20in%3D%27bump%27%20result%3D%27thr%27%3E%3CfeFuncA%20type%3D%27discrete%27%20tableValues%3D%270%200%200%200%200%200%201%201%27%2F%3E%3C%2FfeComponentTransfer%3E%3CfeGaussianBlur%20in%3D%27thr%27%20stdDeviation%3D%272.6%27%20result%3D%27soft%27%2F%3E%3CfeComponentTransfer%20in%3D%27soft%27%20result%3D%27bead%27%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.0%27%20amplitude%3D%273.0%27%20offset%3D%27-0.34%27%2F%3E%3C%2FfeComponentTransfer%3E%3CfeDiffuseLighting%20in%3D%27bead%27%20surfaceScale%3D%278%27%20diffuseConstant%3D%27.85%27%20lighting-color%3D%27%237d97a8%27%20result%3D%27dif%27%3E%3CfeDistantLight%20azimuth%3D%27215%27%20elevation%3D%2748%27%2F%3E%3C%2FfeDiffuseLighting%3E%3CfeSpecularLighting%20in%3D%27bead%27%20surfaceScale%3D%278%27%20specularConstant%3D%271.7%27%20specularExponent%3D%2742%27%20lighting-color%3D%27%23ffffff%27%20result%3D%27spc%27%3E%3CfePointLight%20x%3D%27108%27%20y%3D%2790%27%20z%3D%27120%27%2F%3E%3C%2FfeSpecularLighting%3E%3CfeComposite%20in%3D%27spc%27%20in2%3D%27dif%27%20operator%3D%27arithmetic%27%20k1%3D%270%27%20k2%3D%271%27%20k3%3D%271%27%20k4%3D%270%27%20result%3D%27lit%27%2F%3E%3CfeComposite%20in%3D%27lit%27%20in2%3D%27bead%27%20operator%3D%27in%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27360%27%20height%3D%27360%27%20filter%3D%27url%28%23d%29%27%2F%3E%3C%2Fsvg%3E");
   background-size:360px 360px; mix-blend-mode:normal;
   -webkit-mask-image:none; mask-image:none;
+  animation:slide 26s linear infinite;
 }
+@keyframes slide{to{background-position:0 360px}}
 /* Дуслын доод сүүдэр — гэрэл дээрээс тусахад доогуур нь бараан ирмэг. */
 :root[data-theme="rain"] #bg i:nth-child(2){
   display:block; inset:0; left:2px; top:3px; width:100%; height:100%;
@@ -507,29 +414,7 @@
   background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27360%27%20height%3D%27360%27%3E%3Cfilter%20id%3D%27d%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%20color-interpolation-filters%3D%27sRGB%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.075%27%20numOctaves%3D%272%27%20seed%3D%277%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27matrix%27%20values%3D%270%200%200%200%200%20%200%200%200%200%200%20%200%200%200%200%200%20%201%200%200%200%200%27%20result%3D%27bump%27%2F%3E%3CfeComponentTransfer%20in%3D%27bump%27%20result%3D%27thr%27%3E%3CfeFuncA%20type%3D%27discrete%27%20tableValues%3D%270%200%200%200%200%200%201%201%27%2F%3E%3C%2FfeComponentTransfer%3E%3CfeGaussianBlur%20in%3D%27thr%27%20stdDeviation%3D%272.6%27%20result%3D%27soft%27%2F%3E%3CfeComponentTransfer%20in%3D%27soft%27%20result%3D%27bead%27%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.0%27%20amplitude%3D%273.0%27%20offset%3D%27-0.34%27%2F%3E%3C%2FfeComponentTransfer%3E%3CfeDiffuseLighting%20in%3D%27bead%27%20surfaceScale%3D%278%27%20diffuseConstant%3D%27.85%27%20lighting-color%3D%27%237d97a8%27%20result%3D%27dif%27%3E%3CfeDistantLight%20azimuth%3D%27215%27%20elevation%3D%2748%27%2F%3E%3C%2FfeDiffuseLighting%3E%3CfeSpecularLighting%20in%3D%27bead%27%20surfaceScale%3D%278%27%20specularConstant%3D%271.7%27%20specularExponent%3D%2742%27%20lighting-color%3D%27%23ffffff%27%20result%3D%27spc%27%3E%3CfePointLight%20x%3D%27108%27%20y%3D%2790%27%20z%3D%27120%27%2F%3E%3C%2FfeSpecularLighting%3E%3CfeComposite%20in%3D%27spc%27%20in2%3D%27dif%27%20operator%3D%27arithmetic%27%20k1%3D%270%27%20k2%3D%271%27%20k3%3D%271%27%20k4%3D%270%27%20result%3D%27lit%27%2F%3E%3CfeComposite%20in%3D%27lit%27%20in2%3D%27bead%27%20operator%3D%27in%27%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D%27360%27%20height%3D%27360%27%20filter%3D%27url%28%23d%29%27%2F%3E%3C%2Fsvg%3E");
   background-size:360px 360px; mix-blend-mode:multiply;
   -webkit-mask-image:none; mask-image:none;
-}
-
-/* 漫 — 45° растер ба ЖИГД БУС хурдны шугам. */
-:root[data-theme="anime"] #bg{
-  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%2713%27%20height%3D%2713%27%3E%3Cg%20fill%3D%27%23141417%27%20fill-opacity%3D%270.09%27%3E%3Ccircle%20cx%3D%270%27%20cy%3D%270%27%20r%3D%272.3%27%2F%3E%3Ccircle%20cx%3D%2713%27%20cy%3D%270%27%20r%3D%272.3%27%2F%3E%3Ccircle%20cx%3D%270%27%20cy%3D%2713%27%20r%3D%272.3%27%2F%3E%3Ccircle%20cx%3D%2713%27%20cy%3D%2713%27%20r%3D%272.3%27%2F%3E%3Ccircle%20cx%3D%276.5%27%20cy%3D%276.5%27%20r%3D%272.3%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
-  background-size:13px 13px;
-}
-:root[data-theme="anime"] #bg::after{
-  content:''; position:absolute; inset:0;
-  background-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271200%27%20height%3D%271200%27%3E%3Cg%20fill%3D%27%23141417%27%3E%3Cpolygon%20points%3D%27749.9%2C33.4%2057.6%2C-643.2%2054.6%2C-640.1%20749.1%2C34.1%27%20fill-opacity%3D%270.47%27%2F%3E%3Cpolygon%20points%3D%271095.9%2C226.3%202169.9%2C426.2%202170.7%2C421.6%201096.0%2C225.5%27%20fill-opacity%3D%270.15%27%2F%3E%3Cpolygon%20points%3D%27759.3%2C221.6%2016.7%2C367.4%2017.1%2C369.0%20759.5%2C222.4%27%20fill-opacity%3D%270.19%27%2F%3E%3Cpolygon%20points%3D%27865.3%2C439.6%20689.9%2C1366.3%20693.8%2C1367.1%20865.8%2C439.7%27%20fill-opacity%3D%270.16%27%2F%3E%3Cpolygon%20points%3D%27810.1%2C98.6%20587.5%2C-104.8%20585.8%2C-102.9%20809.4%2C99.4%27%20fill-opacity%3D%270.19%27%2F%3E%3Cpolygon%20points%3D%271156.2%2C165.5%201696.0%2C106.9%201695.6%2C103.2%201156.1%2C164.4%27%20fill-opacity%3D%270.37%27%2F%3E%3Cpolygon%20points%3D%27983.1%2C437.4%201228.0%2C1282.8%201232.7%2C1281.4%20984.1%2C437.1%27%20fill-opacity%3D%270.22%27%2F%3E%3Cpolygon%20points%3D%27819.3%2C302.0%20546.9%2C624.9%20548.7%2C626.4%20819.6%2C302.3%27%20fill-opacity%3D%270.34%27%2F%3E%3Cpolygon%20points%3D%271129.6%2C196.9%201713.2%2C211.1%201713.3%2C206.9%201129.6%2C196.3%27%20fill-opacity%3D%270.29%27%2F%3E%3Cpolygon%20points%3D%27835.8%2C365.3%20475.6%2C1181.2%20479.7%2C1183.1%20836.2%2C365.4%27%20fill-opacity%3D%270.11%27%2F%3E%3Cpolygon%20points%3D%27912.2%2C-49.7%20912.8%2C-364.8%20909.8%2C-364.8%20911.2%2C-49.7%27%20fill-opacity%3D%270.33%27%2F%3E%3Cpolygon%20points%3D%271038.5%2C199.8%201489.7%2C226.3%201489.8%2C223.7%201038.6%2C198.7%27%20fill-opacity%3D%270.40%27%2F%3E%3Cpolygon%20points%3D%271143.2%2C82.9%201676.4%2C-167.9%201675.0%2C-170.9%201142.9%2C82.4%27%20fill-opacity%3D%270.41%27%2F%3E%3Cpolygon%20points%3D%271088.9%2C335.4%201843.3%2C944.7%201844.5%2C943.2%201089.6%2C334.6%27%20fill-opacity%3D%270.48%27%2F%3E%3Cpolygon%20points%3D%271053.8%2C284.1%201736.5%2C725.7%201738.2%2C723.1%201054.4%2C283.2%27%20fill-opacity%3D%270.47%27%2F%3E%3Cpolygon%20points%3D%27753.7%2C145.6%20210.3%2C-13.4%20209.9%2C-11.8%20753.5%2C146.1%27%20fill-opacity%3D%270.16%27%2F%3E%3Cpolygon%20points%3D%27813.9%2C-52.6%20653.4%2C-457.6%20649.1%2C-455.9%20813.5%2C-52.4%27%20fill-opacity%3D%270.31%27%2F%3E%3Cpolygon%20points%3D%27783.7%2C277.5%20119.8%2C721.9%20121.7%2C724.7%20784.3%2C278.4%27%20fill-opacity%3D%270.27%27%2F%3E%3Cpolygon%20points%3D%271148.5%2C278.7%201455.5%2C392.7%201457.0%2C388.6%201148.8%2C278.0%27%20fill-opacity%3D%270.15%27%2F%3E%3Cpolygon%20points%3D%27883.0%2C-63.1%20788.2%2C-887.2%20786.1%2C-887.0%20882.0%2C-63.0%27%20fill-opacity%3D%270.27%27%2F%3E%3Cpolygon%20points%3D%271054.7%2C387.0%201377.0%2C829.8%201380.9%2C826.9%201055.2%2C386.6%27%20fill-opacity%3D%270.44%27%2F%3E%3Cpolygon%20points%3D%271095.3%2C164.6%201797.5%2C59.2%201797.0%2C55.9%201095.1%2C163.7%27%20fill-opacity%3D%270.22%27%2F%3E%3Cpolygon%20points%3D%27795.6%2C271.7%20287.0%2C620.6%20290.0%2C624.8%20796.2%2C272.6%27%20fill-opacity%3D%270.35%27%2F%3E%3Cpolygon%20points%3D%27743.3%2C192.4%20368.4%2C192.3%20368.4%2C196.3%20743.3%2C193.0%27%20fill-opacity%3D%270.45%27%2F%3E%3Cpolygon%20points%3D%27761.5%2C370.1%20148.1%2C1096.8%20151.2%2C1099.3%20762.2%2C370.7%27%20fill-opacity%3D%270.40%27%2F%3E%3Cpolygon%20points%3D%27766.9%2C359.3%20415.2%2C763.7%20418.3%2C766.4%20767.5%2C359.8%27%20fill-opacity%3D%270.38%27%2F%3E%3Cpolygon%20points%3D%27841.9%2C438.4%20611.4%2C1252.1%20613.0%2C1252.6%20842.7%2C438.6%27%20fill-opacity%3D%270.32%27%2F%3E%3Cpolygon%20points%3D%27910.6%2C408.7%20906.1%2C1097.6%20910.0%2C1097.6%20911.5%2C408.7%27%20fill-opacity%3D%270.42%27%2F%3E%3Cpolygon%20points%3D%27788.9%2C365.5%20257.3%2C1116.1%20259.8%2C1117.9%20789.7%2C366.0%27%20fill-opacity%3D%270.44%27%2F%3E%3Cpolygon%20points%3D%271062.3%2C32.6%201829.4%2C-783.4%201826.8%2C-785.9%201061.5%2C31.8%27%20fill-opacity%3D%270.31%27%2F%3E%3Cpolygon%20points%3D%271032.6%2C400.1%201577.8%2C1340.9%201581.2%2C1338.9%201033.2%2C399.7%27%20fill-opacity%3D%270.39%27%2F%3E%3Cpolygon%20points%3D%27894.6%2C48.3%20778.4%2C-900.1%20774.6%2C-899.6%20893.8%2C48.4%27%20fill-opacity%3D%270.27%27%2F%3E%3Cpolygon%20points%3D%27747.3%2C29.2%20152.5%2C-556.8%20151.3%2C-555.5%20746.7%2C29.9%27%20fill-opacity%3D%270.16%27%2F%3E%3Cpolygon%20points%3D%27712.7%2C268.9%20261.0%2C442.7%20262.4%2C446.2%20713.0%2C269.7%27%20fill-opacity%3D%270.12%27%2F%3E%3Cpolygon%20points%3D%27761.8%2C218.9%20421.6%2C279.3%20422.1%2C281.6%20761.9%2C219.3%27%20fill-opacity%3D%270.17%27%2F%3E%3Cpolygon%20points%3D%27955.3%2C309.4%201194.6%2C957.5%201198.0%2C956.3%20955.9%2C309.2%27%20fill-opacity%3D%270.34%27%2F%3E%3Cpolygon%20points%3D%27930.7%2C441.4%20952.8%2C741.1%20955.2%2C740.9%20931.4%2C441.3%27%20fill-opacity%3D%270.26%27%2F%3E%3Cpolygon%20points%3D%271091.6%2C350.8%201551.1%2C758.2%201553.3%2C755.7%201091.9%2C350.5%27%20fill-opacity%3D%270.14%27%2F%3E%3Cpolygon%20points%3D%27750.1%2C144.1%20-5.8%2C-78.5%20-7.1%2C-74.0%20749.8%2C145.2%27%20fill-opacity%3D%270.27%27%2F%3E%3Cpolygon%20points%3D%27994.2%2C-4.0%201230.8%2C-566.6%201227.7%2C-567.9%20993.7%2C-4.2%27%20fill-opacity%3D%270.33%27%2F%3E%3Cpolygon%20points%3D%271162.2%2C123.4%201944.8%2C-90.2%201943.6%2C-94.5%201162.0%2C122.8%27%20fill-opacity%3D%270.10%27%2F%3E%3Cpolygon%20points%3D%271068.8%2C318.6%201703.9%2C832.1%201706.1%2C829.4%201069.1%2C318.2%27%20fill-opacity%3D%270.46%27%2F%3E%3Cpolygon%20points%3D%27782.3%2C319.9%20432.4%2C663.2%20435.8%2C666.5%20782.7%2C320.3%27%20fill-opacity%3D%270.25%27%2F%3E%3Cpolygon%20points%3D%271156.2%2C131.5%201933.4%2C-60.0%201932.3%2C-64.6%201156.0%2C130.9%27%20fill-opacity%3D%270.30%27%2F%3E%3Cpolygon%20points%3D%27768.7%2C275.7%20-203.4%2C845.5%20-202.1%2C847.7%20769.1%2C276.4%27%20fill-opacity%3D%270.29%27%2F%3E%3Cpolygon%20points%3D%271062.8%2C337.4%201546.4%2C804.8%201549.2%2C801.9%201063.2%2C337.0%27%20fill-opacity%3D%270.43%27%2F%3E%3Cpolygon%20points%3D%271108.0%2C208.8%201636.0%2C254.5%201636.4%2C250.0%201108.1%2C207.8%27%20fill-opacity%3D%270.20%27%2F%3E%3Cpolygon%20points%3D%27895.9%2C333.4%20769.1%2C1456.9%20772.5%2C1457.2%20896.5%2C333.4%27%20fill-opacity%3D%270.29%27%2F%3E%3Cpolygon%20points%3D%27785.2%2C28.4%20219.3%2C-702.7%20216.3%2C-700.3%20784.8%2C28.7%27%20fill-opacity%3D%270.22%27%2F%3E%3Cpolygon%20points%3D%27747.4%2C156.4%20210.4%2C40.5%20209.8%2C43.6%20747.2%2C157.2%27%20fill-opacity%3D%270.24%27%2F%3E%3Cpolygon%20points%3D%27905.9%2C-13.0%20896.7%2C-343.5%20893.8%2C-343.4%20905.3%2C-13.0%27%20fill-opacity%3D%270.47%27%2F%3E%3Cpolygon%20points%3D%271063.7%2C63.8%201302.4%2C-137.4%201300.3%2C-139.9%201063.0%2C63.1%27%20fill-opacity%3D%270.33%27%2F%3E%3Cpolygon%20points%3D%27857.7%2C-11.9%20675.6%2C-692.8%20672.6%2C-692.0%20856.7%2C-11.7%27%20fill-opacity%3D%270.26%27%2F%3E%3Cpolygon%20points%3D%271001.0%2C73.4%201329.4%2C-366.6%201327.8%2C-367.8%201000.2%2C72.8%27%20fill-opacity%3D%270.43%27%2F%3E%3Cpolygon%20points%3D%27850.3%2C20.4%20667.8%2C-488.4%20663.2%2C-486.7%20849.4%2C20.8%27%20fill-opacity%3D%270.16%27%2F%3E%3Cpolygon%20points%3D%27714.7%2C218.6%203.2%2C315.0%203.4%2C317.0%20714.8%2C219.2%27%20fill-opacity%3D%270.33%27%2F%3E%3Cpolygon%20points%3D%27961.6%2C72.0%201150.1%2C-383.8%201145.9%2C-385.5%20960.7%2C71.6%27%20fill-opacity%3D%270.37%27%2F%3E%3Cpolygon%20points%3D%271133.1%2C228.4%202240.5%2C409.3%202241.2%2C405.1%201133.3%2C227.3%27%20fill-opacity%3D%270.12%27%2F%3E%3Cpolygon%20points%3D%27995.3%2C65.4%201457.2%2C-639.1%201453.6%2C-641.5%20994.4%2C64.8%27%20fill-opacity%3D%270.15%27%2F%3E%3Cpolygon%20points%3D%27845.1%2C435.1%20731.7%2C845.5%20734.6%2C846.3%20845.9%2C435.4%27%20fill-opacity%3D%270.16%27%2F%3E%3Cpolygon%20points%3D%27821.5%2C103.9%20541.0%2C-168.3%20539.8%2C-167.1%20821.0%2C104.4%27%20fill-opacity%3D%270.12%27%2F%3E%3Cpolygon%20points%3D%27710.1%2C88.4%20-213.4%2C-385.2%20-214.7%2C-382.8%20709.9%2C88.9%27%20fill-opacity%3D%270.23%27%2F%3E%3Cpolygon%20points%3D%27758.2%2C79.5%20-121.1%2C-561.8%20-122.1%2C-560.4%20757.8%2C80.1%27%20fill-opacity%3D%270.38%27%2F%3E%3Cpolygon%20points%3D%271034.4%2C363.8%201455.3%2C954.0%201458.3%2C951.8%201035.2%2C363.2%27%20fill-opacity%3D%270.35%27%2F%3E%3Cpolygon%20points%3D%27895.0%2C390.7%20851.0%2C902.3%20854.5%2C902.6%20895.9%2C390.8%27%20fill-opacity%3D%270.15%27%2F%3E%3Cpolygon%20points%3D%27928.7%2C364.7%201016.9%2C1279.3%201020.6%2C1278.9%20929.2%2C364.6%27%20fill-opacity%3D%270.36%27%2F%3E%3Cpolygon%20points%3D%271097.8%2C302.5%201420.9%2C495.9%201422.6%2C493.1%201098.0%2C302.1%27%20fill-opacity%3D%270.20%27%2F%3E%3Cpolygon%20points%3D%271047.7%2C60.2%201457.1%2C-338.7%201455.8%2C-340.0%201047.1%2C59.5%27%20fill-opacity%3D%270.39%27%2F%3E%3Cpolygon%20points%3D%271045.6%2C239.3%202083.1%2C603.8%202083.9%2C601.5%201045.9%2C238.5%27%20fill-opacity%3D%270.15%27%2F%3E%3Cpolygon%20points%3D%271124.6%2C155.4%202099.7%2C-12.0%202099.1%2C-15.4%201124.6%2C154.9%27%20fill-opacity%3D%270.24%27%2F%3E%3Cpolygon%20points%3D%27927.5%2C359.3%201003.1%2C1171.3%201005.8%2C1171.1%20928.1%2C359.2%27%20fill-opacity%3D%270.15%27%2F%3E%3Cpolygon%20points%3D%271016.4%2C6.0%201494.0%2C-844.9%201490.1%2C-847.1%201015.7%2C5.6%27%20fill-opacity%3D%270.31%27%2F%3E%3Cpolygon%20points%3D%27743.0%2C80.4%20-26.7%2C-426.8%20-27.7%2C-425.3%20742.6%2C80.9%27%20fill-opacity%3D%270.11%27%2F%3E%3Cpolygon%20points%3D%27948.7%2C312.2%201255.5%2C1313.2%201259.4%2C1312.0%20949.4%2C312.0%27%20fill-opacity%3D%270.10%27%2F%3E%3Cpolygon%20points%3D%27668.1%2C237.9%20-138.1%2C389.5%20-137.5%2C392.5%20668.3%2C238.6%27%20fill-opacity%3D%270.14%27%2F%3E%3Cpolygon%20points%3D%27992.3%2C310.2%201337.3%2C819.0%201341.0%2C816.5%20992.8%2C309.8%27%20fill-opacity%3D%270.16%27%2F%3E%3Cpolygon%20points%3D%27907.6%2C351.9%20895.7%2C787.4%20897.9%2C787.5%20908.2%2C351.9%27%20fill-opacity%3D%270.29%27%2F%3E%3Cpolygon%20points%3D%271159.9%2C243.2%201757.2%2C366.9%201758.0%2C362.8%201160.1%2C242.2%27%20fill-opacity%3D%270.37%27%2F%3E%3Cpolygon%20points%3D%27659.8%2C236.8%20266.9%2C306.5%20267.4%2C309.1%20660.0%2C237.7%27%20fill-opacity%3D%270.37%27%2F%3E%3Cpolygon%20points%3D%27893.6%2C49.7%20833.6%2C-415.3%20831.6%2C-415.1%20893.2%2C49.7%27%20fill-opacity%3D%270.13%27%2F%3E%3Cpolygon%20points%3D%27700.3%2C343.3%20207.0%2C695.2%20208.7%2C697.6%20700.7%2C343.8%27%20fill-opacity%3D%270.21%27%2F%3E%3Cpolygon%20points%3D%27887.6%2C-30.0%20840.7%2C-464.7%20837.1%2C-464.3%20887.0%2C-30.0%27%20fill-opacity%3D%270.48%27%2F%3E%3Cpolygon%20points%3D%27801.4%2C47.4%20120.6%2C-841.1%20119.5%2C-840.2%20801.1%2C47.7%27%20fill-opacity%3D%270.41%27%2F%3E%3Cpolygon%20points%3D%27804.9%2C259.2%20161.5%2C665.0%20163.4%2C668.1%20805.4%2C260.1%27%20fill-opacity%3D%270.24%27%2F%3E%3Cpolygon%20points%3D%271020.1%2C264.7%201895.9%2C852.8%201898.5%2C848.9%201020.5%2C264.1%27%20fill-opacity%3D%270.12%27%2F%3E%3Cpolygon%20points%3D%27917.0%2C319.2%20942.2%2C952.4%20944.3%2C952.3%20917.4%2C319.1%27%20fill-opacity%3D%270.26%27%2F%3E%3Cpolygon%20points%3D%27867.6%2C311.4%20752.8%2C622.5%20755.1%2C623.3%20868.6%2C311.8%27%20fill-opacity%3D%270.30%27%2F%3E%3Cpolygon%20points%3D%27751.1%2C304.9%20447.6%2C517.9%20448.6%2C519.4%20751.5%2C305.4%27%20fill-opacity%3D%270.32%27%2F%3E%3Cpolygon%20points%3D%271093.6%2C94.4%201991.3%2C-389.1%201990.7%2C-390.4%201093.3%2C93.9%27%20fill-opacity%3D%270.32%27%2F%3E%3Cpolygon%20points%3D%27710.4%2C208.7%2096.1%2C259.1%2096.4%2C263.2%20710.5%2C209.5%27%20fill-opacity%3D%270.47%27%2F%3E%3Cpolygon%20points%3D%27846.3%2C364.6%20493.7%2C1294.1%20495.4%2C1294.8%20846.9%2C364.8%27%20fill-opacity%3D%270.22%27%2F%3E%3Cpolygon%20points%3D%271108.9%2C313.2%201950.8%2C830.9%201951.8%2C829.3%201109.2%2C312.7%27%20fill-opacity%3D%270.13%27%2F%3E%3Cpolygon%20points%3D%27915.9%2C324.1%20936.4%2C983.8%20938.9%2C983.8%20916.7%2C324.1%27%20fill-opacity%3D%270.12%27%2F%3E%3Cpolygon%20points%3D%27873.5%2C71.1%20731.6%2C-374.8%20729.1%2C-374.0%20873.0%2C71.2%27%20fill-opacity%3D%270.14%27%2F%3E%3Cpolygon%20points%3D%27766.8%2C270.7%20-52.5%2C715.0%20-50.2%2C719.1%20767.1%2C271.4%27%20fill-opacity%3D%270.36%27%2F%3E%3Cpolygon%20points%3D%27924.9%2C-10.4%20967.3%2C-680.4%20963.4%2C-680.7%20923.9%2C-10.4%27%20fill-opacity%3D%270.48%27%2F%3E%3Cpolygon%20points%3D%27882.1%2C-26.9%20810.8%2C-546.9%20807.8%2C-546.5%20881.1%2C-26.8%27%20fill-opacity%3D%270.15%27%2F%3E%3Cpolygon%20points%3D%271044.0%2C250.5%201520.2%2C460.9%201521.3%2C458.4%201044.4%2C249.7%27%20fill-opacity%3D%270.13%27%2F%3E%3Cpolygon%20points%3D%27929.5%2C-7.5%20958.1%2C-329.3%20956.4%2C-329.4%20929.1%2C-7.5%27%20fill-opacity%3D%270.24%27%2F%3E%3Cpolygon%20points%3D%271075.6%2C-5.8%201594.6%2C-633.0%201592.4%2C-634.8%201075.2%2C-6.2%27%20fill-opacity%3D%270.24%27%2F%3E%3Cpolygon%20points%3D%27852.6%2C298.4%20468.6%2C989.8%20472.3%2C991.8%20853.5%2C298.8%27%20fill-opacity%3D%270.14%27%2F%3E%3Cpolygon%20points%3D%27770.0%2C164.3%20-109.3%2C-7.3%20-110.2%2C-2.7%20769.9%2C165.0%27%20fill-opacity%3D%270.42%27%2F%3E%3Cpolygon%20points%3D%271033.8%2C304.3%201820.2%2C1027.8%201822.2%2C1025.6%201034.3%2C303.8%27%20fill-opacity%3D%270.28%27%2F%3E%3Cpolygon%20points%3D%27940.5%2C-61.2%201023.9%2C-803.9%201020.0%2C-804.4%20939.4%2C-61.3%27%20fill-opacity%3D%270.14%27%2F%3E%3Cpolygon%20points%3D%27983.4%2C26.3%201118.9%2C-289.8%201117.1%2C-290.6%20982.4%2C25.9%27%20fill-opacity%3D%270.33%27%2F%3E%3Cpolygon%20points%3D%27666.6%2C219.6%2040.6%2C289.9%2040.9%2C292.1%20666.6%2C220.2%27%20fill-opacity%3D%270.18%27%2F%3E%3Cpolygon%20points%3D%27753.7%2C126.2%20-106.1%2C-230.6%20-107.1%2C-228.2%20753.5%2C126.7%27%20fill-opacity%3D%270.20%27%2F%3E%3Cpolygon%20points%3D%271151.6%2C165.8%202159.4%2C55.2%202159.0%2C52.2%201151.5%2C165.0%27%20fill-opacity%3D%270.16%27%2F%3E%3Cpolygon%20points%3D%271005.8%2C26.1%201169.1%2C-262.6%201167.7%2C-263.4%201005.3%2C25.8%27%20fill-opacity%3D%270.39%27%2F%3E%3Cpolygon%20points%3D%271032.6%2C105.0%201818.5%2C-462.7%201816.3%2C-465.8%201032.2%2C104.5%27%20fill-opacity%3D%270.45%27%2F%3E%3Cpolygon%20points%3D%27743.8%2C27.5%20303.8%2C-403.9%20301.8%2C-401.8%20743.5%2C27.8%27%20fill-opacity%3D%270.33%27%2F%3E%3Cpolygon%20points%3D%27982.0%2C353.5%201207.0%2C873.4%201209.0%2C872.5%20982.4%2C353.4%27%20fill-opacity%3D%270.25%27%2F%3E%3Cpolygon%20points%3D%27693.1%2C224.6%2064.8%2C317.8%2065.5%2C322.4%20693.3%2C225.6%27%20fill-opacity%3D%270.47%27%2F%3E%3Cpolygon%20points%3D%27836.3%2C-10.8%20573.2%2C-714.1%20570.4%2C-713.0%20835.4%2C-10.5%27%20fill-opacity%3D%270.34%27%2F%3E%3Cpolygon%20points%3D%27828.5%2C15.6%20598.0%2C-471.3%20596.6%2C-470.7%20828.1%2C15.8%27%20fill-opacity%3D%270.24%27%2F%3E%3Cpolygon%20points%3D%27711.4%2C80.7%20-75.4%2C-356.6%20-77.6%2C-352.6%20711.1%2C81.3%27%20fill-opacity%3D%270.21%27%2F%3E%3Cpolygon%20points%3D%27884.8%2C64.5%20689.4%2C-847.7%20684.6%2C-846.6%20884.0%2C64.7%27%20fill-opacity%3D%270.46%27%2F%3E%3Cpolygon%20points%3D%27820.5%2C-30.6%20469.9%2C-881.7%20467.7%2C-880.8%20819.7%2C-30.3%27%20fill-opacity%3D%270.31%27%2F%3E%3Cpolygon%20points%3D%271034.9%2C98.5%201924.4%2C-580.0%201922.6%2C-582.3%201034.5%2C97.9%27%20fill-opacity%3D%270.10%27%2F%3E%3Cpolygon%20points%3D%27799.3%2C284.3%20143.7%2C823.1%20146.8%2C826.9%20800.0%2C285.1%27%20fill-opacity%3D%270.35%27%2F%3E%3Cpolygon%20points%3D%27809.0%2C280.4%20142.9%2C853.2%20145.5%2C856.3%20809.5%2C281.0%27%20fill-opacity%3D%270.25%27%2F%3E%3Cpolygon%20points%3D%271026.3%2C93.9%201448.9%2C-268.5%201446.6%2C-271.2%201025.9%2C93.4%27%20fill-opacity%3D%270.46%27%2F%3E%3Cpolygon%20points%3D%271016.5%2C375.5%201484.1%2C1195.4%201485.4%2C1194.6%201016.9%2C375.2%27%20fill-opacity%3D%270.33%27%2F%3E%3Cpolygon%20points%3D%271031.4%2C-23.7%201472.9%2C-821.2%201470.3%2C-822.6%201030.8%2C-24.0%27%20fill-opacity%3D%270.31%27%2F%3E%3Cpolygon%20points%3D%271047.3%2C100.2%201491.2%2C-200.0%201488.4%2C-204.1%201046.9%2C99.5%27%20fill-opacity%3D%270.17%27%2F%3E%3Cpolygon%20points%3D%271046.1%2C218.4%201804.4%2C366.2%201804.8%2C364.0%201046.2%2C217.6%27%20fill-opacity%3D%270.18%27%2F%3E%3Cpolygon%20points%3D%27735.7%2C72.4%206.8%2C-420.4%205.7%2C-418.8%20735.2%2C73.1%27%20fill-opacity%3D%270.29%27%2F%3E%3Cpolygon%20points%3D%271043.2%2C-30.0%201332.2%2C-518.4%201328.8%2C-520.4%201042.3%2C-30.5%27%20fill-opacity%3D%270.47%27%2F%3E%3Cpolygon%20points%3D%27940.5%2C410.5%201071.9%2C1408.1%201073.8%2C1407.8%20941.3%2C410.4%27%20fill-opacity%3D%270.18%27%2F%3E%3Cpolygon%20points%3D%27985.5%2C303.3%201221.7%2C659.8%201223.3%2C658.7%20986.2%2C302.8%27%20fill-opacity%3D%270.40%27%2F%3E%3Cpolygon%20points%3D%27891.9%2C-44.7%20809.5%2C-1016.3%20804.7%2C-1015.9%20891.0%2C-44.6%27%20fill-opacity%3D%270.48%27%2F%3E%3Cpolygon%20points%3D%27729.2%2C8.6%20456.2%2C-265.4%20455.1%2C-264.4%20728.8%2C8.9%27%20fill-opacity%3D%270.18%27%2F%3E%3Cpolygon%20points%3D%27780.6%2C323.7%20166.1%2C941.8%20167.5%2C943.2%20781.2%2C324.3%27%20fill-opacity%3D%270.26%27%2F%3E%3Cpolygon%20points%3D%27744.5%2C144.7%20360.9%2C36.1%20360.1%2C38.9%20744.3%2C145.5%27%20fill-opacity%3D%270.37%27%2F%3E%3Cpolygon%20points%3D%27653.5%2C199.1%20-440.0%2C228.2%20-439.9%2C232.1%20653.5%2C199.5%27%20fill-opacity%3D%270.39%27%2F%3E%3Cpolygon%20points%3D%27872.8%2C323.1%20671.3%2C995.9%20675.1%2C997.1%20873.4%2C323.3%27%20fill-opacity%3D%270.47%27%2F%3E%3Cpolygon%20points%3D%27792.3%2C300.9%20260.6%2C784.8%20263.5%2C788.1%20792.9%2C301.6%27%20fill-opacity%3D%270.33%27%2F%3E%3Cpolygon%20points%3D%27863.6%2C353.4%20574.8%2C1323.7%20576.5%2C1324.2%20864.4%2C353.6%27%20fill-opacity%3D%270.27%27%2F%3E%3Cpolygon%20points%3D%27928.2%2C407.3%20955.2%2C767.9%20957.0%2C767.8%20928.8%2C407.3%27%20fill-opacity%3D%270.29%27%2F%3E%3Cpolygon%20points%3D%271109.1%2C173.5%201730.7%2C113.8%201730.5%2C111.7%201109.0%2C172.4%27%20fill-opacity%3D%270.24%27%2F%3E%3Cpolygon%20points%3D%27957.3%2C80.1%201309.3%2C-795.2%201307.9%2C-795.7%20956.7%2C79.8%27%20fill-opacity%3D%270.20%27%2F%3E%3Cpolygon%20points%3D%27742.8%2C237.2%2033.7%2C426.9%2034.2%2C428.8%20742.9%2C237.6%27%20fill-opacity%3D%270.49%27%2F%3E%3Cpolygon%20points%3D%27736.0%2C258.0%20387.5%2C387.2%20389.1%2C391.5%20736.2%2C258.6%27%20fill-opacity%3D%270.37%27%2F%3E%3Cpolygon%20points%3D%27784.5%2C185.3%20155.5%2C153.2%20155.3%2C156.4%20784.5%2C186.2%27%20fill-opacity%3D%270.34%27%2F%3E%3Cpolygon%20points%3D%271086.2%2C69.6%201768.5%2C-410.3%201767.7%2C-411.3%201086.0%2C69.3%27%20fill-opacity%3D%270.41%27%2F%3E%3Cpolygon%20points%3D%27701.5%2C319.0%20-148.7%2C833.3%20-147.1%2C835.9%20702.0%2C319.9%27%20fill-opacity%3D%270.50%27%2F%3E%3Cpolygon%20points%3D%27922.2%2C-56.2%20940.0%2C-480.3%20936.8%2C-480.5%20921.3%2C-56.2%27%20fill-opacity%3D%270.49%27%2F%3E%3Cpolygon%20points%3D%271063.1%2C186.8%201716.7%2C164.0%201716.6%2C161.0%201063.1%2C186.2%27%20fill-opacity%3D%270.21%27%2F%3E%3Cpolygon%20points%3D%27843.3%2C72.6%20622.3%2C-310.4%20620.8%2C-309.5%20842.7%2C72.9%27%20fill-opacity%3D%270.25%27%2F%3E%3Cpolygon%20points%3D%271109.9%2C43.4%201482.8%2C-234.6%201480.4%2C-237.8%201109.7%2C43.1%27%20fill-opacity%3D%270.48%27%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
-  background-size:cover; background-position:center;
-  background-repeat:no-repeat;
-  -webkit-mask-image:none; mask-image:none;
-  animation:none;
-}
-:root[data-theme="anime"] #bg i:nth-child(2){
-  display:block; border-radius:0; filter:none; opacity:.45; animation:none;
-  left:0; bottom:0; width:70vmax; height:52vmax;
-  background:repeating-linear-gradient(46deg,
-    rgba(20,20,23,.1) 0 1px, transparent 1px 6px);
-  mix-blend-mode:multiply;
-  -webkit-mask-image:radial-gradient(80% 80% at 0% 100%, #000, transparent 72%);
-  mask-image:radial-gradient(80% 80% at 0% 100%, #000, transparent 72%);
+  animation:slide 26s linear infinite;
 }
 
 /* ── Загвар сонгох жагсаалт ──────────────────────────────────────── */
