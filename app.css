@@ -372,6 +372,11 @@ button:disabled{opacity:.5; cursor:default}
 .statles .seen{background:var(--accent); opacity:.28}
 .statles .fill{background:var(--accent)}
 .statles .num{text-align:right; color:var(--ink-2); font-variant-numeric:tabular-nums}
+/* Хэсгийн нэр «初級1», «N5 үг» гэх мэт урт тул шошгын багана өргөн хэрэгтэй. */
+.statles.wide .l{grid-template-columns:62px 1fr 74px}
+/* Явцын таб 6 ширхэг. 6 багана болговол утсан дээр «初級1» шахагдаж
+   уншигдахгүй болдог тул 3×2. */
+.lessons.stabs{grid-template-columns:repeat(3,1fr); margin-bottom:10px}
 .lg{display:inline-flex; align-items:center; gap:4px; margin-left:10px; white-space:nowrap}
 .lg i{width:14px; height:8px; border-radius:4px; background:var(--accent); display:inline-block}
 .lg i.s{opacity:.28}

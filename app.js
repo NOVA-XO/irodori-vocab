@@ -962,7 +962,9 @@ function show(name) {
 }
 
 function go(name) {
-  if (name === 'stats') refreshStats();
+  // Явц нь БҮХ санг харуулдаг тул нээхэд бусад номыг татна. Эхлээд
+  // байгаагаараа зурж, ирсэн хойно нь дахин зурна — хоосон дэлгэц харагдахгүй.
+  if (name === 'stats') { refreshStats(); loadAllBooks().then(refreshStats); }
   if (name === 'profile') { refreshSync(); refreshUsage(); }
   if (name === 'feedback') refreshFb();
   if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
@@ -1081,33 +1083,98 @@ function refreshHome() {
     : 'Дор хаяж нэг бүлэг сонгоно уу — эс тэгвээс дасгал эхлэхгүй.';
 }
 
+/* Явц — БҮХ хэсэгээр.
+ *
+ * Үүний өмнө доорх зураас зөвхөн ИДЭВХТЭЙ Irodori номын хичээлүүдийг
+ * харуулдаг байв — N5-ийн 2077 үг, 1187 ханз, кана дээр хийсэн ажил
+ * хаана ч тусдагүй. Дээд мөрийн «үзсэн» тоо нь харин БҮХ хэсгийг
+ * нийлүүлж тоолдог тул дээд, доод хоёр нь зөрж, «яагаад явц хөдөлсөнгүй
+ * вэ?» гэсэн ойлгомжгүй байдал үүсгэдэг байв. */
+
+const STAT_TABS = [
+  { k: 'starter', n: '入門' }, { k: 'el1', n: '初級1' }, { k: 'el2', n: '初級2' },
+  { k: 'n5', n: 'N5 үг' }, { k: 'kanji', n: 'Ханз' }, { k: 'kana', n: 'Кана' },
+];
+let statTab = null;               // анх нээхэд идэвхтэй номоор эхлэнэ
+
+/** Явцын дэлгэцэд БҮХ сан хэрэгтэй — апп эхлэхэд зөвхөн идэвхтэй
+ *  номоо татдаг (эхний ачаалал хөнгөн байх ёстой). Ганц удаа татаад
+ *  кэшлэнэ. Алдвал тухайн ном хоосон байна — дэлгэц эвдэрч болохгүй. */
+function loadAllBooks() {
+  const jobs = ['starter', 'el1', 'el2']
+    .filter(b => !bookCache[b])
+    .map(b => fetch(BOOK_FILE[b]).then(r => r.json())
+      .then(d => { bookCache[b] = d.items; })
+      .catch(() => { bookCache[b] = []; }));
+  if (!N5.length) jobs.push(loadN5());
+  return Promise.all(jobs);
+}
+
+function statSet(k) {
+  if (k === 'kana') return KANA;
+  if (k === 'kanji') return KANJI;
+  if (k === 'n5') return N5;
+  // Ашиглалтын үг (参考語彙) нь дасгалд анхдагчаар ордоггүй тул явцад бас тоолохгүй.
+  return (bookCache[k] || []).filter(i => !i.ref);
+}
+
+const pSeen = i => ((progress[i.id] || {}).n || 0) > 0;
+const pDone = i => ((progress[i.id] || {}).b || 0) >= 3;
+
+/** Нэг мөр: шошго · хоёр давхаргатай зураас · тоо. */
+function statBar(label, items) {
+  const seen = items.filter(pSeen).length, done = items.filter(pDone).length;
+  const w = x => (100 * x / Math.max(items.length, 1)) + '%';
+  return '<div class="l"><span>' + esc(label) + '</span><span class="track">'
+    + '<span class="seen" style="width:' + w(seen) + '"></span>'
+    + '<span class="fill" style="width:' + w(done) + '"></span></span>'
+    + '<span class="num">' + done + '/' + items.length + '</span></div>';
+}
+
+/** Сонгосон хэсгийн дотоод задаргаа: үг нь хичээлээр,
+ *  ханз нь JLPT түвшнээр, кана нь бүлгээр. */
+function statDetail(k) {
+  const items = statSet(k);
+  if (!items.length) return '<p class="hint">Ачаалж байна…</p>';
+  if (k === 'kana') {
+    const G = [['gojuon', '五十音'], ['dakuten', '濁·半濁'], ['yoon', '拗音']];
+    return G.map(g => statBar(g[1], items.filter(i => i.group === g[0]))).join('');
+  }
+  if (k === 'kanji') {
+    const rows = [5, 4, 3, 2].map(n => statBar('N' + n, items.filter(i => i.n === n)));
+    const rest = items.filter(i => !i.n);
+    // JLPT жагсаалтад үгүй харин хичээлд гардаг ханз — түүнийг бас харуулна.
+    if (rest.length) rows.push(statBar('бусад', rest));
+    return rows.join('');
+  }
+  return [...new Set(items.map(i => i.lesson))].sort((a, b) => a - b)
+    .map(l => statBar('L' + l, items.filter(i => i.lesson === l))).join('');
+}
+
 function refreshStats() {
   const seen = Object.keys(progress).length;
   const learned = Object.values(progress).filter(p => p.b >= 3).length;
   const tot = Object.values(progress).reduce((a, p) => a + p.n, 0);
   const cor = Object.values(progress).reduce((a, p) => a + p.c, 0);
+  const all = STAT_TABS.reduce((a, t) => a + statSet(t.k).length, 0);
   $('stat-sum').innerHTML =
     '<div><b>' + seen + '</b><span>үзсэн</span></div>' +
     '<div><b>' + learned + '</b><span>тогтсон</span></div>' +
-    '<div><b>' + ALL.length + '</b><span>нийт үг</span></div>' +
+    '<div><b>' + all + '</b><span>нийт зүйл</span></div>' +
     '<div><b>' + (tot ? Math.round(100 * cor / tot) : 0) + '%</b><span>зөв хариулт</span></div>';
 
-  const box = $('stat-lessons'); box.innerHTML = '';
-  for (const l of [...new Set(ALL.map(i => i.lesson))].sort((a, b) => a - b)) {
-    const items = ALL.filter(i => i.lesson === l && !i.ref);
-    // ХОЁР ДАВХАРГА: цайвар нь «нэг ч удаа үзсэн», тод нь «тогтсон» (3-р хайрцаг).
-    // Ганц давхаргатай үед эхний өдрүүдэд зураас огт хөдөлдөггүй байсан.
-    const seen = items.filter(i => ((progress[i.id] || {}).n || 0) > 0).length;
-    const k = items.filter(i => (progress[i.id] || {}).b >= 3).length;
-    const w = x => (100 * x / Math.max(items.length, 1)) + '%';
-    const d = document.createElement('div');
-    d.className = 'l';
-    d.innerHTML = '<span>L' + l + '</span><span class="track">' +
-      '<span class="seen" style="width:' + w(seen) + '"></span>' +
-      '<span class="fill" style="width:' + w(k) + '"></span></span>' +
-      '<span class="num">' + k + '/' + items.length + '</span>';
-    box.appendChild(d);
-  }
+  $('stat-sections').innerHTML =
+    STAT_TABS.map(t => statBar(t.n, statSet(t.k))).join('');
+
+  if (!statTab) statTab = STAT_TABS.some(t => t.k === settings.book) ? settings.book : 'starter';
+  const tabs = $('seg-stat');
+  tabs.innerHTML = STAT_TABS.map(t =>
+    '<button data-s="' + t.k + '" aria-pressed="' + (t.k === statTab) + '">'
+    + esc(t.n) + '<small>' + statSet(t.k).length + '</small></button>').join('');
+  tabs.querySelectorAll('button').forEach(b =>
+    b.onclick = () => { statTab = b.dataset.s; refreshStats(); });
+
+  $('stat-lessons').innerHTML = statDetail(statTab);
 }
 
 /* ══════════════════════ 8. Холбоос ══════════════════════ */
