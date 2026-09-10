@@ -8,11 +8,17 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-10za">
-<link rel="stylesheet" href="app.css?v=2026-09-10za">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-10zb">
+<link rel="stylesheet" href="app.css?v=2026-09-10zb">
+<link rel="stylesheet" href="themes.css?v=2026-09-10zb">
+<!-- Сонгосон загварыг CSS-ээс ӨМНӨ тавина. Эс тэгвэл хуудас эхлээд
+     анхдагч 和-гаар нэг анивчаад дараа нь солигдоно. Тиймээс энэ нь
+     app.js дотор биш, ЭНД байх ёстой. -->
+<script>try{var t=JSON.parse(localStorage.getItem("irodori.theme.v1")||'""');
+if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10za">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10za">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10zb">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10zb">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -381,6 +387,11 @@
 
 <!-- ═══════════════════ ПРОФАЙЛ ═══════════════════ -->
 <section id="profile" class="screen" hidden>
+  <h2>Загвар</h2>
+  <p class="hint">Аппын өнгө, хэлбэр, үсгийг бүхэлд нь солино.
+     Сонголт энэ төхөөрөмжид хадгалагдана.</p>
+  <div id="theme-list" class="thlist"></div>
+
   <h2>Хаяг · бүртгэл</h2>
 
   <div id="sync-box" hidden>
@@ -439,7 +450,7 @@
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10za"></script>
-<script src="app.js?v=2026-09-10za"></script>
+<script src="sync-config.js?v=2026-09-10zb"></script>
+<script src="app.js?v=2026-09-10zb"></script>
 </body>
 </html>

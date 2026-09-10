@@ -969,7 +969,7 @@ function go(name) {
   // Явц нь БҮХ санг харуулдаг тул нээхэд бусад номыг татна. Эхлээд
   // байгаагаараа зурж, ирсэн хойно нь дахин зурна — хоосон дэлгэц харагдахгүй.
   if (name === 'stats') { refreshStats(); loadAllBooks().then(refreshStats); }
-  if (name === 'profile') { refreshSync(); refreshUsage(); }
+  if (name === 'profile') { refreshSync(); refreshUsage(); renderThemes(); }
   if (name === 'feedback') refreshFb();
   if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
   show(name);
@@ -1426,6 +1426,57 @@ if (window.speechSynthesis) {
  * Хувийн мэдээлэл биш — санамсаргүй тэмдэгтүүд, зөвхөн энэ браузерт.
  */
 const NL = String.fromCharCode(10);
+/* ── Загвар (theme) ───────────────────────────────────────────────
+ * `data-theme`-ийг <html> дээр тавина; өнгө, хэлбэр, үсэг бүгд
+ * `themes.css` доторх токеноор солигдоно. Хоосон түлхүүр = «Систем»,
+ * өөрөөр хэлбэл `data-theme` огт тавихгүй бөгөөд `prefers-color-scheme`
+ * ажиллана.
+ *
+ * Эхний тавилтыг index.html доторх ЭРТ скрипт хийдэг (анивчихаас
+ * сэргийлнэ) — энд зөвхөн СОЛИХ ба жагсаалт зурах ажил үлдэнэ. */
+const KEY_TH = 'irodori.theme.v1';
+const THEMES = [
+  { k: '', g: '自', n: 'Систем', d: 'Утасныхаа цайвар/харанхуйг дагана (和)',
+    c: ['#f2eee4', '#1c1a16', '#b8412c'] },
+  { k: 'washi', g: '紙', n: '和紙 · цайвар', d: 'Цаас · бэх · ганц улаан. Тайван.',
+    c: ['#f2eee4', '#1c1a16', '#b8412c'] },
+  { k: 'sumi', g: '墨', n: '墨 · харанхуй', d: 'Ижил бүтэц, харанхуй бэх дээр.',
+    c: ['#17150f', '#f0eadc', '#e0674a'] },
+  { k: 'bento', g: '弁', n: '弁当 · бенто', d: 'Хайрцаглалт · гэрэлтэх өнгө · орчин үеийн',
+    c: ['#0b0e13', '#e9eef7', '#6ea8ff'] },
+  { k: 'prison', g: '獄', n: '獄 · Шорон', d: 'Монспэйс · бетон · анхааруулах шар',
+    c: ['#131416', '#e6e8ec', '#f2c744'] },
+  { k: 'play', g: '遊', n: '遊 · тоглоом', d: 'Цайвар · тод ногоон · зузаан товч',
+    c: ['#ffffff', '#3c3c3c', '#58cc02'] },
+];
+
+function curTheme() { return load(KEY_TH, '') || ''; }
+
+function applyTheme(t) {
+  const r = document.documentElement;
+  if (t) r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
+  save(KEY_TH, t);
+  // Хөтчийн хаягийн мөрний өнгийг бодит дэвсгэртэй нийцүүлнэ.
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.content = getComputedStyle(document.body).backgroundColor;
+}
+
+function renderThemes() {
+  const box = $('theme-list');
+  if (!box) return;
+  const cur = curTheme();
+  box.innerHTML = THEMES.map(t =>
+    '<button data-th="' + t.k + '" aria-pressed="' + (t.k === cur) + '">'
+    + '<span class="th-g jpd">' + t.g + '</span>'
+    + '<span><b>' + esc(t.n) + '</b><span>' + esc(t.d) + '</span>'
+    + '<span class="th-sw">' + t.c.map(c =>
+      '<i style="background:' + c + ';border:1px solid rgba(128,128,128,.35)"></i>'
+    ).join('') + '</span></span>'
+    + '<span class="th-tick">\u2713</span></button>').join('');
+  box.querySelectorAll('button').forEach(b =>
+    b.onclick = () => { applyTheme(b.dataset.th); renderThemes(); });
+}
+
 const KEY_DEV = 'irodori.dev.v1';
 let devId = load(KEY_DEV, null);
 if (!devId) {
@@ -1606,7 +1657,7 @@ Promise.all([
     refreshSync();
     // Ачаалахад нэг удаа татаж уусгана — өөр төхөөрөмж дээр давтсан нь орж ирнэ.
     if (syncOn && syncCode) syncNow(true).then(refreshHome);
-    show('home'); refreshHome(); autoStart(); pingUsage();
+    applyTheme(curTheme()); show('home'); refreshHome(); autoStart(); pingUsage();
   })
   .catch(() => {
     document.getElementById('home').innerHTML =

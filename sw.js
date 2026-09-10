@@ -13,12 +13,13 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-09-10za';
+const VERSION = '2026-09-10zb';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 
 const CORE = [
-  './', './index.html', './app.css', './app.js', './sync-config.js',
+  './', './index.html', './app.css', './themes.css', './app.js',
+  './sync-config.js',
   './data/vocab.json', './data/kana.json', './data/kanji.json',
   './data/vocab-n5.json',
   './data/vocab-el1.json', './data/vocab-el2.json',

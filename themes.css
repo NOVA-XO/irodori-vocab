@@ -1,0 +1,192 @@
+/* Загварууд (theme).
+ *
+ * `app.css` нь БҮТЭЦ ба анхдагч 和 загварыг агуулна. Энэ файл нь
+ * `html[data-theme=…]` дээр ЗӨВХӨН токенуудыг дарж бичнэ — марк-ап ч,
+ * байрлал ч давхардахгүй. Тиймээс шинэ загвар нэмэх нь ~30 мөр.
+ *
+ *   (тохиргоогүй) — Систем. Утасны цайвар/харанхуйг дагана (和).
+ *   washi   和紙  — цайвар цаас, албадан
+ *   sumi    墨    — харанхуй бэх, албадан
+ *   bento   弁当  — хайрцаглалт, гэрэлтэх өнгө, орчин үеийн
+ *   prison  獄    — монспэйс, бетон, анхааруулах шар
+ *   play    遊    — цайвар, тод ногоон, зузаан товч
+ *
+ * Загвар бүр НЭГ өнгөний схемд амлалт өгнө: 弁当 ба 獄 нь үргэлж
+ * харанхуй, 遊 нь үргэлж цайвар. Хоёр хувилбар хөтлөх нь дөрвөн
+ * загвар дээр найман палитр болж, аль нь ч сайн болохгүй.
+ */
+
+/* ── 和紙 · цайвар (албадан) ───────────────────────────────────────
+   `:root`-ын анхдагч утга нь аль хэдийн цайвар 和 тул энд нэмэх зүйл
+   алга. `data-theme` тавигдсанаар `prefers-color-scheme` дарагдана. */
+:root[data-theme="washi"]{ --grain:.05 }
+
+/* ── 墨 · харанхуй (албадан) ─────────────────────────────────────── */
+:root[data-theme="sumi"]{
+  --bg:#17150f; --card:#1f1c15; --paper:#242017;
+  --ink:#f0eadc; --ink-2:#a0988a; --ink-3:#736c5e;
+  --line:#332f24; --line-2:#4a4534;
+  --accent:#e0674a; --seal:#e0674a;
+  --ok:#7fa87f; --ng:#d97a63;
+  --ok-bg:#1e2a1e; --ng-bg:#2e1c16;
+  --grain:.045;
+}
+
+/* ── 弁当 · бенто ─────────────────────────────────────────────────
+   Хайрцаг эргэж ирнэ: тусдаа хавтан, дугуй булан, гэрэлтэх өнгө.
+   Сериф биш — энэ загвар нь орчин үеийн самбарын дүр төрхтэй. */
+:root[data-theme="bento"]{
+  --bg:#0b0e13; --card:#141922; --paper:#1a212c;
+  --ink:#e9eef7; --ink-2:#93a2b8; --ink-3:#5e6c81;
+  --line:#212a36; --line-2:#33404f;
+  --accent:#6ea8ff; --seal:#6ea8ff;
+  --ok:#4ade80; --ng:#fb7185;
+  --ok-bg:#11251b; --ng-bg:#2a161f;
+
+  --disp:"Segoe UI","Noto Sans",system-ui,Arial,sans-serif;
+  --jpd:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",
+        sans-serif;
+
+  --r:12px;
+  --box-bg:var(--card); --box-bd:1px solid var(--line); --box-r:16px;
+  --box-sep:0; --box-pad:18px 16px;
+  --list-gap:10px; --list-top:0;
+  --elev:0 6px 22px rgba(0,0,0,.45);
+  --btn-bg:var(--accent); --btn-fg:#07101f;
+  --sel-bg:var(--accent); --sel-fg:#07101f;
+  --h2-tt:none; --h2-ls:.01em; --h2-bd:0;
+  --track-h:8px; --grain:0;
+}
+/* Гол хавтан нь БҮТЭН өргөн, бусад нь хосоороо — бенто-гийн үндэс нь
+   хайрцгууд ТЭГШ БУС байх явдал. */
+:root[data-theme="bento"] .bigcards{grid-template-columns:1fr 1fr}
+:root[data-theme="bento"] .bigcard:first-child,
+:root[data-theme="bento"] .bigcard.quiet{grid-column:1 / -1}
+:root[data-theme="bento"] .bigcard{grid-template-columns:44px 1fr; row-gap:2px}
+:root[data-theme="bento"] .bigcard::after{display:none}
+:root[data-theme="bento"] .bigcard .bc-jp{font-size:22px; color:var(--accent)}
+:root[data-theme="bento"] h2{font-size:17px; font-weight:600; color:var(--ink);
+  letter-spacing:-.01em; margin:30px 0 12px; padding-bottom:0}
+:root[data-theme="bento"] .step{font-size:12px; letter-spacing:.02em;
+  text-transform:none; color:var(--ink-2)}
+:root[data-theme="bento"] .primary{box-shadow:0 0 26px rgba(110,168,255,.32);
+  font-weight:600; letter-spacing:0}
+:root[data-theme="bento"] .prompt{letter-spacing:0}
+:root[data-theme="bento"] .card{padding:44px 18px 40px}
+:root[data-theme="bento"] .statsum div + div{border-left:0}
+:root[data-theme="bento"] .tgoal .track,
+:root[data-theme="bento"] .statles .track{border-radius:999px}
+:root[data-theme="bento"] .seal{display:none}
+
+/* ── 獄 · Шорон ───────────────────────────────────────────────────
+   Аппын нэрийг бүрэн ашиглана: монспэйс, бетон саарал, анхааруулах
+   шар, хатуу шилжсэн сүүдэр. Дугуй булан огт байхгүй. */
+:root[data-theme="prison"]{
+  --bg:#131416; --card:#1b1d21; --paper:#212429;
+  --ink:#e6e8ec; --ink-2:#9aa1a9; --ink-3:#6a7178;
+  --line:#2b2f34; --line-2:#3f454c;
+  --accent:#f2c744; --seal:#f2c744;
+  --ok:#7bc86c; --ng:#e5533d;
+  --ok-bg:#1a2317; --ng-bg:#2a1a15;
+
+  /* DejaVu Sans Mono-г нэрлэсэн шалтгаан: Consolas-д монгол Ү/Ө
+     байгаа эсэх нь баталгаагүй. Сүүлийн нөөц нь UI-ийн фонт. */
+  --ui:ui-monospace,"Cascadia Mono",Consolas,"DejaVu Sans Mono",
+       "Segoe UI",monospace;
+  --disp:ui-monospace,"Cascadia Mono",Consolas,"DejaVu Sans Mono",
+         "Segoe UI",monospace;
+  --jpd:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",
+        sans-serif;
+
+  --r:0;
+  --box-bg:var(--card); --box-bd:2px solid var(--line-2); --box-r:0;
+  --box-sep:2px solid var(--line-2); --box-pad:15px 13px;
+  --list-gap:8px; --list-top:0;
+  --elev:4px 4px 0 var(--line-2);
+  --btn-bg:var(--accent); --btn-fg:#131416;
+  --sel-bg:var(--accent); --sel-fg:#131416;
+  --h2-tt:uppercase; --h2-ls:.14em; --h2-bd:2px solid var(--line-2);
+  --track-h:10px; --grain:.09;
+}
+:root[data-theme="prison"] h2::before{content:'▌ '; color:var(--accent)}
+:root[data-theme="prison"] .bar{border-bottom-width:2px}
+:root[data-theme="prison"] .bar .title{letter-spacing:.24em}
+:root[data-theme="prison"] .primary{font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase}
+:root[data-theme="prison"] .due-n,
+:root[data-theme="prison"] .fin-pct{color:var(--accent)}
+:root[data-theme="prison"] .statsum div + div{border-left:0}
+:root[data-theme="prison"] .seal{border-width:3px; border-radius:0}
+
+/* ── 遊 · тоглоом ─────────────────────────────────────────────────
+   Цайвар, тод ногоон, зузаан «3D» товч. Дарахад товч доошоо буудаг
+   нь энэ загварын гол мэдрэмж. */
+:root[data-theme="play"]{
+  --bg:#ffffff; --card:#ffffff; --paper:#f7f9f7;
+  --ink:#3c3c3c; --ink-2:#777777; --ink-3:#afafaf;
+  --line:#e5e5e5; --line-2:#d0d0d0;
+  --accent:#58cc02; --seal:#58cc02;
+  --ok:#58cc02; --ng:#ff4b4b;
+  --ok-bg:#d7ffb8; --ng-bg:#ffdfe0;
+
+  --disp:"Segoe UI","Noto Sans",system-ui,Arial,sans-serif;
+  --jpd:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",
+        sans-serif;
+
+  --r:14px;
+  --box-bg:var(--card); --box-bd:2px solid var(--line); --box-r:16px;
+  --box-sep:0; --box-pad:16px;
+  --list-gap:10px; --list-top:0;
+  --elev:0 4px 0 var(--line-2);
+  --btn-bg:var(--accent); --btn-fg:#ffffff;
+  --sel-bg:var(--accent); --sel-fg:#ffffff;
+  --h2-tt:uppercase; --h2-ls:.08em; --h2-bd:0;
+  --track-h:14px; --grain:0;
+}
+:root[data-theme="play"] h2{color:var(--accent); font-weight:700; font-size:13px;
+  padding-bottom:0; margin:30px 0 10px}
+:root[data-theme="play"] .step{color:var(--ink-2); text-transform:uppercase;
+  letter-spacing:.08em; font-weight:700}
+:root[data-theme="play"] .primary{box-shadow:0 4px 0 #46a302; font-weight:700;
+  letter-spacing:0; border-radius:14px}
+:root[data-theme="play"] .primary:hover{background:var(--accent)}
+:root[data-theme="play"] .primary:active:not(:disabled){
+  transform:translateY(3px); box-shadow:0 1px 0 #46a302}
+:root[data-theme="play"] .lessons button[aria-pressed="true"]{
+  box-shadow:0 3px 0 #46a302}
+:root[data-theme="play"] .tgoal .track,
+:root[data-theme="play"] .statles .track{border-radius:999px}
+:root[data-theme="play"] .due-n,
+:root[data-theme="play"] .fin-pct,
+:root[data-theme="play"] .statsum b,
+:root[data-theme="play"] .tstat b{color:var(--accent); font-weight:800}
+:root[data-theme="play"] .statsum div + div{border-left:0}
+:root[data-theme="play"] .bar{border-bottom-width:2px}
+:root[data-theme="play"] .seal{display:none}
+
+/* 正/誤 нь 和 ба 獄-д тохирно. Бусад загварт энгийн тэмдэг. */
+:root[data-theme="bento"] .choices button.correct::after,
+:root[data-theme="play"] .choices button.correct::after{content:'✓'}
+:root[data-theme="bento"] .choices button.wrong::after,
+:root[data-theme="play"] .choices button.wrong::after{content:'✕'}
+
+/* ── Загвар сонгох жагсаалт ──────────────────────────────────────── */
+.thlist{display:grid; gap:8px; margin-top:6px}
+.thlist button{
+  display:grid; grid-template-columns:30px 1fr 18px; gap:12px; align-items:center;
+  text-align:left; padding:12px 14px; font-size:14px;
+  background:var(--card); border:1px solid var(--line); color:var(--ink);
+  border-radius:var(--r);
+}
+.thlist button:hover{border-color:var(--ink-3)}
+.thlist .th-g{font-size:19px; text-align:center; color:var(--ink-2)}
+.thlist b{display:block; font-size:15px; font-weight:400}
+.thlist span{font-size:12px; color:var(--ink-2)}
+.thlist .th-tick{opacity:0; color:var(--accent); text-align:right}
+.thlist button[aria-pressed="true"]{border-color:var(--accent)}
+.thlist button[aria-pressed="true"] .th-tick{opacity:1}
+.thlist button[aria-pressed="true"] .th-g{color:var(--accent)}
+/* Загварын өнгийг ЖИЖИГ дээж болгон харуулна — сонгохоос өмнө
+   ямар харагдахыг нь мэдэх ёстой. */
+.th-sw{display:flex; gap:3px; margin-top:6px}
+.th-sw i{width:22px; height:8px; border-radius:2px; display:block}
