@@ -33,6 +33,7 @@ const BOOKS = [
   { name: '入門  ', file: 'vocab.json', romaji: true },
   { name: '初級1 ', file: 'vocab-el1.json', romaji: false },
   { name: '初級2 ', file: 'vocab-el2.json', romaji: false },
+  { name: 'N5   ', file: 'vocab-n5.json', romaji: false },
 ];
 
 let bad = 0;

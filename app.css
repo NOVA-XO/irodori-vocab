@@ -274,8 +274,9 @@ button:disabled{opacity:.5; cursor:default}
 /* Жишээ өгүүлбэр — хариултын доод талд, тайван өнгөөр */
 .exs{margin-top:10px; padding-top:9px; border-top:1px solid var(--line);
      text-align:left}
-.exs b{display:block; font-size:17px; font-weight:400; line-height:1.6;
+.exs b{display:inline; font-size:17px; font-weight:400; line-height:1.6;
        color:var(--ink)}
+.exs .rsp{font-size:15px}
 .rsp:hover{opacity:1}
 
 /* Өргөлтийн зураглал: мора бүрийн ДЭЭР өндөр/нам түвшний хэвтээ зураас,

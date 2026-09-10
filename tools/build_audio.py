@@ -239,9 +239,9 @@ def main():
     import imageio_ffmpeg
     ff = imageio_ffmpeg.get_ffmpeg_exe()
 
-    # Гурван номын үг бүгд — id нь угтвараараа ялгагдана (L / E1 / E2).
+    # Дөрвөн сангийн үг бүгд — id нь угтвараараа ялгагдана (L / E1 / E2 / N5).
     vocab = {'items': []}
-    for f in ('vocab.json', 'vocab-el1.json', 'vocab-el2.json'):
+    for f in ('vocab.json', 'vocab-el1.json', 'vocab-el2.json', 'vocab-n5.json'):
         p = os.path.join(ROOT, 'data', f)
         if os.path.exists(p):
             vocab['items'].extend(json.load(io.open(p, encoding='utf-8'))['items'])
@@ -264,6 +264,12 @@ def main():
                      it.get('accent', ''), say))
     for it in kana['items']:
         jobs.append((it['id'], it['kata'], '', it['hira']))
+    # Жишээ өгүүлбэр — EX-<үгийн id>. N5-ийн 97%-д нь бий. Өргөлтийн
+    # тэмдэглэгээ байхгүй тул хөдөлгүүрийн өөрийн толиор уншина.
+    for it in vocab['items']:
+        ex = (it.get('ex') or '').strip()
+        if ex:
+            jobs.append(('EX-' + it['id'], ex, '', ex))
     for it in kanji['items']:
         code = it['id'].split('-')[1]
         on = [r for r in it['on'][:3] if r]

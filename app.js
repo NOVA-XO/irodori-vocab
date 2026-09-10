@@ -852,8 +852,13 @@ function reveal() {
   // Жишээ өгүүлбэр (N5-ийн санд 97%-д нь бий). Үгийг өгүүлбэр дотор нь
   // харах нь ганцаар цээжлэхээс хамаагүй сайн тогтоодог.
   if (cur.ex) {
+    // Өгүүлбэрийн бичлэг нь EX-<үгийн id>. Байхгүй бол товчгүйгээр
+    // зөвхөн текстээр харуулна.
+    const exId = 'EX-' + cur.id;
     $('a-kj').innerHTML = '<div class="exs"><span class="acclab">жишээ</span>'
-      + '<b class="jp">' + esc(cur.ex) + '</b></div>';
+      + '<b class="jp">' + esc(cur.ex) + '</b>'
+      + (hasAudio(exId) ? '<button class="rsp" data-a="' + exId + '" title="Сонсох">🔊</button>' : '')
+      + '</div>';
     $('a-kj').hidden = false;
   }
   $('answer').hidden = false;
