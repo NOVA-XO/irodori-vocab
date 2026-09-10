@@ -113,7 +113,12 @@ def main():
            " * Noto Serif · Noto Serif JP — SIL Open Font License 1.1 (fonts/OFL.txt).",
            " * Зөвхөн энэ аппад хэрэглэгддэг тэмдэгтээр огтолсон. */"]
 
-    for family, tag, cs in (("Noto Serif", "ns", lc),
+    # Латин+кирилл нь ЗӨВХӨН монспэйс хэрэгтэй: Windows-ийн бүх монспэйс
+    # фонтод (Consolas · Cascadia Mono · Courier New) монгол Ү (U+04AE) ба
+    # Ө (U+04E8) БАЙХГҮЙ тул тэдгээр үсэг өөр фонтоос орлогдож, монспэйс
+    # эгнээ эвдэрдэг. Бусад загвар нь системийн sans ашиглана — түүнд
+    # Ү/Ө бий тул татах шаардлагагүй.
+    for family, tag, cs in (("Noto Sans Mono", "nsm", lc),
                             ("Noto Serif JP", "nsjp", jp)):
         print(family)
         for name, rng in fetch_subsets(family, cs, tag):

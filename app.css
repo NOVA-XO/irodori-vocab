@@ -1,30 +1,29 @@
-/* Үгний Шорон — 和 загвар
+/* Үгний Шорон — үндсэн бүтэц ба MINIMAL загвар
  *
- * Гурван зарчим:
- *   間 (ма)   — хоосон зай нь элементтэй адил чухал. Хүрээ багасгаж
- *               завсарыг нэмнэ. Хайрцаг бүрийг зурахгүй.
- *   墨 (суми) — нэг л бэхний өнгө. Саарал өнгийн олон түвшин биш,
- *               хар бэх ба цайвар шугам хоёр.
- *   朱 (шю)   — ГАНЦ улаан. Ханууны тамганы өнгө. Ховор хэрэглэвэл
- *               л утгатай: сонгосон зүйл, явц, тамга.
+ * Энэ файл нь БҮТЭЦ (байрлал, хэмжээ, хөдөлгөөн) ба анхдагч
+ * **minimal** загварыг агуулна. Бусад загвар (`themes.css`) нь
+ * `html[data-theme=…]` дээр ЗӨВХӨН токеныг дарж бичнэ.
  *
- * Тиймээс: булан бараг хурц (2px), сүүдэр байхгүй, том япон үсэг нь
- * гол дүр, кирилл гарчиг нь serif.
+ * Minimal-ын зарчим: хоосон зай нь элементтэй адил чухал. Хайрцаг
+ * зурахгүй — зөвхөн үс шугам. Өнгө бараг байхгүй: хар бэх, цайвар
+ * саарал хоёр. Хөдөлгөөнт дэвсгэр байхгүй.
+ *
+ * Хэлбэрийн токеныг ЗААВАЛ ашиглана — хатуу утга бичвэл тэр газар
+ * загвар солигдохоо болино.
  */
 
 :root{
-  /* 和紙 — бага зэрэг шаргал цаас. Цэвэр цагаан нь хэт хүйтэн. */
-  --bg:#f2eee4; --card:#fbf9f3; --paper:#ffffff;
-  --ink:#1c1a16; --ink-2:#6d675b; --ink-3:#9c9484;
-  --line:#ddd6c4; --line-2:#c9c0aa;
-  --accent:#b8412c;                     /* 朱 */
-  --ok:#4a7350; --ng:#8f2c1c;           /* 若竹 · 深朱 */
-  --ok-bg:#eaefe6; --ng-bg:#f6e6e1;
+  /* Minimal — бараг цагаан, дулаан биш саарал. */
+  --bg:#fafafa; --card:#ffffff; --paper:#ffffff;
+  --ink:#141414; --ink-2:#6b6b6b; --ink-3:#a3a3a3;
+  --line:#e6e6e6; --line-2:#d2d2d2;
+  --accent:#141414;                     /* өнгө биш, БЭХ. Хамгийн тайван */
+  --ok:#2e7d32; --ng:#c0392b;
+  --ok-bg:#eef5ef; --ng-bg:#fbeceb;
   --shadow:none;
-  --seal:#b8412c;
+  --seal:#141414;
 
-  /* ХЭЛБЭРИЙН токенууд. Theme бүр эдгээрийг л солино — бүтэц давхардахгүй.
-     Анхдагч утга нь 和: хайрцаг байхгүй, зөвхөн үс шугам, булан хурц. */
+  /* ХЭЛБЭРИЙН токенууд. Загвар бүр эдгээрийг л солино — бүтэц давхардахгүй. */
   --r:2px;
   --box-bg:transparent;
   --box-bd:0;
@@ -38,35 +37,21 @@
   --sel-bg:var(--accent); --sel-fg:#fff;
   --h2-tt:uppercase; --h2-ls:.2em; --h2-bd:1px solid var(--line);
   --track-h:2px;
-  --grain:.05;
-  /* Гүнтэй дэвсгэрийн гурван хэлбэрийн өнгө. 和-д маш бүдэг — цаасанд
-     бэх шингэж байгаа мэт төдий. Загвар бүр өөрөөр тодотгоно. */
-  --fx1:#e3d9c3; --fx2:#e9dfcb; --fx3:#dbcfb4; --fx-op:.5;
-  /* Япон бичиг: ГОЛ дүр нь 明朝 (serif). Байхгүй бол системийн уншигдах
-     фонт руу уруудна — том хэмжээнд ч эвдрэхгүй. */
+  --grain:0;
+  /* Гүнтэй дэвсгэрийн гурван хэлбэрийн өнгө. Minimal-д ХЭРЭГГҮЙ. */
+  --fx1:transparent; --fx2:transparent; --fx3:transparent; --fx-op:0;
+  /* Япон бичиг: 明朝-г ӨӨРСДӨӨ нийлүүлнэ (fonts/). Ингэснээр Windows,
+     Mac, Android гурав дээр ИЖИЛ харагдана — Yu Mincho нь Android дээр
+     байдаггүй. */
   --jpd:"Noto Serif JP","Yu Mincho","YuMincho","Hiragino Mincho ProN",
         "Songti SC","SimSun",serif;
   --jp:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",sans-serif;
   --ui:"Segoe UI","Noto Sans",system-ui,Arial,sans-serif;
-  /* Georgia, Times, Cambria, Palatino, Constantia — БҮГДЭД нь монгол
-     Ү (U+04AE) ба Ө (U+04E8) БАЙХГҮЙ. Тэдгээр үсэг өөр фонтоос орлогдож
-     нэг үгийн дунд хоёр загвар холилддог. Тиймээс Noto Serif-ийг өөрсдөө
-     нийлүүлнэ (fonts/, зөвхөн хэрэглэдэг тэмдэгтээр огтолсон). */
-  --disp:"Noto Serif",Georgia,"Times New Roman",serif;
-}
-/* 墨 — шөнийн хувилбар. Цаас биш, БЭХ болно: дулаан хар суурь дээр
-   цайвар бэх. Улаан нь харанхуйд бүдгэрдэг тул арай тодруулав. */
-/* Хэрэглэгч theme-ээ ГАРААР сонгосон бол системийн тохиргоо давахгүй. */
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme]){
-    --bg:#17150f; --card:#1f1c15; --paper:#242017;
-    --ink:#f0eadc; --ink-2:#a0988a; --ink-3:#736c5e;
-    --line:#332f24; --line-2:#4a4534;
-    --accent:#e0674a;
-    --ok:#7fa87f; --ng:#d97a63;
-    --ok-bg:#1e2a1e; --ng-bg:#2e1c16;
-    --seal:#e0674a;
-  }
+  --disp:"Segoe UI","Noto Sans",system-ui,Arial,sans-serif;
+  /* Монспэйс: Windows-ийн Consolas · Cascadia · Courier БҮГДЭД нь монгол
+     Ү (U+04AE), Ө (U+04E8) БАЙХГҮЙ (34px-ээр зурж шалгав). Тиймээс
+     Noto Sans Mono-г өөрсдөө нийлүүлнэ. */
+  --mono:"Noto Sans Mono",ui-monospace,Consolas,monospace;
 }
 
 *{box-sizing:border-box}
@@ -292,7 +277,7 @@ button:disabled{opacity:.42; cursor:default}
   margin-top:12px; padding:12px 14px; border-radius:2px; font-size:12px;
   line-height:1.65; background:var(--card); border:1px solid var(--line);
   color:var(--ink-2); white-space:pre-wrap; word-break:break-word;
-  max-height:280px; overflow:auto; font-family:ui-monospace,Consolas,monospace;
+  max-height:280px; overflow:auto; font-family:var(--mono);
 }
 .src{margin-top:34px; padding-top:18px; border-top:1px solid var(--line);
      font-size:12px; color:var(--ink-2); line-height:1.7}
@@ -365,14 +350,17 @@ button:disabled{opacity:.42; cursor:default}
 /* Гол үг — 明朝, аль болох том. Энэ бол хуудасны цорын ганц баатар. */
 .prompt{font-family:var(--jpd); font-size:52px; line-height:1.28; font-weight:400;
         word-break:break-word; letter-spacing:.02em}
-.prompt.mn{font-family:var(--disp); font-size:28px; letter-spacing:0}
+/* Утга нь бүтэн монгол өгүүлбэр байж болно. Механик, цахилгаан
+   загварт `--disp` нь монспэйс тул урт өгүүлбэр уншихад хүндэрнэ —
+   утгын текстийг ҮРГЭЛЖ UI-ийн фонтоор. */
+.prompt.mn{font-family:var(--ui); font-size:28px; letter-spacing:0}
 .speak{position:absolute; top:12px; right:4px; background:none; border:0;
        font-size:19px; opacity:.4; padding:6px; color:var(--ink)}
 .speak:hover{opacity:1; color:var(--accent)}
 
 .answer{border-top:1px solid var(--line); margin-top:26px; padding-top:22px}
 .a-kana{font-family:var(--jpd); font-size:26px; color:var(--accent)}
-.a-mn{font-size:19px; margin-top:6px; font-family:var(--disp)}
+.a-mn{font-size:19px; margin-top:6px; font-family:var(--ui)}
 .a-acc{font-family:var(--jp); font-size:14px; color:var(--ink-2); margin-top:10px}
 .acclab{display:block; font-family:var(--disp); font-size:10px; letter-spacing:.2em;
         text-transform:uppercase; color:var(--ink-3); margin-bottom:5px}
@@ -557,7 +545,7 @@ button:disabled{opacity:.42; cursor:default}
 a.ghost{display:inline-block; text-decoration:none}
 .bigcard.quiet .bc-jp{font-size:21px; color:var(--ink-3)}
 .synccode{
-  font-family:ui-monospace,Consolas,monospace; font-size:20px; letter-spacing:.16em;
+  font-family:var(--mono); font-size:20px; letter-spacing:.16em;
   background:none; border:0; border-bottom:1px solid var(--line-2); border-radius:0;
   padding:14px 4px; text-align:center; user-select:all; word-break:break-all;
 }
@@ -666,7 +654,6 @@ body::after{
   opacity:var(--grain); background-size:150px 150px;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-@media (prefers-color-scheme:dark){ :root:not([data-theme]) body::after{opacity:.045} }
 
 /* Хөдөлгөөн багасгахыг хүссэн хэрэглэгчид бүх анимацийг унтраана. */
 @media (prefers-reduced-motion:reduce){

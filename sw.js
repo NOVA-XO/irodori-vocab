@@ -13,7 +13,7 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-09-10zc';
+const VERSION = '2026-09-10zd';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 
@@ -28,7 +28,7 @@ const CORE = [
   // Фонт — офлайн үед ч ижил харагдах ёстой. Windows-ийн serif-үүдэд
   // монгол Ү/Ө байхгүй тул эдгээр нь гоо сайхны биш, ЗӨВ БИЧИХ асуудал.
   './fonts/fonts.css',
-  './fonts/ns-00.woff2',
+  './fonts/nsm-00.woff2',
   './fonts/nsjp-00.woff2',
   './fonts/nsjp-01.woff2',
   './fonts/nsjp-02.woff2',
