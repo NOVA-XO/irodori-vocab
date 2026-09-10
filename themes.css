@@ -46,31 +46,90 @@
   --fx-op:0;              /* хөвөгч бөмбөлөг биш, доорх мананцар */
 }
 /* Одон орон. Гурван давхарга өөр өөр хурдаар хөвж, гүн үүсгэнэ. */
+/* ── Дэвсгэр: бодит астрофото шиг ─────────────────────────────────
+   Гурван зарчим (судалгааны дүн):
+     · мананцар нь ФРАКТАЛ бүтэцтэй — `feTurbulence` маск
+     · одны тод байдал жигд БИШ, байрлал нь торлохгүй
+     · хар талбай зайлшгүй — виньет, намуухан тунгалаг */
 :root[data-theme="space"] #bg{
+  background-color:#05030c;
   background-image:
-    radial-gradient(circle at 18% 26%, rgba(255,255,255,.7) 0 1px, transparent 1.4px),
-    radial-gradient(circle at 68% 61%, rgba(255,255,255,.5) 0 1px, transparent 1.4px),
-    radial-gradient(circle at 42% 84%, rgba(214,205,255,.6) 0 1px, transparent 1.4px);
-  background-size:170px 170px, 250px 250px, 330px 330px;
-  animation:stars 220s linear infinite;
+    radial-gradient(circle at 90.8% 93.1%, rgba(255,255,255,.55) 0 0.80px, transparent 1.15px),
+    radial-gradient(circle at 87.7% 10.0%, rgba(255,255,255,.55) 0 0.80px, transparent 1.15px),
+    radial-gradient(circle at 58.8% 42.7%, rgba(255,255,255,.55) 0 0.80px, transparent 1.15px),
+    radial-gradient(circle at 52.9% 14.5%, rgba(255,255,255,.55) 0 0.80px, transparent 1.15px),
+    radial-gradient(circle at 20.4% 44.7%, rgba(255,255,255,.55) 0 0.80px, transparent 1.15px),
+    radial-gradient(circle at 23.2% 45.7%, rgba(255,255,255,.55) 0 0.80px, transparent 1.15px),
+    radial-gradient(circle at 45.4% 55.7%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px),
+    radial-gradient(circle at 90.7% 46.7%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px),
+    radial-gradient(circle at 50.8% 58.4%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px),
+    radial-gradient(circle at 19.7% 51.1%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px),
+    radial-gradient(circle at 62.5% 78.1%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px),
+    radial-gradient(circle at 11.0% 31.1%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px),
+    radial-gradient(circle at 10.7% 79.7%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px),
+    radial-gradient(circle at 68.6% 6.0%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px),
+    radial-gradient(circle at 96.3% 94.6%, rgba(188,204,255,.30) 0 0.60px, transparent 0.95px);
+  background-size:317px 317px, 190px 190px;
+  animation:stars 300s linear infinite;
 }
-@keyframes stars{to{background-position:170px 340px, -250px 500px, 330px -660px}}
-/* Мананцар: ягаан · магента · цэнхэр · фирүүз ХОЛИЛДСОН.
-   Гурван бүдгэрсэн бөмбөлгийн оронд НЭГ давхарга — олон радиал
-   градиент нэг элемент дээр. Утсан дээр хямд, өнгө нь баян. */
-:root[data-theme="space"] #bg i{display:none}
+@keyframes stars{to{background-position:317px 634px, -190px 570px}}
+
+/* Тод одод: цөөхөн, гэрэлтэх сартай, СААРМАГ анивчина. */
+:root[data-theme="space"] #bg::before{
+  content:''; position:absolute; inset:0;
+  background-image:
+    radial-gradient(circle at 67.5% 10.8%, rgba(255,255,255,.95) 0 1.15px, transparent 1.50px),
+    radial-gradient(circle at 61.3% 82.8%, rgba(255,255,255,.95) 0 1.15px, transparent 1.50px),
+    radial-gradient(circle at 82.1% 51.4%, rgba(255,255,255,.95) 0 1.15px, transparent 1.50px),
+    radial-gradient(circle at 62.6% 37.4%, rgba(255,255,255,.95) 0 1.15px, transparent 1.50px),
+    radial-gradient(circle at 67.5% 10.8%, rgba(150,180,255,.16) 0 3.20px, transparent 3.55px),
+    radial-gradient(circle at 61.3% 82.8%, rgba(150,180,255,.16) 0 3.20px, transparent 3.55px),
+    radial-gradient(circle at 82.1% 51.4%, rgba(150,180,255,.16) 0 3.20px, transparent 3.55px),
+    radial-gradient(circle at 62.6% 37.4%, rgba(150,180,255,.16) 0 3.20px, transparent 3.55px);
+  background-size:523px 523px, 523px 523px;
+  animation:twinkle 7s ease-in-out infinite alternate;
+}
+@keyframes twinkle{from{opacity:.55} to{opacity:1}}
+
+/* Мананцрын гурван хэсэг. Өнгө нь бодит астрофотогийн шугамууд:
+   Hα ягаан-час улаан · OIII фирүүз · тоос-ягаан. `screen` холилтоор
+   давхарлана — гэрэл нэмэгддэг, будаг холилддоггүй. */
+:root[data-theme="space"] #bg i{
+  display:block; border-radius:0; filter:none; animation:none;
+  mix-blend-mode:screen; background-repeat:no-repeat;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-size:cover; mask-size:cover;
+}
+:root[data-theme="space"] #bg i:nth-child(1){
+  width:150vmax; height:105vmax; left:-38vmax; top:-30vmax; opacity:.5;
+  background:#a8215f;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.008%200.013%27%20numOctaves%3D%275%27%20seed%3D%2711%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.4%27%20amplitude%3D%271.5%27%20offset%3D%27-0.14%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.008%200.013%27%20numOctaves%3D%275%27%20seed%3D%2711%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.4%27%20amplitude%3D%271.5%27%20offset%3D%27-0.14%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  animation:neb1 150s ease-in-out infinite alternate;
+}
+:root[data-theme="space"] #bg i:nth-child(2){
+  width:130vmax; height:95vmax; right:-34vmax; top:6vmax; opacity:.4;
+  background:#0d7f96;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.011%200.007%27%20numOctaves%3D%275%27%20seed%3D%2729%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.0%27%20amplitude%3D%271.4%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.011%200.007%27%20numOctaves%3D%275%27%20seed%3D%2729%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.0%27%20amplitude%3D%271.4%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  animation:neb2 190s ease-in-out infinite alternate;
+}
+:root[data-theme="space"] #bg i:nth-child(3){
+  width:140vmax; height:100vmax; left:-6vmax; bottom:-34vmax; opacity:.42;
+  background:#5330b8;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.010%27%20numOctaves%3D%276%27%20seed%3D%2747%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.6%27%20amplitude%3D%271.6%27%20offset%3D%27-0.16%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.010%27%20numOctaves%3D%276%27%20seed%3D%2747%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%273.6%27%20amplitude%3D%271.6%27%20offset%3D%27-0.16%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  animation:neb3 170s ease-in-out infinite alternate;
+}
+@keyframes neb1{to{transform:translate3d(3vmax,-2vmax,0) scale(1.1)}}
+@keyframes neb2{to{transform:translate3d(-3vmax,2vmax,0) scale(1.13)}}
+@keyframes neb3{to{transform:translate3d(2vmax,-3vmax,0) scale(1.08)}}
+
+/* Виньет — ирмэг рүү харанхуйлна. Үүнгүйгээр өнгө дэлгэц дүүрч,
+   «зурсан» мэт харагддаг. */
 :root[data-theme="space"] #bg::after{
-  content:''; position:absolute; inset:-22%;
-  background:
-    radial-gradient(42% 36% at 22% 26%, rgba(139,92,246,.34), transparent 70%),
-    radial-gradient(38% 30% at 79% 18%, rgba(236,72,153,.22), transparent 70%),
-    radial-gradient(46% 40% at 62% 76%, rgba(34,211,238,.18), transparent 70%),
-    radial-gradient(32% 28% at 10% 80%, rgba(99,102,241,.24), transparent 70%),
-    radial-gradient(30% 24% at 88% 58%, rgba(251,146,60,.10), transparent 70%);
-  filter:blur(26px);
-  animation:nebula 80s ease-in-out infinite alternate;
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(125% 85% at 50% 38%,
+    transparent 34%, rgba(3,2,9,.55) 76%, rgba(2,1,6,.9) 100%);
 }
-@keyframes nebula{to{transform:translate3d(4%,-3%,0) scale(1.14)}}
+
 :root[data-theme="space"] h2{font-size:16px; font-weight:600; color:var(--ink);
   margin:30px 0 12px; padding-bottom:0}
 :root[data-theme="space"] .step{text-transform:none; letter-spacing:.02em;
