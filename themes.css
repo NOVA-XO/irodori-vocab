@@ -1,10 +1,11 @@
 /* Загварууд (theme).
  *
- * `app.css` нь БҮТЭЦ ба анхдагч **цэнхэр** загварыг агуулна. Энэ файл
+ * `app.css` нь БҮТЭЦ ба анхдагч **minimal** загварыг агуулна. Энэ файл
  * нь `html[data-theme=…]` дээр ЗӨВХӨН токенуудыг дарж бичнэ — марк-ап ч,
  * байрлал ч давхардахгүй. Тиймээс шинэ загвар нэмэх нь ~40 мөр.
  *
- *   blue     蒼  цэнхэр — гүн ус, удаан урсгал. Анхдагч.
+ *   minimal  素  энгийн — GitHub-ийн харанхуй шиг. Анхдагч.
+ *   blue     蒼  цэнхэр — гүн ус, удаан урсгал
  *   space    宙  сансар — од, мананцар, гүн хөх
  *   anime    漫  аниме — цагаан, зузаан хар хүрээ, поп ягаан, растер цэг
  *   rain     雨  бороо — үүлэрхэг саарал, норсон шил, урсах дусал
@@ -15,17 +16,42 @@
 
 /* ── 蒼 цэнхэр (анхдагч) ──────────────────────────────────────────
    `:root`-ын анхдагч утга нь өөрөө цэнхэр тул энд зөвхөн ДЭВСГЭР. */
-:root[data-theme="blue"]{ --grain:0 }
+/* ── 素 minimal (анхдагч) ─────────────────────────────────────────
+   `:root`-ын анхдагч утга нь өөрөө minimal тул токен нэмэх зүйл алга.
+   «Энгийн» гэдэг нь чимэглэлийн дэвсгэр БАЙХГҮЙ гэсэн үг — мөн энэ нь
+   бүх загвараас хамгийн хөнгөн. */
+:root[data-theme="minimal"]{ --grain:0 }
+:root[data-theme="minimal"] #bg{display:none}
+:root:not([data-theme]) #bg{display:none}
+
+:root[data-theme="blue"]{
+  /* 蒼 — гүн далайн цэнхэр. Хар биш, хөх; тайван боловч амьд. */
+  --bg:#061523; --card:#0e2536; --paper:#123047;
+  --ink:#e6f1fa; --ink-2:#94b0c6; --ink-3:#5d788e;
+  --line:#153549; --line-2:#23536e;
+  --accent:#4fc3f7; --seal:#4fc3f7;
+  --ok:#4ade80; --ng:#fb7185;
+  --ok-bg:#0d2a1e; --ng-bg:#2b1520;
+
+  --r:10px;
+  --box-bg:var(--card); --box-bd:1px solid var(--line); --box-r:13px;
+  --box-sep:0; --box-pad:17px 15px;
+  --list-gap:9px; --list-top:0;
+  --elev:0 6px 22px rgba(0,0,0,.38);
+  --btn-bg:var(--accent); --btn-fg:#04212e;
+  --sel-bg:var(--accent); --sel-fg:#04212e;
+  --h2-tt:uppercase; --h2-ls:.14em; --h2-bd:0;
+  --track-h:8px; --grain:0;
+}
+
 /* Гүн ус: том, удаан эргэлдэх урсгал. Хоёр өөр давтамж давхарлаж,
    гөлгөр градиентээс зайлсхийнэ. */
-:root[data-theme="blue"] #bg,
-:root:not([data-theme]) #bg{
+:root[data-theme="blue"] #bg{
   background-color:#061523;
   background-image:radial-gradient(120% 90% at 50% 0%,
     rgba(37,99,140,.35), transparent 62%);
 }
-:root[data-theme="blue"] #bg i:nth-child(1),
-:root:not([data-theme]) #bg i:nth-child(1){
+:root[data-theme="blue"] #bg i:nth-child(1){
   display:block; border-radius:0; filter:none; opacity:.5;
   width:150vmax; height:110vmax; left:-30vmax; top:-26vmax;
   background:#1d6f9e; mix-blend-mode:screen;
@@ -33,8 +59,7 @@
   -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
   mask-repeat:no-repeat; animation:wave1 40s ease-in-out infinite alternate;
 }
-:root[data-theme="blue"] #bg i:nth-child(2),
-:root:not([data-theme]) #bg i:nth-child(2){
+:root[data-theme="blue"] #bg i:nth-child(2){
   display:block; border-radius:0; filter:none; opacity:.34;
   width:140vmax; height:100vmax; right:-32vmax; bottom:-30vmax;
   background:#12897f; mix-blend-mode:screen;
@@ -42,12 +67,10 @@
   -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
   mask-repeat:no-repeat; animation:wave2 54s ease-in-out infinite alternate;
 }
-:root[data-theme="blue"] #bg i:nth-child(3),
-:root:not([data-theme]) #bg i:nth-child(3){display:none}
+:root[data-theme="blue"] #bg i:nth-child(3){display:none}
 @keyframes wave1{to{transform:translate3d(3vmax,2vmax,0) scale(1.12)}}
 @keyframes wave2{to{transform:translate3d(-3vmax,-2vmax,0) scale(1.1)}}
-:root[data-theme="blue"] #bg::after,
-:root:not([data-theme]) #bg::after{
+:root[data-theme="blue"] #bg::after{
   content:''; position:absolute; inset:0;
   background:radial-gradient(130% 90% at 50% 30%,
     transparent 40%, rgba(2,9,16,.55) 80%, rgba(1,6,11,.85) 100%);

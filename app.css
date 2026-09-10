@@ -1,6 +1,6 @@
-/* Мартчихлаа — үндсэн бүтэц ба 蒼 ЦЭНХЭР загвар
+/* Мартчихлаа — үндсэн бүтэц ба 素 MINIMAL загвар
  *
- * Энэ файл нь БҮТЭЦ (байрлал, хэмжээ, хөдөлгөөн) ба анхдагч **цэнхэр**
+ * Энэ файл нь БҮТЭЦ (байрлал, хэмжээ, хөдөлгөөн) ба анхдагч **minimal**
  * загварыг агуулна. Бусад загвар (`themes.css`) нь `html[data-theme=…]`
  * дээр ЗӨВХӨН токеныг дарж бичнэ.
  *
@@ -9,28 +9,30 @@
  */
 
 :root{
-  /* 蒼 — гүн далайн цэнхэр. Хар биш, хөх; тайван боловч амьд. */
-  --bg:#061523; --card:#0e2536; --paper:#123047;
-  --ink:#e6f1fa; --ink-2:#94b0c6; --ink-3:#5d788e;
-  --line:#153549; --line-2:#23536e;
-  --accent:#4fc3f7; --seal:#4fc3f7;
-  --ok:#4ade80; --ng:#fb7185;
-  --ok-bg:#0d2a1e; --ng-bg:#2b1520;
+  /* Minimal — GitHub-ийн харанхуй загварын логик: бараг хар суурь,
+     түүнээс бага зэрэг цайвар гадаргуу, нимгэн саарал хүрээ, ганц хөх
+     холбоос. Чимэглэл байхгүй; уншихад л зориулагдсан. */
+  --bg:#0d1117; --card:#161b22; --paper:#21262d;
+  --ink:#e6edf3; --ink-2:#8b949e; --ink-3:#6e7681;
+  --line:#30363d; --line-2:#424a53;
+  --accent:#2f81f7; --seal:#2f81f7;
+  --ok:#3fb950; --ng:#f85149;
+  --ok-bg:#12261a; --ng-bg:#2d1518;
   --shadow:none;
 
   /* ХЭЛБЭРИЙН токенууд. Загвар бүр эдгээрийг л солино. */
-  --r:10px;
+  --r:6px;
   --box-bg:var(--card);
   --box-bd:1px solid var(--line);
-  --box-r:13px;
+  --box-r:6px;
   --box-sep:0;
-  --box-pad:17px 15px;
-  --list-gap:9px;
+  --box-pad:15px 14px;
+  --list-gap:8px;
   --list-top:0;
-  --elev:0 6px 22px rgba(0,0,0,.38);
-  --btn-bg:var(--accent); --btn-fg:#04212e;
-  --sel-bg:var(--accent); --sel-fg:#04212e;
-  --h2-tt:uppercase; --h2-ls:.14em; --h2-bd:0;
+  --elev:none;
+  --btn-bg:#238636; --btn-fg:#ffffff;      /* GitHub-ийн ногоон гол товч */
+  --sel-bg:var(--accent); --sel-fg:#ffffff;
+  --h2-tt:none; --h2-ls:0; --h2-bd:1px solid var(--line);
   --track-h:8px;
   --grain:0;
   --fx1:transparent; --fx2:transparent; --fx3:transparent; --fx-op:0;

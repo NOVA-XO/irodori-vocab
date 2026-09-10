@@ -1440,6 +1440,9 @@ const NL = String.fromCharCode(10);
  * сэргийлнэ) — энд зөвхөн СОЛИХ ба жагсаалт зурах ажил үлдэнэ. */
 const KEY_TH = 'irodori.theme.v1';
 const THEMES = [
+  { k: 'minimal', g: '素', n: 'Minimal',
+    d: 'Энгийн харанхуй · чимэглэлгүй · хамгийн хөнгөн',
+    c: ['#0d1117', '#e6edf3', '#2f81f7'] },
   { k: 'blue', g: '蒼', n: 'Цэнхэр',
     d: 'Гүн ус · удаан урсгал · тайван',
     c: ['#061523', '#e6f1fa', '#4fc3f7'] },
@@ -1454,9 +1457,9 @@ const THEMES = [
     c: ['#0c1420', '#e8eff7', '#6fc8e0'] },
 ];
 
-/** Тохиргоогүй бол ЦЭНХЭР. Өдөр бүр хэрэглэдэг аппын анхдагч нь
- *  хамгийн тайван нь байх ёстой — бусдыг хүсвэл сонгоно. */
-function curTheme() { return load(KEY_TH, '') || 'blue'; }
+/** Тохиргоогүй бол MINIMAL. Өдөр бүр хэрэглэдэг аппын анхдагч нь
+ *  хамгийн тайван, хамгийн хөнгөн нь байх ёстой — бусдыг хүсвэл сонгоно. */
+function curTheme() { return load(KEY_TH, '') || 'minimal'; }
 
 function applyTheme(t) {
   const r = document.documentElement;
