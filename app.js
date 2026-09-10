@@ -951,6 +951,10 @@ const ICON_BACK = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" s
 
 function show(name) {
   screen = name;
+  // Дасгалын үед дэвсгэрийн анимацийг зогсооно (themes.css: `.busy`).
+  // Энэ нь `show()` дотор байх ЁСТОЙ — дасгал `go()`-гүйгээр шууд
+  // `show('study')` дуудаж эхэлдэг.
+  document.documentElement.classList.toggle('busy', name === 'study');
   for (const s of SCREENS) $(s).hidden = (s !== name);
   $('menu').hidden = true;
   // Дасгал дунд байхад ☰ биш ‹ — нэг дарлагаар гарах боломж хэрэгтэй.
@@ -1488,7 +1492,7 @@ function renderThemes() {
  * Бүхэлдээ чимэглэл. Унтраасан ч, дэмжигдээгүй ч апп бүрэн ажиллана:
  * `flyToCard` нь эхлэлийн хэмжээсгүй бол чимээгүй буцна.
  */
-const RING_N = 14;          // цагирагийн карт
+const RING_N = 12;          // цагирагийн карт (3D давхарга тус бүрд)
 const RING_R = 152;         // радиус, px
 
 /** Системийн «хөдөлгөөн багасга» нь ХЭРЭГЛЭГЧИЙН тохиргооноос дээгүүр. */
