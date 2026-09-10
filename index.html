@@ -8,10 +8,10 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="app.css?v=2026-09-10v">
+<link rel="stylesheet" href="app.css?v=2026-09-10w">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10v">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10v">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10w">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10w">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -70,7 +70,7 @@
     <button class="bigcard" data-go="jlpt">
       <span class="bc-jp">N5</span>
       <b>JLPT бэлтгэл</b>
-      <span>N5–N2 түвшний ханз · <i id="n-kanji">…</i></span>
+      <span>N5–N2-ын <i id="n-kanji">…</i> · N5-ийн 2077 үг, 50 хичээл</span>
     </button>
     <button class="bigcard" data-go="kana">
       <span class="bc-jp jp">かな</span>
@@ -180,22 +180,47 @@
   <div class="step">2 · Юу давтах вэ</div>
   <div class="seg" id="seg-jwhat">
     <button data-w="kanji"><b>Ханз</b><span>N5–N2-ын 979 ханз</span></button>
-    <button data-w="word" disabled><b>Үг</b><span>Удахгүй — доор тайлбарыг үзнэ үү</span></button>
+    <button data-w="word"><b>Үг</b><span>N5-ийн <i id="n-n5">…</i> · 50 хичээл</span></button>
   </div>
 
-  <div class="step">3 · Дасгал</div>
-  <div class="modes">
-    <button class="mode" data-kj2="flash"><b>Флашкарт</b><span>Ханз харж утга, уншлагыг нь эргүүлж шалгана</span></button>
-    <button class="mode" data-kj2="k2m"><b class="jp">漢字 → утга</b><span>Ханзыг харж утгыг нь сонгоно</span></button>
-    <button class="mode" data-kj2="m2k"><b>Утга → <span class="jp">漢字</span></b><span>Утгыг харж ханзыг нь сонгоно</span></button>
-    <button class="mode" data-kj2="read"><b>Уншлага</b><span>Ханзны 音読み-г сонгоно</span></button>
+  <div id="wrap-jkanji">
+    <div class="step">3 · Дасгал</div>
+    <div class="modes">
+      <button class="mode" data-kj2="flash"><b>Флашкарт</b><span>Ханз харж утга, уншлагыг нь эргүүлж шалгана</span></button>
+      <button class="mode" data-kj2="k2m"><b class="jp">漢字 → утга</b><span>Ханзыг харж утгыг нь сонгоно</span></button>
+      <button class="mode" data-kj2="m2k"><b>Утга → <span class="jp">漢字</span></b><span>Утгыг харж ханзыг нь сонгоно</span></button>
+      <button class="mode" data-kj2="read"><b>Уншлага</b><span>Ханзны 音読み-г сонгоно</span></button>
+    </div>
+
+    <p class="hint">JLPT нь <b>ханзны ч, үгийн ч албан ёсны жагсаалт нийтэлдэггүй</b> —
+       шалгалт нь «ерөнхий харилцааны чадвар»-ыг хэмждэг гэж тэд мэдэгддэг.
+       Эндхийн N5–N2 хуваарь нь өргөн хэрэглэгддэг албан бус жагсаалт.
+       Ханз бүрийн хажууд Японы Боловсролын яамны <b>албан ёсны сургуулийн анги</b>
+       ба зурлагын тоо харагдана.</p>
   </div>
 
-  <p class="hint">JLPT нь <b>ханзны ч, үгийн ч албан ёсны жагсаалт нийтэлдэггүй</b> —
-     шалгалт нь «ерөнхий харилцааны чадвар»-ыг хэмждэг гэж тэд мэдэгддэг.
-     Эндхийн N5–N2 хуваарь нь өргөн хэрэглэгддэг албан бус жагсаалт.
-     Ханз бүрийн хажууд Японы Боловсролын яамны <b>албан ёсны сургуулийн анги</b>
-     ба зурлагын тоо харагдана.</p>
+  <div id="wrap-jword" hidden>
+    <div class="step">3 · Хичээл</div>
+    <div id="n5-lessons" class="lessons"></div>
+    <div class="row">
+      <button id="n5-all" class="ghost sm">Бүгд</button>
+      <button id="n5-none" class="ghost sm">Цэвэрлэх</button>
+    </div>
+    <p class="hint" id="n5-hint"></p>
+
+    <div class="step">4 · Дасгал</div>
+    <div class="modes">
+      <button class="mode" data-n5="flash"><b>Флашкарт</b><span>Карт эргүүлж өөрөө дүгнэнэ</span></button>
+      <button class="mode" data-n5="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно</span></button>
+      <button class="mode" data-n5="type"><b>Гараар бичих</b><span>Латинаар бичихэд кана болно</span></button>
+      <button class="mode" data-n5="listen"><b>Сонсох</b><span>Дуудлагыг сонсоод утгыг таана</span></button>
+    </div>
+
+    <p class="hint">Эх сурвалж: <b>N5 шинэ үгийн жагсаалт</b> (монгол орчуулга,
+       50 хичээл). Үг бүрийн 97%-д нь <b>жишээ өгүүлбэр</b> байгаа — хариулт
+       дээр харагдана.</p>
+  </div>
+
 </section>
 
 <!-- ═══════════════════ КАНА ═══════════════════ -->
@@ -406,7 +431,7 @@
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10v"></script>
-<script src="app.js?v=2026-09-10v"></script>
+<script src="sync-config.js?v=2026-09-10w"></script>
+<script src="app.js?v=2026-09-10w"></script>
 </body>
 </html>

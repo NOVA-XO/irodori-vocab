@@ -180,6 +180,13 @@ if (!settings.dir) settings.dir = 'jp2mn';
 if (!settings.kjn) settings.kjn = [5];        // JLPT түвшин (JLPT дэлгэц)
 if (!settings.what) settings.what = 'word';   // Irodori: шинэ үг | шинэ ханз
 if (!settings.book) settings.book = 'starter';
+/* Хичээлийн сонголтыг НОМ ТУС БҮРД тусад нь хадгална. N5 нь 50 хичээлтэй,
+   Irodori-гийнх 18 — нэг жагсаалт хуваалцвал N5-д 25-р хичээл сонгоод
+   Irodori руу шилжихэд багц ХООСОН болно. */
+if (!settings.les) {
+  settings.les = {};
+  if (settings.lessons) settings.les[settings.book] = settings.lessons;
+}
 
 /* Асуултын нүүр талд юу харуулах вэ: ханзтай хэлбэр эсвэл кана уншлага.
    Нөгөө хэлбэрийг нь хариулт дээр үзүүлнэ. Ханзгүй үг (プレゼント, あめ) дээр
@@ -293,8 +300,8 @@ function refreshSync() {
 /* Ном тус бүр ТУСДАА файлтай — сонгосон номоо л татна (эхний ачаалал хөнгөн).
    id-ийн угтвар ном бүрд өөр (L / E1 / E2) тул явц хольцолдохгүй. */
 const BOOK_FILE = { starter: 'data/vocab.json', el1: 'data/vocab-el1.json',
-                    el2: 'data/vocab-el2.json' };
-const BOOK_NAME = { starter: '入門', el1: '初級1', el2: '初級2' };
+                    el2: 'data/vocab-el2.json', n5: 'data/vocab-n5.json' };
+const BOOK_NAME = { starter: '入門', el1: '初級1', el2: '初級2', n5: 'N5' };
 const bookCache = {};
 
 function loadBook(b) {
@@ -304,17 +311,49 @@ function loadBook(b) {
   }).catch(() => false);
 }
 
-let ALL = [];                 // ИДЭВХТЭЙ номын үгс
+let ALL = [];                 // ИДЭВХТЭЙ Irodori номын үгс
+let N5 = [];                  // N5-ийн 2077 үг (50 хичээл) — тусдаа сан
+
+/* Үгийн эх сурвалж: Irodori-гийн ном уу, N5 юу. Хоёр дэлгэц ӨӨР ӨӨР
+   санг үзүүлдэг тул нэг `ALL`-д шахахгүй — эс тэгвэл нэг дэлгэц дээр
+   ном сольход нөгөө нь эвдэрнэ. */
+let wordSrc = 'book';         // 'book' | 'n5'
+const activeWords = () => (wordSrc === 'n5' ? N5 : ALL);
+function activeLessons() {
+  if (wordSrc === 'n5') {
+    if (!settings.n5les) settings.n5les = [1, 2, 3];
+    return settings.n5les;
+  }
+  return curLessons();
+}
+function setActiveLessons(v) {
+  if (wordSrc === 'n5') settings.n5les = v; else settings.les[settings.book] = v;
+  save(KEY_S, settings);
+}
+
+function loadN5() {
+  if (N5.length) return Promise.resolve(true);
+  return fetch('data/vocab-n5.json').then(r => r.json())
+    .then(d => { N5 = d.items; return true; }).catch(() => false);
+}
 let missed = [];              // энэ дасгалд алдсан үгс — төгсгөлд жагсаана
 let KANA = [];                // 107 кана (хирагана · катакана · авиа)
 let KANJI = [];               // 1027 ханз (хичээлийнх + JLPT N5–N2)
 let pool = [];                // идэвхтэй багц (үг эсвэл кана)
 
-const inPool = it => settings.lessons.includes(it.lesson) && (settings.ref || !it.ref);
+/** Идэвхтэй номын сонгосон хичээлүүд. Анхдагчаар эхний гурав. */
+function curLessons() {
+  const b = settings.book;
+  if (!settings.les[b]) settings.les[b] = [1, 2, 3];
+  return settings.les[b];
+}
+function setLessons(v) { settings.les[settings.book] = v; save(KEY_S, settings); }
+
+const inPool = it => activeLessons().includes(it.lesson) && (settings.ref || !it.ref);
 const isDue = it => { const p = progress[it.id]; return p && p.d <= today(); };
 const isNew = it => !progress[it.id];
 
-function rebuildPool() { pool = ALL.filter(inPool); }
+function rebuildPool() { pool = activeWords().filter(inPool); }
 
 /* ══════════════════════ 5. Дуу (speechSynthesis) ══════════════════════ */
 
@@ -452,7 +491,7 @@ const BOOK_LKEY = { starter: 'l', el1: 'l1', el2: 'l2' };
 
 function kanjiPool(src) {
   if (src === 'jlpt') return KANJI.filter(k => k.n && settings.kjn.includes(k.n));
-  const les = settings.lessons || [];
+  const les = curLessons();
   const key = BOOK_LKEY[settings.book] || 'l';
   return KANJI.filter(k => k[key] && k[key].some(x => les.includes(x)));
 }
@@ -511,15 +550,16 @@ function startKanji(km, src) {
   nextCard();
 }
 
-function startSession(m, onlyDue) {
+function startSession(m, onlyDue, src) {
   deck = 'vocab';
+  if (src) wordSrc = src;
   rebuildPool();
   if (!pool.length) { alert('Эхлээд хичээл сонгоно уу.'); return; }
   mode = m;
   queue = buildQueue(!!onlyDue);
   if (!queue.length) { alert('Давтах үг алга. Шинэ хичээл сонгох эсвэл маргааш дахин үзнэ үү.'); return; }
   done = okN = ngN = 0; missed = [];
-  settings.last = { deck: 'vocab', m: m }; save(KEY_S, settings);
+  settings.last = { deck: 'vocab', m: m, src: wordSrc }; save(KEY_S, settings);
   show('study');
   $('c-total').textContent = queue.length;
   nextCard();
@@ -809,6 +849,13 @@ function reveal() {
   $('a-mn').textContent = isRev() ? '' : (cur.mn || '');
   $('a-acc').innerHTML = cur.accent
     ? '<span class="acclab">өргөлт</span>' + pitchHTML(cur.accent) : '';
+  // Жишээ өгүүлбэр (N5-ийн санд 97%-д нь бий). Үгийг өгүүлбэр дотор нь
+  // харах нь ганцаар цээжлэхээс хамаагүй сайн тогтоодог.
+  if (cur.ex) {
+    $('a-kj').innerHTML = '<div class="exs"><span class="acclab">жишээ</span>'
+      + '<b class="jp">' + esc(cur.ex) + '</b></div>';
+    $('a-kj').hidden = false;
+  }
   $('answer').hidden = false;
   replay($('card'), 'flip');           // хариу нээгдэхэд карт эргэх хөдөлгөөн
 }
@@ -917,6 +964,33 @@ function go(name) {
   show(name);
 }
 
+/** N5-ийн 50 хичээлийн чип. Irodori-гийнхтэй ижил зарчим боловч
+    ӨӨР сан, ӨӨР сонголт дээр ажиллана. */
+function renderN5Lessons() {
+  const box = $('n5-lessons');
+  if (!box || !N5.length) return;
+  const sel = settings.n5les || (settings.n5les = [1, 2, 3]);
+  box.innerHTML = '';
+  for (const l of [...new Set(N5.map(i => i.lesson))].sort((a, b) => a - b)) {
+    const n = N5.filter(i => i.lesson === l).length;
+    const b = document.createElement('button');
+    b.innerHTML = 'L' + l + '<small>' + n + '</small>';
+    b.setAttribute('aria-pressed', sel.includes(l));
+    b.onclick = () => {
+      const i = sel.indexOf(l);
+      i < 0 ? sel.push(l) : sel.splice(i, 1);
+      settings.n5les = sel; save(KEY_S, settings); refreshHome();
+    };
+    box.appendChild(b);
+  }
+  const h = $('n5-hint');
+  if (h) {
+    const n = N5.filter(i => sel.includes(i.lesson)).length;
+    h.textContent = n ? 'Доорх дасгал сонгосон ' + n + ' үгээс асууна.'
+                      : 'Дор хаяж нэг хичээл сонгоно уу.';
+  }
+}
+
 function refreshHome() {
   rebuildPool();
   $('due-n').textContent = pool.filter(isDue).length;
@@ -927,10 +1001,11 @@ function refreshHome() {
     const b = document.createElement('button');
     const n = ALL.filter(i => i.lesson === l && (settings.ref || !i.ref)).length;
     b.innerHTML = 'L' + l + '<small>' + n + '</small>';
-    b.setAttribute('aria-pressed', settings.lessons.includes(l));
+    b.setAttribute('aria-pressed', curLessons().includes(l));
     b.onclick = () => {
-      const i = settings.lessons.indexOf(l);
-      i < 0 ? settings.lessons.push(l) : settings.lessons.splice(i, 1);
+      const cur2 = curLessons(), i = cur2.indexOf(l);
+      i < 0 ? cur2.push(l) : cur2.splice(i, 1);
+      setLessons(cur2);
       save(KEY_S, settings); refreshHome();
     };
     box.appendChild(b);
@@ -971,7 +1046,11 @@ function refreshHome() {
   document.querySelectorAll('#seg-book button').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.b === settings.book));
   document.querySelectorAll('#seg-jwhat button').forEach(b =>
-    b.setAttribute('aria-pressed', b.dataset.w === 'kanji'));
+    b.setAttribute('aria-pressed', b.dataset.w === jWhat));
+  const wjk = $('wrap-jkanji'), wjw = $('wrap-jword');
+  if (wjk && wjw) { wjk.hidden = jWhat !== 'kanji'; wjw.hidden = jWhat !== 'word'; }
+  const nn5 = $('n-n5'); if (nn5) nn5.textContent = (N5.length || 2077) + ' үг';
+  renderN5Lessons();
   const ww = $('wrap-word'), wk = $('wrap-kanji');
   if (ww && wk) { ww.hidden = settings.what !== 'word'; wk.hidden = settings.what !== 'kanji'; }
   const ai = $('audio-info');
@@ -1029,13 +1108,30 @@ function refreshStats() {
 /* ══════════════════════ 8. Холбоос ══════════════════════ */
 
 document.querySelectorAll('.mode[data-mode]').forEach(b =>
-  b.onclick = () => startSession(b.dataset.mode, false));
+  b.onclick = () => startSession(b.dataset.mode, false, 'book'));
 document.querySelectorAll('.mode[data-k]').forEach(b =>
   b.onclick = () => startKana(b.dataset.k));
 document.querySelectorAll('.mode[data-kj]').forEach(b =>
   b.onclick = () => startKanji(b.dataset.kj, 'les'));
 document.querySelectorAll('.mode[data-kj2]').forEach(b =>
   b.onclick = () => startKanji(b.dataset.kj2, 'jlpt'));
+document.querySelectorAll('.mode[data-n5]').forEach(b =>
+  b.onclick = () => startSession(b.dataset.n5, false, 'n5'));
+
+/* JLPT: «Ханз» эсвэл «Үг». Үг сонговол N5-ийн санг ачаална. */
+let jWhat = 'kanji';
+document.querySelectorAll('#seg-jwhat button').forEach(b =>
+  b.onclick = () => {
+    jWhat = b.dataset.w;
+    if (jWhat === 'word') loadN5().then(refreshHome);
+    else refreshHome();
+  });
+$('n5-all').onclick = () => {
+  wordSrc = 'n5';
+  setActiveLessons([...new Set(N5.map(i => i.lesson))]);
+  refreshHome();
+};
+$('n5-none').onclick = () => { wordSrc = 'n5'; setActiveLessons([]); refreshHome(); };
 document.querySelectorAll('#jlpt-levels button').forEach(b =>
   b.onclick = () => {
     const n = +b.dataset.j, i = settings.kjn.indexOf(n);
@@ -1078,8 +1174,8 @@ document.querySelectorAll('#menu button, .bigcard').forEach(b =>
 document.addEventListener('click', e => {                // гадуур дарвал цэс хаагдана
   if (!$('menu').hidden && !e.target.closest('#menu, #btn-menu')) $('menu').hidden = true;
 });
-$('sel-all').onclick = () => { settings.lessons = [...new Set(ALL.map(i => i.lesson))]; save(KEY_S, settings); refreshHome(); };
-$('sel-none').onclick = () => { settings.lessons = []; save(KEY_S, settings); refreshHome(); };
+$('sel-all').onclick = () => { setLessons([...new Set(ALL.map(i => i.lesson))]); refreshHome(); };
+$('sel-none').onclick = () => { setLessons([]); refreshHome(); };
 $('inc-ref').onchange = e => { settings.ref = e.target.checked; save(KEY_S, settings); refreshHome(); };
 document.querySelectorAll('#seg-script button').forEach(b =>
   b.onclick = () => { settings.script = b.dataset.s; save(KEY_S, settings); refreshHome(); });
@@ -1103,7 +1199,7 @@ $('btn-continue').onclick = () => {
   const L = settings.last; if (!L) return;
   if (L.deck === 'kana') startKana(L.k);
   else if (L.deck === 'kanji') startKanji(L.k, L.src);
-  else startSession(L.m, false);
+  else startSession(L.m, false, L.src || 'book');
 };
 $('fin-retry').onclick = () => {
   if (!missed.length) return;
@@ -1115,7 +1211,7 @@ $('fin-again').onclick = () => {
   const L = settings.last || {};
   if (L.deck === 'kana') startKana(L.k);
   else if (L.deck === 'kanji') startKanji(L.k, L.src);
-  else startSession(L.m || 'choice', false);
+  else startSession(L.m || 'choice', false, L.src || 'book');
 };
 $('fin-home').onclick = () => go('home');
 document.querySelectorAll('#goal-pick button').forEach(b =>
