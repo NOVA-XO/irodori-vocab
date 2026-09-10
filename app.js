@@ -1404,9 +1404,20 @@ async function sendFeedback() {
   btn.disabled = false;
 }
 
+/** Хөгжүүлэлтийн орчин уу? Тийм бол хэрэглээний тоонд БҮРТГЭХГҮЙ.
+ *
+ * Шалтгаан: headless Chrome-оор шалгах бүрд шинэ профайл үүсдэг тул шинэ
+ * `devId` бичигдээд «шинэ хэрэглэгч» мэт харагдаж, тоог гажуудуулж байсан.
+ * Зөвхөн жинхэнэ хост (github.io) дээрх нээлт тоологдоно. */
+function isDevHost() {
+  const h = location.hostname;
+  return !h || h === 'localhost' || h === '127.0.0.1' || h === '[::1]'
+    || h.endsWith('.local') || location.protocol === 'file:';
+}
+
 /** Апп нээгдэхэд ӨДӨРТ НЭГ УДАА — хэрэглээний тоо. Алдааг чимээгүй өнгөрөөнө. */
 function pingUsage() {
-  if (!syncOn) return;
+  if (!syncOn || isDevHost()) return;
   const k = 'irodori.pinged.v1', t = String(today());
   try {
     if (localStorage.getItem(k) === t) return;

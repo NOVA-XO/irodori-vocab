@@ -185,3 +185,43 @@ revoke all on function public.ping(text) from public;
 revoke all on function public.usage_stats() from public;
 grant execute on function public.ping(text) to anon;
 grant execute on function public.usage_stats() to anon;
+
+-- ─────────────────────────────────────────────────────────────────────
+--  Хэрэглээний ЗАДАРГАА (2026-09-10 нэмэгдэв)
+--
+--  `usage_stats()` нь зөвхөн нийт тоо буцаадаг тул «хэдэн ШИНЭ хүн
+--  орсон бэ» гэдгийг ялгах боломжгүй байв — хөгжүүлэлтийн тест ба
+--  жинхэнэ зочин хоёр нэг тоонд нийлдэг. Энэ функц нь цаг тутмын
+--  задаргааг өгнө: тестийн цонхыг хасаад тоолж болно.
+--
+--  Хувийн мэдээлэл гарахгүй: төхөөрөмжийн id БУЦААХГҮЙ, зөвхөн тоо.
+-- ─────────────────────────────────────────────────────────────────────
+
+create or replace function public.usage_days()
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $ud$
+  select jsonb_build_object(
+    'tz', 'Asia/Ulaanbaatar',
+    'new_by_hour', (
+      select coalesce(jsonb_agg(jsonb_build_object('h', h, 'n', n) order by h), '[]'::jsonb)
+      from (
+        select to_char(first_seen at time zone 'Asia/Ulaanbaatar', 'MM-DD HH24') as h,
+               count(*) as n
+        from public.devices
+        where first_seen > now() - interval '30 days'
+        group by 1
+      ) t
+    ),
+    'opens_by_day', (
+      select coalesce(jsonb_agg(jsonb_build_object('d', day, 'n', opens) order by day), '[]'::jsonb)
+      from public.visits
+      where day > current_date - 30
+    )
+  );
+$ud$;
+
+revoke all on function public.usage_days() from public;
+grant execute on function public.usage_days() to anon;
