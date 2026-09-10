@@ -196,53 +196,56 @@
 :root[data-theme="space"] .seal{display:none}
 
 /* ══ 機 mech ═══════════════════════════════════════════════════════
-   Ган, сараалж, аюулгүйн улбар шар. Дугуй булан огт байхгүй,
-   сүүдэр нь бүдгэрдэггүй — хатуу шилжсэн блок. */
-:root[data-theme="mech"]{
-  --bg:#14161a; --card:#1c1f25; --paper:#23272e;
-  --ink:#dfe3e8; --ink-2:#949aa3; --ink-3:#676d76;
-  --line:#2a2e35; --line-2:#3c424b;
-  --accent:#ff8c1a; --seal:#ff8c1a;
-  --ok:#7bc86c; --ng:#e5533d;
-  --ok-bg:#1b2317; --ng-bg:#2a1a15;
+   Инженерийн нарийвчлал. Судалгааны гол дүгнэлт (Teenage Engineering):
+   «ялгарал нь чимэглэлээс биш, МАТЕРИАЛААС гарна» — дугуй булан ч,
+   сүүдэр ч, градиент ч байхгүй, ирмэг бүр шулуун огтлол. Улбар шар нь
+   барилгын талбайн аюулгүйн өнгө: «анхаар» гэсэн ганц дохио.
 
-  /* Гарчиг, тоо нь монспэйс. Биет текст нь sans хэвээр — монспэйсээр
-     урт монгол өгүүлбэр уншихад хэцүү. */
+   Хуучин хувилбар 2px хүрээ, 4px шилжсэн сүүдэртэй байсан нь БРУТАЛИЗМ
+   байв — тэр нь өөр хэл. Одоо хайрцаггүй, зөвхөн үс шугам. */
+:root[data-theme="mech"]{
+  --bg:#0e1012; --card:#15181b; --paper:#1b1f23;
+  --ink:#e9ecef; --ink-2:#8b939b; --ink-3:#5b636b;
+  --line:#23282d; --line-2:#333a41;
+  --accent:#ff6a00; --seal:#ff6a00;          /* аюулгүйн улбар шар */
+  --ok:#7bc86c; --ng:#e5533d;
+  --ok-bg:#161d13; --ng-bg:#26150f;
+
   --disp:var(--mono);
   --jpd:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",
         sans-serif;
 
   --r:0;
-  --box-bg:var(--card); --box-bd:2px solid var(--line-2); --box-r:0;
-  --box-sep:2px solid var(--line-2); --box-pad:15px 13px;
-  --list-gap:8px; --list-top:0;
-  --elev:4px 4px 0 rgba(0,0,0,.55);
-  --btn-bg:var(--accent); --btn-fg:#14161a;
-  --sel-bg:var(--accent); --sel-fg:#14161a;
-  --h2-tt:uppercase; --h2-ls:.16em; --h2-bd:2px solid var(--line-2);
-  --track-h:10px; --grain:.06;
+  --box-bg:transparent;                       /* хавтгай. Хавтан байхгүй */
+  --box-bd:0;
+  --box-r:0;
+  --box-sep:1px solid var(--line);            /* үс шугам, 2px биш */
+  --box-pad:16px 2px;
+  --list-gap:0;                               /* нягт, шугамаар тусгаарлана */
+  --list-top:1px solid var(--line);
+  --elev:none;                                /* сүүдэр ОГТ байхгүй */
+  --btn-bg:var(--accent); --btn-fg:#0e1012;
+  --sel-bg:var(--accent); --sel-fg:#0e1012;
+  --h2-tt:uppercase; --h2-ls:.2em; --h2-bd:1px solid var(--line);
+  --track-h:5px; --grain:0;
   --fx-op:0;
 }
-/* Техникийн сараалж + ташуу зураас. Хөвөгч толбо энд тохирохгүй. */
+/* Материал: үрсэн ган ба цөөн газрын зэв. Энэ хоёр л «машин» гэсэн
+   мэдрэмжийг үүрнэ — чимэглэл нэмэхгүй. */
 :root[data-theme="mech"] #bg{
   background-image:
-    repeating-linear-gradient(0deg, rgba(255,255,255,.028) 0 1px, transparent 1px 42px),
-    repeating-linear-gradient(90deg, rgba(255,255,255,.028) 0 1px, transparent 1px 42px),
-    repeating-linear-gradient(45deg, rgba(255,140,26,.022) 0 7px, transparent 7px 14px);
+    repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0 1px, transparent 1px 48px);
 }
-/* Үрсэн ган: хэвтээ СУНГАСАН шуугиан. Ганцхан тор нь хэт цэвэрхэн,
-   «CAD зураг» мэт харагддаг — металл нь үргэлж зураастай. */
 :root[data-theme="mech"] #bg i:nth-child(1){
   display:block; inset:0; width:100%; height:100%; left:0; top:0;
-  border-radius:0; filter:none; opacity:.26; animation:none;
+  border-radius:0; filter:none; opacity:.22; animation:none;
   background:#9aa3af; mix-blend-mode:overlay;
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27600%27%20height%3D%27600%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.85%27%20numOctaves%3D%273%27%20seed%3D%2713%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.4%27%20amplitude%3D%271.3%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27600%27%20height%3D%27600%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27600%27%20height%3D%27600%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.85%27%20numOctaves%3D%273%27%20seed%3D%2713%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.4%27%20amplitude%3D%271.3%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27600%27%20height%3D%27600%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27600%27%20height%3D%27600%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.85%27%20numOctaves%3D%273%27%20seed%3D%2713%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.4%27%20amplitude%3D%271.3%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27600%27%20height%3D%27600%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27600%27%20height%3D%27600%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.006%200.85%27%20numOctaves%3D%273%27%20seed%3D%2713%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.4%27%20amplitude%3D%271.3%27%20offset%3D%27-0.12%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27600%27%20height%3D%27600%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
   -webkit-mask-size:cover; mask-size:cover;
 }
-/* Зэв, тос — цөөн газар бөөгнөрсөн бохирдол. */
 :root[data-theme="mech"] #bg i:nth-child(2){
-  display:block; border-radius:0; filter:none; opacity:.22; animation:none;
+  display:block; border-radius:0; filter:none; opacity:.16; animation:none;
   width:120vmax; height:90vmax; right:-24vmax; top:-14vmax;
   background:#8a4a12; mix-blend-mode:screen;
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.005%200.007%27%20numOctaves%3D%275%27%20seed%3D%2771%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%274.0%27%20amplitude%3D%271.6%27%20offset%3D%27-0.2%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.005%200.007%27%20numOctaves%3D%275%27%20seed%3D%2771%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%274.0%27%20amplitude%3D%271.6%27%20offset%3D%27-0.2%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
@@ -250,71 +253,115 @@
   mask-repeat:no-repeat;
 }
 :root[data-theme="mech"] #bg i:nth-child(3){display:none}
-:root[data-theme="mech"] h2::before{content:'// '; color:var(--accent)}
-:root[data-theme="mech"] .bar{border-bottom-width:2px}
-:root[data-theme="mech"] .bar .title{letter-spacing:.24em; font-family:var(--mono)}
-:root[data-theme="mech"] .primary{font-weight:700; letter-spacing:.12em;
-  text-transform:uppercase}
+/* Толгойн доорх аюулгүйн туузан зураас — техникийн бичиг баримтын дохио. */
+:root[data-theme="mech"] .bar{
+  border-bottom:1px solid var(--line-2);
+  box-shadow:0 2px 0 -1px transparent,
+             0 3px 0 0 rgba(255,106,0,.55);
+}
+:root[data-theme="mech"] .bar .title{letter-spacing:.3em; font-family:var(--mono);
+  font-weight:300; font-size:14px}
+/* Гарчиг нь ХЭТ НИМГЭН. Шаардах биш, нарийн байдлаараа анхаарал татна. */
+:root[data-theme="mech"] h2{font-weight:300; font-size:11px}
+:root[data-theme="mech"] h2::before{
+  content:''; display:inline-block; width:7px; height:7px; margin-right:9px;
+  background:var(--accent); vertical-align:1px;
+}
+:root[data-theme="mech"] .step{font-family:var(--mono); font-weight:300;
+  font-size:10.5px; letter-spacing:.22em; color:var(--ink-3)}
+:root[data-theme="mech"] .primary{font-weight:400; letter-spacing:.22em;
+  text-transform:uppercase; font-size:13px; font-family:var(--mono)}
 :root[data-theme="mech"] .due-n,
-:root[data-theme="mech"] .fin-pct{color:var(--accent)}
-:root[data-theme="mech"] .statsum div + div{border-left:0}
-:root[data-theme="mech"] .hero .due{background:rgba(28,31,37,.8)}
-:root[data-theme="mech"] .seal{border-width:3px; border-radius:0}
+:root[data-theme="mech"] .fin-pct{color:var(--accent); font-weight:300}
+:root[data-theme="mech"] .statsum b,
+:root[data-theme="mech"] .tstat b{font-weight:300}
+:root[data-theme="mech"] .statsum div + div{border-left:1px solid var(--line)}
+:root[data-theme="mech"] .lessons button{border-color:var(--line-2)}
+:root[data-theme="mech"] .hero .due{background:transparent}
+:root[data-theme="mech"] .ring3d .c{border:1px solid var(--line-2);
+  background:rgba(21,24,27,.8); opacity:.55}
+:root[data-theme="mech"] .seal{border-width:1px; border-radius:0}
 
 /* ══ 漫 anime ══════════════════════════════════════════════════════
-   Манга хуудас: цагаан цаас, ЗУЗААН хар хүрээ, шилжсэн хатуу сүүдэр,
-   поп ягаан өргөлт, растер цэг. Япон бичиг нь 明朝 — манга дахь
-   ярианы бөмбөлөгт яг тэр үсэг хэрэглэдэг. */
+   Мангагийн хуудас. Судалгааны дөрвөн дүгнэлт:
+     · Хүрээний зузаан нь ШАТЛАЛ үүсгэнэ. Бүгд ижил 3px байвал хуудас
+       хавтгай болно — гол хайрцаг 4px, дэд нь 2.5px, жижиг нь 2px.
+     · Гутер нарийсвал хэмнэл хурдан болно (2–4мм) → 12px биш 8px.
+     · Screentone нь зөвхөн цэг биш — ТОНЫ ШИЛЖИЛТТЭЙ (доошоо нягтарна)
+       ба зураастай (kakeami) хувилбартай.
+     · Хурдны шугам нь нэг ЦЭГ рүү нийлнэ, тэр цэгийн ойролцоо сийрэг. */
 :root[data-theme="anime"]{
   --bg:#fffdf6; --card:#ffffff; --paper:#fffdf6;
-  --ink:#17171a; --ink-2:#5f5f66; --ink-3:#9a9aa2;
-  --line:#e3e0d6; --line-2:#17171a;
-  --accent:#ff3d78; --seal:#ff3d78;
-  --ok:#12a150; --ng:#ff3d3d;
+  --ink:#141417; --ink-2:#55555c; --ink-3:#93939b;
+  --line:#e0ddd2; --line-2:#141417;
+  --accent:#ff2e6a; --seal:#ff2e6a;
+  --ok:#0f9f4f; --ng:#ff2e2e;
   --ok-bg:#e6f8ec; --ng-bg:#ffe9e9;
 
-  --r:12px;
-  --box-bg:var(--card); --box-bd:3px solid var(--ink); --box-r:14px;
-  --box-sep:0; --box-pad:16px;
-  --list-gap:12px; --list-top:0;
-  --elev:5px 5px 0 var(--ink);
+  --r:10px;
+  --box-bg:var(--card); --box-bd:2.5px solid var(--ink); --box-r:12px;
+  --box-sep:0; --box-pad:15px;
+  --list-gap:8px;                              /* нарийн гутер = хурдан */
+  --list-top:0;
+  --elev:4px 4px 0 var(--ink);
   --btn-bg:var(--accent); --btn-fg:#ffffff;
   --sel-bg:var(--accent); --sel-fg:#ffffff;
   --h2-tt:uppercase; --h2-ls:.06em; --h2-bd:0;
-  --track-h:14px; --grain:0;
+  --track-h:13px; --grain:0;
   --fx-op:0;
 }
-/* Растер (halftone) цэг + хурдны шугам. */
+/* Screentone: жигд цэг (машинаар хийгддэг тул жигд байх нь ЗӨВ) +
+   доошоо нягтарсан хоёр дахь давхарга = тоны шилжилт. */
 :root[data-theme="anime"] #bg{
-  background-image:radial-gradient(circle, rgba(23,23,26,.09) 0 1.5px, transparent 1.7px);
-  background-size:13px 13px;
+  background-image:
+    radial-gradient(circle, rgba(20,20,23,.085) 0 1.5px, transparent 1.7px),
+    radial-gradient(circle, rgba(20,20,23,.10) 0 2.2px, transparent 2.4px);
+  background-size:13px 13px, 19px 19px;
+  -webkit-mask-image:none; mask-image:none;
 }
-/* Цаасны ширхэг. Растер цэг нь тодорхой хэвээр — манга дээр тэр нь
-   ЗОРИУД жигд байдаг — харин цаас нь хэзээ ч цэвэр гөлгөр байдаггүй. */
-:root[data-theme="anime"] #bg i:nth-child(1){
-  display:block; inset:0; width:100%; height:100%; left:0; top:0;
-  border-radius:0; filter:none; opacity:.22; animation:none;
-  background:#8b8578; mix-blend-mode:multiply;
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27420%27%20height%3D%27420%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%271.1%27%20numOctaves%3D%273%27%20seed%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%271.4%27%20amplitude%3D%271.0%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27420%27%20height%3D%27420%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27420%27%20height%3D%27420%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%271.1%27%20numOctaves%3D%273%27%20seed%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%271.4%27%20amplitude%3D%271.0%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27420%27%20height%3D%27420%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-size:420px 420px; mask-size:420px 420px;
-}
-:root[data-theme="anime"] #bg i:nth-child(2),
-:root[data-theme="anime"] #bg i:nth-child(3){display:none}
+/* Хурдны шугам: нэг цэг рүү нийлнэ. Тэр цэгийн ойролцоо СИЙРЭГ байх нь
+   чухал — эс тэгвэл дугуй толбо болно. */
 :root[data-theme="anime"] #bg::after{
-  content:''; position:absolute; inset:-30%;
-  background:repeating-conic-gradient(from 0deg at 78% 12%,
-    rgba(255,61,120,.05) 0 .35deg, transparent .35deg 2.6deg);
-  animation:speed 40s linear infinite;
+  content:''; position:absolute; inset:-40%;
+  background:repeating-conic-gradient(from 0deg at 76% 14%,
+    rgba(20,20,23,.055) 0 .3deg, transparent .3deg 2.2deg);
+  -webkit-mask-image:radial-gradient(38% 38% at 76% 14%,
+    transparent 0 22%, #000 60%);
+  mask-image:radial-gradient(38% 38% at 76% 14%,
+    transparent 0 22%, #000 60%);
+  animation:speed 55s linear infinite;
 }
 @keyframes speed{to{transform:rotate(360deg)}}
+/* Цаасны ширхэг + kakeami (зураастай) сүүдэр доод буланд. */
+:root[data-theme="anime"] #bg i:nth-child(1){
+  display:block; inset:0; width:100%; height:100%; left:0; top:0;
+  border-radius:0; filter:none; opacity:.2; animation:none;
+  background:#8b8578; mix-blend-mode:multiply;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27420%27%20height%3D%27420%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%271.1%27%20numOctaves%3D%273%27%20seed%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%271.4%27%20amplitude%3D%271.0%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27420%27%20height%3D%27420%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27420%27%20height%3D%27420%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%271.1%27%20numOctaves%3D%273%27%20seed%3D%273%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%271.4%27%20amplitude%3D%271.0%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27420%27%20height%3D%27420%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:420px 420px; mask-size:420px 420px;
+}
+:root[data-theme="anime"] #bg i:nth-child(2){
+  display:block; border-radius:0; filter:none; opacity:.5; animation:none;
+  left:0; bottom:0; width:70vmax; height:52vmax;
+  background:repeating-linear-gradient(46deg,
+    rgba(20,20,23,.1) 0 1px, transparent 1px 6px);
+  mix-blend-mode:multiply;
+  -webkit-mask-image:radial-gradient(80% 80% at 0% 100%, #000, transparent 72%);
+  mask-image:radial-gradient(80% 80% at 0% 100%, #000, transparent 72%);
+}
+:root[data-theme="anime"] #bg i:nth-child(3){display:none}
+/* Шатлал: гол хайрцаг хамгийн зузаан, доод түвшин нимгэн. */
+:root[data-theme="anime"] .card,
+:root[data-theme="anime"] .hero .due{border-width:4px; box-shadow:6px 6px 0 var(--ink)}
+:root[data-theme="anime"] .lessons button,
+:root[data-theme="anime"] .thlist button{border:2px solid var(--ink)}
 :root[data-theme="anime"] h2{font-weight:800; color:var(--ink); font-size:13px;
   padding-bottom:0; margin:30px 0 10px}
 :root[data-theme="anime"] h2::after{content:''; display:block; width:34px;
   height:4px; background:var(--accent); margin-top:5px; border-radius:2px}
 :root[data-theme="anime"] .step{font-weight:800; color:var(--ink-2);
   text-transform:uppercase; letter-spacing:.08em}
-:root[data-theme="anime"] .bar{border-bottom:3px solid var(--ink)}
+:root[data-theme="anime"] .bar{border-bottom:4px solid var(--ink)}
 :root[data-theme="anime"] .bar .title{font-weight:800; letter-spacing:.1em}
 :root[data-theme="anime"] .primary{font-weight:800; letter-spacing:.02em;
   border:3px solid var(--ink); box-shadow:5px 5px 0 var(--ink)}
@@ -326,75 +373,73 @@
 :root[data-theme="anime"] .statles .track{border-radius:999px;
   border:2px solid var(--ink)}
 :root[data-theme="anime"] .statsum div + div{border-left:0}
-:root[data-theme="anime"] .hero .due{background:rgba(255,255,255,.8);
-  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
+:root[data-theme="anime"] .hero .due{background:rgba(255,255,255,.86);
+  -webkit-backdrop-filter:blur(5px); backdrop-filter:blur(5px)}
 :root[data-theme="anime"] .ring3d .c{border:2px solid var(--ink); opacity:.4}
 
 /* ══ 雨 rain ═══════════════════════════════════════════════════════
-   Үүлэрхэг өдөр, цонхон дээрх бороо. Хүйтэн саарал-хөх, норсон
-   шилэн хавтан (`backdrop-filter`), ташуу урсах дусал.
-
-   Цайвар байхаар зориуд сонгов: тав дахь загвар нь бас харанхуй байвал
-   бүлэг тэнцвэргүй болно (宙 · 機 хоёр аль хэдийн харанхуй), мөн
-   борооны саарал нь удаан хугацаанд уншихад нүдэнд зөөлөн. */
+   Шилэн дээрх бороо. Судалгааны гурван дүгнэлт:
+     · Дусал бол ЛИНЗ — нэг талд нь тод ирмэг, нөгөө талд нь сүүдэр.
+       Ганц цайвар толбо нь «шаар» мэт харагддаг.
+     · Шилний цаана бүрхэг; фокус нь дусал дээр байна.
+     · Урсгал нь тэгш зайтай байж болохгүй — өөр өнцөг, зай, хурд. */
 :root[data-theme="rain"]{
-  --bg:#dbe3e9; --card:#f2f6f9; --paper:#ffffff;
-  --ink:#1e2a33; --ink-2:#5c6b76; --ink-3:#8fa0ac;
-  --line:#c4d0d8; --line-2:#a8b7c2;
-  --accent:#2f7c8c; --seal:#2f7c8c;
+  --bg:#ccd8e1; --card:#eef4f8; --paper:#ffffff;
+  --ink:#1b2731; --ink-2:#55697a; --ink-3:#8a9dad;
+  --line:#b7c6d1; --line-2:#9aabb9;
+  --accent:#2b7a8c; --seal:#2b7a8c;
   --ok:#2f7d5b; --ng:#b34a4a;
   --ok-bg:#e2f0e9; --ng-bg:#f6e5e5;
 
   --r:10px;
-  --box-bg:rgba(255,255,255,.6);
-  --box-bd:1px solid rgba(255,255,255,.85);
+  --box-bg:rgba(255,255,255,.58);
+  --box-bd:1px solid rgba(255,255,255,.8);
   --box-r:14px; --box-sep:0; --box-pad:16px 15px;
   --list-gap:9px; --list-top:0;
-  --elev:0 6px 20px rgba(30,42,51,.1);
+  --elev:0 6px 20px rgba(24,38,50,.12);
   --btn-bg:var(--accent); --btn-fg:#ffffff;
   --sel-bg:var(--accent); --sel-fg:#ffffff;
   --h2-tt:uppercase; --h2-ls:.12em; --h2-bd:0;
-  --track-h:8px; --grain:.03;
-  --fx1:#b3c7d3; --fx2:#c6d4dc; --fx3:#9fb7c6; --fx-op:.6;
+  --track-h:8px; --grain:.02;
+  --fx-op:0;
 }
-/* Хоёр давхарга дусал: ойрынх нь цайвар, хурдан; холынх нь бүдэг, удаан.
-   Хоёулаа НЭГ элемент дээр тул `background-position`-ыг хоёр утгаар
-   өгч параллакс гаргана. */
-/* Дусал нь ЖИГД БУС байх ёстой. Гурван зэрэгцээ градиент нь тэгш
-   зайтай тул «зураастай хальс» мэт харагдана — тиймээс:
-     · гурван давхарга, өөр өнцөг, өөр зай, өөр хурд (параллакс)
-     · дээр нь шилэн дээрх ДУСАЛ (өндөр давтамжтай фрактал толбо)
-   Бороо нь нүдэнд ойрхон учир хөдөлгөөн нь хурдан байх ёстой. */
 :root[data-theme="rain"] #bg{
   background-image:
-    repeating-linear-gradient(99deg, rgba(255,255,255,.30) 0 1px, transparent 1px 17px),
-    repeating-linear-gradient(103deg, rgba(255,255,255,.20) 0 1px, transparent 1px 11px),
-    repeating-linear-gradient(106deg, rgba(86,120,142,.16) 0 1px, transparent 1px 6px);
+    repeating-linear-gradient(99deg, rgba(255,255,255,.26) 0 1px, transparent 1px 19px),
+    repeating-linear-gradient(103deg, rgba(255,255,255,.17) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(106deg, rgba(70,100,120,.14) 0 1px, transparent 1px 7px);
   animation:rainfall 1.35s linear infinite;
 }
 @keyframes rainfall{to{background-position:-42px 190px, -66px 300px, -104px 470px}}
-/* Шилэн дээр наалдсан дусал — тод биш, гэрэл хугалсан толбо. */
+/* Дусал = линз. ХОЙШ шилжсэн хар давхарга + УРАГШ шилжсэн цагаан
+   давхарга нэг маскаар — гэрэл нэг талаас тусаж байгаа мэт болно. */
 :root[data-theme="rain"] #bg i:nth-child(1){
-  display:block; inset:0; left:0; top:0; width:100%; height:100%;
-  border-radius:0; filter:none; opacity:.5; animation:none;
+  display:block; left:-2.5px; top:-2.5px; width:101%; height:101%;
+  border-radius:0; filter:none; opacity:.55; animation:none;
   background:#ffffff; mix-blend-mode:overlay;
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27340%27%20height%3D%27340%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.75%27%20numOctaves%3D%274%27%20seed%3D%2717%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%275.5%27%20amplitude%3D%272.0%27%20offset%3D%27-0.3%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27340%27%20height%3D%27340%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27340%27%20height%3D%27340%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.75%27%20numOctaves%3D%274%27%20seed%3D%2717%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%275.5%27%20amplitude%3D%272.0%27%20offset%3D%27-0.3%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27340%27%20height%3D%27340%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
-  -webkit-mask-size:340px 340px; mask-size:340px 340px;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27330%27%20height%3D%27330%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.26%27%20numOctaves%3D%273%27%20seed%3D%2717%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%277.5%27%20amplitude%3D%272.6%27%20offset%3D%27-0.42%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27330%27%20height%3D%27330%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27330%27%20height%3D%27330%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.26%27%20numOctaves%3D%273%27%20seed%3D%2717%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%277.5%27%20amplitude%3D%272.6%27%20offset%3D%27-0.42%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27330%27%20height%3D%27330%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:290px 290px; mask-size:290px 290px;
 }
-/* Цонхны цаадах бүрхэг — үүлэрхэг өдрийн жигд бус гэрэл. */
 :root[data-theme="rain"] #bg i:nth-child(2){
-  display:block; border-radius:0; filter:none; opacity:.45; animation:none;
+  display:block; left:2.5px; top:2.5px; width:101%; height:101%;
+  border-radius:0; filter:none; opacity:.3; animation:none;
+  background:#2b3f4e; mix-blend-mode:multiply;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27330%27%20height%3D%27330%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.26%27%20numOctaves%3D%273%27%20seed%3D%2717%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%277.5%27%20amplitude%3D%272.6%27%20offset%3D%27-0.42%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27330%27%20height%3D%27330%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27330%27%20height%3D%27330%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.26%27%20numOctaves%3D%273%27%20seed%3D%2717%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%277.5%27%20amplitude%3D%272.6%27%20offset%3D%27-0.42%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27330%27%20height%3D%27330%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
+  -webkit-mask-size:290px 290px; mask-size:290px 290px;
+}
+/* Шилний цаадах бүрхэг — үүлэрхэг өдрийн жигд бус гэрэл. */
+:root[data-theme="rain"] #bg i:nth-child(3){
+  display:block; border-radius:0; filter:none; opacity:.5; animation:none;
   width:150vmax; height:110vmax; left:-26vmax; top:-30vmax;
   background:#ffffff; mix-blend-mode:soft-light;
   -webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.004%200.006%27%20numOctaves%3D%275%27%20seed%3D%2783%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.6%27%20amplitude%3D%271.3%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E"); mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27900%27%20height%3D%27900%27%3E%3Cfilter%20id%3D%27n%27%20x%3D%270%27%20y%3D%270%27%20width%3D%27100%25%27%20height%3D%27100%25%27%3E%3CfeTurbulence%20type%3D%27fractalNoise%27%20baseFrequency%3D%270.004%200.006%27%20numOctaves%3D%275%27%20seed%3D%2783%27%20stitchTiles%3D%27stitch%27%2F%3E%3CfeColorMatrix%20type%3D%27saturate%27%20values%3D%270%27%2F%3E%3CfeComponentTransfer%3E%3CfeFuncA%20type%3D%27gamma%27%20exponent%3D%272.6%27%20amplitude%3D%271.3%27%20offset%3D%27-0.1%27%2F%3E%3C%2FfeComponentTransfer%3E%3C%2Ffilter%3E%3Crect%20width%3D%27900%27%20height%3D%27900%27%20filter%3D%27url%28%23n%29%27%2F%3E%3C%2Fsvg%3E");
   -webkit-mask-size:cover; mask-size:cover; -webkit-mask-repeat:no-repeat;
   mask-repeat:no-repeat;
 }
-:root[data-theme="rain"] #bg i:nth-child(3){display:none}
 :root[data-theme="rain"] #bg::after{
   content:''; position:absolute; inset:0;
-  background:radial-gradient(130% 95% at 50% 25%,
-    transparent 45%, rgba(72,96,114,.28) 100%);
+  background:radial-gradient(130% 95% at 50% 22%,
+    transparent 42%, rgba(56,80,98,.3) 100%);
 }
 /* Норсон шил — зөвхөн ТОМ гадаргуу дээр. Бүх мөрөнд тавивал
    `backdrop-filter` олон давхарга болж утсыг ачаална. */
@@ -403,7 +448,8 @@
 :root[data-theme="rain"] .today,
 :root[data-theme="rain"] .fin,
 :root[data-theme="rain"] .bigcard{
-  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(12px) saturate(1.08);
+  backdrop-filter:blur(12px) saturate(1.08);
 }
 :root[data-theme="rain"] h2{color:var(--ink-2)}
 :root[data-theme="rain"] .step{color:var(--ink-3)}
