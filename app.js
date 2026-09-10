@@ -813,7 +813,11 @@ function reveal() {
     const kun = cur.kun.length ? '<div><b>訓</b> <span class="jp">' +
       esc(cur.kun.map(fmtKun).join('・')) + '</span>' + play('JK-' + code) + '</div>' : '';
     let words = '';
-    for (const w of (cur.w || []).slice(0, 3)) {
+    // Нэг үг хоёр номд орсон бол `w` дотор ДАВХАРДАНА («出身／ご出身» хоёр
+    // удаа гарч байв). Эхний тохиолдлыг нь л үлдээнэ.
+    const seenW = new Set();
+    const uniq = (cur.w || []).filter(x => !seenW.has(x.jp) && seenW.add(x.jp));
+    for (const w of uniq.slice(0, 3)) {
       words += '<div class="kw"><b class="jp">' + esc(w.jp) + '</b>' +
         '<span class="jp">' + esc(w.kana) + '</span>' +
         '<span>' + esc(w.mn) + '</span>' + play(w.id) + '</div>';
@@ -1091,10 +1095,14 @@ function refreshHome() {
  * нийлүүлж тоолдог тул дээд, доод хоёр нь зөрж, «яагаад явц хөдөлсөнгүй
  * вэ?» гэсэн ойлгомжгүй байдал үүсгэдэг байв. */
 
+/* `j` = шошго нь япон бичиг үү. Тийм бол 明朝 (сериф) үсэгээр бичнэ;
+   кириллийг тэр үсгээр бичихээр сунжирч уншигдахаа больдог. */
 const STAT_TABS = [
-  { k: 'starter', n: '入門' }, { k: 'el1', n: '初級1' }, { k: 'el2', n: '初級2' },
-  { k: 'n5', n: 'N5 үг' }, { k: 'kanji', n: 'Ханз' }, { k: 'kana', n: 'Кана' },
+  { k: 'starter', n: '入門', j: 1 }, { k: 'el1', n: '初級1', j: 1 },
+  { k: 'el2', n: '初級2', j: 1 }, { k: 'n5', n: 'N5 үг' },
+  { k: 'kanji', n: 'Ханз' }, { k: 'kana', n: 'Кана' },
 ];
+const statName = t => '<span class="' + (t.j ? 'jpd' : '') + '">' + esc(t.n) + '</span>';
 let statTab = null;               // анх нээхэд идэвхтэй номоор эхлэнэ
 
 /** Явцын дэлгэцэд БҮХ сан хэрэгтэй — апп эхлэхэд зөвхөн идэвхтэй
@@ -1122,10 +1130,10 @@ const pSeen = i => ((progress[i.id] || {}).n || 0) > 0;
 const pDone = i => ((progress[i.id] || {}).b || 0) >= 3;
 
 /** Нэг мөр: шошго · хоёр давхаргатай зураас · тоо. */
-function statBar(label, items) {
+function statBar(label, items, html) {
   const seen = items.filter(pSeen).length, done = items.filter(pDone).length;
   const w = x => (100 * x / Math.max(items.length, 1)) + '%';
-  return '<div class="l"><span>' + esc(label) + '</span><span class="track">'
+  return '<div class="l"><span>' + (html || esc(label)) + '</span><span class="track">'
     + '<span class="seen" style="width:' + w(seen) + '"></span>'
     + '<span class="fill" style="width:' + w(done) + '"></span></span>'
     + '<span class="num">' + done + '/' + items.length + '</span></div>';
@@ -1138,7 +1146,8 @@ function statDetail(k) {
   if (!items.length) return '<p class="hint">Ачаалж байна…</p>';
   if (k === 'kana') {
     const G = [['gojuon', '五十音'], ['dakuten', '濁·半濁'], ['yoon', '拗音']];
-    return G.map(g => statBar(g[1], items.filter(i => i.group === g[0]))).join('');
+    return G.map(g => statBar(g[1], items.filter(i => i.group === g[0]),
+      '<span class="jpd">' + g[1] + '</span>')).join('');
   }
   if (k === 'kanji') {
     const rows = [5, 4, 3, 2].map(n => statBar('N' + n, items.filter(i => i.n === n)));
@@ -1164,13 +1173,13 @@ function refreshStats() {
     '<div><b>' + (tot ? Math.round(100 * cor / tot) : 0) + '%</b><span>зөв хариулт</span></div>';
 
   $('stat-sections').innerHTML =
-    STAT_TABS.map(t => statBar(t.n, statSet(t.k))).join('');
+    STAT_TABS.map(t => statBar(t.n, statSet(t.k), statName(t))).join('');
 
   if (!statTab) statTab = STAT_TABS.some(t => t.k === settings.book) ? settings.book : 'starter';
   const tabs = $('seg-stat');
   tabs.innerHTML = STAT_TABS.map(t =>
     '<button data-s="' + t.k + '" aria-pressed="' + (t.k === statTab) + '">'
-    + esc(t.n) + '<small>' + statSet(t.k).length + '</small></button>').join('');
+    + statName(t) + '<small>' + statSet(t.k).length + '</small></button>').join('');
   tabs.querySelectorAll('button').forEach(b =>
     b.onclick = () => { statTab = b.dataset.s; refreshStats(); });
 

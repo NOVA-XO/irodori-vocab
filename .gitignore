@@ -15,3 +15,5 @@ tools/kanji_missing.txt
 tools/_src/
 tools/n5_raw.json
 tools/report_n5.txt
+tools/_jp*.txt
+tools/_jp*.css

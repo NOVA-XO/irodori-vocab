@@ -8,10 +8,11 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="app.css?v=2026-09-10z">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-10za">
+<link rel="stylesheet" href="app.css?v=2026-09-10za">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10z">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10z">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-10za">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-10za">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -99,18 +100,20 @@
     <span>Боломжтой бол миний GitHub-ийг дагаарай</span>
     <i aria-hidden="true">↗</i>
   </a>
+  <!-- ハンコ — хуудсны төгсгөлийн тамга. Мэдээлэл агуулахгүй тул уншигчаас нууна. -->
+  <div class="seal" aria-hidden="true">獄</div>
 </section>
 
 <!-- ═══════════════════ IRODORI ═══════════════════ -->
 <section id="irodori" class="screen" hidden>
-  <div class="step">1 · Ном</div>
+  <div class="step">一 · Ном</div>
   <div class="seg" id="seg-book">
     <button data-b="starter"><b class="jp">入門</b><span>Суурь шат · A1 · 1232 үг</span></button>
     <button data-b="el1"><b class="jp">初級1</b><span>Анхан шат 1 · A2 · 1192 үг</span></button>
     <button data-b="el2"><b class="jp">初級2</b><span>Анхан шат 2 · A2 · 1786 үг</span></button>
   </div>
 
-  <div class="step">2 · Хичээл</div>
+  <div class="step">二 · Хичээл</div>
   <div id="lessons" class="lessons"></div>
   <div class="row">
     <button id="sel-all" class="ghost sm">Бүгд</button>
@@ -119,26 +122,26 @@
   </div>
   <p class="hint" id="vocab-hint"></p>
 
-  <div class="step">3 · Юу давтах вэ</div>
+  <div class="step">三 · Юу давтах вэ</div>
   <div class="seg" id="seg-what">
     <button data-w="word"><b>Шинэ үг</b><span>Тухайн хичээлийн шинэ үгс</span></button>
     <button data-w="kanji"><b>Шинэ ханз</b><span>Тэдгээр үгэнд гарсан ханз · <i id="n-kles">—</i></span></button>
   </div>
 
   <div id="wrap-word">
-    <div class="step">4 · Үгийг юугаар харуулах</div>
+    <div class="step">四 · Үгийг юугаар харуулах</div>
     <div class="seg" id="seg-script">
       <button data-s="kanji"><b class="jp">漢字</b><span>名前 — ханзаар бичсэн хэлбэр</span></button>
       <button data-s="kana"><b class="jp">ひらがな</b><span>なまえ — зөвхөн кана уншлага</span></button>
     </div>
 
-    <div class="step">5 · Чиглэл</div>
+    <div class="step">五 · Чиглэл</div>
     <div class="seg" id="seg-dir">
       <button data-d="jp2mn"><b class="jp">日本語 → Монгол</b><span>Япон үгийг харж утгыг нь таана</span></button>
       <button data-d="mn2jp"><b>Монгол → <span class="jp">日本語</span></b><span>Утгыг харж япон үгийг нь таана — илүү хүнд</span></button>
     </div>
 
-    <div class="step">6 · Дасгал</div>
+    <div class="step">六 · Дасгал</div>
     <div class="modes">
       <button class="mode" data-mode="flash"><b>Флашкарт</b><span>Карт эргүүлж өөрөө дүгнэнэ</span></button>
       <button class="mode" data-mode="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно</span></button>
@@ -148,7 +151,7 @@
   </div>
 
   <div id="wrap-kanji" hidden>
-    <div class="step">4 · Дасгал</div>
+    <div class="step">四 · Дасгал</div>
     <div class="modes">
       <button class="mode" data-kj="flash"><b>Флашкарт</b><span>Ханз харж утга, уншлагыг нь эргүүлж шалгана</span></button>
       <button class="mode" data-kj="k2m"><b class="jp">漢字 → утга</b><span>Ханзыг харж утгыг нь сонгоно</span></button>
@@ -160,7 +163,7 @@
 
 <!-- ═══════════════════ JLPT ═══════════════════ -->
 <section id="jlpt" class="screen" hidden>
-  <div class="step">1 · Түвшин</div>
+  <div class="step">一 · Түвшин</div>
   <div class="klist" id="jlpt-levels">
     <button data-j="5"><span class="tick">✓</span>
       <span class="kname"><b>N5</b> хамгийн анхны</span>
@@ -177,14 +180,14 @@
   </div>
   <p class="hint" id="jlpt-hint"></p>
 
-  <div class="step">2 · Юу давтах вэ</div>
+  <div class="step">二 · Юу давтах вэ</div>
   <div class="seg" id="seg-jwhat">
     <button data-w="kanji"><b>Ханз</b><span>N5–N2-ын 979 ханз</span></button>
     <button data-w="word"><b>Үг</b><span>N5-ийн <i id="n-n5">…</i> · 50 хичээл</span></button>
   </div>
 
   <div id="wrap-jkanji">
-    <div class="step">3 · Дасгал</div>
+    <div class="step">三 · Дасгал</div>
     <div class="modes">
       <button class="mode" data-kj2="flash"><b>Флашкарт</b><span>Ханз харж утга, уншлагыг нь эргүүлж шалгана</span></button>
       <button class="mode" data-kj2="k2m"><b class="jp">漢字 → утга</b><span>Ханзыг харж утгыг нь сонгоно</span></button>
@@ -200,7 +203,7 @@
   </div>
 
   <div id="wrap-jword" hidden>
-    <div class="step">3 · Хичээл</div>
+    <div class="step">三 · Хичээл</div>
     <div id="n5-lessons" class="lessons"></div>
     <div class="row">
       <button id="n5-all" class="ghost sm">Бүгд</button>
@@ -208,7 +211,7 @@
     </div>
     <p class="hint" id="n5-hint"></p>
 
-    <div class="step">4 · Дасгал</div>
+    <div class="step">四 · Дасгал</div>
     <div class="modes">
       <button class="mode" data-n5="flash"><b>Флашкарт</b><span>Карт эргүүлж өөрөө дүгнэнэ</span></button>
       <button class="mode" data-n5="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно</span></button>
@@ -225,7 +228,7 @@
 
 <!-- ═══════════════════ КАНА ═══════════════════ -->
 <section id="kana" class="screen" hidden>
-  <div class="step">1 · Аль бүлгийг давтахаа сонго</div>
+  <div class="step">一 · Аль бүлгийг давтахаа сонго</div>
   <div class="klist" id="kana-groups">
     <button data-g="gojuon">
       <span class="tick">✓</span>
@@ -245,7 +248,7 @@
   </div>
   <p class="hint" id="kana-hint"></p>
 
-  <div class="step">2 · Дасгалаа сонго</div>
+  <div class="step">二 · Дасгалаа сонго</div>
   <div class="modes">
     <button class="mode" data-k="h2k"><b class="jp">ひらがな → カタカナ</b><span>Хирагана харуулж, катаканыг нь сонгоно</span></button>
     <button class="mode" data-k="k2h"><b class="jp">カタカナ → ひらがな</b><span>Катакана харуулж, хираганыг нь сонгоно</span></button>
@@ -436,7 +439,7 @@
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-10z"></script>
-<script src="app.js?v=2026-09-10z"></script>
+<script src="sync-config.js?v=2026-09-10za"></script>
+<script src="app.js?v=2026-09-10za"></script>
 </body>
 </html>

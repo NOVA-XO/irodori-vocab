@@ -1,18 +1,50 @@
-/* いろどり 入門 — шинэ үг давтах апп
-   Өнгө нь хэвлэдэг хуудсуудтай (JPN-OUT-*) нийцүүлсэн: бэх #1c3350, өргөлт #2f5d8a */
+/* Үгний Шорон — 和 загвар
+ *
+ * Гурван зарчим:
+ *   間 (ма)   — хоосон зай нь элементтэй адил чухал. Хүрээ багасгаж
+ *               завсарыг нэмнэ. Хайрцаг бүрийг зурахгүй.
+ *   墨 (суми) — нэг л бэхний өнгө. Саарал өнгийн олон түвшин биш,
+ *               хар бэх ба цайвар шугам хоёр.
+ *   朱 (шю)   — ГАНЦ улаан. Ханууны тамганы өнгө. Ховор хэрэглэвэл
+ *               л утгатай: сонгосон зүйл, явц, тамга.
+ *
+ * Тиймээс: булан бараг хурц (2px), сүүдэр байхгүй, том япон үсэг нь
+ * гол дүр, кирилл гарчиг нь serif.
+ */
 
 :root{
-  --ink:#1c3350; --ink-2:#4a5f7a; --accent:#2f5d8a; --line:#d6dee7;
-  --bg:#f7f9fb; --card:#ffffff; --ok:#1f7a4d; --ng:#b03030;
-  --ok-bg:#e6f4ec; --ng-bg:#fbeaea; --shadow:0 1px 3px rgba(28,51,80,.12);
+  /* 和紙 — бага зэрэг шаргал цаас. Цэвэр цагаан нь хэт хүйтэн. */
+  --bg:#f2eee4; --card:#fbf9f3; --paper:#ffffff;
+  --ink:#1c1a16; --ink-2:#6d675b; --ink-3:#9c9484;
+  --line:#ddd6c4; --line-2:#c9c0aa;
+  --accent:#b8412c;                     /* 朱 */
+  --ok:#4a7350; --ng:#8f2c1c;           /* 若竹 · 深朱 */
+  --ok-bg:#eaefe6; --ng-bg:#f6e6e1;
+  --shadow:none;
+  --seal:#b8412c;
+  /* Япон бичиг: ГОЛ дүр нь 明朝 (serif). Байхгүй бол системийн уншигдах
+     фонт руу уруудна — том хэмжээнд ч эвдрэхгүй. */
+  --jpd:"Noto Serif JP","Yu Mincho","YuMincho","Hiragino Mincho ProN",
+        "Songti SC","SimSun",serif;
   --jp:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",sans-serif;
   --ui:"Segoe UI","Noto Sans",system-ui,Arial,sans-serif;
+  /* Georgia, Times, Cambria, Palatino, Constantia — БҮГДЭД нь монгол
+     Ү (U+04AE) ба Ө (U+04E8) БАЙХГҮЙ. Тэдгээр үсэг өөр фонтоос орлогдож
+     нэг үгийн дунд хоёр загвар холилддог. Тиймээс Noto Serif-ийг өөрсдөө
+     нийлүүлнэ (fonts/, зөвхөн хэрэглэдэг тэмдэгтээр огтолсон). */
+  --disp:"Noto Serif",Georgia,"Times New Roman",serif;
 }
+/* 墨 — шөнийн хувилбар. Цаас биш, БЭХ болно: дулаан хар суурь дээр
+   цайвар бэх. Улаан нь харанхуйд бүдгэрдэг тул арай тодруулав. */
 @media (prefers-color-scheme:dark){
   :root{
-    --ink:#e8eef6; --ink-2:#9fb0c4; --accent:#7aa7d4; --line:#2b3a4d;
-    --bg:#141b24; --card:#1c2733; --ok:#5fd39a; --ng:#f08b8b;
-    --ok-bg:#163527; --ng-bg:#3a1e1e; --shadow:0 1px 3px rgba(0,0,0,.4);
+    --bg:#17150f; --card:#1f1c15; --paper:#242017;
+    --ink:#f0eadc; --ink-2:#a0988a; --ink-3:#736c5e;
+    --line:#332f24; --line-2:#4a4534;
+    --accent:#e0674a;
+    --ok:#7fa87f; --ng:#d97a63;
+    --ok-bg:#1e2a1e; --ng-bg:#2e1c16;
+    --seal:#e0674a;
   }
 }
 
@@ -23,212 +55,271 @@
 html,body{margin:0;padding:0}
 body{
   background:var(--bg); color:var(--ink); font-family:var(--ui);
-  font-size:16px; line-height:1.5;
+  font-size:16px; line-height:1.62;
   padding:0 0 env(safe-area-inset-bottom);
   -webkit-text-size-adjust:100%;
 }
 .jp{font-family:var(--jp)}
+/* 明朝 — зөвхөн ЯПОН текстэд. Кириллд хэрэглэвэл үсэг сунжирна. */
+.jpd{font-family:var(--jpd)}
 
 /* ---------- толгой ---------- */
+/* Хайрцаг биш — цаасны дээд ирмэг. Ганц үсэг шугам л тусгаарлана. */
 .bar{
   position:sticky; top:0; z-index:9; display:flex; align-items:center;
-  gap:8px; padding:10px 12px; background:var(--card);
+  gap:8px; padding:13px 14px 11px; background:var(--bg);
   border-bottom:1px solid var(--line);
 }
-.bar .title{flex:1; text-align:center; font-weight:600; letter-spacing:.01em}
-.bar .title .skull{font-size:13px; vertical-align:1px; opacity:.85}
-.bar .title small{color:var(--ink-2); font-weight:400}
+.bar .title{
+  flex:1; text-align:center; font-family:var(--disp); font-weight:400;
+  font-size:16px; letter-spacing:.14em; text-transform:uppercase;
+}
+.bar .title .skull{font-size:12px; vertical-align:2px; opacity:.8;
+                   letter-spacing:0; margin-left:2px}
+.bar .title small{color:var(--ink-2); font-weight:400; letter-spacing:.04em}
 .bar .icon{
   background:none; border:0; color:var(--ink-2); padding:6px 8px;
-  display:flex; align-items:center; border-radius:8px;
+  display:flex; align-items:center; border-radius:2px;
 }
-.bar .icon:hover{color:var(--ink); background:var(--bg)}
+.bar .icon:hover{color:var(--accent); background:transparent}
 
-/* ☰ цэс */
+/* ☰ цэс — цаасан дээр тавьсан хуудас. Ганцхан энд сүүдэр зөвшөөрнө. */
 .menu{
-  position:sticky; top:53px; z-index:8; max-width:640px; margin:0 auto;
-  background:var(--card); border:1px solid var(--line); border-radius:12px;
-  box-shadow:var(--shadow); overflow:hidden; display:grid;
+  position:sticky; top:52px; z-index:8; max-width:660px; margin:0 auto;
+  background:var(--card); border:1px solid var(--line); border-radius:2px;
+  box-shadow:0 8px 26px rgba(0,0,0,.10); overflow:hidden; display:grid;
 }
 .menu button{
   background:none; border:0; border-bottom:1px solid var(--line);
-  color:var(--ink); text-align:left; padding:13px 16px; font-size:15px;
+  color:var(--ink); text-align:left; padding:14px 18px; font-size:15px;
+  letter-spacing:.01em;
 }
 .menu button:last-child{border-bottom:0}
 .menu button:hover{background:var(--bg)}
-.menu button[aria-current="true"]{color:var(--accent); font-weight:600}
+.menu button[aria-current="true"]{color:var(--accent)}
+/* Идэвхтэй хуудсыг 朱 зураасаар заана — тод болгохын тулд өнгө нэмэхгүй. */
+.menu button[aria-current="true"]::before{
+  content:''; display:inline-block; width:14px; height:1px; margin-right:9px;
+  vertical-align:4px; background:var(--accent);
+}
 
-/* Нүүрний том сонголтууд */
-.bigcards{display:grid; gap:10px; margin-top:18px}
+/* Нүүрний том сонголтууд — хайрцаггүй, зөвхөн хуваах шугам.
+   Зүүн талын том япон үсэг нь мөрийн «толгой» болно. */
+.bigcards{display:grid; margin-top:26px; border-top:1px solid var(--line)}
 .bigcard{
-  display:grid; grid-template-columns:52px 1fr; align-items:center;
-  column-gap:14px; row-gap:2px; text-align:left; padding:16px;
-  background:var(--card); border:1px solid var(--line); color:var(--ink);
+  display:grid; grid-template-columns:64px 1fr auto; align-items:center;
+  column-gap:18px; row-gap:3px; text-align:left; padding:20px 4px;
+  background:none; border:0; border-bottom:1px solid var(--line);
+  color:var(--ink); border-radius:0; position:relative;
 }
 .bigcard .bc-jp{
-  grid-row:1 / 3; font-size:24px; color:var(--accent); text-align:center;
+  grid-row:1 / 3; font-family:var(--jpd); font-size:27px; line-height:1.15;
+  color:var(--ink); text-align:center; letter-spacing:-.02em;
+  transition:color .2s ease;
 }
-.bigcard b{font-size:17px}
-.bigcard span:not(.bc-jp){font-size:13px; color:var(--ink-2)}
+.bigcard b{font-family:var(--disp); font-size:18px; font-weight:400;
+           letter-spacing:.01em}
+.bigcard span:not(.bc-jp){font-size:13px; color:var(--ink-2); line-height:1.5}
 .bigcard i{font-style:normal}
+/* → тэмдэг. Хүрэхэд урагшилна — өөр ямар ч чимэглэл хэрэггүй. */
+.bigcard::after{
+  content:'→'; grid-row:1 / 3; grid-column:3; color:var(--ink-3);
+  font-size:15px; transition:transform .2s ease, color .2s ease;
+}
+.bigcard:hover::after{color:var(--accent); transform:translateX(4px)}
+.bigcard:hover .bc-jp{color:var(--accent)}
 
-.screen{max-width:640px; margin:0 auto; padding:16px 14px 40px}
-h2{font-size:14px; text-transform:uppercase; letter-spacing:.06em;
-   color:var(--ink-2); margin:22px 0 8px; font-weight:600}
+.screen{max-width:660px; margin:0 auto; padding:18px 16px 56px}
+/* Гарчиг — 間. Дээрээ өргөн зайтай, доороо нарийн шугамтай. */
+h2{
+  font-family:var(--disp); font-size:12px; text-transform:uppercase;
+  letter-spacing:.2em; color:var(--ink-2); font-weight:400;
+  margin:38px 0 14px; padding-bottom:8px; border-bottom:1px solid var(--line);
+}
+.screen > h2:first-of-type{margin-top:20px}
 
 /* ---------- товч ---------- */
-button{font:inherit; cursor:pointer; border-radius:10px; border:1px solid transparent;
+button{font:inherit; cursor:pointer; border-radius:2px; border:1px solid transparent;
        transition:transform .12s ease, background-color .18s ease,
-                  border-color .18s ease, box-shadow .18s ease}
-/* Дарахад бага зэрэг дарагдана — хүрэлт бүр хариу өгсөн мэт мэдрэгдэнэ */
-button:active:not(:disabled){transform:scale(.975)}
+                  border-color .18s ease, color .18s ease}
+button:active:not(:disabled){transform:scale(.985)}
 .choices button:active:not(:disabled),.bigcard:active,.mode:active:not(:disabled){
-  transform:scale(.99)}
-.primary{background:var(--accent); color:#fff; border:0; padding:12px 18px; font-weight:600}
-.ghost{background:transparent; color:var(--ink); border:1px solid var(--line); padding:8px 12px}
-.ghost.sm{padding:6px 10px; font-size:14px}
+  transform:scale(.995)}
+/* Гол товч — бэхээр дүүргэсэн тэгш өнцөгт. Улаан нь ХОВОР байх ёстой
+   тул үндсэн үйлдэлд бэх, тамга/явцад л 朱. */
+.primary{background:var(--ink); color:var(--bg); border:0; padding:14px 20px;
+         font-weight:400; letter-spacing:.06em}
+.primary:hover{background:var(--accent)}
+.ghost{background:transparent; color:var(--ink); border:1px solid var(--line-2);
+       padding:9px 14px}
+.ghost:hover{border-color:var(--ink)}
+.ghost.sm{padding:7px 11px; font-size:14px}
 .ghost.danger{color:var(--ng); border-color:var(--ng)}
 .bar .ghost{border:0; font-size:20px; padding:4px 10px; color:var(--ink-2)}
-.big{width:100%; padding:15px; font-size:17px}
-.ok{background:var(--ok-bg); color:var(--ok); border:1px solid currentColor; font-weight:600}
-.ng{background:var(--ng-bg); color:var(--ng); border:1px solid currentColor; font-weight:600}
-button:disabled{opacity:.5; cursor:default}
+.big{width:100%; padding:16px; font-size:16px}
+.ok{background:var(--ok-bg); color:var(--ok); border:1px solid currentColor}
+.ng{background:var(--ng-bg); color:var(--ng); border:1px solid currentColor}
+button:disabled{opacity:.42; cursor:default}
 
-.row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px}
+.row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px}
 .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-.chk{display:flex; align-items:center; gap:6px; font-size:14px; color:var(--ink-2)}
+.chk{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-2)}
 
 /* ---------- нүүр ---------- */
+/* Өнөөдөр давтах тоо — хуудасны гол дүр. Хайрцаггүй, зөвхөн том тоо. */
 .due{
-  background:var(--card); border:1px solid var(--line); border-radius:14px;
-  padding:18px; text-align:center; box-shadow:var(--shadow);
+  background:none; border:0; border-bottom:1px solid var(--line);
+  padding:34px 0 30px; text-align:center;
 }
-.due-n{font-size:46px; font-weight:700; line-height:1; color:var(--accent)}
-.due-t{color:var(--ink-2); font-size:14px; margin:4px 0 14px}
+.due-n{font-family:var(--disp); font-size:76px; font-weight:400; line-height:.9;
+       color:var(--ink); letter-spacing:-.03em}
+.due-t{color:var(--ink-2); font-size:12px; margin:14px 0 22px;
+       letter-spacing:.16em; text-transform:uppercase}
 
-.lessons{display:grid; grid-template-columns:repeat(6,1fr); gap:6px}
+/* Хичээлийн сонголт — тамга шиг дөрвөлжин. Сонгосон нь 朱-гээр дүүрнэ. */
+.lessons{display:grid; grid-template-columns:repeat(6,1fr); gap:5px}
 .lessons button{
-  padding:10px 0; background:var(--card); border:1px solid var(--line);
-  color:var(--ink-2); font-size:14px; border-radius:8px;
+  padding:11px 0 9px; background:none; border:1px solid var(--line);
+  color:var(--ink-2); font-size:13px; border-radius:2px; letter-spacing:.02em;
 }
+.lessons button:hover{border-color:var(--ink-3); color:var(--ink)}
 .lessons button[aria-pressed="true"]{
-  background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600;
+  background:var(--accent); border-color:var(--accent); color:#fff;
 }
-.lessons button small{display:block; font-size:10px; opacity:.7}
+.lessons button small{display:block; font-size:10px; opacity:.72; margin-top:1px}
 
-/* «漢字 / ひらがな» сонголт */
-.seg{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+/* Хоёр талт сонголт — дүүргэхгүй, ДООГУУР нь зузаан бэх зураас. */
+.seg{display:grid; grid-template-columns:1fr 1fr; gap:0;
+     border-top:1px solid var(--line)}
 .seg button{
-  background:var(--card); border:1px solid var(--line); color:var(--ink-2);
-  padding:11px 12px; text-align:left;
+  background:none; border:0; border-bottom:1px solid var(--line);
+  border-radius:0; color:var(--ink-2); padding:15px 12px 13px; text-align:left;
 }
-.seg button b{display:block; font-size:19px; color:var(--ink)}
-.seg button span{font-size:12px}
+/* Багана хоорондын шугам. Сүүлийн мөр дутуу (ж: 3 ном) байхад ч зөв
+   гарахын тулд контейнерийн хүрээгээр биш, СОНДГОЙ нүдэн дээр зурна. */
+.seg button:nth-child(odd){border-right:1px solid var(--line)}
+/* Кирилл шошгыг ЯПОН serif-ээр битгий бич — үсэг сунжирч уншигдахгүй
+   болдог. Япон бол `.jp` ангитай ирнэ. */
+.seg button b{display:block; font-family:var(--disp); font-size:19px;
+              font-weight:400; color:var(--ink-2); line-height:1.35}
+.seg button b.jp{font-family:var(--jpd); font-size:21px}
+.seg button span{font-size:12px; line-height:1.45; display:block; margin-top:2px}
+.seg button:hover b{color:var(--ink)}
+/* Сонгосныг ДООГУУР нь 朱 зураасаар заана. `border-bottom` нь хуваах
+   шугамд аль хэдийн зарцуулагдсан тул box-shadow-оор давхарлана —
+   ингэснээр байрлал огт хөдлөхгүй. */
 .seg button[aria-pressed="true"]{
-  background:var(--accent); border-color:var(--accent); color:#dbe8f5;
+  color:var(--ink); box-shadow:inset 0 -2px 0 var(--accent);
 }
-.seg button[aria-pressed="true"] b{color:#fff}
+.seg button[aria-pressed="true"] b{color:var(--ink)}
 
-/* Канагийн бүлгийн сонголт — доорх дасгалуудын ШҮҮЛТҮҮР болохыг нь
-   «1 · … / 2 · …» гэсэн алхмаар болон галочкоор тодорхой болгов. */
 .step{
-  font-size:12px; color:var(--ink-2); margin:14px 0 6px;
-  letter-spacing:.03em; font-weight:600;
+  font-family:var(--disp); font-size:11.5px; color:var(--ink-3); margin:26px 0 9px;
+  letter-spacing:.2em; text-transform:uppercase; font-weight:400;
 }
-.klist{display:grid; gap:6px}
+/* Канагийн бүлэг / JLPT түвшин — жагсаалтын мөр, хайрцаг биш. */
+.klist{display:grid; border-top:1px solid var(--line)}
 .klist button{
-  display:grid; grid-template-columns:22px 1fr auto auto; gap:8px; align-items:center;
-  background:var(--card); border:1px solid var(--line); color:var(--ink);
-  padding:10px 12px; text-align:left; font-size:14px;
+  display:grid; grid-template-columns:22px 1fr auto auto; gap:10px; align-items:center;
+  background:none; border:0; border-bottom:1px solid var(--line); border-radius:0;
+  color:var(--ink); padding:13px 4px; text-align:left; font-size:14px;
 }
-.klist .tick{opacity:0; color:var(--accent); font-weight:700}
-.klist button[aria-pressed="true"]{border-color:var(--accent); background:var(--ok-bg2, var(--card))}
+.klist .tick{opacity:0; color:var(--accent)}
 .klist button[aria-pressed="true"] .tick{opacity:1}
-.klist button[aria-pressed="false"]{opacity:.55}
-.klist .kname b{font-size:15px}
-.klist .kex{font-size:12px; color:var(--ink-2); white-space:nowrap}
-.klist i{font-style:normal; font-size:12px; color:var(--ink-2);
-         min-width:24px; text-align:right}
+.klist button[aria-pressed="false"]{opacity:.44}
+.klist button:hover{opacity:1}
+.klist .kname b{font-family:var(--jpd); font-size:16px; font-weight:400}
+.klist .kex{font-family:var(--jpd); font-size:13px; color:var(--ink-2);
+            white-space:nowrap}
+.klist i{font-style:normal; font-size:12px; color:var(--ink-3);
+         min-width:26px; text-align:right; font-variant-numeric:tabular-nums}
 
 @media (max-width:420px){
-  /* Нэр ба тоо нэгдүгээр мөрөнд, жишээ нь хоёрдугаарт — тоо тусдаа
-     мөрөнд унахаас сэргийлж байрлалыг тодорхой зааж өгнө. */
   .klist button{grid-template-columns:20px 1fr auto; row-gap:2px}
   .klist .kname{grid-area:1 / 2 / 2 / 3}
   .klist i{grid-area:1 / 3 / 2 / 4}
   .klist .kex{grid-area:2 / 2 / 3 / 4}
 }
 
-.modes{display:grid; gap:8px}
+/* Дасгалын сонголт — мөр бүр нэг зураасаар тусгаарлагдана. */
+.modes{display:grid; border-top:1px solid var(--line)}
 .mode{
-  text-align:left; background:var(--card); border:1px solid var(--line);
-  padding:12px 14px; color:var(--ink);
+  text-align:left; background:none; border:0; border-bottom:1px solid var(--line);
+  border-radius:0; padding:15px 4px; color:var(--ink); position:relative;
 }
-.mode b{display:block; font-size:16px}
+.mode b{display:block; font-size:16px; font-weight:400; letter-spacing:.01em}
 .mode span{font-size:13px; color:var(--ink-2)}
-.mode:disabled{opacity:.45}
+.mode:disabled{opacity:.38}
+.mode::after{
+  content:'→'; position:absolute; right:4px; top:50%; margin-top:-11px;
+  color:var(--ink-3); font-size:14px; transition:transform .2s ease, color .2s ease;
+}
+.mode:hover:not(:disabled)::after{color:var(--accent); transform:translateX(4px)}
 
 .warn{
-  margin-top:14px; padding:10px 12px; border-radius:10px; font-size:13px;
+  margin-top:16px; padding:12px 14px; border-radius:2px; font-size:13px;
   background:var(--ng-bg); color:var(--ng); border:1px solid currentColor;
 }
 .diag{
-  margin-top:10px; padding:10px 12px; border-radius:10px; font-size:12px;
-  line-height:1.6; background:var(--card); border:1px solid var(--line);
+  margin-top:12px; padding:12px 14px; border-radius:2px; font-size:12px;
+  line-height:1.65; background:var(--card); border:1px solid var(--line);
   color:var(--ink-2); white-space:pre-wrap; word-break:break-word;
   max-height:280px; overflow:auto; font-family:ui-monospace,Consolas,monospace;
 }
-.src{margin-top:26px; font-size:12px; color:var(--ink-2); line-height:1.6}
-/* Зохиогчийн мөр — хамгийн доод талд, чимээгүйхэн. */
-.by{margin:18px 0 0; text-align:center; font-size:11.5px; color:var(--ink-2);
-    letter-spacing:.09em; text-transform:uppercase; opacity:.75}
-.by b{font-weight:600; color:var(--ink); letter-spacing:.04em;
-      text-transform:none}   /* нэрийг бичсэн хэлбэрээр нь үлдээнэ */
+.src{margin-top:34px; padding-top:18px; border-top:1px solid var(--line);
+     font-size:12px; color:var(--ink-2); line-height:1.7}
+.by{margin:22px 0 0; text-align:center; font-size:11px; color:var(--ink-3);
+    letter-spacing:.22em; text-transform:uppercase}
+.by b{font-weight:400; color:var(--ink-2); letter-spacing:.06em;
+      text-transform:none}
 
-/* GitHub-д дагах урилга — товч биш, тод шаардахгүй; хүрэхэд бага зэрэг өргөгдөнө. */
-.follow{
-  display:flex; align-items:center; justify-content:center; gap:8px;
-  margin:10px auto 0; width:fit-content; max-width:100%;
-  padding:9px 15px; border:1px solid var(--line); border-radius:999px;
-  background:var(--card); color:var(--ink-2); font-size:13px;
-  text-decoration:none; box-shadow:var(--shadow);
-  transition:transform .16s ease, color .18s ease, border-color .18s ease,
-             box-shadow .18s ease;
+/* ханууны тамга — хуудсын төгсгөлийн гарын үсэг */
+.seal{
+  display:block; margin:26px auto 0; width:46px; height:46px;
+  border:2px solid var(--seal); border-radius:3px; color:var(--seal);
+  font-family:var(--jpd); font-size:23px; line-height:42px; text-align:center;
+  opacity:.85;
 }
-.follow:hover{color:var(--ink); border-color:var(--accent);
-              transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,.16)}
-.follow:active{transform:scale(.98)}
+
+.follow{
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  margin:14px auto 0; width:fit-content; max-width:100%;
+  padding:10px 17px; border:1px solid var(--line-2); border-radius:2px;
+  background:none; color:var(--ink-2); font-size:13px;
+  text-decoration:none;
+  transition:color .18s ease, border-color .18s ease;
+}
+.follow:hover{color:var(--ink); border-color:var(--ink)}
 .follow svg{flex:none}
-.follow i{font-style:normal; opacity:.6}
+.follow i{font-style:normal; opacity:.55}
 
 /* ---------- дасгал ---------- */
-/* Явцыг зураас биш БӨГЖӨӨР. Тоо нь хажуудаа том, ✓/✗ нь баруун захад. */
-.hud{display:flex; align-items:center; gap:11px; margin:2px 0 14px}
-.ring{width:38px; height:38px; flex:none; transform:rotate(-90deg)}
-.ring circle{fill:none; stroke-width:3.5; stroke-linecap:round}
+.hud{display:flex; align-items:center; gap:12px; margin:2px 0 20px}
+.ring{width:34px; height:34px; flex:none; transform:rotate(-90deg)}
+.ring circle{fill:none; stroke-width:2.5; stroke-linecap:butt}
 .ring .rtrack{stroke:var(--line)}
 .ring .rfill{stroke:var(--accent);
              transition:stroke-dashoffset .4s cubic-bezier(.4,0,.2,1)}
-.hudn{font-size:21px; font-weight:700; line-height:1;
+.hudn{font-family:var(--disp); font-size:20px; line-height:1;
       font-variant-numeric:tabular-nums}
-.hudn small{font-size:13px; font-weight:400; color:var(--ink-2)}
-.hudr{margin-left:auto; display:flex; gap:12px; font-size:15px; font-weight:600;
-      font-variant-numeric:tabular-nums}
+.hudn small{font-size:13px; color:var(--ink-3)}
+.hudr{margin-left:auto; display:flex; gap:14px; font-size:14px;
+      font-variant-numeric:tabular-nums; font-family:var(--disp)}
 .hudr .ok,.hudr .ng{background:none; border:0; padding:0}
 .hudr .ok{color:var(--ok)} .hudr .ng{color:var(--ng)}
 
+/* Карт — «掛け軸» шиг: дээр, доор нь ганц шугам, дунд нь өргөн хоосон зай.
+   Хүрээ, сүүдэр, өнгө байхгүй. Үг өөрөө л гол дүр. */
 .card{
-  position:relative; background:var(--card); border:1px solid var(--line);
-  border-radius:14px; padding:26px 18px; text-align:center;
-  box-shadow:var(--shadow); min-height:190px;
-  display:flex; flex-direction:column; justify-content:center; gap:6px;
+  position:relative; background:none; border:0;
+  border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+  border-radius:0; padding:52px 8px 46px; text-align:center;
+  min-height:240px;
+  display:flex; flex-direction:column; justify-content:center; gap:8px;
 }
-/* Шинэ карт зөөлөн гарч ирнэ; хариу нээгдэхэд карт ЭРГЭНЭ. Хариултын
-   хэсэг эргэлтийн ХОЁРДУГААР хагаст л гарч ирснээр жинхэнэ эргэлт мэт
-   уншигдана — марк-апыг хоёр талтай болгож өөрчлөх шаардлагагүй. */
-.card.in{animation:cardIn .3s cubic-bezier(.2,.7,.3,1)}
+.card.in{animation:cardIn .34s cubic-bezier(.2,.7,.3,1)}
 @keyframes cardIn{
-  from{opacity:0; transform:translateY(7px) scale(.994)}
+  from{opacity:0; transform:translateY(8px)}
   to{opacity:1; transform:none}
 }
 .card.flip{animation:flipY .5s cubic-bezier(.45,.05,.25,1); transform-style:preserve-3d}
@@ -240,194 +331,225 @@ button:disabled{opacity:.5; cursor:default}
 .card.flip .answer{animation:halfIn .5s ease both}
 @keyframes halfIn{0%,52%{opacity:0} 100%{opacity:1}}
 
-.prompt-sub{font-size:12px; color:var(--ink-2)}
-.prompt{font-family:var(--jp); font-size:40px; line-height:1.25; font-weight:500;
-        word-break:break-word}
-.prompt.mn{font-family:var(--ui); font-size:26px}
-.speak{position:absolute; top:10px; right:10px; background:none; border:0;
-       font-size:22px; opacity:.65; padding:6px}
-.speak:hover{opacity:1}
+.prompt-sub{font-size:11px; color:var(--ink-3); letter-spacing:.18em;
+            text-transform:uppercase}
+/* Гол үг — 明朝, аль болох том. Энэ бол хуудасны цорын ганц баатар. */
+.prompt{font-family:var(--jpd); font-size:52px; line-height:1.28; font-weight:400;
+        word-break:break-word; letter-spacing:.02em}
+.prompt.mn{font-family:var(--disp); font-size:28px; letter-spacing:0}
+.speak{position:absolute; top:12px; right:4px; background:none; border:0;
+       font-size:19px; opacity:.4; padding:6px; color:var(--ink)}
+.speak:hover{opacity:1; color:var(--accent)}
 
-.answer{border-top:1px solid var(--line); margin-top:14px; padding-top:14px}
-.a-kana{font-family:var(--jp); font-size:24px; color:var(--accent)}
-.a-mn{font-size:19px; margin-top:4px}
-.a-acc{font-family:var(--jp); font-size:14px; color:var(--ink-2); margin-top:6px}
-.acclab{display:block; font-family:inherit; font-size:10.5px; letter-spacing:.1em;
-        text-transform:uppercase; color:var(--ink-2); margin-bottom:3px}
+.answer{border-top:1px solid var(--line); margin-top:26px; padding-top:22px}
+.a-kana{font-family:var(--jpd); font-size:26px; color:var(--accent)}
+.a-mn{font-size:19px; margin-top:6px; font-family:var(--disp)}
+.a-acc{font-family:var(--jp); font-size:14px; color:var(--ink-2); margin-top:10px}
+.acclab{display:block; font-family:var(--disp); font-size:10px; letter-spacing:.2em;
+        text-transform:uppercase; color:var(--ink-3); margin-bottom:5px}
 
-/* Ханзны хариулт: 音/訓 уншлага ба жишээ үг */
-.prompt.kj{font-size:86px; line-height:1.05}
-.a-kj{margin-top:10px; font-size:14px; color:var(--ink-2); text-align:left}
-.a-kj > div{margin-top:3px}
-.a-kj b{display:inline-block; min-width:22px; color:var(--ink);
-        font-family:var(--jp); font-weight:600}
-.a-kj .jp{color:var(--ink); font-size:16px}
-.kws{margin-top:10px; border-top:1px solid var(--line); padding-top:8px}
-.kw{display:flex; flex-wrap:wrap; gap:4px 9px; align-items:baseline; margin-top:5px}
-.kw b{font-size:17px; min-width:0; color:var(--ink)}
-.kw > .jp{font-size:13px; color:var(--accent)}
+.prompt.kj{font-size:112px; line-height:1.02}
+.a-kj{margin-top:14px; font-size:14px; color:var(--ink-2); text-align:left}
+.a-kj > div{margin-top:4px}
+.a-kj b{display:inline-block; min-width:24px; color:var(--ink-3);
+        font-family:var(--jp); font-weight:400; font-size:12px}
+.a-kj .jp{color:var(--ink); font-size:16px; font-family:var(--jp)}
+.kws{margin-top:14px; border-top:1px solid var(--line); padding-top:11px}
+.kw{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline; margin-top:6px}
+/* Жишээ үг: толгой үг нь бэх, уншлага нь бүдэг. Урьд нь `.kw > .jp`
+   нь толгой үгийг ЧУ улаанаар будаж (b.jp бас шууд хүү), гурван мөр
+   улаан гарч «朱 нь ховор» гэсэн зарчмыг эвддэг байв. */
+.kw b{font-family:var(--jpd); font-size:19px; font-weight:400; min-width:0;
+      color:var(--ink)}
+.kw > span.jp{font-size:13px; color:var(--ink-2)}
 .kw > span:not(:last-child){font-size:13px}
 .kw span{font-size:13px; color:var(--ink-2)}
-.rsp{background:none; border:0; padding:0 4px; font-size:14px; opacity:.55;
+.rsp{background:none; border:0; padding:0 5px; font-size:13px; opacity:.4;
      line-height:1; vertical-align:middle}
-
-/* Жишээ өгүүлбэр — хариултын доод талд, тайван өнгөөр */
-.exs{margin-top:10px; padding-top:9px; border-top:1px solid var(--line);
-     text-align:left}
-.exs b{display:inline; font-size:17px; font-weight:400; line-height:1.6;
-       color:var(--ink)}
-.exs .rsp{font-size:15px}
 .rsp:hover{opacity:1}
+
+.exs{margin-top:14px; padding-top:12px; border-top:1px solid var(--line);
+     text-align:left}
+.exs b{display:inline; font-family:var(--jpd); font-size:18px; font-weight:400;
+       line-height:1.85; color:var(--ink)}
+.exs .rsp{font-size:14px}
 
 /* Өргөлтийн зураглал: мора бүрийн ДЭЭР өндөр/нам түвшний хэвтээ зураас,
    өөрчлөгдөх газарт босоо холбоос. Дээд зураас = өндөр, доод нь = нам. */
 .pitch{display:inline-block; font-family:var(--jp); font-size:20px;
        line-height:1.3; padding-top:17px; color:var(--ink)}
 .pitch .pm,.pitch .pn,.pitch .pgap{position:relative; display:inline-block}
-.pitch .pm::before{content:''; position:absolute; left:0; right:0; height:2px;
+.pitch .pm::before{content:''; position:absolute; left:0; right:0; height:1.5px;
                    background:var(--accent)}
 .pitch .pm.hi::before{top:-15px}
 .pitch .pm.lo::before{top:-7px}
 .pitch .pm.dn::after,.pitch .pm.up::after{content:''; position:absolute; right:-1px;
-       top:-15px; width:2px; height:10px; background:var(--accent)}
-.pitch .pgap{opacity:.4; padding:0 2px}
+       top:-15px; width:1.5px; height:10px; background:var(--accent)}
+.pitch .pgap{opacity:.35; padding:0 2px}
 
-.pane{margin-top:14px; display:grid; gap:10px}
-.choices{display:grid; gap:8px}
+.pane{margin-top:22px; display:grid; gap:12px}
+/* Сонголтууд — мөр бүр нэг шугам. Дүүргэсэн товч биш. */
+.choices{display:grid; border-top:1px solid var(--line)}
 .choices button{
-  background:var(--card); border:1px solid var(--line); color:var(--ink);
-  padding:14px; font-size:17px; text-align:left;
+  background:none; border:0; border-bottom:1px solid var(--line); border-radius:0;
+  color:var(--ink); padding:16px 6px; font-size:17px; text-align:left;
+  position:relative;
 }
-.choices button.jpface{font-family:var(--jp); font-size:22px}
+.choices button:hover:not(:disabled){background:var(--card)}
+.choices button.jpface{font-family:var(--jpd); font-size:23px}
 /* Зөв хариулт ЗҮҮНЭЭС БАРУУН ТИЙШ өнгөөр дүүрнэ — гэнэт солигдохоос
    илүү тод мэдрэгдэнэ. Дэвсгэрийг нь давхаргаар будаж хэмжээг хөдөлгөнө. */
 .choices button.correct{
-  border-color:var(--ok); color:var(--ok);
+  color:var(--ok);
   background-image:linear-gradient(var(--ok-bg),var(--ok-bg));
   background-repeat:no-repeat; background-size:0 100%;
   animation:fillIn .34s cubic-bezier(.4,0,.2,1) forwards;
 }
+.choices button.correct::after{content:'正'; position:absolute; right:8px;
+  font-family:var(--jpd); color:var(--ok); opacity:.8}
 @keyframes fillIn{to{background-size:100% 100%}}
 .choices button.wrong{
-  background:var(--ng-bg); border-color:var(--ng); color:var(--ng);
-  animation:shake .32s ease;
+  background:var(--ng-bg); color:var(--ng); animation:shake .32s ease;
 }
+.choices button.wrong::after{content:'誤'; position:absolute; right:8px;
+  font-family:var(--jpd); color:var(--ng); opacity:.8}
 @keyframes shake{
   10%,90%{transform:translateX(-2px)} 30%,70%{transform:translateX(3px)}
   50%{transform:translateX(-3px)}
 }
 
+/* Бичих талбар — хайрцаг биш, ДООГУУР зураас. Дэвтрийн мөр шиг. */
+/* Хэрэглэгч ЛАТИНААР бичдэг (кана руу нь апп хөрвүүлж доор нь харуулна)
+   тул энд япон фонт биш, UI-ийн фонт зөв. */
 #t-input{
-  width:100%; padding:14px; font-size:18px; border-radius:10px;
-  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  width:100%; padding:14px 4px; font-size:19px; border-radius:0;
+  border:0; border-bottom:1px solid var(--line-2);
+  background:none; color:var(--ink); font-family:var(--ui);
 }
-.t-kana{font-family:var(--jp); font-size:30px; min-height:42px; text-align:center;
+#t-input:focus{outline:0; border-bottom-color:var(--accent)}
+.t-kana{font-family:var(--jpd); font-size:32px; min-height:44px; text-align:center;
         color:var(--accent)}
-.verdict{text-align:center; font-size:17px; font-weight:600}
+.verdict{text-align:center; font-size:16px; font-family:var(--disp)}
 .verdict.ok{color:var(--ok)} .verdict.ng{color:var(--ng)}
 
 /* ---------- өнөөдрийн явц ба дүгнэлт ---------- */
-.today{display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:center;
-       background:var(--card); border:1px solid var(--line); border-radius:12px;
-       padding:12px 14px; margin-bottom:10px}
-.tstat{text-align:center; min-width:64px}
-.tstat b{display:block; font-size:26px; line-height:1.1; color:var(--accent)}
-.tstat span{font-size:10.5px; color:var(--ink-2)}
+.today{display:grid; grid-template-columns:auto 1fr; gap:18px; align-items:center;
+       background:none; border:0; border-bottom:1px solid var(--line);
+       border-radius:0; padding:16px 0; margin-bottom:0}
+.tstat{text-align:center; min-width:56px}
+.tstat b{display:block; font-family:var(--disp); font-size:30px; line-height:1;
+         color:var(--ink)}
+.tstat span{font-size:10px; color:var(--ink-3); letter-spacing:.1em;
+            text-transform:uppercase}
 .tgoal .tg-head{display:flex; justify-content:space-between; align-items:baseline;
-                font-size:12.5px; color:var(--ink-2); margin-bottom:6px}
-.tgoal .tg-head b{color:var(--ink); font-variant-numeric:tabular-nums}
-.tgoal .track{height:8px; background:var(--line); border-radius:4px; overflow:hidden}
+                font-size:11px; color:var(--ink-3); margin-bottom:8px;
+                letter-spacing:.12em; text-transform:uppercase}
+.tgoal .tg-head b{color:var(--ink); font-variant-numeric:tabular-nums;
+                  font-family:var(--disp); letter-spacing:0}
+.tgoal .track{height:2px; background:var(--line); border-radius:0; overflow:hidden}
 .tgoal .fill{display:block; height:100%; width:0; background:var(--accent);
              transition:width .25s}
 .wide{width:100%; margin-bottom:10px}
 
-.fin{background:var(--card); border:1px solid var(--line); border-radius:12px;
-     padding:22px 14px; text-align:center; margin-bottom:4px}
-.fin-pct{font-size:48px; font-weight:700; line-height:1; color:var(--accent)}
-.fin-sub{margin-top:8px; color:var(--ink-2); font-variant-numeric:tabular-nums}
-.misslist{display:grid; gap:6px; margin-bottom:14px}
-.ms{display:grid; grid-template-columns:auto 1fr; gap:10px; align-items:baseline;
-    background:var(--card); border:1px solid var(--line); border-radius:9px;
-    padding:9px 12px}
-.ms b{font-size:19px}
+.fin{background:none; border:0; border-bottom:1px solid var(--line);
+     border-radius:0; padding:40px 0 34px; text-align:center; margin-bottom:0}
+.fin-pct{font-family:var(--disp); font-size:70px; font-weight:400; line-height:.9;
+         color:var(--ink); letter-spacing:-.03em}
+.fin-sub{margin-top:14px; color:var(--ink-2); font-variant-numeric:tabular-nums;
+         font-size:13px; letter-spacing:.06em}
+.misslist{display:grid; border-top:1px solid var(--line); margin-bottom:18px}
+.ms{display:grid; grid-template-columns:auto 1fr; gap:12px; align-items:baseline;
+    background:none; border:0; border-bottom:1px solid var(--line);
+    border-radius:0; padding:12px 4px}
+.ms b{font-family:var(--jpd); font-size:20px; font-weight:400}
 .ms span{font-size:13px; color:var(--ink-2)}
 
-/* Хариулсны дараа «Дараах» товч доод ирмэгт наалдана — сонголтын доор
-   гарч ирээд бүх агуулгыг доош түлхдэг байсныг зогсооно. */
 #pane-next{position:sticky; bottom:0; z-index:5; background:var(--bg);
-           padding:10px 0 calc(10px + env(safe-area-inset-bottom))}
+           padding:12px 0 calc(12px + env(safe-area-inset-bottom))}
 
 /* ---------- явц ---------- */
-.statsum{display:grid; grid-template-columns:repeat(4,1fr); gap:8px}
-.statsum div{background:var(--card); border:1px solid var(--line); border-radius:10px;
-             padding:12px 8px; text-align:center}
-.statsum b{display:block; font-size:22px; color:var(--accent)}
-.statsum span{font-size:11px; color:var(--ink-2)}
-.statles{display:grid; gap:5px}
-.statles .l{display:grid; grid-template-columns:38px 1fr 56px; gap:8px;
-            align-items:center; font-size:13px}
-.statles .track{position:relative; height:8px; background:var(--line);
-                border-radius:4px; overflow:hidden}
+.statsum{display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+         border-top:1px solid var(--line); border-bottom:1px solid var(--line)}
+.statsum div{background:none; border:0; border-radius:0;
+             padding:18px 6px; text-align:center}
+.statsum div + div{border-left:1px solid var(--line)}
+.statsum b{display:block; font-family:var(--disp); font-size:26px; line-height:1.1;
+           color:var(--ink)}
+.statsum span{font-size:10px; color:var(--ink-3); letter-spacing:.1em;
+              text-transform:uppercase; margin-top:4px; display:block}
+.statles{display:grid; gap:0}
+.statles .l{display:grid; grid-template-columns:38px 1fr 56px; gap:12px;
+            align-items:center; font-size:12.5px; padding:7px 0;
+            border-bottom:1px solid var(--line)}
+.statles .l > span:first-child{color:var(--ink-2); font-family:var(--disp)}
+.statles .track{position:relative; height:2px; background:var(--line);
+                border-radius:0; overflow:hidden}
 .statles .seen,.statles .fill{position:absolute; left:0; top:0; height:100%}
-.statles .seen{background:var(--accent); opacity:.28}
+.statles .seen{background:var(--accent); opacity:.3}
 .statles .fill{background:var(--accent)}
-.statles .num{text-align:right; color:var(--ink-2); font-variant-numeric:tabular-nums}
+.statles .num{text-align:right; color:var(--ink-3); font-variant-numeric:tabular-nums}
 /* Хэсгийн нэр «初級1», «N5 үг» гэх мэт урт тул шошгын багана өргөн хэрэгтэй. */
 .statles.wide .l{grid-template-columns:62px 1fr 74px}
+.statles.wide .l > span:first-child{font-size:13.5px; color:var(--ink)}
+.statles.wide .l .jpd{font-size:15px}
 /* Явцын таб 6 ширхэг. 6 багана болговол утсан дээр «初級1» шахагдаж
    уншигдахгүй болдог тул 3×2. */
-.lessons.stabs{grid-template-columns:repeat(3,1fr); margin-bottom:10px}
-.lg{display:inline-flex; align-items:center; gap:4px; margin-left:10px; white-space:nowrap}
-.lg i{width:14px; height:8px; border-radius:4px; background:var(--accent); display:inline-block}
-.lg i.s{opacity:.28}
+.lessons.stabs{grid-template-columns:repeat(3,1fr); margin-bottom:14px}
+.lessons.stabs button{font-size:14px; padding:12px 0 10px}
+.lessons.stabs .jpd{font-size:16px}
+.lg{display:inline-flex; align-items:center; gap:5px; margin-left:12px;
+    white-space:nowrap}
+.lg i{width:14px; height:2px; border-radius:0; background:var(--accent);
+      display:inline-block}
+.lg i.s{opacity:.3}
 
-.hint{font-size:12.5px; color:var(--ink-2); line-height:1.6; margin:6px 0}
+.hint{font-size:12.5px; color:var(--ink-2); line-height:1.75; margin:8px 0}
 
 /* ---------- санал хүсэлт ---------- */
 #fb-body{
-  width:100%; padding:12px; font:inherit; font-size:15px; line-height:1.5;
-  border-radius:10px; border:1px solid var(--line);
-  background:var(--card); color:var(--ink); resize:vertical; min-height:120px;
+  width:100%; padding:14px 4px; font:inherit; font-size:15px; line-height:1.7;
+  border-radius:0; border:0; border-bottom:1px solid var(--line-2);
+  background:none; color:var(--ink); resize:vertical; min-height:130px;
 }
 #fb-contact{
-  width:100%; padding:11px 12px; font:inherit; font-size:15px;
-  border-radius:10px; border:1px solid var(--line);
-  background:var(--card); color:var(--ink);
+  width:100%; padding:12px 4px; font:inherit; font-size:15px;
+  border-radius:0; border:0; border-bottom:1px solid var(--line-2);
+  background:none; color:var(--ink);
 }
-.fb-count{text-align:right; font-size:11.5px; color:var(--ink-2); margin-top:4px}
-/* Холбоос боловч товч шиг харагдана */
+#fb-body:focus,#fb-contact:focus{outline:0; border-bottom-color:var(--accent)}
+.fb-count{text-align:right; font-size:11px; color:var(--ink-3); margin-top:6px}
 a.ghost{display:inline-block; text-decoration:none}
-/* Нүүрэн дэх санал хүсэлтийн карт — үндсэн гурваас чимээгүй байх ёстой */
-.bigcard.quiet{margin-top:10px; opacity:.9}
-.bigcard.quiet .bc-jp{font-size:20px}
+.bigcard.quiet .bc-jp{font-size:21px; color:var(--ink-3)}
 .synccode{
-  font-family:ui-monospace,Consolas,monospace; font-size:19px; letter-spacing:.08em;
-  background:var(--card); border:1px solid var(--line); border-radius:10px;
-  padding:12px; text-align:center; user-select:all; word-break:break-all;
+  font-family:ui-monospace,Consolas,monospace; font-size:20px; letter-spacing:.16em;
+  background:none; border:0; border-bottom:1px solid var(--line-2); border-radius:0;
+  padding:14px 4px; text-align:center; user-select:all; word-break:break-all;
 }
 
 @media (max-width:380px){
   .lessons{grid-template-columns:repeat(5,1fr)}
-  .prompt{font-size:34px}
+  .prompt{font-size:42px}
+  .prompt.kj{font-size:92px}
+  .due-n{font-size:64px}
 }
 
 @media (hover:hover) and (pointer:fine){
   .choices button::before{
-    content:attr(data-k); display:inline-block; min-width:17px; margin-right:9px;
-    font-size:11px; line-height:15px; color:var(--ink-2);
-    border:1px solid var(--line); border-radius:4px; text-align:center;
+    content:attr(data-k); display:inline-block; min-width:16px; margin-right:12px;
+    font-size:10px; line-height:14px; color:var(--ink-3);
+    border:1px solid var(--line); border-radius:2px; text-align:center;
     vertical-align:middle;
   }
 }
 
-/* Дэвсгэр дээрх маш нарийн мөхлөг — хавтгай өнгийг «цаас»-тай төстэй болгоно.
-   Хүрэлт нэвтэрдэг, зөвхөн харагдац. */
+/* Цаасны мөхлөг. 和紙 нь гөлгөр биш — энэ давхарга л «цаас»-ыг цаас
+   болгодог. Хүрэлт нэвтэрдэг, зөвхөн харагдац. */
 body::after{
   content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
-  opacity:.028; background-size:140px 140px;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.05; background-size:150px 150px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-@media (prefers-color-scheme:dark){ body::after{opacity:.05} }
+@media (prefers-color-scheme:dark){ body::after{opacity:.045} }
 
 /* Хөдөлгөөн багасгахыг хүссэн хэрэглэгчид бүх анимацийг унтраана. */
 @media (prefers-reduced-motion:reduce){

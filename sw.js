@@ -13,7 +13,7 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-09-10z';
+const VERSION = '2026-09-10za';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 
@@ -24,6 +24,16 @@ const CORE = [
   './data/vocab-el1.json', './data/vocab-el2.json',
   './icons/icon-192.png', './icons/icon-512.png',
   './icons/favicon.svg', './icons/favicon-32.png',
+  // Фонт — офлайн үед ч ижил харагдах ёстой. Windows-ийн serif-үүдэд
+  // монгол Ү/Ө байхгүй тул эдгээр нь гоо сайхны биш, ЗӨВ БИЧИХ асуудал.
+  './fonts/fonts.css',
+  './fonts/ns-00.woff2',
+  './fonts/nsjp-00.woff2',
+  './fonts/nsjp-01.woff2',
+  './fonts/nsjp-02.woff2',
+  './fonts/nsjp-03.woff2',
+  './fonts/nsjp-04.woff2',
+  './fonts/nsjp-05.woff2',
 ];
 
 self.addEventListener('install', e => {
