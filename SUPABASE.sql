@@ -14,8 +14,14 @@
 create table if not exists public.progress (
   code       text primary key,
   data       jsonb       not null,
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- ШИНЭ кодыг цаг тутам тоолоход. `updated_at` нь синк тутам хөдөлдөг
+  -- тул «энэ мөр саяхан ҮҮССЭН үү» гэдгийг хэлж чадахгүй.
+  created_at timestamptz not null default now()
 );
+-- Байгаа санд багана нэмнэ (хүснэгт аль хэдийн үүссэн бол).
+alter table public.progress add column if not exists created_at timestamptz not null default now();
+create index if not exists progress_created_idx on public.progress (created_at);
 
 -- RLS-ийг асаагаад ямар ч policy бичихгүй  =>  шууд хандалт бүрэн хаагдана.
 alter table public.progress enable row level security;
@@ -83,9 +89,18 @@ begin
     raise exception 'payload too big';
   end if;
 
-  insert into public.progress (code, data, updated_at)
-  values (p_code, '{}'::jsonb, now())
-  on conflict (code) do nothing;
+  -- ШИНЭ код үү? Анон түлхүүрээр санамсаргүй кодоор хязгааргүй мөр
+  -- үүсгэж санг дүүргэх боломжтой байв. Цагт 200 шинэ кодоор хязгаарлана
+  -- — байгаа кодын шинэчлэлт (синк тутам) хамаарахгүй.
+  if not exists (select 1 from public.progress where code = p_code) then
+    if (select count(*) from public.progress
+          where created_at > now() - interval '1 hour') >= 200 then
+      raise exception 'rate limited';
+    end if;
+    insert into public.progress (code, data, updated_at, created_at)
+    values (p_code, '{}'::jsonb, now(), now())
+    on conflict (code) do nothing;
+  end if;
 
   select data into v_old from public.progress where code = p_code for update;
   v_old := coalesce(v_old, '{}'::jsonb);
