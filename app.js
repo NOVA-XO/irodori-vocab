@@ -950,6 +950,10 @@ const ICON_MENU = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" s
 const ICON_BACK = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
 
 function show(name) {
+  // Дасгалаас ГАРАХ мөчид хэрэглээний тоог илгээнэ. `finish()` нь
+  // `show('done')` дуудаж дуусдаг тул дуусгасан ч, дундуур гарсан ч
+  // хоёулаа энд таарна.
+  if (screen === 'study' && name !== 'study') statsPing();
   screen = name;
   // Дасгалын үед дэвсгэрийн анимацийг зогсооно (themes.css: `.busy`).
   // Энэ нь `show()` дотор байх ЁСТОЙ — дасгал `go()`-гүйгээр шууд
@@ -1679,6 +1683,20 @@ function isDevHost() {
     || h.endsWith('.local') || location.protocol === 'file:';
 }
 
+/** Хэрэглээний ГҮНийг хэмжих гурван тоо.
+ *
+ * АЛЬ үг гэдгийг илгээхгүй — зөвхөн хэдийг. `n` нь тухайн карт дээр
+ * хэдэн удаа хариулсан тоо (`grade()`), тиймээс `answers` нь бодит
+ * хөдөлмөрийн хэмжүүр; `cards` нь зөвхөн хүрсэн үгийн тоо. */
+function usageTotals() {
+  const v = Object.values(progress);
+  return {
+    cards: v.length,
+    answers: v.reduce((a, p) => a + (p.n || 0), 0),
+    learned: v.filter(p => (p.b || 0) >= 3).length,
+  };
+}
+
 /** Апп нээгдэхэд ӨДӨРТ НЭГ УДАА — хэрэглээний тоо. Алдааг чимээгүй өнгөрөөнө. */
 function pingUsage() {
   if (!syncOn || isDevHost()) return;
@@ -1687,7 +1705,28 @@ function pingUsage() {
     if (localStorage.getItem(k) === t) return;
     localStorage.setItem(k, t);
   } catch (e) { /* хувийн горим */ }
-  rpc('ping', { p_dev: devId }).catch(() => {});
+  const u = usageTotals();
+  rpc('ping', { p_dev: devId, p_cards: u.cards, p_answers: u.answers,
+                p_learned: u.learned }).catch(() => {});
+}
+
+/** Дасгалаас гармагц тоог л шинэчилнэ — НЭЭЛТ нэмэгдэхгүй (`p_bump:false`).
+ *
+ * Үүнгүй бол өдрийн цорын ганц ping нь дасгалын ӨМНӨ явдаг тул тухайн
+ * өдрийн бүх давталт бүртгэлгүй үлдэнэ — анх орсон өдрөө л суугаад
+ * дахин ирээгүй хүн «0 карт хийсэн» мэт харагдана.
+ *
+ * 2 минутад нэгээс олонгүй: богино дасгал дараалан хийхэд сүлжээ
+ * дэмий ачаалахгүй. */
+let lastStatsPing = 0;
+function statsPing() {
+  if (!syncOn || isDevHost()) return;
+  const now = Date.now();
+  if (now - lastStatsPing < 120000) return;
+  lastStatsPing = now;
+  const u = usageTotals();
+  rpc('ping', { p_dev: devId, p_cards: u.cards, p_answers: u.answers,
+                p_learned: u.learned, p_bump: false }).catch(() => {});
 }
 
 function refreshUsage() {
@@ -1706,7 +1745,10 @@ function refreshUsage() {
       '<div><b>' + (d.active_7d || 0) + '</b><span>7 хоногт идэвхтэй</span></div>' +
       '<div><b>' + (d.opens || 0) + '</b><span>нийт нээлт</span></div>' +
       '<div><b>' + (d.feedback || 0) + '</b><span>санал хүсэлт</span></div>';
-    note.textContent = 'Өнөөдөр ' + (d.today_opens || 0) + ' удаа нээгдсэн. '
+    note.textContent = 'Өнөөдөр ' + (d.today_opens || 0) + ' удаа нээгдсэн'
+      + ' · ' + (d.studied || 0) + ' төхөөрөмж дасгал хийсэн'
+      + ' · нийт ' + (d.answers || 0) + ' хариулт'
+      + ' · ' + (d.learned || 0) + ' үг тогтсон. '
       + 'Зөвхөн тоо — хувийн мэдээлэл, IP хадгалдаггүй.';
   }).catch(() => { box.innerHTML = ''; note.textContent = 'Тоог авч чадсангүй.'; });
 }

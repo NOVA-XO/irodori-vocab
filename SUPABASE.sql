@@ -145,23 +145,74 @@ create table if not exists public.visits (
 alter table public.devices enable row level security;
 alter table public.visits  enable row level security;
 
--- Апп нээгдэх бүрд нэг удаа дуудна.
-create or replace function public.ping(p_dev text)
+-- ─────────────────────────────────────────────────────────────────────
+--  Хэрэглээний ГҮН  (2026-09-11 нэмэгдэв)
+--
+--  «Хэдэн хүн орсон» ба «хэр их хэрэглэж байна» хоёр ТЭС ӨӨР асуулт.
+--  Эхнийхэд `opens` хариулдаг байв; хоёр дахийг хэмжих өгөгдөл ОГТ
+--  байгаагүй — аппыг нээгээд шууд хаасан хүн, 300 карт давтсан хүн
+--  хоёр яг ИЖИЛ мөр үлдээдэг байсан.
+--
+--  Тиймээс гурван ТОО нэмнэ. Хувийн мэдээлэл нэмэгдэхгүй: АЛЬ үг
+--  гэдгийг биш, зөвхөн хэдийг гэдгийг бичнэ.
+--
+--  `days` багана НЭМЭХГҮЙ — ping өдөрт нэг удаа явдаг тул одоо байгаа
+--  `opens` нь өөрөө «хэдэн өдөр идэвхтэй байсан» гэсэн тоо мөн.
+alter table public.devices add column if not exists cards   int not null default 0;
+alter table public.devices add column if not exists answers int not null default 0;
+alter table public.devices add column if not exists learned int not null default 0;
+
+-- Гарын үсэг өөрчлөгдөж байгаа тул хуучныг унагана. `create or replace`
+-- нь өөр аргументтай функцийг ЗЭРЭГЦЭЭ үүсгэдэг бөгөөд тэр үед PostgREST
+-- аль нь гэдгийг ялгаж чадахгүй алдаа өгнө.
+-- Кэшлэгдсэн хуучин клиент зөвхөн `p_dev` илгээсэн ч шинэ функц
+-- default-аар хүлээж авах тул тэдний ping тасрахгүй.
+drop function if exists public.ping(text);
+
+-- Апп нээгдэх бүрд нэг удаа дуудна (`p_bump` = true).
+-- Дасгал дууссаны дараа тоог л шинэчилнэ (`p_bump` = false) — тэр үед
+-- нээлт НЭМЭГДЭХГҮЙ. Үүнгүй бол анх орсон өдрөө л суудаг хүний бүх
+-- давталт бүртгэлгүй үлдэнэ: өдрийн эхний ping нь хоосон тоо илгээгээд,
+-- дараа нь дахин илгээх боломж гарахгүй.
+create or replace function public.ping(
+  p_dev     text,
+  p_cards   int     default null,
+  p_answers int     default null,
+  p_learned int     default null,
+  p_bump    boolean default true)
 returns void
 language plpgsql
 security definer
 set search_path = public
 as $pg$
+declare
+  -- Анон түлхүүрээр дуудагддаг тул тоог хязгаарлана: хэн нэг нь
+  -- 10^12 бичээд нийлбэрийг утгагүй болгох боломжгүй байх ёстой.
+  c int := least(greatest(coalesce(p_cards,   0), 0), 1000000);
+  a int := least(greatest(coalesce(p_answers, 0), 0), 1000000);
+  l int := least(greatest(coalesce(p_learned, 0), 0), 1000000);
+  bump int := case when coalesce(p_bump, true) then 1 else 0 end;
 begin
   if p_dev is null or length(p_dev) not between 8 and 64 then
     return;
   end if;
-  insert into public.devices (dev) values (p_dev)
-  on conflict (dev) do update
-    set last_seen = now(), opens = public.devices.opens + 1;
 
-  insert into public.visits (day, opens) values (current_date, 1)
-  on conflict (day) do update set opens = public.visits.opens + 1;
+  insert into public.devices (dev, opens, cards, answers, learned)
+  values (p_dev, bump, c, a, l)
+  on conflict (dev) do update
+    set last_seen = now(),
+        opens     = public.devices.opens + bump,
+        -- ХАМГИЙН ИХ утгыг барина. Явц ачаалагдахаас өмнө ping явбал 0
+        -- ирж, хуримтлагдсан тоог тэглэх эрсдэлтэй; мөн хэрэглэгч
+        -- явцаа арилгавал өмнөх хөдөлмөр тооноос алга болох ёсгүй.
+        cards     = greatest(public.devices.cards,   c),
+        answers   = greatest(public.devices.answers, a),
+        learned   = greatest(public.devices.learned, l);
+
+  if bump = 1 then
+    insert into public.visits (day, opens) values (current_date, 1)
+    on conflict (day) do update set opens = public.visits.opens + 1;
+  end if;
 end;
 $pg$;
 
@@ -177,13 +228,32 @@ as $us$
     'opens',         (select coalesce(sum(opens), 0) from public.visits),
     'today_opens',   (select coalesce(opens, 0) from public.visits where day = current_date),
     'active_7d',     (select count(*) from public.devices where last_seen > now() - interval '7 days'),
-    'feedback',      (select count(*) from public.feedback)
+    'feedback',      (select count(*) from public.feedback),
+
+    -- ── ГҮН: «хэр их хэрэглэж байна» ──────────────────────────────
+    -- `returned` нь хамгийн чухал ганц тоо: хоёр дахь өдөр эргэж
+    -- ирсэн төхөөрөмж. Давтлагын апп-д эргэж ирэхгүй бол утгагүй.
+    'returned',      (select count(*) from public.devices where opens > 1),
+    'studied',       (select count(*) from public.devices where answers > 0),
+    'answers',       (select coalesce(sum(answers), 0) from public.devices),
+    'learned',       (select coalesce(sum(learned), 0) from public.devices),
+    -- Дундаж биш ДУНДАЖИЙН МЕДИАН: нэг хүн 500 карт хийвэл дундаж
+    -- бүгдийг нь сайхан харагдуулна, медиан харагдуулахгүй.
+    'med_answers',   (select coalesce(round(percentile_cont(0.5)
+                        within group (order by answers)), 0)
+                      from public.devices where answers > 0),
+    'buckets',       (select jsonb_build_object(
+                        'n0',   count(*) filter (where answers = 0),
+                        'n1',   count(*) filter (where answers between 1 and 19),
+                        'n20',  count(*) filter (where answers between 20 and 99),
+                        'n100', count(*) filter (where answers >= 100))
+                      from public.devices)
   );
 $us$;
 
-revoke all on function public.ping(text) from public;
+revoke all on function public.ping(text, int, int, int, boolean) from public;
 revoke all on function public.usage_stats() from public;
-grant execute on function public.ping(text) to anon;
+grant execute on function public.ping(text, int, int, int, boolean) to anon;
 grant execute on function public.usage_stats() to anon;
 
 -- ─────────────────────────────────────────────────────────────────────
