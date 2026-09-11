@@ -149,7 +149,37 @@ function load(key, dflt) {
   try { return JSON.parse(localStorage.getItem(key)) || dflt; } catch (e) { return dflt; }
 }
 function save(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* private mode */ }
+  try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+  catch (e) { storeFailed(); return false; }
+}
+
+/* Хадгалалт унавал (хувийн горим, диск дүүрсэн) ЧИМЭЭГҮЙ өнгөрөх нь
+   хамгийн муу төгсгөл: хэрэглэгч 40 карт давтаад, дахин ачаалахад бүгд
+   алга болно. Нэг удаа хэлнэ — дараа нь дахин сануулахгүй. */
+let storeWarned = false;
+function storeFailed() {
+  if (storeWarned) return;
+  storeWarned = true;
+  const el = document.getElementById('save-warn');
+  if (el) {
+    el.hidden = false;
+    el.textContent = 'Энэ браузер явцыг хадгалж чадахгүй байна '
+      + '(хувийн горим эсвэл сангийн хязгаар). Хуудсыг хаавал энэ дасгалын '
+      + 'үр дүн алга болно.';
+  }
+}
+
+/** Явцыг ДИСКЭН ДЭЭРХИЙТЭЙ НИЙЛҮҮЛЖ бичнэ.
+ *
+ *  Шууд дарж бичвэл хоёр таб бие биенээ устгана: тус бүр өөрийн эхний
+ *  хуулбараа барьж байгаад бүхлээр нь бичдэг тул сүүлд бичсэн нь
+ *  нөгөөгийн хариултыг арилгана. Үүлэн синктэй ИЖИЛ дүрмээр уусгана:
+ *  илүү олон удаа давтсан нь ялна. */
+function saveProgress() {
+  try {
+    progress = mergeProgress(load(KEY_P, {}), progress);
+  } catch (e) { /* эвдэрсэн бичлэг — өөрийнхөө хуулбарыг л бичнэ */ }
+  return save(KEY_P, progress);
 }
 
 const KEY_D = 'irodori.days.v1';
@@ -207,9 +237,22 @@ function grade(id, ok) {
   else { p.w++; p.b = Math.max(p.b - 2, 0); }
   p.d = today() + BOXES[p.b];
   progress[id] = p;
-  save(KEY_P, progress);
+  saveProgress();
   tickDay();
 }
+
+/* Өөр ТАБ бичсэн бол санах ойгоо шинэчилнэ. `storage` нь ЗӨВХӨН бусад
+   таб дээр ажилладаг (өөрийн бичилтэд гардаггүй) тул давталт үүсэхгүй. */
+window.addEventListener('storage', e => {
+  if (!e.key) return;
+  if (e.key === KEY_P) {
+    progress = mergeProgress(load(KEY_P, {}), progress);
+    if (screen !== 'study') { refreshHome(); refreshStats(); }
+  } else if (e.key === KEY_D) {
+    const d = load(KEY_D, days);
+    if (d && d.last === days.last && (d.n || 0) > (days.n || 0)) days = d;
+  }
+});
 
 /* ══════════════════════ 3b. Төхөөрөмж хооронд нийлүүлэх ══════════════════════
  *
@@ -271,16 +314,29 @@ function syncSay(msg) {
 }
 
 async function syncNow(quiet) {
-  if (!syncOn || !syncCode) return;
+  // Кодыг ЭХЭНД нь барьж авна. `syncCode` нь дэлхийн хувьсагч тул
+  // GET явж байхад хэрэглэгч өөр код холбовол PUT нь ШИНЭ код руу
+  // ХУУЧИН кодын явцыг бичих байсан — хоёр хүний явц холилдоно.
+  const code = syncCode;
+  if (!syncOn || !code) return;
   try {
     if (!quiet) syncSay('нийлүүлж байна…');
-    const remote = await rpc('get_progress', { p_code: syncCode });
+    const remote = await rpc('get_progress', { p_code: code });
+    if (syncCode !== code) return;             // энэ хооронд код солигдов
     const merged = mergeProgress(progress, remote || {});
     progress = merged;
-    save(KEY_P, progress);
-    await rpc('put_progress', { p_code: syncCode, p_data: merged });
+    saveProgress();
+    // `put_progress` нь СЕРВЕР дээр уусгаж, эцсийн үр дүнг буцаана.
+    // Дарж бичдэг байсан тул хоёр төхөөрөмж зэрэг нийлүүлэхэд сүүлийнх
+    // нь эхнийхийг устгадаг байв.
+    const saved = await rpc('put_progress', { p_code: code, p_data: merged });
+    if (syncCode !== code) return;
+    if (saved && typeof saved === 'object') {
+      progress = mergeProgress(progress, saved);
+      saveProgress();
+    }
     syncSay('нийлүүлсэн: ' + new Date().toLocaleTimeString() +
-            ' · ' + Object.keys(merged).length + ' карт');
+            ' · ' + Object.keys(progress).length + ' карт');
   } catch (e) {
     syncSay('алдаа: ' + e.message);
   }
@@ -302,14 +358,31 @@ function refreshSync() {
    id-ийн угтвар ном бүрд өөр (L / E1 / E2) тул явц хольцолдохгүй. */
 const BOOK_FILE = { starter: 'data/vocab.json', el1: 'data/vocab-el1.json',
                     el2: 'data/vocab-el2.json', n5: 'data/vocab-n5.json' };
-const BOOK_NAME = { starter: '入門', el1: '初級1', el2: '初級2', n5: 'N5' };
 const bookCache = {};
 
+/* Ном сонгох дараалал: дарлага бүрд дугаар өгнө. Хоёр номыг хурдан
+   дараалан дарвал эхнийх нь СҮҮЛД хариулж, сонголтыг эргүүлж татдаг
+   байв — зөвхөн ХАМГИЙН СҮҮЛИЙН хүсэлтийг хүлээн авна. */
+let bookReq = 0;
+
+/** Номын үгсийг татаж кэшлэнэ. `ALL`-ыг ХӨДӨЛГӨХГҮЙ — дуудагч нь
+ *  өөрийн хүсэлт хамгийн сүүлийнх эсэхийг шалгаад өөрөө тавина. */
+function fetchBook(b) {
+  if (bookCache[b]) return Promise.resolve(bookCache[b]);
+  return fetch(BOOK_FILE[b]).then(r => {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(d => {
+    bookCache[b] = d.items;                   // амжилттай үед Л кэшлэнэ
+    return d.items;
+  }).catch(() => null);                       // бүтэлгүйтлийг КЭШЛЭХГҮЙ
+}
+
 function loadBook(b) {
-  if (bookCache[b]) { ALL = bookCache[b]; return Promise.resolve(true); }
-  return fetch(BOOK_FILE[b]).then(r => r.json()).then(d => {
-    bookCache[b] = d.items; ALL = d.items; return true;
-  }).catch(() => false);
+  return fetchBook(b).then(items => {
+    if (!items) return false;
+    ALL = items; return true;
+  });
 }
 
 let ALL = [];                 // ИДЭВХТЭЙ Irodori номын үгс
@@ -334,8 +407,17 @@ function setActiveLessons(v) {
 
 function loadN5() {
   if (N5.length) return Promise.resolve(true);
-  return fetch('data/vocab-n5.json').then(r => r.json())
-    .then(d => { N5 = d.items; return true; }).catch(() => false);
+  return fetch('data/vocab-n5.json').then(r => {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(d => { N5 = d.items; return true; }).catch(() => false);
+}
+
+/** Дасгал эхлүүлэхийн ӨМНӨ тухайн сангийн үг ачаалагдсан эсэхийг батална.
+ *  N5-ийг апп эхлэхэд татдаггүй (эхний ачаалал хөнгөн байх ёстой) тул
+ *  дахин ачаалсны дараа «Үргэлжлүүлэх» дарвал хоосон багц гардаг байв. */
+function ensureWords(src) {
+  return (src === 'n5') ? loadN5() : Promise.resolve(true);
 }
 let missed = [];              // энэ дасгалд алдсан үгс — төгсгөлд жагсаана
 let KANA = [];                // 107 кана (хирагана · катакана · авиа)
@@ -386,9 +468,9 @@ function pickVoice() {
   document.querySelector('[data-mode="listen"]').disabled =
     !canSpeak && !(AUDIO_IDS && AUDIO_IDS.size);
 
-  // Хоолой хожуу ирвэл ОДООГИЙН картын товчийг сэргээнэ.
+  // Хоолой хожуу ирвэл ОДООГИЙН картын товчийг сэргээнэ — ижил дүрмээр.
   const b = document.getElementById('btn-speak');
-  if (b) b.hidden = !canSpeak || mode === 'type' && !answered;
+  if (b) b.hidden = soundBtnHidden();
 }
 
 /* Ихэнх гар утас эхний дуу гаргахын өмнө хэрэглэгчийн хүрэлт шаарддаг.
@@ -418,7 +500,6 @@ document.addEventListener('keydown', unlockSpeech, { once: true });
 /* Зарим браузер utterance-ыг хогийн цэвэрлэгчид өгөөд дуугаа тасалдаг тул
    сүүлийн объектыг барьж үлдэнэ. */
 let lastUtterance = null;
-let lastSpeechError = '';
 
 function speak(text) {
   if (!canSpeak || !text) return;
@@ -431,7 +512,6 @@ function speak(text) {
   if (jaVoice) u.voice = jaVoice;
   u.lang = 'ja-JP';                            // хоолой олдоогүй ч систем сонгоно
   u.rate = 0.85;
-  u.onerror = e => { lastSpeechError = (e && e.error) || 'үл мэдэгдэх алдаа'; };
   lastUtterance = u;
   speechSynthesis.speak(u);
 }
@@ -452,13 +532,22 @@ function ensurePlayer() {
 }
 const hasAudio = id => !!(AUDIO_IDS && id && AUDIO_IDS.has(id));
 
-function playFile(id) {
+/** @param onFail  тоглуулалт УНАВАЛ дуудагдана (офлайн, эвдэрсэн файл).
+ *
+ *  Урьд нь `play()`-ийн татгалзлыг залгидаг байсан тул жагсаалтад байгаа
+ *  ч бодитоор дуугардаггүй бичлэг дээр апп ЧИМЭЭГҮЙ үлдэж, TTS рүү ч
+ *  шилжихгүй байв. */
+function playFile(id, onFail) {
   if (!hasAudio(id)) return false;
   try {
     const p = ensurePlayer();
     p.src = 'audio/' + id + '.mp3';
     const r = p.play();
-    if (r && r.catch) r.catch(() => {});
+    if (r && r.catch) r.catch(err => {
+      // Дараагийн карт руу шилжихэд өмнөхийг тасалдаг — тэр нь алдаа биш.
+      if (err && (err.name === 'AbortError' || err.name === 'NotAllowedError')) return;
+      if (onFail) onFail();
+    });
     return true;
   } catch (e) { return false; }
 }
@@ -469,12 +558,13 @@ function say(it) {
   if (deck === 'kanji') {
     // Ганц ханзны дуудлага олон янз байдаг тул ЖИШЭЭ ҮГЭЭР нь сонсгоно.
     const w = kjWord(it);
-    if (w && playFile(w.id)) return;
+    if (w && playFile(w.id, () => speak(w.kana))) return;
     if (w) speak(w.kana);
     return;
   }
-  if (playFile(it.id)) return;
-  speak(deck === 'kana' ? it.hira : (it.kana || it.jp));
+  const fallback = deck === 'kana' ? it.hira : (it.kana || it.jp);
+  if (playFile(it.id, () => speak(fallback))) return;
+  speak(fallback);
 }
 /** Энэ картыг сонсох боломж бий юу (бичлэг эсвэл TTS). */
 const canHear = it => (deck === 'kanji')
@@ -560,10 +650,24 @@ function startSession(m, onlyDue, src) {
   enterStudy();
 }
 
+/** Дуу товчийг харуулах уу — ГАНЦ дүрэм.
+ *
+ *  Урьд нь `nextCard()`, `resolve()`, `pickVoice()` гурав ӨӨР ӨӨР
+ *  дүрмээр шийддэг байв. Хоолой хожуу ирэхэд `pickVoice()` дуудагдаж,
+ *  «бичих» горимд хариулахаас өмнө товчийг ил гаргаж ХАРИУЛТЫГ
+ *  ЗАДАЛДАГ байсан. */
+function soundBtnHidden() {
+  if (!cur || !canHear(cur)) return true;
+  // «Бичих» ба урвуу чиглэлд асуулт нь монгол утга — дуу нь хариулт.
+  if ((mode === 'type' || isRev()) && !shown) return true;
+  return false;
+}
+
 function nextCard() {
   if (!queue.length) { finish(); return; }
   cur = queue.shift();
   answered = false;
+  shown = false;
   const card = $('card');
   if (card) card.classList.remove('flip');
   replay(card, 'in');
@@ -634,9 +738,8 @@ function nextCard() {
   // үргэлж дарлагаас (mode товч эсвэл «Дараах») эхэлдэг тул ингэж дуудвал
   // хэрэглэгчийн хүрэлтийн гинж тасрахгүй — iOS Safari зөвхөн тийм үед
   // дуу гаргахыг зөвшөөрдөг.
-  const hideSound = mode === 'type' || isRev();   // хариултыг задлахгүйн тулд
-  $('btn-speak').hidden = !canHear(cur) || hideSound;
-  if (canHear(cur) && !hideSound) say(cur);
+  $('btn-speak').hidden = soundBtnHidden();
+  if (!soundBtnHidden()) say(cur);
   updateBar();
 }
 
@@ -793,7 +896,10 @@ function pitchSeg(seg) {
 
 function countKana(a) { var n = 0, i; for (i = 0; i < a.length; i++) if (a[i].kana) n++; return n; }
 
+let shown = false;          // хариулт харагдсан уу (дуу товчийн дүрэмд)
+
 function reveal() {
+  shown = true;
   if (deck === 'kanji') {
     $('a-kana').textContent = kmode === 'm2k' ? cur.c : '';
     $('a-mn').textContent = cur.mn;
@@ -868,7 +974,7 @@ function resolve(ok) {
   reveal();
   grade(cur.id, ok);
   done++; ok ? okN++ : ngN++;
-  $('c-done').textContent = done; $('c-ok').textContent = okN; $('c-ng').textContent = ngN;
+  renderCounters();
   const v = $('verdict');
   v.textContent = ok ? '✓ Зөв' : '✗ Буруу';
   v.className = 'verdict ' + (ok ? 'ok' : 'ng');
@@ -879,14 +985,27 @@ function resolve(ok) {
   }
   // Бусад горимд карт гармагц аль хэдийн сонсгосон тул дахин давтахгүй.
   // «Бичих»-д зөвхөн ЭНД сонсгоно — урьд нь сонсгосон бол хариулт задарна.
-  if (canHear(cur) && (mode === 'type' || isRev())) { $('btn-speak').hidden = false; say(cur); }
+  $('btn-speak').hidden = soundBtnHidden();
+  if (canHear(cur) && (mode === 'type' || isRev())) say(cur);
   updateBar();
 }
 
 const RING_C = 2 * Math.PI * 19;          // r=19, index.html дэх дугуйтай таарна
 
+/** Дасгалын дөрвөн тоолуурыг ЗЭРЭГ бичнэ. Шинэ дасгал эхлэхэд ч
+ *  дуудна — эс тэгвэл өмнөх дасгалын тоо эхний хариулт хүртэл үлдэнэ. */
+function renderCounters(total) {
+  if (total != null) $('c-total').textContent = total;
+  $('c-done').textContent = done;
+  $('c-ok').textContent = okN;
+  $('c-ng').textContent = ngN;
+}
+
 function updateBar() {
-  const total = done + queue.length + 1;
+  // Хариулсны дараа тухайн карт `done`-д АЛЬ ХЭДИЙН орсон тул дахин
+  // нэмбэл хуваарь нэгээр өснө: 20 картыг бүгдийг зөв хариулахад
+  // 20/21 (95.2%) харагддаг байв.
+  const total = done + queue.length + (answered ? 0 : 1);
   const r = $('pring');
   if (!r) return;
   const p = Math.max(0, Math.min(1, done / Math.max(total, 1)));
@@ -1006,8 +1125,17 @@ function renderN5Lessons() {
 }
 
 function refreshHome() {
-  rebuildPool();
-  $('due-n').textContent = pool.filter(isDue).length;
+  // `pool`-ыг ЭНД ХӨДӨЛГӨХГҮЙ (docs/STATE.md §2.27). `finish()` нь
+  // `refreshHome()` дуудаж дуусдаг тул урьд нь ханзны дасгал дууссаны
+  // дараа `pool` нь ҮГ болчихдог байв — «Алдаагаа давтах» дарахад
+  // `simKey()` нь үг дээр `it.on[0]` уншиж УНАДАГ байсан.
+  //
+  // Нүүрэн дэх тоо нь ЗӨВХӨН харуулах зориулалттай тул тусад нь
+  // тооцно. Мөн `wordSrc`-оос ХАМААРАХГҮЙ: N5 ороод гарсны дараа
+  // Irodori-гийн тоо N5-ийнхыг (эсвэл 0-ыг) харуулдаг байв.
+  const bookPool = ALL.filter(
+    it => curLessons().includes(it.lesson) && (settings.ref || !it.ref));
+  $('due-n').textContent = bookPool.filter(isDue).length;
   const box = $('lessons');
   box.innerHTML = '';
   const lessons = [...new Set(ALL.map(i => i.lesson))].sort((a, b) => a - b);
@@ -1040,7 +1168,6 @@ function refreshHome() {
   document.querySelectorAll('#goal-pick button').forEach(b =>
     b.setAttribute('aria-pressed', +b.dataset.goal === settings.goal));
   buildRing();
-  const nv = $('n-vocab'); if (nv) nv.textContent = ALL.length + ' үг';
   const nk = $('n-kana'); if (nk) nk.textContent = KANA.length + ' кана';
   const nj = $('n-kanji');
   if (nj) nj.textContent = KANJI.filter(k => k.n).length + ' ханз';
@@ -1074,8 +1201,8 @@ function refreshHome() {
       + '(VOICEVOX, өргөлтийг нь номоор тохируулсан).'
     : 'Бэлдсэн бичлэг алга — браузерын өөрийн дуу уншигчийг ашиглана.';
   const vh = $('vocab-hint');
-  if (vh) vh.textContent = pool.length
-    ? 'Сонгосон ' + pool.length + ' үгээс асууна.'
+  if (vh) vh.textContent = bookPool.length
+    ? 'Сонгосон ' + bookPool.length + ' үгээс асууна.'
     : 'Дор хаяж нэг хичээл сонгоно уу.';
   document.querySelectorAll('#seg-script button').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.s === settings.script));
@@ -1113,11 +1240,11 @@ let statTab = null;               // анх нээхэд идэвхтэй ном
  *  номоо татдаг (эхний ачаалал хөнгөн байх ёстой). Ганц удаа татаад
  *  кэшлэнэ. Алдвал тухайн ном хоосон байна — дэлгэц эвдэрч болохгүй. */
 function loadAllBooks() {
+  // Амжилтгүй бол кэшлэхгүй: `[]` нь truthy тул дараа нь «татсан» мэт
+  // харагдаад ДАХИН ОРОЛДОХГҮЙ болдог байв (сүлжээ сэргэсэн ч хоосон).
   const jobs = ['starter', 'el1', 'el2']
     .filter(b => !bookCache[b])
-    .map(b => fetch(BOOK_FILE[b]).then(r => r.json())
-      .then(d => { bookCache[b] = d.items; })
-      .catch(() => { bookCache[b] = []; }));
+    .map(b => fetchBook(b));
   if (!N5.length) jobs.push(loadN5());
   return Promise.all(jobs);
 }
@@ -1230,9 +1357,14 @@ document.querySelectorAll('#seg-book button').forEach(b =>
   b.onclick = () => {
     const nb = b.dataset.b;
     if (nb === settings.book) return;
-    loadBook(nb).then(ok => {
-      if (!ok) { alert('Энэ номын үгсийг ачаалж чадсангүй.'); return; }
-      settings.book = nb; save(KEY_S, settings); refreshHome();
+    // Хоёр номыг хурдан дараалан дарвал эхнийх нь СҮҮЛД хариулж,
+    // сонголтыг эргүүлж татдаг байв. Зөвхөн сүүлийн хүсэлт хүчинтэй.
+    const req = ++bookReq;
+    fetchBook(nb).then(items => {
+      if (req !== bookReq) return;                // хуучирсан хариу
+      if (!items) { alert('Энэ номын үгсийг ачаалж чадсангүй.'); return; }
+      ALL = items; settings.book = nb; wordSrc = 'book';
+      save(KEY_S, settings); refreshHome();
     });
   });
 document.querySelectorAll('#kana-groups button').forEach(b =>
@@ -1282,21 +1414,29 @@ $('btn-next').onclick = nextCard;
 
 $('btn-continue').onclick = () => {
   const L = settings.last; if (!L) return;
-  if (L.deck === 'kana') startKana(L.k);
-  else if (L.deck === 'kanji') startKanji(L.k, L.src);
-  else startSession(L.m, false, L.src || 'book');
+  if (L.deck === 'kana') { startKana(L.k); return; }
+  if (L.deck === 'kanji') { startKanji(L.k, L.src); return; }
+  // N5-ийг апп эхлэхэд татдаггүй тул дахин ачаалсны дараа энэ товч
+  // «хичээл сонгоно уу» гэж буруу хэлдэг байв.
+  ensureWords(L.src).then(() => startSession(L.m, false, L.src || 'book'));
 };
 $('fin-retry').onclick = () => {
   if (!missed.length) return;
   queue = shuffle(missed.slice());
   missed = []; done = okN = ngN = 0;
-  show('study'); $('c-total').textContent = queue.length; nextCard();
+  // `pool`-ыг ДАХИН тогтооно: `finish()` → `refreshHome()` нь урьд нь
+  // түүнийг үг болгодог байсан (одоо болихгүй ч, багц нь дасгалынхаа
+  // сангаас гарах ёстой — сандруулагч эндээс сонгогдоно).
+  if (deck === 'kana') pool = KANA.filter(i => settings.kgroups.includes(i.group));
+  else if (deck === 'kanji') pool = kanjiPool((settings.last || {}).src || 'les');
+  else rebuildPool();
+  show('study'); renderCounters(queue.length); nextCard();
 };
 $('fin-again').onclick = () => {
   const L = settings.last || {};
-  if (L.deck === 'kana') startKana(L.k);
-  else if (L.deck === 'kanji') startKanji(L.k, L.src);
-  else startSession(L.m || 'choice', false, L.src || 'book');
+  if (L.deck === 'kana') { startKana(L.k); return; }
+  if (L.deck === 'kanji') { startKanji(L.k, L.src); return; }
+  ensureWords(L.src).then(() => startSession(L.m || 'choice', false, L.src || 'book'));
 };
 $('fin-home').onclick = () => go('home');
 document.querySelectorAll('#goal-pick button').forEach(b =>
@@ -1412,9 +1552,20 @@ $('file-import').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
   f.text().then(t => {
     const d = JSON.parse(t);
-    if (d.progress) { progress = d.progress; save(KEY_P, progress); }
+    if (d.progress) { progress = d.progress; saveProgress(); }
     if (d.settings) { settings = d.settings; save(KEY_S, settings); }
-    refreshStats(); refreshHome(); alert('Сэргээлээ.');
+    if (!settings.les) settings.les = {};
+    if (!settings.book) settings.book = 'starter';
+    // Тохиргоо нь 初級1 гэж хэлж байхад `ALL` нь 入門 хэвээр үлдэж,
+    // харуулж буй ном ба асуудаг үг ЗӨРДӨГ байв. Номыг нь ачаалсны
+    // ДАРАА л дэлгэцийг шинэчилнэ.
+    return loadBook(settings.book).then(ok => {
+      if (!ok) { settings.book = 'starter'; save(KEY_S, settings); return loadBook('starter'); }
+      return true;
+    }).then(() => {
+      wordSrc = 'book';
+      refreshStats(); refreshHome(); alert('Сэргээлээ.');
+    });
   }).catch(() => alert('Файлыг уншиж чадсангүй.'));
 };
 
@@ -1613,7 +1764,7 @@ function enterStudy() {
   // огт өөр үг гарч ирнэ.
   const from = ringPull(dispText(queue[0]));   // хэмжилт нь дэлгэц солихоос ӨМНӨ
   show('study');
-  $('c-total').textContent = queue.length;
+  renderCounters(queue.length);
   nextCard();
   flyToCard(from);
 }
@@ -1817,7 +1968,10 @@ function autoStart() {
   const j = (location.hash.match(/j=(flash|k2m|m2k|read)/) || [])[1];
   if (j) { startKanji(j, /jlpt/.test(location.hash) ? 'jlpt' : 'les'); return; }
   const m = (location.hash.match(/m=(flash|choice|type|listen)/) || [])[1];
-  if (m) startSession(m, false);
+  if (m) {
+    const src = /n5/.test(location.hash) ? 'n5' : 'book';
+    ensureWords(src).then(() => startSession(m, false, src));
+  }
 }
 
 Promise.all([
@@ -1832,6 +1986,11 @@ Promise.all([
   .then(([v, k, kj, au]) => {
     ALL = v.items; KANA = k.items; KANJI = kj.items;
     bookCache[v.book || 'starter'] = v.items;
+    // Сонгосон ном татагдаагүй бөгөөд 入門 руу ухарсан бол ТОХИРГООГ
+    // нь ч засна — эс тэгвэл дэлгэц «初級1» гэж хэлээд 入門-ий үг асууна.
+    if ((v.book || 'starter') !== settings.book) {
+      settings.book = v.book || 'starter'; save(KEY_S, settings);
+    }
     if (au && au.ids) { AUDIO_IDS = new Set(au.ids); pickVoice(); }
     refreshSync();
     // Ачаалахад нэг удаа татаж уусгана — өөр төхөөрөмж дээр давтсан нь орж ирнэ.

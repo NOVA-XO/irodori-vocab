@@ -270,7 +270,150 @@ async function run(c) {
   `);
   ok('дутуу DOM id алга', missing.length === 0, missing.join(', '));
 
-  console.log('\n[9] .busy — дасгалын үед дэвсгэр зогсоно');
+  console.log('\n[9] 2026-09-11-ний аудитын регресс');
+  // Эдгээр нь БОДИТООР гарсан алдаанууд. Тест нь тэднийг буцаж
+  // ирэхээс хамгаална — тайлбар нь docs/STATE.md §2.27 ба CHANGELOG.
+
+  // №4 — ханзны дасгал дуусаад «Алдаагаа давтах» дарахад унадаг байв.
+  {
+    const r = await c.ev(`
+      progress = {}; const _a = window.alert; window.alert = () => {};
+      startKanji('k2m', 'jlpt');
+      await new Promise(r=>setTimeout(r,120));
+      missed = queue.slice(0, 3); queue = [];
+      finish();                       // → refreshHome() → урьд нь pool-ыг эвдэнэ
+      let crashed = null;
+      try { document.getElementById('fin-retry').onclick(); }
+      catch (e) { crashed = String(e && e.message); }
+      const poolIsKanji = !!(pool[0] && ('on' in pool[0]));
+      window.alert = _a; show('home');
+      return { crashed, deck, poolIsKanji, screen };
+    `);
+    ok('№4 ханз→давтах унахгүй', r.crashed === null, r.crashed || '');
+    ok('№4 давтахад pool нь ХАНЗ хэвээр', r.poolIsKanji, JSON.stringify(r));
+  }
+
+  // №17 — N5 ороод гарвал Irodori 0 үг харуулдаг байв.
+  {
+    const r = await c.ev(`
+      const _a = window.alert; window.alert = () => {};
+      go('irodori'); await new Promise(r=>setTimeout(r,150));
+      const before = document.getElementById('vocab-hint').textContent;
+      await loadN5();
+      startSession('flash', false, 'n5');
+      await new Promise(r=>setTimeout(r,120));
+      show('home');
+      go('irodori'); await new Promise(r=>setTimeout(r,200));
+      const after = document.getElementById('vocab-hint').textContent;
+      window.alert = _a;
+      return { before, after, same: before === after };
+    `);
+    ok('№17 N5-ийн дараа Irodori-гийн тоо хэвээр', r.same,
+      JSON.stringify(r));
+  }
+
+  // №19 — бүгдийг зөв хариулахад 20/21 (95.2%) гардаг байв.
+  {
+    const r = await c.ev(`
+      done = 7; queue = []; answered = true; updateBar();
+      const full = document.getElementById('pring').style.strokeDashoffset;
+      done = 7; queue = []; answered = false; updateBar();
+      const notYet = document.getElementById('pring').style.strokeDashoffset;
+      return { full: parseFloat(full), notYet: parseFloat(notYet) };
+    `);
+    ok('№19 сүүлийн картыг давхар тоолохгүй', Math.abs(r.full) < 0.001,
+      JSON.stringify(r));
+    ok('№19 хариулаагүй байхад дүүрэхгүй', r.notYet > 0.5, JSON.stringify(r));
+  }
+
+  // №16 — хоолой хожуу ирэхэд «бичих» горимд хариулт задардаг байв.
+  {
+    const r = await c.ev(`
+      const _a = window.alert; window.alert = () => {};
+      startSession('type', false, 'book');
+      await new Promise(r=>setTimeout(r,120));
+      const hiddenAtStart = document.getElementById('btn-speak').hidden;
+      pickVoice();                    // хоолой хожуу ирэв
+      const hiddenAfterVoices = document.getElementById('btn-speak').hidden;
+      reveal();
+      const hiddenAfterReveal = document.getElementById('btn-speak').hidden;
+      window.alert = _a; show('home');
+      return { hiddenAtStart, hiddenAfterVoices, hiddenAfterReveal };
+    `);
+    ok('№16 «бичих»-д дуу товч эхэндээ нуугдсан', r.hiddenAtStart === true,
+      JSON.stringify(r));
+    ok('№16 хоолой ирсэн ч нуугдсан хэвээр', r.hiddenAfterVoices === true,
+      JSON.stringify(r));
+  }
+
+  // №1 — өөр таб бичсэнийг уусгана, дарж бичихгүй.
+  {
+    const r = await c.ev(`
+      // Өмнөх хэсгүүдийн үлдэгдлийг цэвэрлэнэ — эс тэгвэл түлхүүрийн
+      // тоо таарахгүй: saveProgress нь дискэн дээрхтэй уусгадаг.
+      localStorage.removeItem('irodori.progress.v1');
+      progress = { A: { n: 5, b: 2, d: 0, c: 5, w: 0 } };
+      saveProgress();
+      // өөр таб B-г нэмэв
+      const disk = JSON.parse(localStorage.getItem('irodori.progress.v1'));
+      disk.B = { n: 3, b: 1, d: 0, c: 3, w: 0 };
+      localStorage.setItem('irodori.progress.v1', JSON.stringify(disk));
+      // энэ таб нь B-г мэдэхгүй байж дахин бичнэ
+      progress.A.n = 6;
+      saveProgress();
+      const out = JSON.parse(localStorage.getItem('irodori.progress.v1'));
+      progress = {};
+      return { keys: Object.keys(out).sort(), aN: out.A && out.A.n };
+    `);
+    ok('№1 өөр табын явц устахгүй',
+      r.keys.length === 2 && r.keys[0] === 'A' && r.keys[1] === 'B',
+      JSON.stringify(r));
+    ok('№1 өөрийн шинэ утга үлдэнэ', r.aN === 6, JSON.stringify(r));
+  }
+
+  // №9 — амжилтгүй татал кэшийг хордуулдаг байв.
+  {
+    const r = await c.ev(`
+      const js = await (await fetch('app.js')).text();
+      return { poisons: /bookCache\\[b\\] *= *\\[\\]/.test(js),
+               cachesOnlyOnSuccess: js.indexOf('бүтэлгүйтлийг КЭШЛЭХГҮЙ') > 0 };
+    `);
+    ok('№9 амжилтгүй таталыг кэшлэхгүй', !r.poisons, JSON.stringify(r));
+  }
+
+  // №5 / №10 / №12 — service worker
+  {
+    const r = await c.ev(`
+      const t = await (await fetch('sw.js')).text();
+      return {
+        addAll: /c\\.addAll\\(CORE\\)/.test(t),
+        audioJson: t.indexOf("'./data/audio.json'") > 0,
+        ownCachesOnly: /k\\.indexOf\\('shell-'\\) *=== *0/.test(t),
+        exactFirst: /caches\\.match\\(req\\)\\s*\\n?\\s*\\.then/.test(t),
+      };
+    `);
+    ok('№5 sw: CORE-ыг addAll (алдаа залгихгүй)', r.addAll, JSON.stringify(r));
+    ok('№10 sw: audio.json урьдчилан кэшлэнэ', r.audioJson, JSON.stringify(r));
+    ok('№12 sw: зөвхөн ӨӨРИЙН кэшийг устгана', r.ownCachesOnly, JSON.stringify(r));
+  }
+
+  // №20 / №21 — үхсэн код
+  {
+    const r = await c.ev(`
+      const js = await (await fetch('app.js')).text();
+      const html = await (await fetch('index.html')).text();
+      return { bookName: js.indexOf('BOOK_NAME') >= 0,
+               lastSpeechError: js.indexOf('lastSpeechError') >= 0,
+               nVocab: js.indexOf('n-vocab') >= 0,
+               dueCard: html.indexOf('id="due-card"') >= 0 };
+    `);
+    ok('№20 BOOK_NAME хасагдсан', !r.bookName);
+    ok('№20 lastSpeechError хасагдсан', !r.lastSpeechError);
+    ok('№21 n-vocab хасагдсан', !r.nVocab);
+    ok('№21 due-card id хасагдсан', !r.dueCard);
+  }
+
+  console.log('\n[10] .busy — дасгалын үед дэвсгэр зогсоно');
   await c.ev('queue = ALL.slice(0,2); deck="vocab"; mode="flash"; enterStudy(); return 1');
   await sleep(100);
   ok('дасгал дээр .busy тавигдсан',

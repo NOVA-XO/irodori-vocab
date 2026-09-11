@@ -31,17 +31,55 @@ as $$
 $$;
 
 -- ── Явц хадгалах: байхгүй бол үүсгэж, байвал шинэчилнэ ──────────────────
+-- Урьд нь ДАРЖ бичдэг байв. Хоёр төхөөрөмж зэрэг нийлүүлэхэд хоёулаа
+-- ИЖИЛ хуучин хуулбарыг уншиж, өөрсдийнхөө нэмээд буцааж бичдэг тул
+-- СҮҮЛИЙНХ нь эхнийхийн шинэ картыг бүрэн устгадаг байсан.
+--
+-- Дүрэм нь клиентийн `mergeProgress()`-той ИЖИЛ: илүү олон удаа
+-- давтсан (`n`) нь ялна; тэнцвэл илүү өндөр хайрцаг (`b`).
+--
+-- `for update` мөрийн түгжээ нь зэрэг дуудалтыг дараалалд оруулна.
+-- Буцаах төрөл өөрчлөгдсөн (void → jsonb) тул хуучныг УНАГААНА.
+drop function if exists public.put_progress(text, jsonb);
+
 create or replace function public.put_progress(p_code text, p_data jsonb)
-returns void
-language sql
+returns jsonb
+language plpgsql
 security definer
 set search_path = public
-as $$
+as $pp$
+declare
+  res jsonb;
+  k   text;
+  a   jsonb;
+  b   jsonb;
+begin
+  if p_code is null or length(p_code) < 8 then
+    raise exception 'bad code';
+  end if;
+
   insert into public.progress (code, data, updated_at)
-  values (p_code, p_data, now())
-  on conflict (code) do update
-    set data = excluded.data, updated_at = now();
-$$;
+  values (p_code, '{}'::jsonb, now())
+  on conflict (code) do nothing;
+
+  select data into res from public.progress where code = p_code for update;
+  res := coalesce(res, '{}'::jsonb);
+
+  for k in select jsonb_object_keys(coalesce(p_data, '{}'::jsonb)) loop
+    a := res -> k;
+    b := p_data -> k;
+    if a is null
+       or coalesce((b ->> 'n')::int, 0) >  coalesce((a ->> 'n')::int, 0)
+       or (coalesce((b ->> 'n')::int, 0) = coalesce((a ->> 'n')::int, 0)
+           and coalesce((b ->> 'b')::int, 0) > coalesce((a ->> 'b')::int, 0)) then
+      res := jsonb_set(res, array[k], b, true);
+    end if;
+  end loop;
+
+  update public.progress set data = res, updated_at = now() where code = p_code;
+  return res;                      -- клиент энээс буцааж уусгана
+end;
+$pp$;
 
 -- Анон хэрэглэгчид ЗӨВХӨН энэ хоёр функцийг дуудах эрх өгнө.
 revoke all on function public.get_progress(text) from public;
