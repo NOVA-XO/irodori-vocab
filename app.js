@@ -183,7 +183,7 @@ function saveProgress() {
 }
 
 const KEY_D = 'irodori.days.v1';
-let progress = load(KEY_P, {});
+let progress = load(KEY_P, {});          // доор `cleanProgress`-оор шүүнэ
 /* Өдөр бүрийн хариултын тоо ба дараалсан өдрийн тоо. Явц (хайрцаг) удаан
    хөдөлдөг тул ӨДӨР ТУТМЫН биелэлтийг тусад нь харуулах хэрэгтэй. */
 let days = load(KEY_D, { last: -1, streak: 0, n: 0 });
@@ -229,6 +229,79 @@ const backOf = it => (settings.script === 'kana') ? it.jp : (it.kana || '');
    «бичих» нь аль хэдийн урвуу, «сонсох» нь дуунаас эхэлдэг. */
 const isRev = () => deck === 'vocab' && settings.dir === 'mn2jp'
   && (mode === 'flash' || mode === 'choice');
+
+/* ── Импортын АРИУТГАЛ ────────────────────────────────────────────
+ *
+ * Нөөц файл нь `settings` ба `progress`-ыг БҮХЭЛД нь солино. Файл нь
+ * хэрэглэгчийн гараас ирдэг тул төрөл нь ямар ч байж болно. Довтолгооны
+ * шалгалтад дараах нь аппыг унагав (браузерт баталсан):
+ *   settings.les     = "мөр"   → Cannot create property 'starter' on string
+ *   settings.kgroups = 42      → kgroups.includes is not a function
+ *   progress['x']    = null    → Cannot read properties of null
+ *
+ * Тиймээс ирсэн утгыг ИТГЭЛГҮЙГЭЭР дахин байгуулна: төрөл нь таарахгүй
+ * бол анхдагчаар солино. */
+/* Номын түлхүүр. `BOOK_FILE` нь хамаагүй доор тодорхойлогддог тул
+   `cleanSettings` түүнийг ашиглаж БОЛОХГҮЙ — модуль ачаалагдах үед
+   TDZ алдаа өгнө. */
+const BOOKS = ['starter', 'el1', 'el2', 'n5'];
+const KGROUPS = ['gojuon', 'dakuten', 'yoon'];
+const arrOf = (v, ok) => Array.isArray(v) ? v.filter(ok) : null;
+
+function cleanSettings(v) {
+  const d = {
+    lessons: [1, 2, 3], ref: false, script: 'kanji', kgroups: ['gojuon'],
+    goal: 20, dir: 'jp2mn', kjn: [5], fx: 1, what: 'word',
+    book: 'starter', les: {}, n5les: [1, 2, 3],
+  };
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return d;
+  const num = x => typeof x === 'number' && isFinite(x);
+  const out = Object.assign({}, d);
+  if (BOOKS.includes(v.book)) out.book = v.book;
+  out.ref = !!v.ref;
+  out.fx = v.fx ? 1 : 0;
+  if (v.script === 'kana' || v.script === 'kanji') out.script = v.script;
+  if (v.dir === 'mn2jp' || v.dir === 'jp2mn') out.dir = v.dir;
+  if (v.what === 'word' || v.what === 'kanji') out.what = v.what;
+  // Зорилт 0 бол хуваалт Infinity болно — доод хязгаар 1.
+  if (num(v.goal)) out.goal = Math.max(1, Math.min(500, Math.round(v.goal)));
+  out.kgroups = arrOf(v.kgroups, x => KGROUPS.includes(x)) || d.kgroups;
+  if (!out.kgroups.length) out.kgroups = d.kgroups;
+  out.kjn = arrOf(v.kjn, num) || d.kjn;
+  out.n5les = arrOf(v.n5les, num) || d.n5les;
+  out.les = {};
+  if (v.les && typeof v.les === 'object' && !Array.isArray(v.les)) {
+    for (const b of BOOKS) {
+      const ls = arrOf(v.les[b], num);
+      if (ls) out.les[b] = ls;
+    }
+  }
+  if (v.last && typeof v.last === 'object' && !Array.isArray(v.last)) out.last = v.last;
+  return out;
+}
+
+function cleanProgress(v) {
+  const out = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  const n = x => (typeof x === 'number' && isFinite(x)) ? x : 0;
+  for (const id of Object.keys(v)) {
+    if (id === '__proto__' || id === 'constructor' || id === 'prototype') continue;
+    const p = v[id];
+    if (!p || typeof p !== 'object' || Array.isArray(p)) continue;
+    out[id] = {
+      b: Math.max(0, Math.min(BOXES.length - 1, Math.round(n(p.b)))),
+      d: Math.round(n(p.d)), n: Math.max(0, Math.round(n(p.n))),
+      c: Math.max(0, Math.round(n(p.c))), w: Math.max(0, Math.round(n(p.w))),
+    };
+  }
+  return out;
+}
+
+/* Гараар засагдсан, хуучин хэлбэртэй, эсвэл өөр хувилбараас үлдсэн
+   localStorage-аас хамгаална. Энэ нь `cleanSettings` / `cleanProgress`
+   хоёрын ДАРАА байх ёстой — тэдгээр нь `const` (TDZ). */
+progress = cleanProgress(progress);
+settings = cleanSettings(settings);
 
 function grade(id, ok) {
   const p = progress[id] || { b: 0, d: 0, n: 0, c: 0, w: 0 };
@@ -323,7 +396,9 @@ async function syncNow(quiet) {
     if (!quiet) syncSay('нийлүүлж байна…');
     const remote = await rpc('get_progress', { p_code: code });
     if (syncCode !== code) return;             // энэ хооронд код солигдов
-    const merged = mergeProgress(progress, remote || {});
+    // Үүлнээс ирсэн өгөгдлийг ч ИТГЭЛГҮЙГЭЭР шүүнэ: кодоо мэддэг хэн ч
+    // ямар ч хэлбэрийн jsonb бичиж чадна.
+    const merged = mergeProgress(progress, cleanProgress(remote || {}));
     progress = merged;
     saveProgress();
     // `put_progress` нь СЕРВЕР дээр уусгаж, эцсийн үр дүнг буцаана.
@@ -358,6 +433,8 @@ function refreshSync() {
    id-ийн угтвар ном бүрд өөр (L / E1 / E2) тул явц хольцолдохгүй. */
 const BOOK_FILE = { starter: 'data/vocab.json', el1: 'data/vocab-el1.json',
                     el2: 'data/vocab-el2.json', n5: 'data/vocab-n5.json' };
+// Хоёр газар жагсаалт барихгүй: дээрх `BOOKS`-той таарч байх ёстой.
+BOOKS.forEach(b => { if (!BOOK_FILE[b]) throw new Error('ном дутуу: ' + b); });
 const bookCache = {};
 
 /* Ном сонгох дараалал: дарлага бүрд дугаар өгнө. Хоёр номыг хурдан
@@ -851,6 +928,14 @@ function esc(t) {
   return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/** АТРИБУТЫН дотор тавих текст. `esc()` нь хашилтыг орлуулдаггүй тул
+ *  `id="A" onmouseover="…"` гэсэн утга атрибутаас ГАРЧ шинэ атрибут
+ *  үүсгэдэг (2026-09-11-ний довтолгооны шалгалтад браузер дотор
+ *  баталсан). Атрибутад ҮРГЭЛЖ үүнийг хэрэглэнэ, `esc()`-ийг БИШ. */
+function escA(t) {
+  return esc(t).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function pitchHTML(acc) {
   if (!acc) return '';
   var out = '', buf = '', i, ch;
@@ -908,7 +993,7 @@ function reveal() {
     // (JO-/JK-<юникод>). Ханзны нүүрэн дэх 🔊 нь жишээ ҮГИЙГ сонсгоно.
     const code = cur.id.split('-')[1];
     const play = id => hasAudio(id)
-      ? '<button class="rsp" data-a="' + id + '" title="Сонсох">🔊</button>' : '';
+      ? '<button class="rsp" data-a="' + escA(id) + '" title="Сонсох">🔊</button>' : '';
     const on = cur.on.length ? '<div><b>音</b> <span class="jp">' +
       esc(cur.on.join('・')) + '</span>' + play('JO-' + code) + '</div>' : '';
     const kun = cur.kun.length ? '<div><b>訓</b> <span class="jp">' +
@@ -962,7 +1047,7 @@ function reveal() {
     const exId = 'EX-' + cur.id;
     $('a-kj').innerHTML = '<div class="exs"><span class="acclab">жишээ</span>'
       + '<b class="jp">' + esc(cur.ex) + '</b>'
-      + (hasAudio(exId) ? '<button class="rsp" data-a="' + exId + '" title="Сонсох">🔊</button>' : '')
+      + (hasAudio(exId) ? '<button class="rsp" data-a="' + escA(exId) + '" title="Сонсох">🔊</button>' : '')
       + '</div>';
     $('a-kj').hidden = false;
   }
@@ -1309,7 +1394,7 @@ function refreshStats() {
   if (!statTab) statTab = STAT_TABS.some(t => t.k === settings.book) ? settings.book : 'starter';
   const tabs = $('seg-stat');
   tabs.innerHTML = STAT_TABS.map(t =>
-    '<button data-s="' + t.k + '" aria-pressed="' + (t.k === statTab) + '">'
+    '<button data-s="' + escA(t.k) + '" aria-pressed="' + (t.k === statTab) + '">'
     + statName(t) + '<small>' + statSet(t.k).length + '</small></button>').join('');
   tabs.querySelectorAll('button').forEach(b =>
     b.onclick = () => { statTab = b.dataset.s; refreshStats(); });
@@ -1552,10 +1637,9 @@ $('file-import').onchange = e => {
   const f = e.target.files[0]; if (!f) return;
   f.text().then(t => {
     const d = JSON.parse(t);
-    if (d.progress) { progress = d.progress; saveProgress(); }
-    if (d.settings) { settings = d.settings; save(KEY_S, settings); }
-    if (!settings.les) settings.les = {};
-    if (!settings.book) settings.book = 'starter';
+    // Файл нь хэрэглэгчийн гараас ирдэг — төрөл нь ямар ч байж болно.
+    if (d.progress) { progress = cleanProgress(d.progress); saveProgress(); }
+    if (d.settings) { settings = cleanSettings(d.settings); save(KEY_S, settings); }
     // Тохиргоо нь 初級1 гэж хэлж байхад `ALL` нь 入門 хэвээр үлдэж,
     // харуулж буй ном ба асуудаг үг ЗӨРДӨГ байв. Номыг нь ачаалсны
     // ДАРАА л дэлгэцийг шинэчилнэ.
@@ -1630,7 +1714,7 @@ function renderThemes() {
   if (!box) return;
   const cur = curTheme();
   box.innerHTML = THEMES.map(t =>
-    '<button data-th="' + t.k + '" aria-pressed="' + (t.k === cur) + '">'
+    '<button data-th="' + escA(t.k) + '" aria-pressed="' + (t.k === cur) + '">'
     + '<span class="th-g jpd">' + t.g + '</span>'
     + '<span><b>' + esc(t.n) + '</b><span>' + esc(t.d) + '</span>'
     + '<span class="th-sw">' + t.c.map(c =>
