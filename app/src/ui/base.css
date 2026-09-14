@@ -1,0 +1,17 @@
+/* Түр суурь — бодит токен давхаргыг дараагийн алхамд app.css/themes.css-ээс порт хийнэ */
+:root{
+  --bg:#0d1117; --card:#161b22; --ink:#e6edf3; --ink-2:#8b949e;
+  --line:#30363d; --accent:#2f81f7;
+  --ui:"Segoe UI","Noto Sans",system-ui,Arial,sans-serif;
+  /* Хөдөлгөөний токенууд (Astra шалгаж засна) */
+  --dur-fast:140ms; --dur:220ms; --dur-slow:420ms;
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --ease-in-out:cubic-bezier(.65,0,.35,1);
+}
+:root[data-theme="blue"]{ --bg:#061523; --card:#0e2536; --accent:#4fc3f7; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);
+  min-height:100dvh;-webkit-font-smoothing:antialiased}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}

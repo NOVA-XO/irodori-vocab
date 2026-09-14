@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Мартчихлаа</title>
+  <!-- Загварыг эрт тавьж анивчихаас сэргийлнэ (vanilla аппын логиктой ижил) -->
+  <script>
+    try {
+      var t = JSON.parse(localStorage.getItem('irodori.theme.v1') || '""') || 'minimal';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { document.documentElement.setAttribute('data-theme', 'minimal'); }
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>
