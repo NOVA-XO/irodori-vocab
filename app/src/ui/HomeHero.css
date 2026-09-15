@@ -1,0 +1,163 @@
+.home-hero {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 1.5rem;
+  min-height: 28rem;
+  padding: 2rem 1rem;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.home-hero__stage {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 19rem;
+}
+
+.home-hero__perspective {
+  width: 0;
+  height: 0;
+  perspective: 1100px;
+  perspective-origin: center;
+}
+
+.home-hero__ring {
+  position: relative;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+  animation: home-hero-spin 40s linear infinite;
+}
+
+.home-hero__slot {
+  position: absolute;
+  top: -76px;
+  left: -66px;
+  width: 132px;
+  height: 152px;
+  transform-style: preserve-3d;
+}
+
+.home-hero__card {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--box-bd, var(--line));
+  border-radius: var(--box-r, 1rem);
+  background: var(--card);
+  color: var(--ink);
+  font-family: var(--jpd);
+  font-size: 1.65rem;
+  line-height: 1.5;
+  text-align: center;
+  overflow-wrap: anywhere;
+  backface-visibility: hidden;
+  transform: translateZ(0) scale(1);
+}
+
+.home-hero__card--leaving {
+  animation: home-hero-fly var(--dur-slow, 420ms)
+    var(--ease-out, ease-out) both;
+  animation-duration: min(var(--dur-slow, 420ms), 420ms);
+}
+
+.home-hero__start {
+  position: relative;
+  box-sizing: border-box;
+  min-height: 3.75rem;
+  padding: 0.9rem 3rem;
+  border: 2px solid var(--accent);
+  border-radius: var(--box-r, 1rem);
+  background: var(--accent);
+  color: var(--bg);
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform var(--dur, 160ms) var(--ease-out, ease-out),
+    opacity var(--dur, 160ms) var(--ease-out, ease-out);
+}
+
+.home-hero__start:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.home-hero__start:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.home-hero__start:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 5px;
+}
+
+.home-hero__start:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.home-hero__empty {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+@keyframes home-hero-spin {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+@keyframes home-hero-fly {
+  from {
+    transform: translateZ(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateZ(180px) scale(1.3);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-hero__perspective {
+    transform: scale(0.62);
+  }
+
+  .home-hero__stage {
+    height: 14rem;
+  }
+
+  .home-hero {
+    min-height: 23rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero__ring {
+    animation: none;
+    transform: rotateY(0deg);
+  }
+
+  .home-hero__card--leaving {
+    animation: none;
+  }
+
+  .home-hero__start {
+    transition: none;
+  }
+
+  .home-hero__start:hover:not(:disabled),
+  .home-hero__start:active:not(:disabled) {
+    transform: none;
+  }
+}
