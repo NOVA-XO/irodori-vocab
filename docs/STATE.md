@@ -270,6 +270,18 @@ progress-д мөр үлдээнэ. Анон түлхүүрт DELETE эрх ба�
 `{"n":"abc"}` ирвэл cast алдаа өгч бүх гүйлгээ унана. `jnum(jsonb)`
 туслах функц ашиглана: `jsonb_typeof(v) = 'number'` эсэхийг шалгана.
 
+### 2.35 Astra (codex exec) — FOREGROUND + reasoning=low
+gpt-6-astra-г `nohup ... &` background-аар ажиллуулбал streaming хариултын
+БИЕ алдагдаж, зөвхөн промтын echo үлддэг ("codex" хэсэг, "tokens used"
+footer гарахгүй). Мөн xhigh reasoning + том даалгавар нь хоосон хариу өгдөг.
+Оношилгоо: энгийн `exec ... "Reply hello"` foreground-д зөв ажилладаг.
+
+**Дүрэм:** Astra-г FOREGROUND-д (background биш) `-c model_reasoning_effort=low`
+ба ЖИЖИГ, нэг үр дүнтэй даалгавраар ажиллуул. Гаралт нь CRLF тул fenced
+блок задлахад `?
+` хэрэглэ. 2026-09-15-нд StudyCard.jsx/css амжилттай
+гаргаж, browser-д баталсан (5/5).
+
 ### 2.32 Codex нь ДОВТОЛГООНЫ аудитаас татгалздаг
 «RED-TEAM», «attacker», «exploit» гэсэн үг бүхий даалгаварт OpenAI-ийн
 шүүлтүүр `possible cybersecurity risk` гэж хариулж, «Trusted Access for

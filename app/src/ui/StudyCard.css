@@ -1,0 +1,200 @@
+:root {
+  --dur-fast: 140ms;
+  --dur: 220ms;
+  --dur-slow: 420ms;
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+}
+
+.study-card,
+.study-card * {
+  box-sizing: border-box;
+}
+
+.study-card {
+  width: min(100%, 34rem);
+  margin-inline: auto;
+  color: var(--ink);
+  border-radius: var(--box-r);
+}
+
+.study-card:focus-visible,
+.study-card button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.study-card__viewport {
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.study-card__motion {
+  perspective: 1100px;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+  transform: translateX(var(--drag-x)) rotate(var(--drag-angle));
+  opacity: 1;
+  transition:
+    transform var(--dur) var(--ease-out),
+    opacity var(--dur) var(--ease-out);
+}
+
+.study-card__motion.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+.study-card__motion.is-exiting {
+  opacity: 0;
+  pointer-events: none;
+  transition-duration: var(--dur-slow);
+}
+
+.study-card__flip {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.study-card__flip.is-revealed {
+  transform: rotateY(180deg);
+}
+
+.study-card__face {
+  position: relative;
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+  min-height: 18rem;
+  padding: 2rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--box-r);
+  background: var(--card);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.study-card__face::before,
+.study-card__face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.study-card__face::before {
+  background: var(--ng);
+  opacity: var(--wrong-opacity);
+}
+
+.study-card__face::after {
+  background: var(--ok);
+  opacity: var(--correct-opacity);
+}
+
+.is-dragging .study-card__face::before,
+.is-dragging .study-card__face::after {
+  transition: none;
+}
+
+.study-card__text {
+  position: relative;
+  z-index: 1;
+  white-space: pre-wrap;
+}
+
+.study-card__front {
+  font-family: var(--jpd);
+  font-size: clamp(2.5rem, 9vw, 5rem);
+  line-height: 1.3;
+}
+
+.study-card__back {
+  transform: rotateY(180deg);
+  font-size: clamp(1.25rem, 5vw, 2rem);
+  line-height: 1.5;
+}
+
+.study-card__controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem 1rem;
+}
+
+.study-card button {
+  min-width: 5rem;
+  min-height: 3rem;
+  padding: 0.65rem 1.5rem;
+  border: 2px solid var(--accent);
+  border-radius: var(--box-r);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+
+.study-card button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.study-card button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.study-card .study-card__wrong {
+  border-color: var(--ng);
+  color: var(--ng);
+}
+
+.study-card .study-card__correct {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .study-card *,
+  .study-card *::before,
+  .study-card *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .study-card__motion,
+  .study-card__flip,
+  .study-card__flip.is-revealed,
+  .study-card__back,
+  .study-card button:active:not(:disabled) {
+    transform: none;
+  }
+
+  .study-card__flip {
+    transform-style: flat;
+  }
+
+  .study-card__front {
+    visibility: visible;
+  }
+
+  .study-card__back {
+    visibility: hidden;
+  }
+
+  .study-card__flip.is-revealed .study-card__front {
+    visibility: hidden;
+  }
+
+  .study-card__flip.is-revealed .study-card__back {
+    visibility: visible;
+  }
+}
