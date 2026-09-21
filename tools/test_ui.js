@@ -481,7 +481,12 @@ async function run(c) {
     ok('«бодож» төрөлд микрофон гарахгүй',
       await c.ev('return document.getElementById("ex-speak").hidden === true'));
 
-    // Бичгийн хэлбэр — апп даяарх НЭГ тохиргоо (`settings.script`).
+    /* Бичгийн хэлбэр — апп даяарх НЭГ тохиргоо (`settings.script`).
+       Асуулт нь САНАМСАРГҮЙ сонгогддог тул ханзтайг нь ТУЛГАЖ өгнө:
+       `ATMはどこですか。` гэх мэт ханзгүй асуулт таарвал «漢字 горимд
+       ханз гарна» гэсэн шалгуур зүй ёсоор унадаг байв. */
+    await c.ev('exQs[exIdx] = EXAM.items.find(x => x.id === "S01-01");'
+      + 'renderExam(); return 1;');
     const kanaOn = await c.ev('settings.script = "kana"; renderExam();'
       + 'await new Promise(r=>setTimeout(r,150));'
       + 'const t = document.getElementById("ex-q").textContent;'
