@@ -264,8 +264,14 @@ function tickDay() {
   days.n++;
   save(KEY_D, days);
 }
-let settings = load(KEY_S, { lessons: [1, 2, 3], ref: false, script: 'kanji', kgroups: ['gojuon'] });
-if (!settings.script) settings.script = 'kanji';   // хуучин хадгалсан тохиргоог нөхнө
+const SCRIPTS = ['kana', 'ruby', 'kanji'];
+let settings = load(KEY_S, { lessons: [1, 2, 3], ref: false, script: 'kana', kgroups: ['gojuon'] });
+/* Бичгийн хэлбэр — НЭГ тохиргоо, апп даяар. Профайл дэлгэцээс нэг удаа
+   сонгоно; өмнө нь үгийн сан ба шалгалт тус тусдаа тохиргоотой байв.
+     kana  — зөвхөн кана (ӨГӨГДМӨЛ: шинэ сурагч ханз уншиж чадахгүй)
+     ruby  — ханз, дээр нь жижиг канаар уншлага (ふりがな)
+     kanji — цэвэр ханз, туслалцаагүй */
+if (!SCRIPTS.includes(settings.script)) settings.script = 'kana';
 if (!settings.kgroups) settings.kgroups = ['gojuon'];
 if (!settings.goal) settings.goal = 20;
 if (!settings.dir) settings.dir = 'jp2mn';
@@ -279,6 +285,144 @@ if (!settings.book) settings.book = 'starter';
 if (!settings.les) {
   settings.les = {};
   if (settings.lessons) settings.les[settings.book] = settings.lessons;
+}
+
+/* ══ ふりがな — ханз ба кана хоёрыг зэрэгцүүлэх ═══════════════════════
+   Аль кана аль ханзанд харьяалагдахыг олно. Ханзгүй хэсгүүд нь ЗАНГУУ:
+   тэдгээр нь канан хэлбэрт ЯГ давтагдана. Хоёр зангууны хооронд үлдсэн
+   кана нь дундах ханзны уншлага болно. Дэлгэрэнгүй ба барьсан урхинууд:
+   docs/STATE.md §2.38. Энэ нь `tools/build_exam.py`-гийн алгоритмын
+   ХУУЛБАР — шалгалт нь бэлдсэн хосоо хэрэглэдэг, үгийн сан нь энэ
+   функцээр яг тэр цагт тооцуулна (6287 үгийг урьдчилж хадгалах нь
+   өгөгдлийг дэмий тарга авахуулна). */
+const RB_KANJI = /[々㐀-鿿]/;
+// Араб тоо нь ханзтай ижил — уншлагатай. Дараах ханзнаасаа САЛГАХГҮЙ:
+// тоолуурын дуудлага өмнөх тооноос хамаарна (3階 さんがい · 5階 ごかい).
+const RB_DIGIT = /[0-9０-９,，]/;
+const RB_LATIN = /[A-Za-zＡ-Ｚａ-ｚ]/;
+const RB_WS = /[\s　]+/g;
+
+function cbits(n) { let c = 0; while (n) { c += n & 1; n >>= 1; } return c; }
+
+function rbKind(c) {
+  if (RB_KANJI.test(c) || RB_DIGIT.test(c)) return 'b';
+  if (RB_LATIN.test(c)) return 'l';       // ХОЁРДМОЛ — доор хоёуланг нь турших
+  return 'a';
+}
+
+/** Латины хоёрдмол байдлыг задалж боломжит хуваалтуудыг гаргана.
+ *  Зангуу гэж үзсэн хувилбар ЭХЭЛНЭ — латин нь канан хэлбэрт хэвээрээ
+ *  байвал уншигдахгүй (ABC会社 → ABCがいしゃ, гэхдээ M → エム). */
+function rbLayouts(s) {
+  const parts = [];
+  for (const ch of s) {
+    const k = rbKind(ch);
+    if (parts.length && parts[parts.length - 1][0] === k) parts[parts.length - 1][1] += ch;
+    else parts.push([k, ch]);
+  }
+  const idx = [];
+  parts.forEach((p, i) => { if (p[0] === 'l') idx.push(i); });
+  const masks = [];
+  for (let m = 0; m < (1 << idx.length); m++) masks.push(m);
+  masks.sort((a, b) => cbits(a) - cbits(b));
+  return masks.map(mask => {
+    const kinds = parts.map(p => p[0]);
+    idx.forEach((i, bit) => { kinds[i] = ((mask >> bit) & 1) ? 'b' : 'a'; });
+    const out = [];
+    kinds.forEach((k, i) => {
+      const isB = k === 'b';
+      if (out.length && out[out.length - 1][0] === isB) out[out.length - 1][1] += parts[i][1];
+      else out.push([isB, parts[i][1]]);
+    });
+    return out;
+  });
+}
+
+/** [[текст, уншлага], …] буцаана. Чадаагүй ЭСВЭЛ эргэлзээтэй бол null —
+ *  буруу ふりがな харуулахаас огт харуулахгүй нь дээр. */
+function rubyPairs(surface, reading) {
+  surface = (surface || '').replace(RB_WS, '');
+  reading = (reading || '').replace(RB_WS, '');
+  // Латиныг ч оруулна: `Mにします。` → `エムにします。` гэж уншигддаг тул
+  // ханз/тоогүй ч ふりがな хэрэгтэй байж болно. Хэрэв латин нь канан
+  // хэлбэрт хэвээрээ байвал доорх шийдэгч уншлагагүй хос буцаана.
+  if (!surface || !reading
+      || !/[々㐀-鿿0-9０-９A-Za-zＡ-Ｚａ-ｚ]/.test(surface)) return null;
+  const found = [];
+  const solve = (parts, pi, ri, acc) => {
+    if (found.length > 1) return;                 // эргэлзээ — цаашид хэрэггүй
+    if (pi === parts.length) {
+      if (ri === reading.length) found.push(acc.slice());
+      return;
+    }
+    const isB = parts[pi][0], text = parts[pi][1];
+    if (!isB) {                                   // зангуу — яг таарна
+      if (reading.substr(ri, text.length) === text) {
+        acc.push([text, '']);
+        solve(parts, pi + 1, ri + text.length, acc);
+        acc.pop();
+      }
+      return;
+    }
+    // Доод хязгаарыг ЗӨВХӨН ханзаар тоолно: `1,000円` нь 7 тэмдэгт
+    // боловч уншлага нь ердөө 4 кана.
+    let need = 0;
+    for (const c of text) if (RB_KANJI.test(c)) need++;
+    need = Math.max(1, need);
+    if (pi + 1 === parts.length) {
+      if (reading.length - ri >= need) {
+        acc.push([text, reading.slice(ri)]);
+        found.push(acc.slice());
+        acc.pop();
+      }
+      return;
+    }
+    const nxt = parts[pi + 1][1];
+    let start = ri + need;
+    for (;;) {
+      const j = reading.indexOf(nxt, start);
+      if (j < 0) return;
+      acc.push([text, reading.slice(ri, j)]);
+      solve(parts, pi + 1, j, acc);
+      acc.pop();
+      start = j + 1;
+    }
+  };
+  for (const parts of rbLayouts(surface)) {
+    solve(parts, 0, 0, []);
+    if (found.length) break;      // эхний үр дүнтэй хувилбараар зогсоно
+  }
+  return found.length === 1 ? found[0] : null;
+}
+
+/** Хосуудыг элемент рүү <ruby><rt> болгож барина.
+ *
+ *  DOM зангаар — `innerHTML` ХЭРЭГЛЭХГҮЙ. Ингэснээр эдгээр цэгүүд нь
+ *  `textContent`-ийн адил тарилтаас бүрэн хамгаалагдсан хэвээр үлдэнэ
+ *  (docs/STATE.md §2.29). */
+function rubyDom(el, pairs) {
+  el.textContent = '';
+  el.classList.add('ruby');
+  for (const pair of pairs) {
+    const base = pair[0], read = pair[1];
+    if (!read) { el.appendChild(document.createTextNode(base)); continue; }
+    const r = document.createElement('ruby');
+    r.appendChild(document.createTextNode(base));
+    const rt = document.createElement('rt');
+    rt.textContent = read;
+    r.appendChild(rt);
+    el.appendChild(r);
+  }
+}
+
+/** Ханз+кана хосыг ふりがな-гаар бичнэ. Зэрэгцүүлж чадаагүй бол `plain`
+ *  текстийг тавиад `false` буцаана — дуудагч нь хуучин зан төлөвөө
+ *  хадгална. */
+function rubyInto(el, surface, reading, plain) {
+  const pairs = rubyPairs(surface, reading);
+  if (!pairs) { el.classList.remove('ruby'); el.textContent = plain; return false; }
+  rubyDom(el, pairs);
+  return true;
 }
 
 /* Асуултын нүүр талд юу харуулах вэ: ханзтай хэлбэр эсвэл кана уншлага.
@@ -312,7 +456,7 @@ const arrOf = (v, ok) => Array.isArray(v) ? v.filter(ok) : null;
 
 function cleanSettings(v) {
   const d = {
-    lessons: [1, 2, 3], ref: false, script: 'kanji', kgroups: ['gojuon'],
+    lessons: [1, 2, 3], ref: false, script: 'kana', kgroups: ['gojuon'],
     goal: 20, dir: 'jp2mn', kjn: [5], fx: 1, what: 'word',
     book: 'starter', les: {}, n5les: [1, 2, 3],
   };
@@ -322,7 +466,7 @@ function cleanSettings(v) {
   if (BOOKS.includes(v.book)) out.book = v.book;
   out.ref = !!v.ref;
   out.fx = v.fx ? 1 : 0;
-  if (v.script === 'kana' || v.script === 'kanji') out.script = v.script;
+  if (SCRIPTS.includes(v.script)) out.script = v.script;
   if (v.dir === 'mn2jp' || v.dir === 'jp2mn') out.dir = v.dir;
   if (v.what === 'word' || v.what === 'kanji') out.what = v.what;
   // Зорилт 0 бол хуваалт Infinity болно — доод хязгаар 1.
@@ -1172,7 +1316,20 @@ function reveal() {
     const back = backOf(cur);
     if (back && back !== faceOf(cur)) lines.push(back);
   }
-  $('a-kana').textContent = lines.join('   ');
+  /* ふりがな нь ЗӨВХӨН ар талд. Урд талд тавьбал таах ёстой уншлагыг нь
+     задлаад өгнө — дасгал утгагүй болно. Ар талд `にほん` гэж тусад нь
+     бичихээс `日本` дээр нь бичих нь илүү: аль дуудлага аль ханзных
+     болохыг харуулна. Зэрэгцүүлж чадаагүй ~2.6% үг дээр хуучин мөр
+     хэвээрээ үлдэнэ (rubyInto нь false буцаана). */
+  const ak = $('a-kana');
+  if (settings.script === 'ruby' && lines.length === 1
+      && cur.jp && cur.kana && cur.jp !== cur.kana
+      && rubyInto(ak, cur.jp, cur.kana, lines[0])) {
+    /* ふりがな тавигдлаа */
+  } else {
+    ak.classList.remove('ruby');
+    ak.textContent = lines.join('   ');
+  }
   $('a-mn').textContent = isRev() ? '' : (cur.mn || '');
   $('a-acc').innerHTML = cur.accent
     ? '<span class="acclab">өргөлт</span>' + pitchHTML(cur.accent) : '';
@@ -1631,7 +1788,15 @@ $('sel-all').onclick = () => { setLessons([...new Set(ALL.map(i => i.lesson))]);
 $('sel-none').onclick = () => { setLessons([]); refreshHome(); };
 $('inc-ref').onchange = e => { settings.ref = e.target.checked; save(KEY_S, settings); refreshHome(); };
 document.querySelectorAll('#seg-script button').forEach(b =>
-  b.onclick = () => { settings.script = b.dataset.s; save(KEY_S, settings); refreshHome(); });
+  b.onclick = () => {
+    settings.script = b.dataset.s;
+    save(KEY_S, settings);
+    refreshHome();
+    /* Шалгалт нь мөн үүнийг дагадаг тул түүний дэлгэцийг ч шинэчилнэ.
+       Дундуур нь сольсон бол одоогийн асуултыг тэр дор нь дахин зурна. */
+    refreshExamSeg();
+    if (screen === 'exam' && exQs.length) renderExam();
+  });
 document.querySelectorAll('#seg-dir button').forEach(b =>
   b.onclick = () => { settings.dir = b.dataset.d; save(KEY_S, settings); refreshHome(); });
 
@@ -1774,17 +1939,10 @@ let exN = load(KEY_EXN, 15);
 if (![10, 15, 20].includes(exN)) exN = 15;
 let exMode = load(KEY_EXM, 'think');
 if (!['think', 'speak'].includes(exMode)) exMode = 'think';
-/* Бичгийн хэлбэр — ГУРВАН сонголт (build_exam.py бүгдийг нь бэлддэг):
-     ruby  — ханз, дээр нь жижиг канаар уншлага (ふりがな). ӨГӨГДМӨЛ:
-             ханзыг СУРЧ байхад нь уншиж чадна, хоёрын хооронд сонгох
-             хэрэггүй.
-     kanji — цэвэр ханз, туслалцаагүй.
-     kana  — зөвхөн кана, ханз огт харагдахгүй. */
-const KEY_EXS = 'irodori.examscript.v1';
-let exScript = load(KEY_EXS, 'ruby');
-if (!['ruby', 'kanji', 'kana'].includes(exScript)) exScript = 'ruby';
-const exQ = q => (exScript === 'kana' ? q.qKana : q.q) || q.q;
-const exA = q => (exScript === 'kana' ? q.modelKana : q.model) || q.model;
+/* Шалгалт нь өөрийн гэсэн бичгийн тохиргоогүй — апп даяарх
+   `settings.script`-ийг дагана (профайл дэлгэцээс сонгоно). */
+const exQ = q => (settings.script === 'kana' ? q.qKana : q.q) || q.q;
+const exA = q => (settings.script === 'kana' ? q.modelKana : q.model) || q.model;
 
 /** Асуулт/хариултыг элемент рүү бичнэ. `ruby` горимд <ruby><rt> босгоно.
  *
@@ -1795,19 +1953,12 @@ const exA = q => (exScript === 'kana' ? q.modelKana : q.model) || q.model;
 function exInto(el, q, which) {
   const pairs = q && (which === 'a' ? q.modelRuby : q.qRuby);
   const plain = which === 'a' ? exA(q) : exQ(q);
-  el.textContent = '';
-  el.classList.toggle('ruby', exScript === 'ruby' && !!pairs);
-  if (exScript !== 'ruby' || !pairs) { el.textContent = plain; return; }
-  for (const pair of pairs) {
-    const base = pair[0], read = pair[1];
-    if (!read) { el.appendChild(document.createTextNode(base)); continue; }
-    const r = document.createElement('ruby');
-    r.appendChild(document.createTextNode(base));
-    const rt = document.createElement('rt');
-    rt.textContent = read;
-    r.appendChild(rt);
-    el.appendChild(r);
+  if (settings.script !== 'ruby' || !pairs) {
+    el.classList.remove('ruby');
+    el.textContent = plain;
+    return;
   }
+  rubyDom(el, pairs);
 }
 
 /* ГҮЙЛТИЙН ТЭМДЭГ — docs/STATE.md §2.36. */
@@ -1856,8 +2007,6 @@ function refreshExamSeg() {
   if (exMode === 'speak' && !examSpeakOK()) exMode = 'think';
   document.querySelectorAll('#seg-exam-mode button').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.m === exMode));
-  document.querySelectorAll('#seg-exam-script button').forEach(b =>
-    b.setAttribute('aria-pressed', b.dataset.s === exScript));
   const note = $('ex-mode-note');
   if (note) {
     note.textContent = !canListen
@@ -2043,8 +2192,6 @@ document.querySelectorAll('#seg-exam-n button').forEach(b =>
   b.onclick = () => { exN = +b.dataset.n; save(KEY_EXN, exN); refreshExamSeg(); });
 document.querySelectorAll('#seg-exam-mode button').forEach(b =>
   b.onclick = () => { exMode = b.dataset.m; save(KEY_EXM, exMode); refreshExamSeg(); });
-document.querySelectorAll('#seg-exam-script button').forEach(b =>
-  b.onclick = () => { exScript = b.dataset.s; save(KEY_EXS, exScript); refreshExamSeg(); });
 $('btn-exam').onclick = startExam;
 /** Шалгалтын дуу: VOICEVOX-ийн УРЬДЧИЛАН бэлдсэн бичлэгийг тоглуулна.
  *  Браузерын TTS нь төхөөрөмж бүрд өөр хоолой, өөр өргөлттэй тул жигд

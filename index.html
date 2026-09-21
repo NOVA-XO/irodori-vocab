@@ -8,9 +8,9 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21m">
-<link rel="stylesheet" href="app.css?v=2026-09-21m">
-<link rel="stylesheet" href="themes.css?v=2026-09-21m">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21n">
+<link rel="stylesheet" href="app.css?v=2026-09-21n">
+<link rel="stylesheet" href="themes.css?v=2026-09-21n">
 <!-- Сонгосон загварыг CSS-ээс ӨМНӨ тавина. Эс тэгвэл хуудас эхлээд
      анхдагч 和-гаар нэг анивчаад дараа нь солигдоно. Тиймээс энэ нь
      app.js дотор биш, ЭНД байх ёстой. -->
@@ -18,8 +18,8 @@
 document.documentElement.setAttribute("data-theme",t);}catch(e){
 document.documentElement.setAttribute("data-theme","minimal");}</script>
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21m">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21m">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21n">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21n">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -159,19 +159,13 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   </div>
 
   <div id="wrap-word">
-    <div class="step">四 · Үгийг юугаар харуулах</div>
-    <div class="seg" id="seg-script">
-      <button data-s="kanji"><b class="jp">漢字</b><span>名前 — ханзаар бичсэн хэлбэр</span></button>
-      <button data-s="kana"><b class="jp">ひらがな</b><span>なまえ — зөвхөн кана уншлага</span></button>
-    </div>
-
-    <div class="step">五 · Чиглэл</div>
+    <div class="step">四 · Чиглэл</div>
     <div class="seg" id="seg-dir">
       <button data-d="jp2mn"><b class="jp">日本語 → Монгол</b><span>Япон үгийг харж утгыг нь таана</span></button>
       <button data-d="mn2jp"><b>Монгол → <span class="jp">日本語</span></b><span>Утгыг харж япон үгийг нь таана — илүү хүнд</span></button>
     </div>
 
-    <div class="step">六 · Дасгал</div>
+    <div class="step">五 · Дасгал</div>
     <div class="modes">
       <button class="mode" data-mode="flash"><b>Флашкарт</b><span>Карт эргүүлж өөрөө дүгнэнэ</span></button>
       <button class="mode" data-mode="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно</span></button>
@@ -387,13 +381,6 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
     </div>
     <p class="hint" id="ex-mode-note"></p>
 
-    <div class="step">Бичиг</div>
-    <div class="seg" id="seg-exam-script">
-      <button data-s="ruby"><b class="jp">ふりがな</b><span>Ханз, дээр нь жижиг канаар уншлага</span></button>
-      <button data-s="kanji"><b class="jp">漢字</b><span>Цэвэр ханз — туслалцаагүй</span></button>
-      <button data-s="kana"><b class="jp">かな</b><span>Зөвхөн кана — ханз уншиж чадахгүй бол</span></button>
-    </div>
-
     <div class="step">Хэдэн асуулт вэ</div>
     <div class="seg" id="seg-exam-n">
       <button data-n="10"><b>10 асуулт</b><span>богино</span></button>
@@ -518,6 +505,17 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
      Сонголт энэ төхөөрөмжид хадгалагдана.</p>
   <div id="theme-list" class="thlist"></div>
 
+  <h2>Япон бичиг</h2>
+  <p class="hint">Япон үг, өгүүлбэрийг юугаар харуулах вэ. Энэ сонголт
+     <b>апп даяар</b> үйлчилнэ — үгийн карт, шалгалт хоёуланд нь.</p>
+  <div class="seg" id="seg-script">
+    <button data-s="kana"><b class="jp">かな</b><span>Зөвхөн кана — ханз огт харагдахгүй</span></button>
+    <button data-s="ruby"><b class="jp">ふりがな</b><span>Ханз, дээр нь жижиг канаар уншлага</span></button>
+    <button data-s="kanji"><b class="jp">漢字</b><span>Цэвэр ханз — туслалцаагүй</span></button>
+  </div>
+  <p class="hint">Үгийн картын <b>урд талд</b> ふりがな гарахгүй — уншлага нь
+     таах ёстой хариулт учраас. Ар тал нээгдэхэд харагдана.</p>
+
   <h2>Хаяг · бүртгэл</h2>
 
   <div id="sync-box" hidden>
@@ -584,7 +582,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-21m"></script>
-<script src="app.js?v=2026-09-21m"></script>
+<script src="sync-config.js?v=2026-09-21n"></script>
+<script src="app.js?v=2026-09-21n"></script>
 </body>
 </html>

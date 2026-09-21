@@ -455,13 +455,13 @@ async function run(c) {
     ok('«бодож» төрөлд микрофон гарахгүй',
       await c.ev('return document.getElementById("ex-speak").hidden === true'));
 
-    // Ханз / кана сонголт — ханз уншиж чаддаггүй сурагчид.
-    const kanaOn = await c.ev('exScript = "kana"; renderExam();'
+    // Бичгийн хэлбэр — апп даяарх НЭГ тохиргоо (`settings.script`).
+    const kanaOn = await c.ev('settings.script = "kana"; renderExam();'
       + 'await new Promise(r=>setTimeout(r,150));'
       + 'const t = document.getElementById("ex-q").textContent;'
       + 'return { t: t, k: /[\u3400-\u9fff]/.test(t) };');
     ok('かな горимд ХАНЗ гарахгүй', kanaOn && kanaOn.k === false, JSON.stringify(kanaOn));
-    const kanjiOn = await c.ev('exScript = "kanji"; renderExam();'
+    const kanjiOn = await c.ev('settings.script = "kanji"; renderExam();'
       + 'await new Promise(r=>setTimeout(r,150));'
       + 'const t = document.getElementById("ex-q").textContent;'
       + 'return { t: t, k: /[\u3400-\u9fff]/.test(t) };');
@@ -598,21 +598,26 @@ async function run(c) {
      шалгах утгагүй. Шалгах ёстой зүйл нь: юу ч хадгалаагүй шинэ
      хэрэглэгчид ふりがな ОНОГДОНО, сонголт нь яг гурав. */
   const seg = await c.ev(`
-    return { fallback: load(KEY_EXS, 'ruby'),
-             stored: localStorage.getItem(KEY_EXS),
-             btns: [...document.querySelectorAll('#seg-exam-script button')]
-                     .map(b => b.dataset.s) };
+    return { fallback: cleanSettings({}).script,
+             scripts: SCRIPTS,
+             btns: [...document.querySelectorAll('#seg-script button')]
+                     .map(b => b.dataset.s),
+             inProfile: !!document.querySelector('#profile #seg-script'),
+             oldExam: !!document.getElementById('seg-exam-script') };
   `);
-  ok('юу ч хадгалаагүй бол ふりがな оногдоно',
-    seg && seg.fallback === 'ruby', JSON.stringify(seg));
-  ok('бичгийн сонголт яг гурав: ruby/kanji/kana',
-    seg && JSON.stringify(seg.btns) === '["ruby","kanji","kana"]',
+  ok('өгөгдмөл нь かな', seg && seg.fallback === 'kana', JSON.stringify(seg));
+  ok('бичгийн сонголт яг гурав: kana/ruby/kanji',
+    seg && JSON.stringify(seg.btns) === '["kana","ruby","kanji"]',
     JSON.stringify(seg));
+  ok('сонгогч нь ПРОФАЙЛ дээр — нэг л газар',
+    seg && seg.inProfile === true, JSON.stringify(seg));
+  ok('шалгалтын тусдаа сонгогч УСТСАН',
+    seg && seg.oldExam === false, JSON.stringify(seg));
 
   const ru = await c.ev(`
     await loadExam();
     const q = EXAM.items.find(x => x.id === "S01-01");
-    exScript = "ruby"; exN = 10; exMode = "think";
+    settings.script = "ruby"; exN = 10; exMode = "think";
     startExam();
     await new Promise(r => setTimeout(r, 800));
     exQs[exIdx] = q; exIdx = 0; renderExam();
@@ -643,14 +648,14 @@ async function run(c) {
     ru && ru.lh > ru.fs * 1.9, JSON.stringify(ru));
 
   const rk = await c.ev(`
-    exScript = "kanji"; renderExam(); await new Promise(r => setTimeout(r, 150));
+    settings.script = "kanji"; renderExam(); await new Promise(r => setTimeout(r, 150));
     const el = document.getElementById("ex-q");
     const a = { rubies: el.querySelectorAll("ruby").length,
                 cls: el.className, txt: el.textContent };
-    exScript = "kana"; renderExam(); await new Promise(r => setTimeout(r, 150));
+    settings.script = "kana"; renderExam(); await new Promise(r => setTimeout(r, 150));
     a.kanaTxt = el.textContent;
     a.kanaKanji = /[\\u3400-\\u9fff]/.test(el.textContent);
-    exScript = "ruby";
+    settings.script = "ruby";
     return a;
   `);
   ok('漢字 горимд ruby үүсэхгүй', rk && rk.rubies === 0, JSON.stringify(rk));
@@ -662,7 +667,7 @@ async function run(c) {
   // `exInto()` нь DOM зангаар барьдаг тул ямар ч тэмдэгт ТЕКСТ л болно.
   const rx = await c.ev(`
     const el = document.getElementById("ex-q");
-    exScript = "ruby";
+    settings.script = "ruby";
     exInto(el, { q: "x", qKana: "x",
                  qRuby: [["<img src=x onerror=window.__pwn=1>", "<b>r</b>"]] }, 'q');
     await new Promise(r => setTimeout(r, 300));
@@ -674,7 +679,73 @@ async function run(c) {
     rx && rx.imgs === 0 && rx.pwned === false, JSON.stringify(rx));
   ok('хорлонтой ruby нь ТЕКСТ болж үлдэнэ',
     rx && rx.rt === '<b>r</b>', JSON.stringify(rx));
-  await c.ev('exAbort(); go("home"); return 1;');
+  /* JS дэх `rubyPairs()` нь `tools/build_exam.py`-гийн алгоритмын ХУУЛБАР.
+     Хоёр хэрэгжүүлэлт салж явбал үгийн сан дээр буруу ふりがな гарна.
+     Тиймээс Python-ы бэлдсэн 200 хостой ТУЛГАНА — энэ нь хөрвүүлэлт
+     зөв эсэхийн шууд нотолгоо. */
+  const cross = await c.ev(`
+    await loadExam();
+    let same = 0, diff = 0, plain = 0; const bad = [];
+    for (const it of EXAM.items) {
+      for (const [surf, read, want] of [[it.q, it.qKana, it.qRuby],
+                                        [it.model, it.modelKana, it.modelRuby]]) {
+        // Ханзгүй мөр (ж: おはようございます。): Python нэг зангуу хос
+        // хадгалдаг, JS нь null буцаана. Хоёулаа ИЖИЛ зүйл харуулна —
+        // энд тулгах нь уншлагатай мөрүүд.
+        if (!want.some(x => x[1])) { plain++; continue; }
+        const got = rubyPairs(surf, read);
+        if (!got) { diff++; bad.push(it.id + ' null'); continue; }
+        if (JSON.stringify(got) === JSON.stringify(want)) same++;
+        else { diff++; if (bad.length < 4) bad.push(it.id + ' ' + JSON.stringify(got)); }
+      }
+    }
+    return { same: same, diff: diff, plain: plain, bad: bad };
+  `);
+  ok('JS зэрэгцүүлэгч Python-тойгоо ЯГ таарна (зөрүү 0)',
+    cross && cross.diff === 0 && cross.same > 150, JSON.stringify(cross));
+  ok('ханзгүй мөрд ふりがな үүсгэхгүй',
+    cross && cross.plain > 20 && cross.same + cross.plain === 200,
+    JSON.stringify(cross));
+
+  // Үгийн карт: урд тал нь ЦЭВЭР байх ёстой — уншлага нь таах хариулт.
+  const wc = await c.ev(`
+    settings.script = "ruby";
+    const w = ALL.find(x => x.jp && x.kana && x.jp !== x.kana
+                            && /[\\u3400-\\u9fff]/.test(x.jp));
+    queue = [w]; deck = "vocab"; mode = "flash"; enterStudy();
+    await new Promise(r => setTimeout(r, 300));
+    const front = document.getElementById("p-main");
+    const a = { word: w.jp, kana: w.kana,
+                frontRt: front.querySelectorAll("rt").length,
+                frontTxt: front.textContent };
+    reveal();
+    await new Promise(r => setTimeout(r, 200));
+    const back = document.getElementById("a-kana");
+    a.backRt = back.querySelectorAll("rt").length;
+    a.backBase = [...back.childNodes].map(n => n.nodeName === "RUBY"
+        ? n.firstChild.textContent : n.textContent).join("");
+    a.backCls = back.className;
+    return a;
+  `);
+  ok('үгийн картын УРД талд ふりがな ГАРАХГҮЙ',
+    wc && wc.frontRt === 0, JSON.stringify(wc));
+  ok('урд тал нь ханзан хэлбэр хэвээр',
+    wc && wc.frontTxt === wc.word, JSON.stringify(wc));
+  ok('АР талд ふりがな гарна', wc && wc.backRt > 0, JSON.stringify(wc));
+  ok('ар талын суурь нь ханзан хэлбэр',
+    wc && wc.backBase === wc.word, JSON.stringify(wc));
+
+  // かな горимд үгийн картын ар талд ruby байх ЁСГҮЙ.
+  const wk = await c.ev(`
+    settings.script = "kana"; reveal();
+    await new Promise(r => setTimeout(r, 200));
+    const back = document.getElementById("a-kana");
+    return { rt: back.querySelectorAll("rt").length, cls: back.className };
+  `);
+  ok('かな горимд үгийн картад ruby гарахгүй',
+    wk && wk.rt === 0 && String(wk.cls).indexOf('ruby') < 0, JSON.stringify(wk));
+
+  await c.ev('settings.script = "kana"; exAbort(); show("home"); go("home"); return 1;');
 
   console.log('\n[10] .busy — дасгалын үед дэвсгэр зогсоно');
   await c.ev('queue = ALL.slice(0,2); deck="vocab"; mode="flash"; enterStudy(); return 1');
