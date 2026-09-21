@@ -1254,8 +1254,16 @@ function finish() {
 
 /* ══════════════════════ 7. Дэлгэц солих ба нүүр ══════════════════════ */
 
-const SCREENS = ['home', 'irodori', 'jlpt', 'kana', 'study', 'done', 'feedback', 'stats', 'profile'];
+const SCREENS = ['home', 'irodori', 'jlpt', 'kana', 'study', 'done', 'exam',
+                 'feedback', 'stats', 'profile'];
 let screen = 'home';
+
+/* JLPT хэсгийг ТҮР унтраасан. Буцаахдаа зөвхөн энэ тугийг `true` болгоно —
+   өөр юу ч өөрчлөх шаардлагагүй (дэлгэц, өгөгдөл, логик бүгд байрандаа). */
+const JLPT_ON = false;
+if (!JLPT_ON) {
+  document.querySelectorAll('[data-go="jlpt"]').forEach(el => { el.hidden = true; });
+}
 
 const ICON_MENU = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>';
 const ICON_BACK = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>';
@@ -1280,6 +1288,9 @@ function show(name) {
 }
 
 function go(name) {
+  // JLPT түр унтраалттай үед тэр дэлгэц рүү орохыг хаана (гүн холбоос,
+  // хуучин кэштэй хуудаснаас ирсэн дарлага ч байж болно).
+  if (name === 'jlpt' && !JLPT_ON) name = 'home';
   // Явц нь БҮХ санг харуулдаг тул нээхэд бусад номыг татна. Эхлээд
   // байгаагаараа зурж, ирсэн хойно нь дахин зурна — хоосон дэлгэц харагдахгүй.
   if (name === 'stats') { refreshStats(); loadAllBooks().then(refreshStats); }
@@ -1689,6 +1700,130 @@ $('fin-again').onclick = () => {
   ensureWords(L.src).then(() => startSession(L.m || 'choice', false, L.src || 'book'));
 };
 $('fin-home').onclick = () => go('home');
+
+/* ══════════════════════ 7b. Шалгалт ══════════════════════
+ *
+ * 100 асуултын сангаас (data/exam-starter.json) санамсаргүй 10–20-г
+ * сонгож асууна. ДАСГАЛААС ЯЛГААТАЙ нь: зөв/бурууг шууд хэлэхгүй,
+ * эцэст нь оноо ба алдсан асуултуудыг зөв хариултын хамт харуулна —
+ * жинхэнэ шалгалт шиг.
+ *
+ * Явцад (SRS) НӨЛӨӨЛӨХГҮЙ: шалгалт нь хэмжих зорилготой, сургах биш.
+ * Тиймээс `grade()` дуудахгүй — эс тэгвэл хайрцаг гэнэт үсэрч давтлагын
+ * хуваарь эвдэрнэ. */
+const KEY_EXN = 'irodori.examn.v1';
+let EXAM = null;                       // татсан сан (нэг удаа)
+let exQs = [], exIdx = 0, exLog = [];
+let exN = load(KEY_EXN, 15);
+if (![10, 15, 20].includes(exN)) exN = 15;
+
+function loadExam() {
+  if (EXAM) return Promise.resolve(EXAM);
+  return fetch('data/exam-starter.json').then(r => {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(d => { EXAM = d; return d; });
+}
+
+function refreshExamSeg() {
+  document.querySelectorAll('#seg-exam-n button').forEach(b =>
+    b.setAttribute('aria-pressed', +b.dataset.n === exN));
+}
+
+function startExam() {
+  const btn = $('btn-exam');
+  btn.disabled = true;
+  loadExam().then(d => {
+    btn.disabled = false;
+    const pool = (d.items || []).slice();
+    if (pool.length < 4) { alert('Шалгалтын асуулт ачаалагдсангүй.'); return; }
+    exQs = shuffle(pool).slice(0, Math.min(exN, pool.length));
+    exIdx = 0; exLog = [];
+    $('ex-run').hidden = false; $('ex-done').hidden = true;
+    show('exam');
+    renderExam();
+  }).catch(() => {
+    btn.disabled = false;
+    alert('Шалгалтын асуултыг ачаалж чадсангүй. Холболтоо шалгана уу.');
+  });
+}
+
+function renderExam() {
+  const q = exQs[exIdx];
+  $('ex-pos').textContent = (exIdx + 1) + ' / ' + exQs.length;
+  $('ex-bar').style.width = Math.round(100 * exIdx / exQs.length) + '%';
+  $('ex-topic').textContent = 'L' + q.lesson + ' · ' + q.topic;
+  $('ex-q').textContent = q.q;
+  const box = $('ex-opts');
+  box.innerHTML = '';
+  for (const o of shuffle([q.a].concat(q.dis))) {
+    const b = document.createElement('button');
+    b.className = 'jpface';
+    b.textContent = o.jp;                     // textContent — тарилтаас хамгаална
+    b.onclick = () => examPick(o, b);
+    box.appendChild(b);
+  }
+  window.scrollTo(0, 0);
+}
+
+function examPick(o, btn) {
+  const q = exQs[exIdx];
+  const ok = o.jp === q.a.jp;
+  exLog.push({ q: q, picked: o, ok: ok });
+  [...$('ex-opts').children].forEach(c => { c.disabled = true; });
+  // Товчийг богинохон онцолно — зөв хариултыг ХАРУУЛАХГҮЙ (шалгалт тул).
+  btn.classList.add(ok ? 'ok' : 'ng');
+  setTimeout(() => {
+    exIdx++;
+    if (exIdx >= exQs.length) finishExam(); else renderExam();
+  }, 240);
+}
+
+function finishExam() {
+  const good = exLog.filter(x => x.ok).length;
+  const pct = exLog.length ? Math.round(100 * good / exLog.length) : 0;
+  $('ex-pct').textContent = pct + '%';
+  $('ex-sum').textContent = '✓ ' + good + '   ✗ ' + (exLog.length - good)
+    + '   (' + exLog.length + ' асуулт)';
+  $('ex-verdict').textContent = pct >= 90 ? 'Маш сайн — сурсан байна.'
+    : pct >= 70 ? 'Сайн. Алдсанаа давтвал бүрэн болно.'
+    : pct >= 50 ? 'Дунд. Алдсан хичээлүүдээ дахин үзэх хэрэгтэй.'
+    : 'Дахин давтах шаардлагатай.';
+
+  const wrong = exLog.filter(x => !x.ok);
+  $('ex-wrong-h').hidden = !wrong.length;
+  const box = $('ex-wrong');
+  box.innerHTML = '';
+  for (const w of wrong) {
+    // DOM-оор угсарна (innerHTML биш) — өгөгдөл HTML болж хувирахгүй.
+    const d = document.createElement('div');
+    d.className = 'ex-w';
+    const qq = document.createElement('div');
+    qq.className = 'ex-wq';
+    qq.textContent = 'L' + w.q.lesson + ' · ' + w.q.q;
+    const bad = document.createElement('div');
+    bad.className = 'ex-bad';
+    bad.textContent = '✗ ' + w.picked.jp + ' — ' + w.picked.mn;
+    const good2 = document.createElement('div');
+    good2.className = 'ex-good';
+    good2.textContent = '✓ ' + w.q.a.jp
+      + (w.q.a.kana && w.q.a.kana !== w.q.a.jp ? '（' + w.q.a.kana + '）' : '')
+      + ' — ' + w.q.a.mn;
+    d.appendChild(qq); d.appendChild(bad); d.appendChild(good2);
+    box.appendChild(d);
+  }
+  $('ex-run').hidden = true;
+  $('ex-done').hidden = false;
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll('#seg-exam-n button').forEach(b =>
+  b.onclick = () => { exN = +b.dataset.n; save(KEY_EXN, exN); refreshExamSeg(); });
+$('btn-exam').onclick = startExam;
+$('ex-again').onclick = startExam;
+$('ex-home').onclick = () => go('home');
+$('ex-quit').onclick = () => { if (confirm('Шалгалтыг зогсоох уу?')) go('irodori'); };
+refreshExamSeg();
 document.querySelectorAll('#goal-pick button').forEach(b =>
   b.onclick = () => { settings.goal = +b.dataset.goal; save(KEY_S, settings); refreshHome(); });
 

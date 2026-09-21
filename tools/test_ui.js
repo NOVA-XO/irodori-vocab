@@ -169,15 +169,27 @@ async function run(c) {
   ok('isDevHost() = true', await c.ev('return isDevHost() === true'));
 
   console.log('\n[3] Дэлгэц бүр нээгдэнэ');
-  for (const s of ['irodori', 'jlpt', 'kana', 'stats', 'profile', 'feedback', 'home']) {
+  // JLPT-г ТҮР унтраасан бол (app.js: `JLPT_ON`) тэр дэлгэц нээгдэхгүй байх
+  // нь ЗӨВ. Тугийг буцаахад энэ тест автоматаар дахин шалгана.
+  const jlptOn = await c.ev('return typeof JLPT_ON === "undefined" || JLPT_ON === true');
+  const screens = ['irodori', 'kana', 'stats', 'profile', 'feedback', 'home'];
+  if (jlptOn) screens.splice(1, 0, 'jlpt');
+  for (const s of screens) {
     await c.ev('go("' + s + '"); return 1');
     await sleep(120);
     const vis = await c.ev('return !document.getElementById("' + s + '").hidden');
     ok('дэлгэц ' + s, vis);
   }
+  if (!jlptOn) {
+    ok('JLPT унтраалттай — go("jlpt") нүүр рүү буцаана',
+      await c.ev('go("jlpt"); await new Promise(r=>setTimeout(r,120)); return screen === "home"'));
+    ok('JLPT унтраалттай — оролтууд нуугдсан',
+      await c.ev('return [...document.querySelectorAll(\'[data-go="jlpt"]\')].every(e=>e.hidden)'));
+  }
 
   console.log('\n[4] Ханзны 3D цагираг дэлгэц дагаж нүүнэ');
-  for (const s of ['home', 'irodori', 'jlpt', 'kana']) {
+  const ringScreens = jlptOn ? ['home', 'irodori', 'jlpt', 'kana'] : ['home', 'irodori', 'kana'];
+  for (const s of ringScreens) {
     await c.ev('go("' + s + '"); return 1');
     await sleep(150);
     const r = await c.ev(
@@ -411,6 +423,37 @@ async function run(c) {
     ok('№20 lastSpeechError хасагдсан', !r.lastSpeechError);
     ok('№21 n-vocab хасагдсан', !r.nVocab);
     ok('№21 due-card id хасагдсан', !r.dueCard);
+  }
+
+  console.log('\n[9b] Шалгалт — 100 асуултаас санамсаргүй сонгож оноо гаргана');
+  {
+    // Шалгалтын ӨМНӨХ явцыг тэмдэглэнэ — шалгалт үүнийг хөдөлгөх ЁСГҮЙ.
+    await c.ev('window.__pBefore = JSON.stringify(progress); return 1;');
+    await c.ev('go("irodori"); await new Promise(r=>setTimeout(r,150));'
+      + 'const b=[...document.querySelectorAll("#seg-exam-n button")].find(x=>x.dataset.n==="10");'
+      + 'if(b) b.click(); document.getElementById("btn-exam").click();'
+      + 'await new Promise(r=>setTimeout(r,900)); return 1;');
+    ok('шалгалт нээгдэв', await c.ev('return screen === "exam"'));
+    ok('10 асуулт сонгогдов', Number(await c.ev('return exQs.length')) === 10);
+    ok('4 сонголт гарна', Number(await c.ev('return document.getElementById("ex-opts").children.length')) === 4);
+    // Бүгдийг ЗӨВ хариулна -> 100%
+    const r = await c.ev(`
+      for (let i = 0; i < 40 && document.getElementById("ex-done").hidden; i++) {
+        const q = exQs[exIdx];
+        const bs = [...document.getElementById("ex-opts").children];
+        (bs.find(b => b.textContent === q.a.jp) || bs[0]).click();
+        await new Promise(r => setTimeout(r, 280));
+      }
+      return { pct: document.getElementById("ex-pct").textContent,
+               wrongN: document.getElementById("ex-wrong").children.length };
+    `);
+    ok('бүгд зөв → 100%', r && r.pct === '100%', JSON.stringify(r));
+    ok('алдсан жагсаалт хоосон', r && r.wrongN === 0, JSON.stringify(r));
+    // Шалгалт нь SRS явцад НӨЛӨӨЛӨХГҮЙ байх ёстой: хэмжих зорилготой,
+    // сургах биш. `grade()` дуудвал хайрцаг үсэрч давтлагын хуваарь эвдэрнэ.
+    ok('шалгалт SRS явцыг ХӨДӨЛГӨӨГҮЙ',
+      await c.ev('return JSON.stringify(progress) === window.__pBefore;'));
+    await c.ev('go("home"); return 1;');
   }
 
   console.log('\n[10] .busy — дасгалын үед дэвсгэр зогсоно');

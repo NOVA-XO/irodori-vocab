@@ -665,3 +665,19 @@ body::after{
 .mic-hint{color:var(--ink-2); font-size:14px; min-height:20px}
 .mic-text{font-family:var(--jpd); font-size:30px; min-height:42px; color:var(--ink)}
 @media (prefers-reduced-motion: reduce){ .mic.rec{animation:none} }
+
+/* ── Шалгалт ─────────────────────────────────────────────────────── */
+.ex-top{display:flex; align-items:center; gap:12px; margin-bottom:18px}
+.ex-pos{font-family:var(--mono); font-size:14px; color:var(--ink-2); white-space:nowrap}
+.ex-top .track{flex:1}
+.ex-topic{font-size:13px; color:var(--ink-3); letter-spacing:.04em; margin-bottom:6px}
+.ex-q{font-size:19px; line-height:1.5; margin-bottom:20px; color:var(--ink)}
+#ex-opts button.ok{border-color:var(--ok); color:var(--ok)}
+#ex-opts button.ng{border-color:var(--ng); color:var(--ng)}
+#ex-opts button:disabled{opacity:.72}
+.ex-w{background:var(--box-bg); border:var(--box-bd); border-radius:var(--box-r);
+  padding:13px 14px; margin-bottom:10px}
+.ex-wq{font-size:14px; color:var(--ink-2); margin-bottom:7px}
+.ex-bad{color:var(--ng); font-family:var(--jpd); font-size:17px}
+.ex-good{color:var(--ok); font-family:var(--jpd); font-size:17px; margin-top:3px}
+#ex-done h2{margin-top:26px}

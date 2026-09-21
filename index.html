@@ -8,9 +8,9 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21d">
-<link rel="stylesheet" href="app.css?v=2026-09-21d">
-<link rel="stylesheet" href="themes.css?v=2026-09-21d">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21e">
+<link rel="stylesheet" href="app.css?v=2026-09-21e">
+<link rel="stylesheet" href="themes.css?v=2026-09-21e">
 <!-- Сонгосон загварыг CSS-ээс ӨМНӨ тавина. Эс тэгвэл хуудас эхлээд
      анхдагч 和-гаар нэг анивчаад дараа нь солигдоно. Тиймээс энэ нь
      app.js дотор биш, ЭНД байх ёстой. -->
@@ -18,8 +18,8 @@
 document.documentElement.setAttribute("data-theme",t);}catch(e){
 document.documentElement.setAttribute("data-theme","minimal");}</script>
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21d">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21d">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21e">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21e">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -184,6 +184,18 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
       <button class="mode" data-kj="read"><b>Уншлага</b><span>Ханзны 音読み-г сонгоно</span></button>
     </div>
   </div>
+
+  <!-- Шалгалт: 100 асуултын сангаас санамсаргүй сонгоно. Дасгалаас
+       ЯЛГААТАЙ нь шууд хариу хэлэхгүй — эцэст нь оноо ба алдсаныг харуулна. -->
+  <div class="step">Шалгалт</div>
+  <p class="hint">Сурсанаа шалгах бол. <span class="jp">入門</span>-ий 100 асуултаас
+     санамсаргүй сонгож асууна. Хариултыг эцэст нь харуулна.</p>
+  <div class="seg" id="seg-exam-n">
+    <button data-n="10"><b>10 асуулт</b><span>богино</span></button>
+    <button data-n="15"><b>15 асуулт</b><span>дунд</span></button>
+    <button data-n="20"><b>20 асуулт</b><span>бүтэн</span></button>
+  </div>
+  <button id="btn-exam" class="primary big wide">Шалгалт эхлүүлэх</button>
 </section>
 
 <!-- ═══════════════════ JLPT ═══════════════════ -->
@@ -364,6 +376,32 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <div class="row"><button id="fin-home" class="ghost sm">Нүүр</button></div>
 </section>
 
+<!-- ═══════════════════ ШАЛГАЛТ ═══════════════════ -->
+<section id="exam" class="screen" hidden>
+  <div id="ex-run">
+    <div class="ex-top">
+      <span class="ex-pos" id="ex-pos">1 / 15</span>
+      <div class="track"><span class="fill" id="ex-bar"></span></div>
+    </div>
+    <div class="ex-topic" id="ex-topic"></div>
+    <div class="ex-q" id="ex-q"></div>
+    <div id="ex-opts" class="choices"></div>
+    <div class="row"><button id="ex-quit" class="ghost sm">Шалгалтыг зогсоох</button></div>
+  </div>
+
+  <div id="ex-done" hidden>
+    <div class="fin">
+      <div class="fin-pct" id="ex-pct">—</div>
+      <div class="fin-sub" id="ex-sum"></div>
+      <div class="fin-goal" id="ex-verdict"></div>
+    </div>
+    <h2 id="ex-wrong-h" hidden>Алдсан асуултууд</h2>
+    <div id="ex-wrong"></div>
+    <button id="ex-again" class="primary big wide">Дахин шалгуулах</button>
+    <div class="row"><button id="ex-home" class="ghost sm">Нүүр</button></div>
+  </div>
+</section>
+
 <!-- ═══════════════════ САНАЛ ХҮСЭЛТ ═══════════════════ -->
 <section id="feedback" class="screen" hidden>
   <h2>Санал хүсэлт</h2>
@@ -492,7 +530,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-21d"></script>
-<script src="app.js?v=2026-09-21d"></script>
+<script src="sync-config.js?v=2026-09-21e"></script>
+<script src="app.js?v=2026-09-21e"></script>
 </body>
 </html>
