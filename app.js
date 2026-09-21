@@ -160,16 +160,43 @@ function checkTyped(raw, item) {
   return set.has(normKana(toKana(raw))) || set.has(normRomaji(raw));
 }
 
+/* ── ОМОНИМЫН зураглал: ханз → уншлага ─────────────────────────────
+ * Япон хэл омоним ихтэй (かみ = 紙/髪/神). Хэрэглэгч ЗӨВ дуудсан ч таниулт
+ * өөр ханз сонгож бичвэл (髪 гэхийн оронд 紙) шууд харьцуулалт унана.
+ * Манай өгөгдөлд `jp ↔ kana` харгалзаа бүрэн байгаа тул таньсан ханзны
+ * УНШЛАГЫГ гаргаж, зорилтот үгийн уншлагатай тулгана. Дуудлага зөв бол
+ * ханз нь зөрсөн ч хүлээнэ — энэ дасгал нь БИЧИХ биш ХЭЛЭХ чадварыг
+ * шалгадаг. */
+let READ_MAP = null;
+function buildReadMap() {
+  READ_MAP = new Map();
+  for (const arr of [ALL, N5]) {
+    for (const it of arr || []) {
+      const jp = normKana(it.jp || ''), ka = normKana(it.kana || '');
+      if (jp && ka && jp !== ka && !READ_MAP.has(jp)) READ_MAP.set(jp, ka);
+    }
+  }
+  return READ_MAP;
+}
+function readingOf(norm) {
+  if (!READ_MAP) buildReadMap();
+  return READ_MAP.get(norm) || '';
+}
+
 /** ЯРИХ горим: микрофоны таньсан япон текстийг УНШЛАГААР шалгана.
  *  Таних нь ханз (私) эсвэл кана (わたし) буцааж болно — `answerSet` нь
  *  ханз (jp) ба кана хоёуланг агуулдаг тул аль нь ч таарна. Топик бөөс
- *  は/へ/を-ийн дуудлагын хувилбарыг ч (readingVariants) хамруулна. */
+ *  は/へ/を-ийн дуудлагын хувилбарыг ч (readingVariants) хамруулна.
+ *  Эцэст нь ОМОНИМ ханзыг уншлагаар нь шалгана. */
 function checkSpoken(transcript, item) {
   const set = answerSet(item);
   const n = normKana(transcript || '');
   if (!n) return false;
   if (set.has(n)) return true;
-  return readingVariants(n).some(v => set.has(v));
+  if (readingVariants(n).some(v => set.has(v))) return true;
+  const r = readingOf(n);                       // омоним: 紙 -> かみ
+  if (r && (set.has(r) || readingVariants(r).some(v => set.has(v)))) return true;
+  return false;
 }
 
 /* ══════════════════════ 3. Явц (localStorage) ══════════════════════ */
@@ -493,7 +520,7 @@ function fetchBook(b) {
 function loadBook(b) {
   return fetchBook(b).then(items => {
     if (!items) return false;
-    ALL = items; return true;
+    ALL = items; READ_MAP = null; return true;
   });
 }
 
@@ -522,7 +549,7 @@ function loadN5() {
   return fetch('data/vocab-n5.json').then(r => {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();
-  }).then(d => { N5 = d.items; return true; }).catch(() => false);
+  }).then(d => { N5 = d.items; READ_MAP = null; return true; }).catch(() => false);
 }
 
 /** Дасгал эхлүүлэхийн ӨМНӨ тухайн сангийн үг ачаалагдсан эсэхийг батална.
@@ -1528,7 +1555,7 @@ document.querySelectorAll('#seg-book button').forEach(b =>
     fetchBook(nb).then(items => {
       if (req !== bookReq) return;                // хуучирсан хариу
       if (!items) { alert('Энэ номын үгсийг ачаалж чадсангүй.'); return; }
-      ALL = items; settings.book = nb; wordSrc = 'book';
+      ALL = items; READ_MAP = null; settings.book = nb; wordSrc = 'book';
       save(KEY_S, settings); refreshHome();
     });
   });
@@ -2206,7 +2233,7 @@ Promise.all([
   fetch('data/audio.json').then(r => r.ok ? r.json() : null).catch(() => null),
 ])
   .then(([v, k, kj, au]) => {
-    ALL = v.items; KANA = k.items; KANJI = kj.items;
+    ALL = v.items; KANA = k.items; KANJI = kj.items; READ_MAP = null;
     bookCache[v.book || 'starter'] = v.items;
     // Сонгосон ном татагдаагүй бөгөөд 入門 руу ухарсан бол ТОХИРГООГ
     // нь ч засна — эс тэгвэл дэлгэц «初級1» гэж хэлээд 入門-ий үг асууна.
