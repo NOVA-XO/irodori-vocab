@@ -1581,6 +1581,13 @@ $('t-check').onclick = () => {
    нь ч зөв бол хүлээнэ. */
 $('mic-btn').onclick = () => {
   if (answered || recognizing) { if (recognizing) stopRecog(); return; }
+  // Таниулт үүлэн дээр хийгддэг тул офлайн үед ажиллахгүй — шууд хэлнэ.
+  if (!navigator.onLine) {
+    $('mic-hint').textContent = 'Ярих горим интернэт холболт шаардана '
+      + '(таниулт браузерын үүлэн үйлчилгээгээр хийгддэг). Офлайн үед '
+      + '«Гараар бичих» горимыг ашиглана уу.';
+    return;
+  }
   const btn = $('mic-btn');
   btn.classList.add('rec'); btn.textContent = '● Сонсож байна…';
   $('mic-hint').textContent = 'Одоо хэлээрэй…';
@@ -1610,11 +1617,22 @@ $('mic-skip').onclick = () => {
   if (answered) return;
   stopRecog(); answered = true; resolve(false);
 };
-// Микрофоны таниулт дэмжихгүй браузерт «Ярих» горимыг идэвхгүй болгоно.
-if (!canListen) {
+/* «Ярих» горим хэзээ боломжтой вэ:
+ *   1. браузер таниулт дэмжих (Chrome/Edge; Firefox үгүй),
+ *   2. ИНТЕРНЭТ байх — таниулт нь браузерын үүлэн үйлчилгээгээр хийгддэг.
+ * Апп өөрөө офлайн ажилладаг (метронд давтах) тул офлайн үед энэ горимыг
+ * ЧИМЭЭГҮЙ бүтэлгүйтүүлэхгүй, шууд идэвхгүй болгож шалтгааныг хэлнэ. */
+function refreshSpeakAvail() {
   const sb = document.querySelector('[data-mode="speak"]');
-  if (sb) { sb.disabled = true; sb.title = 'Микрофоны таниулт зөвхөн Chrome/Edge дээр'; }
+  if (!sb) return;
+  const off = !navigator.onLine;
+  sb.disabled = !canListen || off;
+  sb.title = !canListen ? 'Микрофоны таниулт зөвхөн Chrome/Edge дээр'
+    : off ? 'Ярих горим интернэт холболт шаардана' : '';
 }
+refreshSpeakAvail();
+addEventListener('online', refreshSpeakAvail);
+addEventListener('offline', refreshSpeakAvail);
 $('btn-next').onclick = nextCard;
 
 $('btn-continue').onclick = () => {
