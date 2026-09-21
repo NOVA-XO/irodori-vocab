@@ -591,21 +591,34 @@ const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 const canListen = !!SpeechRec;
 let recog = null, recognizing = false;
 
-function startRecog(onInterim, onFinal, onError) {
+/* ГҮЙЛТИЙН ТЭМДЭГ. Таниулт нь ASYNC: `stop()` дуудсаны дараа ч эцсийн
+   үр дүнгээ хүргэдэг. Тэмдэггүй бол дараах хоёр алдаа гарна:
+     · хуучин таниулт ДАРААГИЙН картыг хариулчихна,
+     · хуучин объектын `onend` нь `recognizing`-ийг тэглээд, шинэ таниулт
+       зогсоох боломжгүй болно.
+   Тиймээс дуудлага бүр өөрийн `run`-ыг шалгана; `stopRecog()` нь тэмдгийг
+   ахиулж хуучин бүх дуудлагыг ХҮЧИНГҮЙ болгоно. */
+let recogRun = 0;
+
+function startRecog(onInterim, onFinal, onError, onEnd) {
   if (!canListen) { if (onError) onError('unsupported'); return; }
+  stopRecog();                         // өмнөхийг таслаж, дуудлагыг хүчингүй болгоно
+  const run = ++recogRun;
+  const live = () => run === recogRun;
   try {
-    if (recog) { try { recog.abort(); } catch (e) { /* байхгүй */ } }
-    recog = new SpeechRec();
-    recog.lang = 'ja-JP';
-    recog.interimResults = true;
-    recog.maxAlternatives = 4;     // таних нь ойролцоо хувилбар өгдөг — бүгдийг шалгана
-    recog.continuous = false;
+    const r = new SpeechRec();
+    recog = r;
+    r.lang = 'ja-JP';
+    r.interimResults = true;
+    r.maxAlternatives = 4;     // таних нь ойролцоо хувилбар өгдөг — бүгдийг шалгана
+    r.continuous = false;
     recognizing = true;
-    recog.onresult = e => {
+    r.onresult = e => {
+      if (!live()) return;
       let interim = '', finalRes = null;
       for (let i = e.resultIndex; i < e.results.length; i++) {
-        const r = e.results[i];
-        if (r.isFinal) finalRes = r; else interim += r[0].transcript;
+        const x = e.results[i];
+        if (x.isFinal) finalRes = x; else interim += x[0].transcript;
       }
       if (finalRes) {
         const alts = [];
@@ -613,12 +626,27 @@ function startRecog(onInterim, onFinal, onError) {
         if (onFinal) onFinal(alts);
       } else if (interim && onInterim) onInterim(interim);
     };
-    recog.onerror = e => { recognizing = false; if (onError) onError(e.error || 'error'); };
-    recog.onend = () => { recognizing = false; };
-    recog.start();
+    r.onerror = e => {
+      if (!live()) return;
+      recognizing = false;
+      if (onError) onError((e && e.error) || 'error');
+    };
+    r.onend = () => {
+      if (!live()) return;
+      recognizing = false;
+      if (onEnd) onEnd();              // үр дүнгүй дуусвал товчийг сэргээнэ
+    };
+    r.start();
   } catch (e) { recognizing = false; if (onError) onError(String((e && e.message) || e)); }
 }
-function stopRecog() { if (recog && recognizing) { try { recog.stop(); } catch (e) { /* байхгүй */ } } }
+
+/** Таниулт зогсоож, хуучин бүх дуудлагыг хүчингүй болгоно. `abort()` нь
+ *  `stop()`-оос ялгаатай нь үр дүнг ХАЯДАГ — цуцлахад яг тэр хэрэгтэй. */
+function stopRecog() {
+  recogRun++;
+  recognizing = false;
+  if (recog) { try { recog.abort(); } catch (e) { /* байхгүй */ } recog = null; }
+}
 
 /* Гар утсан дээр getVoices() ХОЙШЛОН дүүрдэг тул хоолой олдох хүртэл хүлээж
    товчийг нуувал хэзээ ч гарч ирэхгүй. Мөн яг таарсан «ja» хоолой олдоогүй ч
@@ -842,6 +870,9 @@ function soundBtnHidden() {
 
 function nextCard() {
   if (!queue.length) { finish(); return; }
+  // Шинэ карт гармагц хуучин таниулт ХҮЧИНГҮЙ. Эс тэгвэл өмнөх картын
+  // хожуу ирсэн үр дүн энэ асуултыг хариулчихаж магадгүй.
+  stopRecog();
   cur = queue.shift();
   answered = false;
   shown = false;
@@ -902,11 +933,10 @@ function nextCard() {
     $('pane-type').hidden = false;
     setTimeout(() => $('t-input').focus(), 30);
   } else if (mode === 'speak') {
-    // Утга харуулж → хэрэглэгч япон үгээ ХЭЛНЭ (bичих горимтой ижил чиглэл).
+    // Утга харуулж → хэрэглэгч япон үгээ ХЭЛНЭ (бичих горимтой ижил чиглэл).
     $('p-main').textContent = cur.mn || cur.jp; $('p-main').className = 'prompt mn';
     $('mic-text').textContent = '';
-    $('mic-hint').textContent = 'Товчийг дараад япон үгээ хэлээрэй.';
-    $('mic-btn').classList.remove('rec');
+    micIdle('Товчийг дараад япон үгээ хэлээрэй.');
     $('pane-speak').hidden = false;
   } else if (mode === 'listen') {
     $('p-main').textContent = '🔊'; $('p-main').className = 'prompt';
@@ -1273,6 +1303,8 @@ function show(name) {
   // `show('done')` дуудаж дуусдаг тул дуусгасан ч, дундуур гарсан ч
   // хоёулаа энд таарна.
   if (screen === 'study' && name !== 'study') { statsPing(); stopRecog(); }
+  // Шалгалтаас гарвал хойшлуулсан таймер ШИНЭ гүйлтэд нөлөөлөхгүй байх ёстой.
+  if (screen === 'exam' && name !== 'exam') exAbort();
   screen = name;
   // Дасгалын үед дэвсгэрийн анимацийг зогсооно (themes.css: `.busy`).
   // Энэ нь `show()` дотор байх ЁСТОЙ — дасгал `go()`-гүйгээр шууд
@@ -1617,8 +1649,21 @@ $('t-check').onclick = () => {
 /* «Ярих» горим — микрофоны товч. Дарахад таниж эхэлнэ; таньсан текстийг
    ЯГ ХАРУУЛаад уншлагаар нь шалгана. Таних олон хувилбар өгдөг тул алийг
    нь ч зөв бол хүлээнэ. */
+/** Микрофоны товчийг хүлээлтийн байдалд буцаана. Таниулт үр дүнгүй
+ *  дуусахад ч (чимээгүй, хэрэглэгч зогсоосон) товч «сонсож байна» гэж
+ *  гацахгүй байх ёстой. */
+function micIdle(hint) {
+  const b = $('mic-btn');
+  if (!b) return;
+  b.classList.remove('rec');
+  b.textContent = '🎤 Хэлэх';
+  if (hint != null) $('mic-hint').textContent = hint;
+}
+
 $('mic-btn').onclick = () => {
-  if (answered || recognizing) { if (recognizing) stopRecog(); return; }
+  // Сонсож байхад дарвал ЦУЦАЛНА (товч гацахгүй).
+  if (recognizing) { stopRecog(); micIdle('Цуцаллаа. Дахин оролдож болно.'); return; }
+  if (answered) return;
   // Таниулт үүлэн дээр хийгддэг тул офлайн үед ажиллахгүй — шууд хэлнэ.
   if (!navigator.onLine) {
     $('mic-hint').textContent = 'Ярих горим интернэт холболт шаардана '
@@ -1630,25 +1675,29 @@ $('mic-btn').onclick = () => {
   btn.classList.add('rec'); btn.textContent = '● Сонсож байна…';
   $('mic-hint').textContent = 'Одоо хэлээрэй…';
   $('mic-text').textContent = '';
+  // Эхлэх агшны КАРТЫГ барьж авна. Таниулт async тул үр дүн хожуу ирэхэд
+  // хэрэглэгч аль хэдийн дараагийн карт дээр очсон байж болно — тэр үед
+  // хуучин хариулт ШИНЭ асуултыг хариулчихаж болзошгүй.
+  const askedFor = cur;
   startRecog(
     interim => { $('mic-text').textContent = interim; },
     alts => {
-      if (answered) return;
-      btn.classList.remove('rec'); btn.textContent = '🎤 Хэлэх';
+      micIdle();
+      if (answered || cur !== askedFor) return;   // карт солигдсон бол үл тоох
       const heard = alts[0] || '';
       $('mic-text').textContent = heard || '(таниагүй)';
-      const ok = alts.some(a => checkSpoken(a, cur));
+      const ok = alts.some(a => checkSpoken(a, askedFor));
       answered = true;
       resolve(ok);
     },
     err => {
-      btn.classList.remove('rec'); btn.textContent = '🎤 Хэлэх';
-      $('mic-hint').textContent = err === 'not-allowed' || err === 'service-not-allowed'
+      micIdle(err === 'not-allowed' || err === 'service-not-allowed'
         ? 'Микрофон зөвшөөрөл өгөгдсөнгүй. Хаягийн зүүн талын 🔒-оос зөвшөөрнө үү.'
         : err === 'no-speech' ? 'Дуу сонсогдсонгүй — дахин оролдоно уу.'
         : err === 'unsupported' ? 'Энэ браузер микрофоны таниулт дэмжихгүй (Chrome/Edge ашиглана уу).'
-        : 'Таних боломжгүй байна — дахин оролдоно уу.';
-    }
+        : 'Таних боломжгүй байна — дахин оролдоно уу.');
+    },
+    () => { micIdle(); }        // үр дүнгүй дууссан ч товч гацахгүй
   );
 };
 $('mic-skip').onclick = () => {
@@ -1714,6 +1763,28 @@ $('fin-home').onclick = () => go('home');
 const KEY_EXN = 'irodori.examn.v1';
 let EXAM = null;                       // татсан сан (нэг удаа)
 let exQs = [], exIdx = 0, exLog = [];
+/* ГҮЙЛТИЙН ТЭМДЭГ. Шалгалт нь async (fetch) ба хойшлуулсан (setTimeout)
+   хэсэгтэй. Тэмдэггүй бол:
+     · fetch нислэг дунд хэрэглэгч гарсан ч `show('exam')` эргүүлж татна,
+     · хариултын 240мс таймер ШИНЭ шалгалтын `exIdx`-ийг ахиулж
+       эхний асуултыг алгасна (хоёулаа браузерт давтагдсан).
+   Гүйлт бүр өөрийн тэмдгийг шалгана; гарах/дахин эхлэхэд тэмдэг ахина. */
+let exRun = 0, exTimer = null;
+
+/** Шалгалтын гүйлтийг хүчингүй болгоно (гарах, дахин эхлэх). */
+function exAbort() {
+  exRun++;
+  if (exTimer) { clearTimeout(exTimer); exTimer = null; }
+}
+
+/** Амлалтыг хугацаагаар хязгаарлана — өлгөөтэй fetch товчийг мөнхөд
+ *  идэвхгүй орхихоос сэргийлнэ. */
+function withTimeout(p, ms) {
+  return new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error('timeout')), ms);
+    p.then(v => { clearTimeout(t); res(v); }, e => { clearTimeout(t); rej(e); });
+  });
+}
 let exN = load(KEY_EXN, 15);
 if (![10, 15, 20].includes(exN)) exN = 15;
 
@@ -1732,9 +1803,12 @@ function refreshExamSeg() {
 
 function startExam() {
   const btn = $('btn-exam');
+  exAbort();                       // өмнөх гүйлтийг хүчингүй болгоно
+  const run = exRun;
   btn.disabled = true;
-  loadExam().then(d => {
-    btn.disabled = false;
+  withTimeout(loadExam(), 15000).then(d => {
+    btn.disabled = false;          // ҮРГЭЛЖ сэргээнэ — товч гацахгүй
+    if (run !== exRun) return;     // хэрэглэгч гарсан эсвэл дахин эхлүүлсэн
     const pool = (d.items || []).slice();
     if (pool.length < 4) { alert('Шалгалтын асуулт ачаалагдсангүй.'); return; }
     exQs = shuffle(pool).slice(0, Math.min(exN, pool.length));
@@ -1744,6 +1818,7 @@ function startExam() {
     renderExam();
   }).catch(() => {
     btn.disabled = false;
+    if (run !== exRun) return;
     alert('Шалгалтын асуултыг ачаалж чадсангүй. Холболтоо шалгана уу.');
   });
 }
@@ -1773,7 +1848,10 @@ function examPick(o, btn) {
   [...$('ex-opts').children].forEach(c => { c.disabled = true; });
   // Товчийг богинохон онцолно — зөв хариултыг ХАРУУЛАХГҮЙ (шалгалт тул).
   btn.classList.add(ok ? 'ok' : 'ng');
-  setTimeout(() => {
+  const run = exRun;
+  exTimer = setTimeout(() => {
+    exTimer = null;
+    if (run !== exRun) return;     // шалгалт зогссон/дахин эхэлсэн
     exIdx++;
     if (exIdx >= exQs.length) finishExam(); else renderExam();
   }, 240);
@@ -1822,7 +1900,9 @@ document.querySelectorAll('#seg-exam-n button').forEach(b =>
 $('btn-exam').onclick = startExam;
 $('ex-again').onclick = startExam;
 $('ex-home').onclick = () => go('home');
-$('ex-quit').onclick = () => { if (confirm('Шалгалтыг зогсоох уу?')) go('irodori'); };
+$('ex-quit').onclick = () => {
+  if (confirm('Шалгалтыг зогсоох уу?')) { exAbort(); go('irodori'); }
+};
 refreshExamSeg();
 document.querySelectorAll('#goal-pick button').forEach(b =>
   b.onclick = () => { settings.goal = +b.dataset.goal; save(KEY_S, settings); refreshHome(); });

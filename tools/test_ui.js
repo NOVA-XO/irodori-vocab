@@ -453,6 +453,29 @@ async function run(c) {
     // сургах биш. `grade()` дуудвал хайрцаг үсэрч давтлагын хуваарь эвдэрнэ.
     ok('шалгалт SRS явцыг ХӨДӨЛГӨӨГҮЙ',
       await c.ev('return JSON.stringify(progress) === window.__pBefore;'));
+
+    // ── Уралдааны регресс (2026-09-21, Astra-гийн ревьюгээр олдсон) ──
+    // Хариултын 240мс таймер ШИНЭ шалгалтын эхний асуултыг алгасдаг байв.
+    const race1 = await c.ev(`
+      exN = 10; await loadExam(); startExam();
+      await new Promise(r => setTimeout(r, 450));
+      document.getElementById("ex-opts").children[0].click();
+      await new Promise(r => setTimeout(r, 60));   // таймер дуусахаас ӨМНӨ
+      startExam();
+      await new Promise(r => setTimeout(r, 450));
+      return { exIdx: exIdx, pos: document.getElementById("ex-pos").textContent };
+    `);
+    ok('№6 хуучин таймер шинэ шалгалтыг алгасахгүй',
+      race1 && race1.exIdx === 0 && /^1 \//.test(race1.pos), JSON.stringify(race1));
+
+    // fetch нислэг дунд гарахад `show('exam')` эргүүлж татдаг байв.
+    const race2 = await c.ev(`
+      EXAM = null; startExam(); go("home");
+      await new Promise(r => setTimeout(r, 900));
+      return screen;
+    `);
+    ok('№5 fetch дунд гарахад эргүүлж татахгүй', race2 === 'home', String(race2));
+
     await c.ev('go("home"); return 1;');
   }
 
