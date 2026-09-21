@@ -93,22 +93,48 @@ const normRomaji = t => (t || '').toLowerCase().replace(/[^a-z]/g, '');
 
 /* ══════════════════════ 2. Хариулт шалгах ══════════════════════ */
 
+/** ДУУДЛАГЫН хувилбарууд: топик бөөс は/へ/を нь бичлэгээрээ は/へ/を боловч
+ *  дуудлагаараа wa/e/o (こんにちは→konnichiwa, 〜を→o, 〜へ→e). Ромажи талбар
+ *  байхгүй сангуудад (el1/el2/n5) хэрэглэгч байгалийн дуудлагаар бичихэд
+ *  татгалздаг байсныг засна. Бичлэг ба дуудлага ХОЁУЛЫГ хүлээж авна тул
+ *  は=ha үг (はい, はたけ) хэвээр зөв.
+ *
+ *  を нь бараг үргэлж бөөс тул аюулгүй; は/へ нь үгэн дотор ч гарах тул
+ *  хоёуланг зөвшөөрснөөр буруу дуудлагыг ч хүлээх эрсдэлтэй — гэхдээ зөв
+ *  хариултыг ТАТГАЛЗАХААС хамаагүй дээр (сурагч бичих дасгал). */
+function readingVariants(s) {
+  let out = [''];
+  for (const ch of s) {
+    const alts = ch === 'は' ? ['は', 'わ']
+      : ch === 'へ' ? ['へ', 'え']
+      : ch === 'を' ? ['を', 'お'] : [ch];
+    if (alts.length === 1) { out = out.map(p => p + ch); continue; }
+    const next = [];
+    for (const pre of out) for (const a of alts) next.push(pre + a);
+    out = next;
+    if (out.length > 64) return [s];   // хэт олон бөөстэй үгэнд тэсрэхээс сэргийлнэ
+  }
+  return out;
+}
+
 /** Зөвшөөрөгдөх хариултууд: ／-ээр салгасан хувилбар бүр, ромажийн хувилбар. */
 function answerSet(item) {
   const set = new Set();
   const add = v => { if (v) set.add(v); };
+  // Кана хэлбэрт дуудлагын хувилбаруудыг нэмнэ (は→わ, へ→え, を→お).
+  const addKana = v => { for (const x of readingVariants(v)) add(x); };
   // Хаалтанд байгаа хэсэг нь СОНГОЛТОТ: «おはよう（ございます）» дээр
   // «おはよう» гэж бичихэд ч зөв. Тиймээс кана/ханз талд хоёулангийнх нь
   // хувилбарыг нэмнэ — эс тэгвээс зөвхөн PDF-ийн яг тэр ромажи үсгээр
   // (ohayoo) таарах ба хүн «ohayou» гэж бичихэд татгалзана.
   const dropParen = t => t.replace(/[（(][^）)]*[）)]/g, '');
   for (const part of (item.kana || '').split(/[／/]/)) {
-    add(normKana(part));
-    add(normKana(dropParen(part)));
+    addKana(normKana(part));
+    addKana(normKana(dropParen(part)));
   }
   for (const part of (item.jp || '').split(/[／/]/)) {
-    add(normKana(part));
-    add(normKana(dropParen(part)));
+    addKana(normKana(part));
+    addKana(normKana(dropParen(part)));
   }
   const rom = item.romaji || '';
   for (const part of rom.split(/[／/]/)) {
@@ -127,4 +153,4 @@ function checkTyped(raw, item) {
 
 /* ══════════════════════ 3. Явц (localStorage) ══════════════════════ */
 
-export { toKana, checkTyped, normKana, normRomaji, answerSet, KANA_MAP };
+export { toKana, checkTyped, normKana, normRomaji, answerSet, readingVariants, KANA_MAP };

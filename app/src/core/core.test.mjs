@@ -51,3 +51,26 @@ test('mergeProgress: их n ялна, __proto__ алгасна', () => {
   assert.ok(out.Y);
   assert.equal(({}).Z, undefined);
 });
+
+import { checkTyped, readingVariants } from './romaji.js';
+
+test('checkTyped: топик бөөс は/へ/を дуудлагаар хүлээнэ (ромажигүй сан)', () => {
+  const c = (kana, typed) => checkTyped(typed, { kana, jp: kana, romaji: '' });
+  assert.ok(c('こんにちは', 'konnichiwa'));   // は = wa
+  assert.ok(c('こちらは', 'kochirawa'));       // топик は = wa
+  assert.ok(c('ピアスをする', 'piasuosuru'));   // を = o
+  assert.ok(c('がっこうへいく', 'gakkoueiku')); // へ = e
+  assert.ok(c('こんにちは', 'konnichiha'));     // бичлэгээр ч зөв
+});
+
+test('checkTyped: は=ha үгс хэвээр зөв, буруу нь татгалзана', () => {
+  assert.ok(checkTyped('hai', { kana: 'はい', jp: 'はい', romaji: '' }));
+  assert.ok(checkTyped('hatake', { kana: 'はたけ', jp: 'はたけ', romaji: '' }));
+  assert.equal(checkTyped('xyz', { kana: 'はい', jp: 'はい', romaji: '' }), false);
+});
+
+test('readingVariants: は/へ/を-г хоёр янзаар, бусдыг хэвээр', () => {
+  const v = readingVariants('こんにちは');
+  assert.ok(v.includes('こんにちは') && v.includes('こんにちわ'));
+  assert.deepEqual(readingVariants('たべる'), ['たべる']);   // бөөсгүй үг өөрчлөгдөхгүй
+});

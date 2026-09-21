@@ -130,6 +130,29 @@ for (const [kana, typed] of accept) {
   console.log((ok ? 'ok  ' : 'FAIL') + '  ' + typed.padEnd(20) + '-> ' + kana);
 }
 
+// Топик бөөс は/へ/を — дуудлагаараа wa/e/o. Ромажигүй сан (el1/el2/n5)
+// дээр байгалийн дуудлагаар бичихэд хүлээх ёстой. Синтетик item тул
+// өгөгдлөөс хамаарахгүй, тодорхой.
+console.log('\n-- топик бөөс は/へ/を --');
+const particleAccept = [
+  ['こんにちは', 'konnichiwa'], ['こちらは', 'kochirawa'],
+  ['ピアスをする', 'piasuosuru'], ['がっこうへいく', 'gakkoueiku'],
+  ['はい', 'hai'], ['はたけ', 'hatake'],        // は=ha хэвээр зөв
+  ['こんにちは', 'konnichiha'],                 // бичлэгээр ч зөв
+];
+for (const [kana, typed] of particleAccept) {
+  const ok = mod.checkTyped(typed, { kana, jp: kana, romaji: '' });
+  if (!ok) bad++;
+  console.log((ok ? 'ok  ' : 'FAIL') + '  ' + typed.padEnd(20) + '-> ' + kana);
+}
+// Буруу хариулт татгалзсаар байх ёстой (хэт задгай болоогүй).
+const particleReject = [['はい', 'xyz'], ['はたけ', 'sushi']];
+for (const [kana, typed] of particleReject) {
+  const rej = !mod.checkTyped(typed, { kana, jp: kana, romaji: '' });
+  if (!rej) bad++;
+  console.log((rej ? 'ok  ' : 'FAIL') + '  ' + typed.padEnd(20) + '-x ' + kana + ' (татгалзах ёстой)');
+}
+
 fs.writeFileSync(path.join(__dirname, 'rejected.json'),
   JSON.stringify(rejected.slice(0, 80), null, 1), 'utf8');
 console.log('\nтатгалзсан ромажи: ' + rejected.length + '  (tools/rejected.json)');
