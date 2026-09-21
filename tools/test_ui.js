@@ -718,6 +718,34 @@ async function run(c) {
   ok('торны ГАДНА карт үлдээгүй',
     laid && laid.outside === 0, JSON.stringify(laid));
 
+  /* Нүүрний блокууд ЖИГД зайтай эсэх. Өмнө нь блок тус бүр өөрийн
+     margin-тай байсан тул 0 / 10 / 34px гэсэн санамсаргүй алхам
+     гардаг байв. Энд CSS уншихгүй — БОДИТ зайг хэмжинэ. */
+  const gaps = await c.ev(`
+    go('home');
+    await new Promise(r => setTimeout(r, 300));
+    const kids = [...document.getElementById('home').children]
+      .filter(e => e.getBoundingClientRect().height > 0);
+    const g = [];
+    for (let i = 1; i < kids.length; i++) {
+      g.push(Math.round(kids[i].getBoundingClientRect().top
+                        - kids[i - 1].getBoundingClientRect().bottom));
+    }
+    return { gaps: g, uniq: [...new Set(g)] };
+  `);
+  ok('нүүрний блокуудын зай ЖИГД (бүгд ижил)',
+    gaps && gaps.uniq.length === 1, JSON.stringify(gaps));
+  ok('зай нь --list-gap (14px)',
+    gaps && gaps.uniq[0] === 14, JSON.stringify(gaps));
+
+  // Цэс — зөвхөн «Явц». Бусад нь нүүрэн дээр карт болж байдаг.
+  const menu = await c.ev(
+    'return [...document.querySelectorAll("#menu button")].map(b => b.dataset.go);');
+  ok('цэсэнд ганцхан бичлэг',
+    Array.isArray(menu) && menu.length === 1, JSON.stringify(menu));
+  ok('тэр нь «Явц» (stats)',
+    Array.isArray(menu) && menu[0] === 'stats', JSON.stringify(menu));
+
   console.log('\n[12] ふりがな — ruby/rt');
   /* `exScript`-ийг §9b аль хэдийн өөрчилсөн тул одоогийн УТГЫГ нь
      шалгах утгагүй. Шалгах ёстой зүйл нь: юу ч хадгалаагүй шинэ

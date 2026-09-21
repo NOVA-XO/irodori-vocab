@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22c">
-<link rel="stylesheet" href="app.css?v=2026-09-22c">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22d">
+<link rel="stylesheet" href="app.css?v=2026-09-22d">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22c">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22c">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22d">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22d">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -44,13 +44,11 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   </button>
 </header>
 
+<!-- Цэс нь ЗӨВХӨН «Явц»-тай. Бусад бүх хэсэг (Irodori · Шалгалт ·
+     Кана · Санал хүсэлт) нүүрэн дээр карт болж байдаг, гарчиг дархад
+     нүүр рүү ордог тул цэсэнд давхардуулах шаардлагагүй. «Явц» нь
+     цорын ганц нүүрэнд байхгүй дэлгэц. -->
 <nav id="menu" class="menu" hidden>
-  <button data-go="home">Нүүр</button>
-  <button data-go="irodori">Irodori сурах бичиг</button>
-  <button data-go="jlpt">JLPT бэлтгэл</button>
-  <button data-go="exam">Шалгалт</button>
-  <button data-go="kana">Кана үсэг</button>
-  <button data-go="feedback">Санал хүсэлт</button>
   <button data-go="stats">Явц</button>
 </nav>
 
@@ -69,12 +67,10 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
 
   <button id="btn-continue" class="primary big wide" hidden>Үргэлжлүүлэх</button>
 
-  <div class="hero">
-    <div class="due">
+  <div class="due">
       <div class="due-n" id="due-n">…</div>
       <div class="due-t">өнөөдөр давтах үг</div>
-      <button id="btn-review" class="primary big">Давталт эхлүүлэх</button>
-    </div>
+    <button id="btn-review" class="primary big">Давталт эхлүүлэх</button>
   </div>
 
   <div class="bigcards">
@@ -559,7 +555,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-22c"></script>
-<script src="app.js?v=2026-09-22c"></script>
+<script src="sync-config.js?v=2026-09-22d"></script>
+<script src="app.js?v=2026-09-22d"></script>
 </body>
 </html>

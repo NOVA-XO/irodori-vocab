@@ -171,8 +171,7 @@ body{
 
 /* Нүүрний том сонголтууд — хайрцаггүй, зөвхөн хуваах шугам.
    Зүүн талын том япон үсэг нь мөрийн «толгой» болно. */
-.bigcards{display:grid; gap:var(--list-gap); margin-top:26px;
-          border-top:var(--list-top)}
+.bigcards{display:grid; gap:var(--list-gap); border-top:var(--list-top)}
 .bigcard{
   display:grid; grid-template-columns:64px 1fr auto; align-items:center;
   column-gap:18px; row-gap:3px; text-align:left; padding:var(--box-pad);
@@ -199,6 +198,18 @@ body{
 
 .screen{max-width:660px; margin:0 auto; padding:18px 16px 56px;
         position:relative; z-index:1}
+
+/* Нүүрний блокууд ЖИГД зайтай. Өмнө нь блок тус бүр өөрийн margin-тай
+   байсан тул 0 / 10 / 34px гэсэн санамсаргүй алхам гардаг байв.
+   Торны `gap` нь: блок нэмэх/хасахад зай өөрөө зөв үлдэнэ, нуугдсан
+   блок (`#btn-continue`) хоосон зай үлдээхгүй. */
+#home{display:grid; align-content:start; gap:var(--list-gap)}
+/* Хөндлөн `auto`-г ХЭВЭЭР үлдээнэ — `.follow` түүгээр төвлөрдөг. */
+#home > *{margin-top:0; margin-bottom:0}
+/* Хөл хэсэг ч ЯГ ижил зайтай: түүнийг тусгаарлах ажлыг өөрийнх нь
+   дээд хүрээ ба дотоод зай (`.src{padding-top:18px; border-top}`)
+   хийнэ — нэмэлт `margin` хэрэггүй. */
+#home > .src{margin-top:0}
 /* Гарчиг — 間. Дээрээ өргөн зайтай, доороо нарийн шугамтай. */
 h2{
   font-family:var(--disp); font-size:12px; text-transform:var(--h2-tt);
