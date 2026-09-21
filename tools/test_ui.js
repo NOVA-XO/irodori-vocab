@@ -425,57 +425,85 @@ async function run(c) {
     ok('№21 due-card id хасагдсан', !r.dueCard);
   }
 
-  console.log('\n[9b] Шалгалт — 100 асуултаас санамсаргүй сонгож оноо гаргана');
+  console.log('\n[9b] Шалгалт — харилцааны, өөрөө үнэлэх');
   {
     // Шалгалтын ӨМНӨХ явцыг тэмдэглэнэ — шалгалт үүнийг хөдөлгөх ЁСГҮЙ.
     await c.ev('window.__pBefore = JSON.stringify(progress); return 1;');
-    // Шалгалт нь ТУСДАА хэсэг (нүүрнээс, хуучин JLPT картын байранд).
     ok('нүүрэнд шалгалтын оролт бий',
       await c.ev('return !!document.querySelector(\'[data-go="exam"]\')'));
     await c.ev('go("exam"); await new Promise(r=>setTimeout(r,200)); return 1;');
     ok('орвол эхлээд ТОХИРГОО гарна',
       await c.ev('return screen === "exam" && !document.getElementById("ex-setup").hidden'
         + ' && document.getElementById("ex-run").hidden'));
-    await c.ev('const b=[...document.querySelectorAll("#seg-exam-n button")].find(x=>x.dataset.n==="10");'
+    ok('хариулах 2 төрөл байна',
+      Number(await c.ev('return document.querySelectorAll("#seg-exam-mode button").length')) === 2);
+
+    await c.ev('const m=document.querySelector(\'#seg-exam-mode button[data-m="think"]\'); if(m) m.click();'
+      + 'const b=[...document.querySelectorAll("#seg-exam-n button")].find(x=>x.dataset.n==="10");'
       + 'if(b) b.click(); document.getElementById("btn-exam").click();'
       + 'await new Promise(r=>setTimeout(r,900)); return 1;');
-    ok('шалгалт эхлэв', await c.ev('return screen === "exam"'));
+    ok('шалгалт эхлэв', await c.ev('return screen === "exam" && exQs.length === 10'));
     ok('тохиргоо нуугдав', await c.ev('return document.getElementById("ex-setup").hidden === true'));
-    ok('10 асуулт сонгогдов', Number(await c.ev('return exQs.length')) === 10);
-    ok('4 сонголт гарна', Number(await c.ev('return document.getElementById("ex-opts").children.length')) === 4);
-    // Бүгдийг ЗӨВ хариулна -> 100%
+    ok('япон асуулт гарна',
+      String(await c.ev('return document.getElementById("ex-q").textContent')).length > 3);
+    ok('монгол орчуулга гарна',
+      String(await c.ev('return document.getElementById("ex-qmn").textContent')).length > 3);
+    ok('эхэндээ загвар хариулт НУУГДСАН',
+      await c.ev('return document.getElementById("ex-model").hidden === true'));
+    ok('«бодож» төрөлд микрофон гарахгүй',
+      await c.ev('return document.getElementById("ex-speak").hidden === true'));
+
+    await c.ev('document.getElementById("ex-reveal").click(); await new Promise(r=>setTimeout(r,120)); return 1;');
+    ok('загвар хариулт нээгдэв',
+      await c.ev('return document.getElementById("ex-model").hidden === false'
+        + ' && document.getElementById("ex-model-jp").textContent.length > 2'));
+
     const r = await c.ev(`
       for (let i = 0; i < 40 && document.getElementById("ex-done").hidden; i++) {
-        const q = exQs[exIdx];
-        const bs = [...document.getElementById("ex-opts").children];
-        (bs.find(b => b.textContent === q.a.jp) || bs[0]).click();
-        await new Promise(r => setTimeout(r, 280));
+        if (document.getElementById("ex-model").hidden) document.getElementById("ex-reveal").click();
+        await new Promise(r => setTimeout(r, 90));
+        document.getElementById("ex-yes").click();
+        await new Promise(r => setTimeout(r, 220));
       }
       return { pct: document.getElementById("ex-pct").textContent,
                wrongN: document.getElementById("ex-wrong").children.length };
     `);
-    ok('бүгд зөв → 100%', r && r.pct === '100%', JSON.stringify(r));
-    ok('алдсан жагсаалт хоосон', r && r.wrongN === 0, JSON.stringify(r));
-    // Шалгалт нь SRS явцад НӨЛӨӨЛӨХГҮЙ байх ёстой: хэмжих зорилготой,
-    // сургах биш. `grade()` дуудвал хайрцаг үсэрч давтлагын хуваарь эвдэрнэ.
+    ok('бүгд чадсан -> 100%', r && r.pct === '100%', JSON.stringify(r));
+    ok('чадаагүй жагсаалт хоосон', r && r.wrongN === 0, JSON.stringify(r));
+
+    await c.ev('document.getElementById("ex-again").click(); await new Promise(r=>setTimeout(r,200));'
+      + 'document.getElementById("btn-exam").click(); await new Promise(r=>setTimeout(r,800)); return 1;');
+    const r2 = await c.ev(`
+      for (let i = 0; i < 40 && document.getElementById("ex-done").hidden; i++) {
+        if (document.getElementById("ex-model").hidden) document.getElementById("ex-reveal").click();
+        await new Promise(r => setTimeout(r, 90));
+        document.getElementById("ex-no").click();
+        await new Promise(r => setTimeout(r, 220));
+      }
+      return { pct: document.getElementById("ex-pct").textContent,
+               wrongN: document.getElementById("ex-wrong").children.length };
+    `);
+    ok('бүгд чадаагүй -> 0%', r2 && r2.pct === '0%', JSON.stringify(r2));
+    ok('чадаагүй 10 асуулт жагсаав', r2 && r2.wrongN === 10, JSON.stringify(r2));
+
     ok('шалгалт SRS явцыг ХӨДӨЛГӨӨГҮЙ',
       await c.ev('return JSON.stringify(progress) === window.__pBefore;'));
 
-    // ── Уралдааны регресс (2026-09-21, Astra-гийн ревьюгээр олдсон) ──
-    // Хариултын 240мс таймер ШИНЭ шалгалтын эхний асуултыг алгасдаг байв.
+    // ── Уралдааны регресс (docs/STATE.md §2.36) ──
     const race1 = await c.ev(`
       exN = 10; await loadExam(); startExam();
       await new Promise(r => setTimeout(r, 450));
-      document.getElementById("ex-opts").children[0].click();
-      await new Promise(r => setTimeout(r, 60));   // таймер дуусахаас ӨМНӨ
+      document.getElementById("ex-reveal").click();
+      await new Promise(r => setTimeout(r, 80));
+      document.getElementById("ex-yes").click();
+      await new Promise(r => setTimeout(r, 40));
       startExam();
-      await new Promise(r => setTimeout(r, 450));
+      await new Promise(r => setTimeout(r, 500));
       return { exIdx: exIdx, pos: document.getElementById("ex-pos").textContent };
     `);
     ok('№6 хуучин таймер шинэ шалгалтыг алгасахгүй',
-      race1 && race1.exIdx === 0 && /^1 \//.test(race1.pos), JSON.stringify(race1));
+      race1 && race1.exIdx === 0 && race1.pos.indexOf('1 /') === 0, JSON.stringify(race1));
 
-    // fetch нислэг дунд гарахад `show('exam')` эргүүлж татдаг байв.
     const race2 = await c.ev(`
       EXAM = null; startExam(); go("home");
       await new Promise(r => setTimeout(r, 900));

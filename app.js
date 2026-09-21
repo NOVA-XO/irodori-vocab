@@ -1753,23 +1753,29 @@ $('fin-home').onclick = () => go('home');
 
 /* ══════════════════════ 7b. Шалгалт ══════════════════════
  *
- * 100 асуултын сангаас (data/exam-starter.json) санамсаргүй 10–20-г
- * сонгож асууна. ДАСГАЛААС ЯЛГААТАЙ нь: зөв/бурууг шууд хэлэхгүй,
- * эцэст нь оноо ба алдсан асуултуудыг зөв хариултын хамт харуулна —
- * жинхэнэ шалгалт шиг.
+ * ХАРИЛЦААНЫ шалгалт: япон асуулт гарч, сурагч ХАРИУЛНА. Дараа нь
+ * загвар хариултыг хараад ӨӨРӨӨ «чадсан/чадаагүй» гэж дүгнэнэ —
+ * чөлөөт хариултыг автоматаар үнэлэх боломжгүй, багшийн аман шалгалт
+ * ч яг ингэж явдаг.
  *
- * Явцад (SRS) НӨЛӨӨЛӨХГҮЙ: шалгалт нь хэмжих зорилготой, сургах биш.
- * Тиймээс `grade()` дуудахгүй — эс тэгвэл хайрцаг гэнэт үсэрч давтлагын
- * хуваарь эвдэрнэ. */
+ * Хоёр төрөл:
+ *   think — хариултаа бодоод (эсвэл дуугаар хэлээд) загвартай тулгана,
+ *   speak — микрофоноор хариулж, таньсан текст ба ТҮЛХҮҮР БҮТЭЦ олдсон
+ *           эсэхийг зөвлөмж болгон харуулна. Дүгнэлт нь хэвээр ӨӨРӨӨ —
+ *           чөлөөт яриаг таних нь найдваргүй тул оноог түүнд даатгахгүй.
+ *
+ * Явцад (SRS) НӨЛӨӨЛӨХГҮЙ: шалгалт хэмжинэ, сургахгүй. `grade()` дуудахгүй.
+ */
 const KEY_EXN = 'irodori.examn.v1';
+const KEY_EXM = 'irodori.exammode.v1';
 let EXAM = null;                       // татсан сан (нэг удаа)
 let exQs = [], exIdx = 0, exLog = [];
-/* ГҮЙЛТИЙН ТЭМДЭГ. Шалгалт нь async (fetch) ба хойшлуулсан (setTimeout)
-   хэсэгтэй. Тэмдэггүй бол:
-     · fetch нислэг дунд хэрэглэгч гарсан ч `show('exam')` эргүүлж татна,
-     · хариултын 240мс таймер ШИНЭ шалгалтын `exIdx`-ийг ахиулж
-       эхний асуултыг алгасна (хоёулаа браузерт давтагдсан).
-   Гүйлт бүр өөрийн тэмдгийг шалгана; гарах/дахин эхлэхэд тэмдэг ахина. */
+let exN = load(KEY_EXN, 15);
+if (![10, 15, 20].includes(exN)) exN = 15;
+let exMode = load(KEY_EXM, 'think');
+if (!['think', 'speak'].includes(exMode)) exMode = 'think';
+
+/* ГҮЙЛТИЙН ТЭМДЭГ — docs/STATE.md §2.36. */
 let exRun = 0, exTimer = null;
 
 /** Шалгалтын дэлгэц рүү орвол ЭХЛЭЭД тохиргоо гарна (шууд эхлэхгүй). */
@@ -1785,18 +1791,16 @@ function examSetup() {
 function exAbort() {
   exRun++;
   if (exTimer) { clearTimeout(exTimer); exTimer = null; }
+  stopRecog();
 }
 
-/** Амлалтыг хугацаагаар хязгаарлана — өлгөөтэй fetch товчийг мөнхөд
- *  идэвхгүй орхихоос сэргийлнэ. */
+/** Өлгөөтэй fetch товчийг мөнхөд идэвхгүй орхихоос сэргийлнэ. */
 function withTimeout(p, ms) {
   return new Promise((res, rej) => {
     const t = setTimeout(() => rej(new Error('timeout')), ms);
     p.then(v => { clearTimeout(t); res(v); }, e => { clearTimeout(t); rej(e); });
   });
 }
-let exN = load(KEY_EXN, 15);
-if (![10, 15, 20].includes(exN)) exN = 15;
 
 function loadExam() {
   if (EXAM) return Promise.resolve(EXAM);
@@ -1806,21 +1810,39 @@ function loadExam() {
   }).then(d => { EXAM = d; return d; });
 }
 
+/** «Амаар» төрөл боломжтой юу: браузер дэмжих БА интернэт байх. */
+function examSpeakOK() { return canListen && navigator.onLine; }
+
 function refreshExamSeg() {
   document.querySelectorAll('#seg-exam-n button').forEach(b =>
     b.setAttribute('aria-pressed', +b.dataset.n === exN));
+  const sp = document.querySelector('#seg-exam-mode button[data-m="speak"]');
+  if (sp) sp.disabled = !examSpeakOK();
+  if (exMode === 'speak' && !examSpeakOK()) exMode = 'think';
+  document.querySelectorAll('#seg-exam-mode button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.m === exMode));
+  const note = $('ex-mode-note');
+  if (note) {
+    note.textContent = !canListen
+      ? 'Амаар хариулах нь зөвхөн Chrome/Edge дээр ажиллана.'
+      : !navigator.onLine
+      ? 'Амаар хариулахад интернэт шаардана (таниулт үүлэн дээр).'
+      : exMode === 'speak'
+      ? 'Асуулт бүрд микрофоноор хариулна. Дүгнэлтийг өөрөө өгнө.'
+      : 'Хариултаа бодоод (эсвэл дуугаар хэлээд) загвартай тулгана.';
+  }
 }
 
 function startExam() {
   const btn = $('btn-exam');
-  exAbort();                       // өмнөх гүйлтийг хүчингүй болгоно
+  exAbort();
   const run = exRun;
   btn.disabled = true;
   withTimeout(loadExam(), 15000).then(d => {
-    btn.disabled = false;          // ҮРГЭЛЖ сэргээнэ — товч гацахгүй
-    if (run !== exRun) return;     // хэрэглэгч гарсан эсвэл дахин эхлүүлсэн
+    btn.disabled = false;
+    if (run !== exRun) return;
     const pool = (d.items || []).slice();
-    if (pool.length < 4) { alert('Шалгалтын асуулт ачаалагдсангүй.'); return; }
+    if (!pool.length) { alert('Шалгалтын асуулт ачаалагдсангүй.'); return; }
     exQs = shuffle(pool).slice(0, Math.min(exN, pool.length));
     exIdx = 0; exLog = [];
     $('ex-setup').hidden = true;
@@ -1839,44 +1861,57 @@ function renderExam() {
   $('ex-pos').textContent = (exIdx + 1) + ' / ' + exQs.length;
   $('ex-bar').style.width = Math.round(100 * exIdx / exQs.length) + '%';
   $('ex-topic').textContent = 'L' + q.lesson + ' · ' + q.topic;
-  $('ex-q').textContent = q.q;
-  const box = $('ex-opts');
-  box.innerHTML = '';
-  for (const o of shuffle([q.a].concat(q.dis))) {
-    const b = document.createElement('button');
-    b.className = 'jpface';
-    b.textContent = o.jp;                     // textContent — тарилтаас хамгаална
-    b.onclick = () => examPick(o, b);
-    box.appendChild(b);
+  $('ex-q').textContent = q.q;            // textContent — тарилтаас хамгаална
+  $('ex-qmn').textContent = q.qMn;
+  $('ex-model').hidden = true;
+  $('ex-reveal').hidden = false;
+  // Амаар төрөл
+  const sp = exMode === 'speak';
+  $('ex-speak').hidden = !sp;
+  if (sp) {
+    stopRecog();
+    $('ex-mic').classList.remove('rec');
+    $('ex-mic').textContent = '🎤 Хариулах';
+    $('ex-mic-text').textContent = '';
+    $('ex-mic-hint').textContent = 'Товчийг дараад япон хэлээр хариулаарай.';
   }
   window.scrollTo(0, 0);
 }
 
-function examPick(o, btn) {
+/** Загвар хариултыг харуулна. Амаар төрөлд таниулт зогсоно. */
+function examReveal() {
   const q = exQs[exIdx];
-  const ok = o.jp === q.a.jp;
-  exLog.push({ q: q, picked: o, ok: ok });
-  [...$('ex-opts').children].forEach(c => { c.disabled = true; });
-  // Товчийг богинохон онцолно — зөв хариултыг ХАРУУЛАХГҮЙ (шалгалт тул).
-  btn.classList.add(ok ? 'ok' : 'ng');
+  stopRecog();
+  $('ex-mic') && $('ex-mic').classList.remove('rec');
+  $('ex-model-jp').textContent = q.model;
+  $('ex-model-mn').textContent = q.modelMn;
+  $('ex-key').textContent = q.key ? 'Түлхүүр бүтэц: ' + q.key : '';
+  $('ex-reveal').hidden = true;
+  $('ex-model').hidden = false;
+}
+
+/** Сурагчийн өөрийн дүгнэлт. */
+function examMark(ok) {
+  const q = exQs[exIdx];
+  exLog.push({ q: q, ok: ok });
   const run = exRun;
   exTimer = setTimeout(() => {
     exTimer = null;
-    if (run !== exRun) return;     // шалгалт зогссон/дахин эхэлсэн
+    if (run !== exRun) return;
     exIdx++;
     if (exIdx >= exQs.length) finishExam(); else renderExam();
-  }, 240);
+  }, 160);
 }
 
 function finishExam() {
   const good = exLog.filter(x => x.ok).length;
   const pct = exLog.length ? Math.round(100 * good / exLog.length) : 0;
   $('ex-pct').textContent = pct + '%';
-  $('ex-sum').textContent = '✓ ' + good + '   ✗ ' + (exLog.length - good)
-    + '   (' + exLog.length + ' асуулт)';
-  $('ex-verdict').textContent = pct >= 90 ? 'Маш сайн — сурсан байна.'
-    : pct >= 70 ? 'Сайн. Алдсанаа давтвал бүрэн болно.'
-    : pct >= 50 ? 'Дунд. Алдсан хичээлүүдээ дахин үзэх хэрэгтэй.'
+  $('ex-sum').textContent = 'Чадсан ' + good + '   ·   Чадаагүй '
+    + (exLog.length - good) + '   (' + exLog.length + ' асуулт)';
+  $('ex-verdict').textContent = pct >= 90 ? 'Маш сайн — асуултад чөлөөтэй хариулж байна.'
+    : pct >= 70 ? 'Сайн. Чадаагүй хэдийгээ давтвал бүрэн болно.'
+    : pct >= 50 ? 'Дунд. Тэдгээр хичээлийн яриаг дахин үзэх хэрэгтэй.'
     : 'Дахин давтах шаардлагатай.';
 
   const wrong = exLog.filter(x => !x.ok);
@@ -1884,21 +1919,26 @@ function finishExam() {
   const box = $('ex-wrong');
   box.innerHTML = '';
   for (const w of wrong) {
-    // DOM-оор угсарна (innerHTML биш) — өгөгдөл HTML болж хувирахгүй.
+    // DOM-оор угсарна (innerHTML биш).
     const d = document.createElement('div');
     d.className = 'ex-w';
+    const t = document.createElement('div');
+    t.className = 'ex-wq';
+    t.textContent = 'L' + w.q.lesson + ' · ' + w.q.topic;
     const qq = document.createElement('div');
-    qq.className = 'ex-wq';
-    qq.textContent = 'L' + w.q.lesson + ' · ' + w.q.q;
-    const bad = document.createElement('div');
-    bad.className = 'ex-bad';
-    bad.textContent = '✗ ' + w.picked.jp + ' — ' + w.picked.mn;
-    const good2 = document.createElement('div');
-    good2.className = 'ex-good';
-    good2.textContent = '✓ ' + w.q.a.jp
-      + (w.q.a.kana && w.q.a.kana !== w.q.a.jp ? '（' + w.q.a.kana + '）' : '')
-      + ' — ' + w.q.a.mn;
-    d.appendChild(qq); d.appendChild(bad); d.appendChild(good2);
+    qq.className = 'ex-bad jp';
+    qq.textContent = w.q.q;
+    const qm = document.createElement('div');
+    qm.className = 'ex-wq';
+    qm.textContent = w.q.qMn;
+    const a = document.createElement('div');
+    a.className = 'ex-good jp';
+    a.textContent = w.q.model;
+    const am = document.createElement('div');
+    am.className = 'ex-wq';
+    am.textContent = w.q.modelMn + (w.q.key ? '  ·  ' + w.q.key : '');
+    d.appendChild(t); d.appendChild(qq); d.appendChild(qm);
+    d.appendChild(a); d.appendChild(am);
     box.appendChild(d);
   }
   $('ex-run').hidden = true;
@@ -1906,14 +1946,60 @@ function finishExam() {
   window.scrollTo(0, 0);
 }
 
+/* ── Амаар хариулах: микрофон ── */
+$('ex-mic').onclick = () => {
+  const b = $('ex-mic');
+  if (recognizing) { stopRecog(); b.classList.remove('rec'); b.textContent = '🎤 Хариулах'; return; }
+  if (!examSpeakOK()) {
+    $('ex-mic-hint').textContent = canListen
+      ? 'Интернэт холболт шаардана.'
+      : 'Энэ браузер микрофоны таниулт дэмжихгүй (Chrome/Edge).';
+    return;
+  }
+  const q = exQs[exIdx];
+  b.classList.add('rec'); b.textContent = '● Сонсож байна…';
+  $('ex-mic-hint').textContent = 'Одоо хариулаарай…';
+  $('ex-mic-text').textContent = '';
+  startRecog(
+    interim => { $('ex-mic-text').textContent = interim; },
+    alts => {
+      b.classList.remove('rec'); b.textContent = '🎤 Хариулах';
+      if (exQs[exIdx] !== q) return;          // асуулт солигдсон бол үл тоох
+      const heard = alts[0] || '';
+      $('ex-mic-text').textContent = heard || '(таниагүй)';
+      // ЗӨВЛӨМЖ: түлхүүр бүтэц сонсогдов уу. Оноо энэнд даатгахгүй —
+      // чөлөөт яриаг таних нь найдваргүй.
+      const core = (q.key || '').replace(/[〜～]/g, '');
+      const hit = core && alts.some(a => normKana(a).includes(normKana(core)));
+      $('ex-mic-hint').textContent = !heard
+        ? 'Сонсогдсонгүй — дахин оролдоно уу.'
+        : hit ? '✓ «' + q.key + '» бүтэц сонсогдлоо.'
+        : 'Загвар хариултыг харж өөрөө дүгнээрэй.';
+    },
+    err => {
+      b.classList.remove('rec'); b.textContent = '🎤 Хариулах';
+      $('ex-mic-hint').textContent = err === 'not-allowed' || err === 'service-not-allowed'
+        ? 'Микрофон зөвшөөрөл өгөгдсөнгүй.'
+        : err === 'no-speech' ? 'Дуу сонсогдсонгүй — дахин оролдоно уу.'
+        : 'Таних боломжгүй байна — дахин оролдоно уу.';
+    },
+    () => { b.classList.remove('rec'); b.textContent = '🎤 Хариулах'; }
+  );
+};
+
 document.querySelectorAll('#seg-exam-n button').forEach(b =>
   b.onclick = () => { exN = +b.dataset.n; save(KEY_EXN, exN); refreshExamSeg(); });
+document.querySelectorAll('#seg-exam-mode button').forEach(b =>
+  b.onclick = () => { exMode = b.dataset.m; save(KEY_EXM, exMode); refreshExamSeg(); });
 $('btn-exam').onclick = startExam;
-$('ex-again').onclick = startExam;
+$('ex-reveal').onclick = examReveal;
+$('ex-yes').onclick = () => examMark(true);
+$('ex-no').onclick = () => examMark(false);
+$('ex-again').onclick = () => examSetup();
 $('ex-home').onclick = () => go('home');
-$('ex-quit').onclick = () => {
-  if (confirm('Шалгалтыг зогсоох уу?')) examSetup();
-};
+$('ex-quit').onclick = () => { if (confirm('Шалгалтыг зогсоох уу?')) examSetup(); };
+addEventListener('online', refreshExamSeg);
+addEventListener('offline', refreshExamSeg);
 refreshExamSeg();
 document.querySelectorAll('#goal-pick button').forEach(b =>
   b.onclick = () => { settings.goal = +b.dataset.goal; save(KEY_S, settings); refreshHome(); });

@@ -8,9 +8,9 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21g">
-<link rel="stylesheet" href="app.css?v=2026-09-21g">
-<link rel="stylesheet" href="themes.css?v=2026-09-21g">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21h">
+<link rel="stylesheet" href="app.css?v=2026-09-21h">
+<link rel="stylesheet" href="themes.css?v=2026-09-21h">
 <!-- Сонгосон загварыг CSS-ээс ӨМНӨ тавина. Эс тэгвэл хуудас эхлээд
      анхдагч 和-гаар нэг анивчаад дараа нь солигдоно. Тиймээс энэ нь
      app.js дотор биш, ЭНД байх ёстой. -->
@@ -18,8 +18,8 @@
 document.documentElement.setAttribute("data-theme",t);}catch(e){
 document.documentElement.setAttribute("data-theme","minimal");}</script>
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21g">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21g">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21h">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21h">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -377,15 +377,23 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <div id="ex-setup">
     <h2>Шалгалт</h2>
     <p class="hint"><span class="jp">Irodori 入門</span>-ий <b>100 асуултаас</b>
-       санамсаргүй сонгож асууна. Дасгалаас ялгаатай нь зөв/бурууг шууд
-       хэлэхгүй — эцэст нь оноо, алдсан асуулт бүрийг зөв хариултын хамт
-       харуулна.</p>
+       санамсаргүй сонгож асууна. Багш асуусан юм шиг япон асуулт гарах ба
+       та хариулна. Дараа нь <b>загвар хариултыг</b> харж өөрөө дүгнэнэ.</p>
+
+    <div class="step">Хариулах арга</div>
+    <div class="seg" id="seg-exam-mode">
+      <button data-m="think"><b>Бодож хариулах</b><span>Хариултаа бодоод загвартай тулгана</span></button>
+      <button data-m="speak"><b>Амаар хариулах</b><span>Микрофоноор хэлнэ · Chrome/Edge, интернэт</span></button>
+    </div>
+    <p class="hint" id="ex-mode-note"></p>
+
     <div class="step">Хэдэн асуулт вэ</div>
     <div class="seg" id="seg-exam-n">
       <button data-n="10"><b>10 асуулт</b><span>богино</span></button>
       <button data-n="15"><b>15 асуулт</b><span>дунд</span></button>
       <button data-n="20"><b>20 асуулт</b><span>бүтэн</span></button>
     </div>
+
     <button id="btn-exam" class="primary big wide">Шалгалт эхлүүлэх</button>
     <p class="hint">Шалгалт нь давтлагын явцад <b>нөлөөлөхгүй</b> — зөвхөн хэмжинэ.</p>
   </div>
@@ -396,8 +404,29 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
       <div class="track"><span class="fill" id="ex-bar"></span></div>
     </div>
     <div class="ex-topic" id="ex-topic"></div>
-    <div class="ex-q" id="ex-q"></div>
-    <div id="ex-opts" class="choices"></div>
+    <div class="ex-q jp" id="ex-q"></div>
+    <div class="ex-qmn" id="ex-qmn"></div>
+
+    <!-- Амаар хариулах төрөлд л гарна -->
+    <div id="ex-speak" hidden>
+      <button class="primary big mic" id="ex-mic">🎤 Хариулах</button>
+      <div class="mic-hint" id="ex-mic-hint"></div>
+      <div class="mic-text jp" id="ex-mic-text"></div>
+    </div>
+
+    <button id="ex-reveal" class="primary big wide">Загвар хариултыг харах</button>
+
+    <div id="ex-model" hidden>
+      <div class="ex-model-jp jp" id="ex-model-jp"></div>
+      <div class="ex-model-mn" id="ex-model-mn"></div>
+      <div class="ex-key" id="ex-key"></div>
+      <p class="hint">Та ингэж хариулж чадсан уу?</p>
+      <div class="row2">
+        <button class="ng big" id="ex-no">Чадаагүй</button>
+        <button class="ok big" id="ex-yes">Чадсан</button>
+      </div>
+    </div>
+
     <div class="row"><button id="ex-quit" class="ghost sm">Шалгалтыг зогсоох</button></div>
   </div>
 
@@ -407,7 +436,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
       <div class="fin-sub" id="ex-sum"></div>
       <div class="fin-goal" id="ex-verdict"></div>
     </div>
-    <h2 id="ex-wrong-h" hidden>Алдсан асуултууд</h2>
+    <h2 id="ex-wrong-h" hidden>Чадаагүй асуултууд</h2>
     <div id="ex-wrong"></div>
     <button id="ex-again" class="primary big wide">Дахин шалгуулах</button>
     <div class="row"><button id="ex-home" class="ghost sm">Нүүр</button></div>
@@ -542,7 +571,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-21g"></script>
-<script src="app.js?v=2026-09-21g"></script>
+<script src="sync-config.js?v=2026-09-21h"></script>
+<script src="app.js?v=2026-09-21h"></script>
 </body>
 </html>
