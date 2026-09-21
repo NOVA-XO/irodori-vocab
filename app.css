@@ -1,41 +1,44 @@
-/* Мартчихлаа — үндсэн бүтэц ба 素 MINIMAL загвар
+/* Мартчихлаа — аппын ЦОРЫН ГАНЦ хэв маягийн файл
  *
- * Энэ файл нь БҮТЭЦ (байрлал, хэмжээ, хөдөлгөөн) ба анхдагч **minimal**
- * загварыг агуулна. Бусад загвар (`themes.css`) нь `html[data-theme=…]`
- * дээр ЗӨВХӨН токеныг дарж бичнэ.
+ * Загвар НЭГ. Цайвар нь `:root`-д, бараан нь `prefers-color-scheme`-ийн
+ * дотор — СИСТЕМЭЭС авна, сонгох товч байхгүй. (2026-09-21 хүртэл
+ * таван загвар + `themes.css` байсан; бүгд хасагдсан.)
  *
- * Хэлбэрийн токеныг ЗААВАЛ ашиглана — хатуу утга бичвэл тэр газар
- * загвар солигдохоо болино.
+ * Өнгө, радиус, зай бүрийг ТОКЕНООР бич. Хатуу утга бичвэл тэр газар
+ * бараан горимд ЧИМЭЭГҮЙХЭН эвдэрнэ — нүдээр л олдоно (STATE §2.39).
  */
 
 :root{
-  /* Minimal — GitHub-ийн харанхуй загварын логик: бараг хар суурь,
-     түүнээс бага зэрэг цайвар гадаргуу, нимгэн саарал хүрээ, ганц хөх
-     холбоос. Чимэглэл байхгүй; уншихад л зориулагдсан. */
-  --bg:#0d1117; --card:#161b22; --paper:#21262d;
-  --ink:#e6edf3; --ink-2:#8b949e; --ink-3:#6e7681;
-  --line:#30363d; --line-2:#424a53;
-  --accent:#2f81f7; --seal:#2f81f7;
-  --ok:#3fb950; --ng:#f85149;
-  --ok-bg:#12261a; --ng-bg:#2d1518;
+  /* ЦАЙВАР — хэрэглэгчийн палитр: #2470f0 · #5b8bef · #61cef2 · #f3f8a8
+     Байрлал, зай нь flashcards.world шиг намуухан хэвээр; өнгө нь эндээс.
+     Дэвсгэр нь цэнхэрийн маш сул сүүдэртэй цагаан — палитрын хөх нь
+     дэвсгэр болбол текст уншигдахаа болино. */
+  --bg:#f5f8ff; --card:#ffffff; --paper:#ffffff;
+  --ink:#0b1540; --ink-2:#3c4a76; --ink-3:#5d6b95;
+  --line:#dde7fb; --line-2:#bccff7;
+  --accent:#2470f0; --seal:#2470f0;
+  /* Хоёрдогч ба тодруулга — палитрын үлдсэн хоёр өнгө. */
+  --accent-2:#61cef2;
+  --hl:#f3f8a8; --hl-ink:#0b1540;
+  /* Ногоон/улаан нь палитрт байхгүй ч УТГА агуулдаг тул хэвээр. */
+  --ok:#166534; --ng:#b91c1c;
+  --ok-bg:#f0fdf4; --ng-bg:#fef2f2;
   --shadow:none;
 
-  /* ХЭЛБЭРИЙН токенууд. Загвар бүр эдгээрийг л солино. */
-  --r:6px;
+  /* ХЭЛБЭРИЙН токенууд. */
+  --r:16px;
   --box-bg:var(--card);
   --box-bd:1px solid var(--line);
-  --box-r:6px;
-  --box-sep:0;
-  --box-pad:15px 14px;
-  --list-gap:8px;
-  --list-top:0;
+  --box-r:14px;
+  --box-sep:1px dashed var(--line);
+  --box-pad:20px;
+  --list-gap:14px;
+  --list-top:none;
   --elev:none;
-  --btn-bg:#238636; --btn-fg:#ffffff;      /* GitHub-ийн ногоон гол товч */
-  --sel-bg:var(--accent); --sel-fg:#ffffff;
-  --h2-tt:none; --h2-ls:0; --h2-bd:1px solid var(--line);
-  --track-h:8px;
-  --grain:0;
-  --fx1:transparent; --fx2:transparent; --fx3:transparent; --fx-op:0;
+  --btn-bg:#2470f0; --btn-fg:#ffffff;
+  --sel-bg:#e9f1ff; --sel-fg:#1a52c0;
+  --h2-tt:none; --h2-ls:normal; --h2-bd:none;
+  --track-h:4px;
   /* НЭГ ФОНТ — Noto Sans JP. Япон, латин, кирилл гурвууланг нь агуулна
      (Ү/Ө орно — шалгасан), өөрсдөө нийлүүлдэг (fonts/nsjps-*.woff2) тул
      Windows, Mac, Android, iOS дээр ИЖИЛ харагдана.
@@ -54,6 +57,29 @@
      Ү (U+04AE), Ө (U+04E8) БАЙХГҮЙ (34px-ээр зурж шалгав). Тиймээс
      Noto Sans Mono-г өөрсдөө нийлүүлнэ. */
   --mono:"Noto Sans Mono",ui-monospace,Consolas,monospace;
+}
+
+/* БАРААН — системийн сонголтыг дагана. Тусдаа сэдэв БИШ, товчлуур ч
+   байхгүй: утас/компьютер нь бараан горимд байвал апп автоматаар
+   дагана. Цэвэр хар биш, намуухан slate — шөнө уншихад нүд цавдахгүй.
+   Зөвхөн ӨНГӨ солигдоно; хэлбэрийн токенууд цайвартайгаа ижил. */
+@media (prefers-color-scheme: dark){
+  :root{
+    /* Хэрэглэгчийн палитр: #0b1540 · #1e28c4 · #7b95ff · #a9d0fb */
+    --bg:#0b1540; --card:#131e52; --paper:#1a2765;
+    --ink:#e9f0ff; --ink-2:#a9d0fb; --ink-3:#8294c6;
+    --line:#22306e; --line-2:#35458c;
+    --accent:#7b95ff; --seal:#7b95ff;
+    --accent-2:#61cef2;
+    /* Цайвар дээрх цайвар шар нь бараан дээр хэт цохилно — палитрын
+       хамгийн хүчтэй хөхийг тодруулга болгов. */
+    --hl:#1e28c4; --hl-ink:#e9f0ff;
+    --ok:#6ee7a0; --ng:#ff9ba3;
+    --ok-bg:#0e2c25; --ng-bg:#331a24;
+    /* Гол товч — палитрын хүчтэй хөх; цагаан бичиг дээр нь уншигдана. */
+    --btn-bg:#1e28c4;
+    --sel-bg:#1b2a6b; --sel-fg:#a9d0fb;
+  }
 }
 
 *{box-sizing:border-box}
@@ -180,7 +206,7 @@ button:disabled{opacity:.42; cursor:default}
 .due{
   background:var(--box-bg); border:var(--box-bd); border-bottom:var(--box-sep);
   border-radius:var(--box-r); box-shadow:var(--elev);
-  padding:34px 0 30px; text-align:center;
+  padding:32px 20px; text-align:center;
 }
 .due-n{font-family:var(--disp); font-size:76px; font-weight:400; line-height:.9;
        color:var(--ink); letter-spacing:-.03em}
@@ -286,14 +312,6 @@ button:disabled{opacity:.42; cursor:default}
     letter-spacing:.22em; text-transform:uppercase}
 .by b{font-weight:400; color:var(--ink-2); letter-spacing:.06em;
       text-transform:none}
-
-/* ханууны тамга — хуудсын төгсгөлийн гарын үсэг */
-.seal{
-  display:block; margin:26px auto 0; width:46px; height:46px;
-  border:2px solid var(--seal); border-radius:3px; color:var(--seal);
-  font-family:var(--jpd); font-size:23px; line-height:42px; text-align:center;
-  opacity:.85;
-}
 
 .follow{
   display:flex; align-items:center; justify-content:center; gap:9px;
@@ -456,10 +474,14 @@ button:disabled{opacity:.42; cursor:default}
 .today{display:grid; grid-template-columns:auto minmax(0,1fr); gap:18px;
        align-items:center; background:var(--box-bg); border:var(--box-bd);
        border-bottom:var(--box-sep); border-radius:var(--box-r);
-       box-shadow:var(--elev); padding:16px 0; margin-bottom:0}
+       box-shadow:var(--elev); padding:18px 20px; margin-bottom:0}
 .tstat{text-align:center; min-width:56px}
-.tstat b{display:block; font-family:var(--disp); font-size:30px; line-height:1;
-         color:var(--ink)}
+/* Дараалсан өдөр — цорын ганц тодруулсан тоо. Палитрын дөрөв дэх
+   өнгө энд л гарна: нүүрэнд яг нэг л анхаарал татах цэг байх ёстой. */
+.tstat b{display:block; width:fit-content; margin:0 auto 6px;
+         font-family:var(--disp); font-size:30px; line-height:1;
+         color:var(--hl-ink); background:var(--hl);
+         border-radius:var(--r); padding:6px 14px; min-width:30px}
 .tstat span{font-size:10px; color:var(--ink-3); letter-spacing:.1em;
             text-transform:uppercase}
 .tgoal .tg-head{display:flex; justify-content:space-between; align-items:baseline;
@@ -469,7 +491,9 @@ button:disabled{opacity:.42; cursor:default}
                   font-family:var(--disp); letter-spacing:0}
 .tgoal .track{height:var(--track-h); background:var(--line);
               border-radius:var(--r); overflow:hidden}
-.tgoal .fill{display:block; height:100%; width:0; background:var(--accent);
+/* Явцын зураас — палитрын хоёрдогч (тэнгэрийн) өнгө. Гол өнгө нь
+   ТОВЧинд зориулагдсан тул давхардуулахгүй. */
+.tgoal .fill{display:block; height:100%; width:0; background:var(--accent-2);
              transition:width .25s}
 .wide{width:100%; margin-bottom:10px}
 
@@ -568,93 +592,17 @@ a.ghost{display:inline-block; text-decoration:none}
 }
 
 
-/* ═══ Гүнтэй дэвсгэр ба 3D үгийн цагираг ═══════════════════════════
- *
- * Хоёулаа ЧИМЭГЛЭЛ тул `#bg`, `.ring3d` хоёрыг `aria-hidden` болгож,
- * хөдөлгөөн унтраасан үед бүрэн устгана. Аль нь ч зайлшгүй мэдээлэл
- * агуулахгүй — алга болсон ч апп бүрэн ажиллана.
- */
-
-/* Дэвсгэр давхарга бүх агуулгын АРД байхын тулд өнгийг `html` дээр
-   тавьж, `body`-г тунгалаг болгоно. */
+/* Дэвсгэрийн өнгийг `html` дээр тавьж, `body`-г тунгалаг үлдээнэ. */
 html{background:var(--bg)}
 
-#bg{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
-#bg i{
-  position:absolute; display:block; border-radius:50%;
-  filter:blur(70px); opacity:var(--fx-op);
-}
-#bg i:nth-child(1){width:54vmax; height:54vmax; left:-18vmax; top:-20vmax;
-  background:var(--fx1); animation:drift1 34s ease-in-out infinite alternate}
-#bg i:nth-child(2){width:46vmax; height:46vmax; right:-16vmax; top:24vmax;
-  background:var(--fx2); animation:drift2 46s ease-in-out infinite alternate}
-#bg i:nth-child(3){width:40vmax; height:40vmax; left:10vmax; bottom:-18vmax;
-  background:var(--fx3); animation:drift3 40s ease-in-out infinite alternate}
-@keyframes drift1{to{transform:translate3d(14vmax,9vmax,0) scale(1.16)}}
-@keyframes drift2{to{transform:translate3d(-12vmax,-11vmax,0) scale(.86)}}
-@keyframes drift3{to{transform:translate3d(9vmax,-8vmax,0) scale(1.1)}}
+/* 2026-09-21: ГҮНТЭЙ ДЭВСГЭР, 3D ЦАГИРАГ, НИСДЭГ КАРТ, ЦААСНЫ МӨХЛӨГ
+   бүгд ХАСАГДСАН. Аль нь ч мэдээлэл агуулдаггүй байсан — зөвхөн
+   чимэглэл. Загварын шинэ чиглэл нь намуухан, уншихад зориулсан
+   хуудас (лавлагаа: flashcards.world), тиймээс хөдөлгөөнт чимэглэл
+   зорилгодоо харшилна. Түүхийг `git log`-оос үз.
 
-/* Нүүрний баатар. Цагираг нь картаас ӨНДӨР тул дээр доогуур нь картууд
-   эргэлдэж харагдана — хайрцагтай загварт ч (弁当, 遊) далдрахгүй. */
-/* Цагирагийг баатрын хавтангийн ЯГ ард тавихыг оролдоод болиод байв:
-   хайрцагтай загварт (弁当, 遊) хавтан нь бүрэн бүрхэж, цагираг огт
-   харагдахгүй болно. Тиймээс цагираг ӨӨРИЙН зурвастай — хавтан нь
-   доод хэсэг дээр нь ДАВХАРЛАНА. Ингэснээр «ард нь» гэсэн мэдрэмж
-   хэвээр, гэхдээ загвар бүрд харагдана. */
-.hero{position:relative; padding:0 0 8px}
-/* Нүүрэн дээр л хавтан нь цагираг дээр давхарлана. Сонголтын
-   дэлгэцүүд дээр цагираг энгийн зурвас хэвээр. */
-.hero .ring3d{margin-bottom:-52px}
-.ringslot:empty{display:none}
-.ring3d{
-  position:relative; width:100%; height:198px; margin:0 auto;
-  z-index:0; perspective:1000px; pointer-events:none;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
-  mask-image:linear-gradient(90deg,transparent,#000 15%,#000 85%,transparent);
-}
-.hero .due{position:relative; z-index:1}
-.ring3d-in{
-  position:absolute; left:50%; top:50%; width:0; height:0;
-  transform-style:preserve-3d; animation:ringSpin 46s linear infinite;
-}
-/* Багахан налуу — картууд хавтгай биш, эргэлдэж байгаа нь мэдрэгдэнэ. */
-@keyframes ringSpin{
-  from{transform:rotateX(-9deg) rotateY(0)}
-  to{transform:rotateX(-9deg) rotateY(-360deg)}
-}
-.ring3d .c{
-  position:absolute; width:62px; height:86px; margin:-43px -31px;
-  display:flex; align-items:center; justify-content:center; text-align:center;
-  font-family:var(--jpd); font-size:19px; line-height:1.15; padding:4px;
-  color:var(--ink-2); background:var(--card);
-  border:1px solid var(--line); border-radius:var(--box-r);
-  opacity:.62; backface-visibility:hidden; overflow:hidden;
-}
-/* Дасгал эхлэхэд цагираг хурдсаад холдоно — карт нь «сугарч» гарсан мэт. */
-.ring3d.pull .ring3d-in{animation-duration:5s}
-.ring3d.pull{transition:opacity .5s ease, transform .5s ease;
-             opacity:0; transform:scale(.84)}
-
-/* Цагирагаас сугарч дасгалын карт болж томрох НИСДЭГ карт. */
-.flyer{
-  position:fixed; z-index:60; pointer-events:none;
-  display:flex; align-items:center; justify-content:center; text-align:center;
-  font-family:var(--jpd); color:var(--ink); background:var(--card);
-  border:1px solid var(--line-2); border-radius:var(--box-r);
-  box-shadow:0 20px 60px rgba(0,0,0,.34);
-}
-
-/* Хөдөлгөөн унтраасан — эсвэл систем нь «багасга» гэсэн. */
-.nofx #bg,.nofx .ring3d{display:none}
-@media (prefers-reduced-motion:reduce){ #bg,.ring3d{display:none} }
-
-/* Цаасны мөхлөг. 和紙 нь гөлгөр биш — энэ давхарга л «цаас»-ыг цаас
-   болгодог. Хүрэлт нэвтэрдэг, зөвхөн харагдац. */
-body::after{
-  content:''; position:fixed; inset:0; pointer-events:none; z-index:9999;
-  opacity:var(--grain); background-size:150px 150px;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)'/%3E%3C/svg%3E");
-}
+   Үүнтэй хамт `#bg`, `.ring3d`, `.ringslot`, `.flyer`, `.seal`,
+   `--grain`, `--fx*` токенууд, `.nofx` анги мөн устсан. */
 
 /* Хөдөлгөөн багасгахыг хүссэн хэрэглэгчид бүх анимацийг унтраана. */
 @media (prefers-reduced-motion:reduce){

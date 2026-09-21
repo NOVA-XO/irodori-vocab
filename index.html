@@ -3,23 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1c3350">
+<!-- Хөтчийн хаягийн мөрний өнгө. Апп нь системийн цайвар/бараан
+     сонголтыг дагадаг тул ХОЁР мөр — JS-ээр солихгүй. -->
+<meta name="theme-color" content="#f5f8ff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b1540" media="(prefers-color-scheme: dark)">
 <title>Мартчихлаа — Irodori 入門</title>
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21n">
-<link rel="stylesheet" href="app.css?v=2026-09-21n">
-<link rel="stylesheet" href="themes.css?v=2026-09-21n">
-<!-- Сонгосон загварыг CSS-ээс ӨМНӨ тавина. Эс тэгвэл хуудас эхлээд
-     анхдагч 和-гаар нэг анивчаад дараа нь солигдоно. Тиймээс энэ нь
-     app.js дотор биш, ЭНД байх ёстой. -->
-<script>try{var t=JSON.parse(localStorage.getItem("irodori.theme.v1")||'""')||"minimal";
-document.documentElement.setAttribute("data-theme",t);}catch(e){
-document.documentElement.setAttribute("data-theme","minimal");}</script>
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21q">
+<link rel="stylesheet" href="app.css?v=2026-09-21q">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21n">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21n">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21q">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21q">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -27,10 +23,6 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
 <meta name="apple-mobile-web-app-title" content="Мартчихлаа">
 </head>
 <body>
-
-<!-- Гүнтэй дэвсгэр: бүдгэрсэн гурван хэлбэр аажим хөвнө. Загвар бүрд
-     өөр өнгөтэй. Хөдөлгөөн унтраасан үед бүрэн алга болно. -->
-<div id="bg" aria-hidden="true"><i></i><i></i><i></i></div>
 
 <header class="bar">
   <button id="btn-menu" class="icon" title="Цэс" aria-label="Цэс">
@@ -70,12 +62,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
 
   <button id="btn-continue" class="primary big wide" hidden>Үргэлжлүүлэх</button>
 
-  <!-- Үгийн сангийн 3D цагираг. Дасгал эхлэхэд урд талын карт нь
-       СУГАРЧ гарч, дасгалын карт болж томордог. -->
   <div class="hero">
-    <div class="ringslot">
-      <div id="ring" class="ring3d" aria-hidden="true"><div class="ring3d-in"></div></div>
-    </div>
     <div class="due">
       <div class="due-n" id="due-n">…</div>
       <div class="due-t">өнөөдөр давтах үг</div>
@@ -126,8 +113,6 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
     <span>Боломжтой бол миний GitHub-ийг дагаарай</span>
     <i aria-hidden="true">↗</i>
   </a>
-  <!-- ハンコ — хуудсны төгсгөлийн тамга. Мэдээлэл агуулахгүй тул уншигчаас нууна. -->
-  <div class="seal" aria-hidden="true">忘</div>
 </section>
 
 <!-- ═══════════════════ IRODORI ═══════════════════ -->
@@ -135,7 +120,6 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <!-- Цагирагийн суудал. Цагираг НЭГ л ширхэг байх бөгөөд идэвхтэй
        дэлгэцийн суудал руу зөөгдөнө — эс тэгвэл дасгал сонгох
        дэлгэцээс эхлүүлэхэд сугалах карт олдохгүй. -->
-  <div class="ringslot"></div>
   <div class="step">一 · Ном</div>
   <div class="seg" id="seg-book">
     <button data-b="starter"><b class="jp">入門</b><span>Суурь шат · A1 · 1232 үг</span></button>
@@ -192,7 +176,6 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <!-- Цагирагийн суудал. Цагираг НЭГ л ширхэг байх бөгөөд идэвхтэй
        дэлгэцийн суудал руу зөөгдөнө — эс тэгвэл дасгал сонгох
        дэлгэцээс эхлүүлэхэд сугалах карт олдохгүй. -->
-  <div class="ringslot"></div>
   <div class="step">一 · Түвшин</div>
   <div class="klist" id="jlpt-levels">
     <button data-j="5"><span class="tick">✓</span>
@@ -261,7 +244,6 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <!-- Цагирагийн суудал. Цагираг НЭГ л ширхэг байх бөгөөд идэвхтэй
        дэлгэцийн суудал руу зөөгдөнө — эс тэгвэл дасгал сонгох
        дэлгэцээс эхлүүлэхэд сугалах карт олдохгүй. -->
-  <div class="ringslot"></div>
   <div class="step">一 · Аль бүлгийг давтахаа сонго</div>
   <div class="klist" id="kana-groups">
     <button data-g="gojuon">
@@ -500,11 +482,6 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
 
 <!-- ═══════════════════ ПРОФАЙЛ ═══════════════════ -->
 <section id="profile" class="screen" hidden>
-  <h2>Загвар</h2>
-  <p class="hint">Аппын өнгө, хэлбэр, үсгийг бүхэлд нь солино.
-     Сонголт энэ төхөөрөмжид хадгалагдана.</p>
-  <div id="theme-list" class="thlist"></div>
-
   <h2>Япон бичиг</h2>
   <p class="hint">Япон үг, өгүүлбэрийг юугаар харуулах вэ. Энэ сонголт
      <b>апп даяар</b> үйлчилнэ — үгийн карт, шалгалт хоёуланд нь.</p>
@@ -533,14 +510,6 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   </div>
   <p class="hint" id="sync-none" hidden>Синк тохируулаагүй байна — явц зөвхөн
      энэ төхөөрөмжид хадгалагдана. Доорх нөөцлөх аргаар зөөж болно.</p>
-
-  <h2>Хөдөлгөөн</h2>
-  <p class="hint">Нүүрэн дэх 3D үгийн цагираг ба хөвөгч дэвсгэр.
-     Утас халаах, батарей идэх юм шиг санагдвал унтраа.
-     Системийн «хөдөлгөөн багасгах» тохиргоог үргэлж дагана.</p>
-  <div class="row">
-    <button id="btn-fx" class="ghost sm">…</button>
-  </div>
 
   <h2>Өдрийн зорилт</h2>
   <p class="hint">Өдөрт хэдэн хариулт өгөхөөр төлөвлөж байна вэ. Нүүрэн дээрх
@@ -582,7 +551,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-21n"></script>
-<script src="app.js?v=2026-09-21n"></script>
+<script src="sync-config.js?v=2026-09-21q"></script>
+<script src="app.js?v=2026-09-21q"></script>
 </body>
 </html>

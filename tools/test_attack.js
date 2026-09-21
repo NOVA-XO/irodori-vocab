@@ -177,7 +177,7 @@ function getJSON(path, method) {
                    accent: '', romaji: '', ref: false, section: '' };
     ALL = [evil]; deck = 'vocab'; mode = 'flash'; pool = [evil];
     queue = [evil]; cur = evil;
-    try { reveal(); buildRing(); } catch (e) { return 'унав: ' + e.message; }
+    try { reveal(); refreshHome(); } catch (e) { return 'унав: ' + e.message; }
     await new Promise(r => setTimeout(r, 400));
     return window.__x2 ? 'СКРИПТ АЖИЛЛАВ' : null;
   `));

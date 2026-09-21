@@ -276,7 +276,7 @@ if (!settings.kgroups) settings.kgroups = ['gojuon'];
 if (!settings.goal) settings.goal = 20;
 if (!settings.dir) settings.dir = 'jp2mn';
 if (!settings.kjn) settings.kjn = [5];
-if (!('fx' in settings)) settings.fx = 1;     // чимэглэлийн хөдөлгөөн        // JLPT түвшин (JLPT дэлгэц)
+        // JLPT түвшин (JLPT дэлгэц)
 if (!settings.what) settings.what = 'word';   // Irodori: шинэ үг | шинэ ханз
 if (!settings.book) settings.book = 'starter';
 /* Хичээлийн сонголтыг НОМ ТУС БҮРД тусад нь хадгална. N5 нь 50 хичээлтэй,
@@ -1463,10 +1463,8 @@ function show(name) {
   // Шалгалтаас гарвал хойшлуулсан таймер ШИНЭ гүйлтэд нөлөөлөхгүй байх ёстой.
   if (screen === 'exam' && name !== 'exam') exAbort();
   screen = name;
-  // Дасгалын үед дэвсгэрийн анимацийг зогсооно (themes.css: `.busy`).
   // Энэ нь `show()` дотор байх ЁСТОЙ — дасгал `go()`-гүйгээр шууд
   // `show('study')` дуудаж эхэлдэг.
-  document.documentElement.classList.toggle('busy', name === 'study');
   for (const s of SCREENS) $(s).hidden = (s !== name);
   $('menu').hidden = true;
   // Дасгал дунд байхад ☰ биш ‹ — нэг дарлагаар гарах боломж хэрэгтэй.
@@ -1483,10 +1481,10 @@ function go(name) {
   // Явц нь БҮХ санг харуулдаг тул нээхэд бусад номыг татна. Эхлээд
   // байгаагаараа зурж, ирсэн хойно нь дахин зурна — хоосон дэлгэц харагдахгүй.
   if (name === 'stats') { refreshStats(); loadAllBooks().then(refreshStats); }
-  if (name === 'profile') { refreshSync(); refreshUsage(); renderThemes(); applyFx(); }
+  if (name === 'profile') { refreshSync(); refreshUsage(); }
   if (name === 'feedback') refreshFb();
   if (name === 'exam') examSetup();
-  if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) { placeRing(name); refreshHome(); }
+  if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
   show(name);
 }
 
@@ -1560,7 +1558,6 @@ function refreshHome() {
   }
   document.querySelectorAll('#goal-pick button').forEach(b =>
     b.setAttribute('aria-pressed', +b.dataset.goal === settings.goal));
-  buildRing();
   const nk = $('n-kana'); if (nk) nk.textContent = KANA.length + ' кана';
   const nj = $('n-kanji');
   if (nj) nj.textContent = KANJI.filter(k => k.n).length + ' ханз';
@@ -2313,10 +2310,6 @@ $('btn-sync-link').onclick = () => {
   syncNow().then(() => { refreshStats(); refreshHome(); });
 };
 $('btn-sync-now').onclick = () => syncNow().then(() => { refreshStats(); refreshHome(); });
-if ($('btn-fx')) $('btn-fx').onclick = () => {
-  settings.fx = settings.fx ? 0 : 1; save(KEY_S, settings);
-  applyFx(); refreshHome();
-};
 $('btn-sync-off').onclick = () => {
   if (!confirm('Энэ төхөөрөмжийг салгах уу? Явц энд үлдэнэ, зөвхөн нийлүүлэлт зогсоно.')) return;
   syncCode = null; save(KEY_C, null); refreshSync(); syncSay('салгалаа');
@@ -2359,188 +2352,27 @@ if (window.speechSynthesis) {
  * Хувийн мэдээлэл биш — санамсаргүй тэмдэгтүүд, зөвхөн энэ браузерт.
  */
 const NL = String.fromCharCode(10);
-/* ── Загвар (theme) ───────────────────────────────────────────────
- * `data-theme`-ийг <html> дээр тавина; өнгө, хэлбэр, үсэг бүгд
- * `themes.css` доторх токеноор солигдоно. Хоосон түлхүүр = «Систем»,
- * өөрөөр хэлбэл `data-theme` огт тавихгүй бөгөөд `prefers-color-scheme`
- * ажиллана.
+/* 2026-09-21: ЗАГВАР СОНГОГЧ, 3D ЦАГИРАГ, НИСДЭГ КАРТ, ХӨДӨЛГӨӨНИЙ
+ * ТОХИРГОО бүгд ХАСАГДСАН (~150 мөр).
  *
- * Эхний тавилтыг index.html доторх ЭРТ скрипт хийдэг (анивчихаас
- * сэргийлнэ) — энд зөвхөн СОЛИХ ба жагсаалт зурах ажил үлдэнэ. */
-const KEY_TH = 'irodori.theme.v1';
-const THEMES = [
-  { k: 'minimal', g: '素', n: 'Minimal',
-    d: 'Энгийн харанхуй · чимэглэлгүй · хамгийн хөнгөн',
-    c: ['#0d1117', '#e6edf3', '#2f81f7'] },
-  { k: 'blue', g: '蒼', n: 'Цэнхэр',
-    d: 'Гүн ус · удаан урсгал · тайван',
-    c: ['#061523', '#e6f1fa', '#4fc3f7'] },
-  { k: 'space', g: '宙', n: 'Сансар',
-    d: 'Од, мананцар · гүн хөх · хөвөгч хавтан',
-    c: ['#07040f', '#ece9f7', '#b79bff'] },
-  { k: 'anime', g: '空', n: 'Аниме',
-    d: 'Цэлмэг тэнгэр · хөвөх үүл · поп ягаан',
-    c: ['#3b96dd', '#ffffff', '#ff2e6a'] },
-  { k: 'rain', g: '雨', n: 'Бороо',
-    d: 'Шөнийн норсон цонх · бүдгэрсэн гэрэл · дусал',
-    c: ['#0c1420', '#e8eff7', '#6fc8e0'] },
-];
-
-/** Тохиргоогүй бол MINIMAL. Өдөр бүр хэрэглэдэг аппын анхдагч нь
- *  хамгийн тайван, хамгийн хөнгөн нь байх ёстой — бусдыг хүсвэл сонгоно. */
-function curTheme() { return load(KEY_TH, '') || 'minimal'; }
-
-function applyTheme(t) {
-  const r = document.documentElement;
-  if (t) r.setAttribute('data-theme', t); else r.removeAttribute('data-theme');
-  save(KEY_TH, t);
-  // Хөтчийн хаягийн мөрний өнгийг бодит дэвсгэртэй нийцүүлнэ.
-  const m = document.querySelector('meta[name="theme-color"]');
-  if (m) m.content = getComputedStyle(document.body).backgroundColor;
-}
-
-function renderThemes() {
-  const box = $('theme-list');
-  if (!box) return;
-  const cur = curTheme();
-  box.innerHTML = THEMES.map(t =>
-    '<button data-th="' + escA(t.k) + '" aria-pressed="' + (t.k === cur) + '">'
-    + '<span class="th-g jpd">' + t.g + '</span>'
-    + '<span><b>' + esc(t.n) + '</b><span>' + esc(t.d) + '</span>'
-    + '<span class="th-sw">' + t.c.map(c =>
-      '<i style="background:' + c + ';border:1px solid rgba(128,128,128,.35)"></i>'
-    ).join('') + '</span></span>'
-    + '<span class="th-tick">\u2713</span></button>').join('');
-  box.querySelectorAll('button').forEach(b =>
-    b.onclick = () => { applyTheme(b.dataset.th); renderThemes(); });
-}
-
-/* ── Чимэглэл: гүнтэй дэвсгэр ба 3D үгийн цагираг ────────────────
+ * Шалтгаан: апп нэг намуухан загвартай болов — цайвар, бараан нь
+ * СИСТЕМЭЭ дагана (`app.css` дахь `prefers-color-scheme`). Сонгох зүйл
+ * үлдээгүй тул сонгогч ч хэрэггүй; хөдөлгөөнт чимэглэл байхгүй тул
+ * түүнийг унтраах товч ч хэрэггүй.
  *
- * Нүүрэн дээр үгийн сангаас түүсэн картууд удаан эргэлдэнэ. Дасгал
- * эхлэхэд урд талын карт нь СУГАРЧ гарч, дасгалын карт болж томордог —
- * «энэ үгийг тэр овоолгоос сугалж авлаа» гэсэн мэдрэмж төрүүлнэ.
- *
- * Бүхэлдээ чимэглэл. Унтраасан ч, дэмжигдээгүй ч апп бүрэн ажиллана:
- * `flyToCard` нь эхлэлийн хэмжээсгүй бол чимээгүй буцна.
+ * Хөтчийн хаягийн мөрний өнгө (`meta[name=theme-color]`) нь одоо
+ * `index.html`-д СТАТИК. Хоёр өнгө хэрэгтэй тул `media` атрибуттай
+ * хоёр мөр байна.
  */
-const RING_N = 12;          // цагирагийн карт (3D давхарга тус бүрд)
-const RING_R = 152;         // радиус, px
-
-/** Системийн «хөдөлгөөн багасга» нь ХЭРЭГЛЭГЧИЙН тохиргооноос дээгүүр. */
-function motionOK() {
-  if (!settings.fx) return false;
-  try { return !matchMedia('(prefers-reduced-motion: reduce)').matches; }
-  catch (e) { return true; }
-}
-
-function applyFx() {
-  document.documentElement.classList.toggle('nofx', !motionOK());
-  const b = $('btn-fx');
-  if (b) b.textContent = settings.fx ? 'Хөдөлгөөн: асаалттай' : 'Хөдөлгөөн: унтраалттай';
-}
-
-/** Цагирагийн картуудыг одоогийн үгийн сангаас дүүргэнэ. */
-/** Цагирагийг идэвхтэй дэлгэцийн суудал руу зөөнө. */
-function placeRing(screen) {
-  const r = $('ring');
-  if (!r) return;
-  const slot = document.querySelector('#' + screen + ' .ringslot');
-  if (slot && r.parentNode !== slot) slot.appendChild(r);
-}
-
-function buildRing() {
-  const r = $('ring');
-  if (!r || !motionOK()) return;
-  const inn = r.firstElementChild;
-  const src = (activeWords().length ? activeWords() : ALL);
-  if (!src.length) { inn.innerHTML = ''; return; }
-  const pick = shuffle(src.slice()).slice(0, RING_N);
-  inn.innerHTML = pick.map((it, i) => {
-    // Урт үг картад багтахгүй тул эхний хэдэн тэмдэгтийг л авна.
-    const t = (settings.script === 'kana' ? (it.kana || it.jp) : (it.jp || it.kana)) || '';
-    return '<span class="c" style="transform:rotateY(' + (i * 360 / pick.length)
-      + 'deg) translateZ(' + RING_R + 'px)">' + esc(t.slice(0, 4)) + '</span>';
-  }).join('');
-}
-
-/** Картан дээр харагдах бичиг. Дасгалын төрлөөс хамаарна. */
-function dispText(it) {
-  if (!it) return '';
-  if (deck === 'kanji') return it.c || '';
-  if (deck === 'kana') return it.kata || it.hira || '';
-  return (settings.script === 'kana' ? (it.kana || it.jp) : (it.jp || it.kana)) || '';
-}
-
-/** Урд талын картыг олж, цагирагийг холдуулна. Хэмжээсийг нь буцаана.
- *  `label` өгвөл тэр картын бичгийг СОЛИНО — ингэснээр сугалагдаж буй
- *  карт нь дасгалд гарах яг тэр үг болно. */
-function ringPull(label) {
-  const r = $('ring');
-  if (!r || !motionOK()) return null;
-  // Эргэлдэж байгаа тул ХАМГИЙН ӨРГӨН харагдаж буй нь урд талынх.
-  let best = null, bestEl = null;
-  r.querySelectorAll('.c').forEach(c => {
-    const b = c.getBoundingClientRect();
-    if (b.width > 6 && (!best || b.width > best.w)) {
-      best = { left: b.left, top: b.top, w: b.width, h: b.height, text: c.textContent };
-      bestEl = c;
-    }
-  });
-  if (best && label) {
-    bestEl.textContent = label.slice(0, 4);
-    best.text = label;
-  }
-  if (best) {
-    r.classList.add('pull');
-    setTimeout(() => r.classList.remove('pull'), 700);
-  }
-  return best;
-}
-
-/** Сугалсан картыг дасгалын картын байрлал руу нисгэнэ. */
-function flyToCard(from) {
-  const card = $('card');
-  if (!from || !card || !motionOK() || !card.animate) return;
-  const to = card.getBoundingClientRect();
-  if (!to.width) return;
-  const fly = document.createElement('div');
-  fly.className = 'flyer';
-  fly.textContent = from.text;
-  document.body.appendChild(fly);
-  card.style.visibility = 'hidden';
-  let ended = false;
-  const end = () => {
-    if (ended) return;
-    ended = true;
-    fly.remove();
-    card.style.visibility = '';
-    replay(card, 'in');
-  };
-  // Өргөн/өндрийг ШУУД хөдөлгөнө — `scale` нь 62×86-аас 390×290 болоход
-  // үсгийг сунгаж гажуудуулна.
-  const an = fly.animate([
-    { left: from.left + 'px', top: from.top + 'px',
-      width: from.w + 'px', height: from.h + 'px',
-      fontSize: '19px', opacity: .85, transform: 'rotateY(-26deg)' },
-    { left: to.left + 'px', top: to.top + 'px',
-      width: to.width + 'px', height: to.height + 'px',
-      fontSize: '52px', opacity: 1, transform: 'rotateY(0deg)' },
-  ], { duration: 540, easing: 'cubic-bezier(.22,.8,.28,1)', fill: 'forwards' });
-  an.onfinish = end;
-  setTimeout(end, 900);      // WAAPI нь onfinish өгөхгүй байсан ч гацахгүй
-}
 
 /** Гурван эхлүүлэгчийн НИЙТЛЭГ төгсгөл. */
 function enterStudy() {
   // `queue[0]` нь `nextCard()`-д гарах үг. Сугалагдах картыг ЯГ түүгээр
   // бичнэ — эс тэгвэл нисэж ирсэн карт өөр үг харуулаад, буусны дараа
   // огт өөр үг гарч ирнэ.
-  const from = ringPull(dispText(queue[0]));   // хэмжилт нь дэлгэц солихоос ӨМНӨ
   show('study');
   renderCounters(queue.length);
   nextCard();
-  flyToCard(from);
 }
 
 const KEY_DEV = 'irodori.dev.v1';
@@ -2769,7 +2601,6 @@ Promise.all([
     refreshSync();
     // Ачаалахад нэг удаа татаж уусгана — өөр төхөөрөмж дээр давтсан нь орж ирнэ.
     if (syncOn && syncCode) syncNow(true).then(refreshHome);
-    applyTheme(curTheme()); applyFx();
     show('home'); refreshHome(); autoStart(); pingUsage();
   })
   .catch(() => {

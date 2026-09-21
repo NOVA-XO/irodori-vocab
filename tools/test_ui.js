@@ -162,7 +162,11 @@ async function run(c) {
   ok('нүүр дэлгэц гарсан', await c.ev('return screen === "home"'));
   ok('ханз ачаалагдсан', await c.ev('return KANJI.length') > 1000);
   ok('кана ачаалагдсан', await c.ev('return KANA.length') === 107);
-  ok('дэвсгэр (#bg) байна', await c.ev('return !!document.getElementById("bg")'));
+  // Чимэглэлүүд 2026-09-21-нд ХАСАГДСАН. Буцаж орж ирвэл энд баригдана.
+  ok('чимэглэл байхгүй (#bg · ring · seal)',
+    await c.ev('return !document.getElementById("bg")'
+      + ' && !document.getElementById("ring")'
+      + ' && !document.querySelector(".seal,.ringslot,.flyer")'));
   ok('гарчиг «Мартчихлаа»',
     (await c.ev('return document.title')).indexOf('Мартчихлаа') >= 0,
     await c.ev('return document.title'));
@@ -189,17 +193,38 @@ async function run(c) {
       await c.ev('return [...document.querySelectorAll(\'[data-go="jlpt"]\')].every(e=>e.hidden)'));
   }
 
-  console.log('\n[4] Ханзны 3D цагираг дэлгэц дагаж нүүнэ');
-  const ringScreens = jlptOn ? ['home', 'irodori', 'jlpt', 'kana'] : ['home', 'irodori', 'kana'];
-  for (const s of ringScreens) {
-    await c.ev('go("' + s + '"); return 1');
-    await sleep(150);
-    const r = await c.ev(
-      'const r=document.getElementById("ring");' +
-      'return r ? {inScreen: !!r.closest("#' + s + '"), w: r.getBoundingClientRect().width} : null');
-    ok('цагираг ' + s + '-д байна', r && r.inScreen, JSON.stringify(r));
-    ok('цагирагны өргөн > 0', r && r.w > 0, r ? String(r.w) : 'ring алга');
-  }
+  console.log('\n[4] Цайвар / бараан — СИСТЕМЭЭ дагана');
+  // Сэдэв сонгогч байхгүй. Хөтчийн `prefers-color-scheme`-ийг дуурайж
+  // токен ҮНЭХЭЭР солигдож байгааг шалгана — CSS бичигдсэн эсэхийг биш.
+  const tok = () => c.ev(
+    'const cs = getComputedStyle(document.documentElement);'
+    + 'return { bg: cs.getPropertyValue("--bg").trim(),'
+    + '         ink: cs.getPropertyValue("--ink").trim() };');
+
+  await c.send('Emulation.setEmulatedMedia',
+    { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
+  await sleep(150);
+  const lt = await tok();
+  ok('цайвар: --bg нь #f5f8ff', lt.bg === '#f5f8ff', JSON.stringify(lt));
+  ok('цайвар: бичиг бараан',   lt.ink === '#0b1540', JSON.stringify(lt));
+
+  await c.send('Emulation.setEmulatedMedia',
+    { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });
+  await sleep(150);
+  const dk = await tok();
+  ok('бараан: --bg нь #0f172a', dk.bg === '#0b1540', JSON.stringify(dk));
+  ok('бараан: бичиг цайвар',    dk.ink === '#e9f0ff', JSON.stringify(dk));
+  ok('хоёр горим ҮНЭХЭЭР ялгаатай', lt.bg !== dk.bg, lt.bg + ' / ' + dk.bg);
+
+  // Хаягийн мөрний өнгө хоёулаа бичигдсэн эсэх (JS-ээр солихоо больсон).
+  const tcs = await c.ev(
+    'return [...document.querySelectorAll("meta[name=theme-color]")]'
+    + '.map(m => m.media + " " + m.content);');
+  ok('theme-color хоёр мөртэй', Array.isArray(tcs) && tcs.length === 2,
+    JSON.stringify(tcs));
+
+  await c.send('Emulation.setEmulatedMedia', { features: [] });
+  await sleep(150);
 
   console.log('\n[5] Бүх сан × бүх горим — БОДИТ эхлэх замаар');
   // Төлөвийг гараар тавьж БОЛОХГҮЙ: `deck` ба `pool` хоёр зэрэг
@@ -255,23 +280,24 @@ async function run(c) {
   const sum = await c.ev('return document.getElementById("stat-sum").textContent');
   ok('Явцын дүн хоосон биш', sum && sum.length > 5, sum);
 
-  console.log('\n[7] Загвар солих');
-  const themes = await c.ev('return THEMES.map(t=>t.k)');
-  ok('5 загвар бүртгэлтэй', themes.length === 5, themes.join(','));
-  for (const t of themes) {
-    const r = await c.ev(
-      'applyTheme(' + JSON.stringify(t) + ');' +
-      'const cs=getComputedStyle(document.documentElement);' +
-      'return {attr: document.documentElement.getAttribute("data-theme"),' +
-      ' bg: cs.getPropertyValue("--bg").trim(),' +
-      ' ink: cs.getPropertyValue("--ink").trim()}');
-    ok('загвар ' + t + ' — data-theme тавигдсан', r.attr === t, JSON.stringify(r));
-    ok('загвар ' + t + ' — --bg токен бий', /^#|rgb/.test(r.bg), r.bg);
-  }
-  await c.ev('applyTheme("minimal"); return 1');
-  const mb = await c.ev(
-    'return getComputedStyle(document.documentElement).getPropertyValue("--bg").trim()');
-  ok('minimal нь GitHub-ийн #0d1117', mb === '#0d1117', mb);
+  console.log('\n[7] Загварын систем УСТСАН');
+  const gone = await c.ev(
+    'return { themes: typeof THEMES,'
+    + '        applyTheme: typeof applyTheme,'
+    + '        buildRing: typeof buildRing,'
+    + '        applyFx: typeof applyFx,'
+    + '        list: !!document.getElementById("theme-list"),'
+    + '        fxBtn: !!document.getElementById("btn-fx"),'
+    + '        attr: document.documentElement.getAttribute("data-theme") };');
+  ok('THEMES · applyTheme устсан',
+    gone && gone.themes === 'undefined' && gone.applyTheme === 'undefined',
+    JSON.stringify(gone));
+  ok('buildRing · applyFx устсан',
+    gone && gone.buildRing === 'undefined' && gone.applyFx === 'undefined',
+    JSON.stringify(gone));
+  ok('сонгогч ба хөдөлгөөний товч устсан',
+    gone && gone.list === false && gone.fxBtn === false, JSON.stringify(gone));
+  ok('data-theme огт тавигдахгүй', gone && gone.attr === null, JSON.stringify(gone));
 
   console.log('\n[8] JS-ээс дуудагддаг DOM id бүр index.html-д байгаа эсэх');
   const missing = await c.ev(`
@@ -747,14 +773,6 @@ async function run(c) {
 
   await c.ev('settings.script = "kana"; exAbort(); show("home"); go("home"); return 1;');
 
-  console.log('\n[10] .busy — дасгалын үед дэвсгэр зогсоно');
-  await c.ev('queue = ALL.slice(0,2); deck="vocab"; mode="flash"; enterStudy(); return 1');
-  await sleep(100);
-  ok('дасгал дээр .busy тавигдсан',
-    await c.ev('return document.documentElement.classList.contains("busy")'));
-  await c.ev('show("home"); return 1');
-  ok('гармагц .busy авагдсан',
-    await c.ev('return !document.documentElement.classList.contains("busy")'));
 }
 
 main().catch(e => { console.error(e); process.exit(2); });
