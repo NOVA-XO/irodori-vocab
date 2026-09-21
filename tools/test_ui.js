@@ -688,6 +688,85 @@ async function run(c) {
 
   /* ふりがな — ханзан дээрх жижиг кана. Уншлагын хосыг `build_exam.py`
      үүсгэж шалгасан; энд шалгах нь ХӨТӨЧ дээрх үр дүн. */
+  console.log('\n[14] Хариултын дуу ба чичиргээ');
+  /* «Алдаа гараагүй» гэдэг нь хангалтгүй — осциллятор ҮНЭХЭЭР үүсч,
+     эхэлж байгааг тоолно. Мөн чичиргээ нь ЗӨВХӨН буруу дээр. */
+  const snd = await c.ev(`
+    const C = window.AudioContext || window.webkitAudioContext;
+    let made = 0;
+    const real = C.prototype.createOscillator;
+    C.prototype.createOscillator = function () { made++; return real.call(this); };
+    const vib = [];
+    const realVib = navigator.vibrate;
+    navigator.vibrate = p => { vib.push(p); return true; };
+
+    const was = settings.sfx;
+    settings.sfx = 1;
+
+    made = 0; vib.length = 0;
+    sfx(true);
+    const good = { osc: made, vib: vib.length };
+
+    made = 0; vib.length = 0;
+    sfx(false);
+    const bad = { osc: made, vib: vib.slice() };
+
+    settings.sfx = 0;
+    made = 0; vib.length = 0;
+    sfx(true); sfx(false);
+    const off = { osc: made, vib: vib.length };
+
+    settings.sfx = was;
+    C.prototype.createOscillator = real;
+    navigator.vibrate = realVib;
+    return { good, bad, off, ctx: actx ? actx.state : 'none' };
+  `);
+  ok('зөв хариултад дуу гарна', snd && snd.good.osc > 0, JSON.stringify(snd));
+  ok('зөв хариултад чичирэхгүй', snd && snd.good.vib === 0, JSON.stringify(snd));
+  ok('буруу хариултад дуу гарна', snd && snd.bad.osc > 0, JSON.stringify(snd));
+  ok('буруу хариултад ЧИЧИРНЭ',
+    snd && snd.bad.vib.length === 1 && snd.bad.vib[0] > 0, JSON.stringify(snd));
+  ok('унтраалттай үед дуу ч, чичиргээ ч ГАРАХГҮЙ',
+    snd && snd.off.osc === 0 && snd.off.vib === 0, JSON.stringify(snd));
+
+  /* Дасгалын БОДИТ урсгалд холбогдсон эсэх — `sfx()`-ыг шууд биш,
+     хариулт өгөх замаар дуудуулна. */
+  const flow = await c.ev(`
+    const C = window.AudioContext || window.webkitAudioContext;
+    let made = 0;
+    const real = C.prototype.createOscillator;
+    C.prototype.createOscillator = function () { made++; return real.call(this); };
+    settings.sfx = 1;
+    queue = ALL.slice(0, 3); deck = 'vocab'; mode = 'flash'; enterStudy();
+    await new Promise(r => setTimeout(r, 300));
+    made = 0;
+    resolve(true);
+    await new Promise(r => setTimeout(r, 120));
+    const afterResolve = made;
+    C.prototype.createOscillator = real;
+    show('home'); go('home');
+    return { afterResolve: afterResolve };
+  `);
+  ok('дасгалд хариулахад дуу гарна (resolve-д холбогдсон)',
+    flow && flow.afterResolve > 0, JSON.stringify(flow));
+
+  const btn = await c.ev(`
+    const b = document.getElementById('btn-sfx');
+    if (!b) return null;
+    const was = settings.sfx;
+    settings.sfx = 1; refreshSfx();
+    const on = b.textContent;
+    settings.sfx = 0; refreshSfx();
+    const off = b.textContent;
+    settings.sfx = was; refreshSfx();
+    return { on: on, off: off, def: cleanSettings({}).sfx };
+  `);
+  ok('тохиргооны товч байна', !!btn, JSON.stringify(btn));
+  ok('товчны бичиг төлөвөө харуулна',
+    btn && /асаалттай/.test(btn.on) && /унтраалттай/.test(btn.off),
+    JSON.stringify(btn));
+  ok('анхдагчаар АСААЛТТАЙ', btn && btn.def === 1, JSON.stringify(btn));
+
   console.log('\n[13] Нүүрний картууд давхцахгүй');
   /* «Санал хүсэлт» карт нь `.bigcards` торны ГАДНА байсан тул `gap`
      үйлчлэхгүй, өмнөх карт дээрээ наалдаж байв. Зургаар баригдсан.

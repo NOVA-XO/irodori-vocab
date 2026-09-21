@@ -273,6 +273,7 @@ let settings = load(KEY_S, { lessons: [1, 2, 3], ref: false, script: 'kana', kgr
      ruby  — ханз, дээр нь жижиг канаар уншлага (ふりがな)
      kanji — цэвэр ханз, туслалцаагүй */
 if (!SCRIPTS.includes(settings.script)) settings.script = 'kana';
+if (!('sfx' in settings)) settings.sfx = 1;   // хариултын дуу ба чичиргээ
 if (!settings.kgroups) settings.kgroups = ['gojuon'];
 if (!settings.goal) settings.goal = 20;
 if (!settings.dir) settings.dir = 'jp2mn';
@@ -458,7 +459,7 @@ const arrOf = (v, ok) => Array.isArray(v) ? v.filter(ok) : null;
 function cleanSettings(v) {
   const d = {
     lessons: [1, 2, 3], ref: false, script: 'kana', kgroups: ['gojuon'],
-    goal: 20, dir: 'jp2mn', kjn: [5], what: 'word',
+    goal: 20, dir: 'jp2mn', kjn: [5], what: 'word', sfx: 1,
     book: 'starter', les: {}, n5les: [1, 2, 3],
   };
   if (!v || typeof v !== 'object' || Array.isArray(v)) return d;
@@ -467,6 +468,7 @@ function cleanSettings(v) {
   if (BOOKS.includes(v.book)) out.book = v.book;
   out.ref = !!v.ref;
   if (SCRIPTS.includes(v.script)) out.script = v.script;
+  out.sfx = v.sfx === 0 ? 0 : 1;          // анхдагчаар асаалттай
   if (v.dir === 'mn2jp' || v.dir === 'jp2mn') out.dir = v.dir;
   if (v.what === 'word' || v.what === 'kanji') out.what = v.what;
   // Зорилт 0 бол хуваалт Infinity болно — доод хязгаар 1.
@@ -1349,7 +1351,70 @@ function reveal() {
   replay($('card'), 'flip');           // хариу нээгдэхэд карт эргэх хөдөлгөөн
 }
 
+/* ── Хариултын дуу ба чичиргээ ─────────────────────────────────────
+ *
+ * Дууг ФАЙЛААР биш, Web Audio-гоор ГАЗАР ДЭЭР НЬ үүсгэнэ. Шалтгаан:
+ *   · хэмжээ 0 — репо аль хэдийн 160 МБ дуутай;
+ *   · саатал 0 — файл татах, буферлэх хүлээлтгүй тул хариулт өгмөгц
+ *     дуугарна. Хариултын дуу 200мс хожимдвол огт хэрэггүй;
+ *   · офлайн үед ч ажиллана.
+ *
+ * `AudioContext`-ыг УРЬДЧИЛАН үүсгэхгүй: гар утсан дээр хэрэглэгчийн
+ * үйлдлээс өмнө үүсгэвэл `suspended` төлөвт гацдаг. Эхний хариулт
+ * өөрөө үйлдэл тул тэнд үүсгэнэ.
+ */
+let actx = null;
+
+function audioCtx() {
+  if (actx) return actx;
+  const C = window.AudioContext || window.webkitAudioContext;
+  if (!C) return null;
+  try { actx = new C(); } catch (e) { return null; }
+  return actx;
+}
+
+/** Нэг богино дуу. `f0`→`f1` давтамж, `ms` үргэлжлэх хугацаа. */
+function blip(ctx, at, f0, f1, ms, type, vol) {
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, at);
+  o.frequency.exponentialRampToValueAtTime(f1, at + ms / 1000);
+  /* Дуу эхлэх/дуусахад ТОМ тас гарахаас сэргийлж дугтуй тавина —
+     огцом тасалбал чанга «клик» сонсогдоно. */
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(vol, at + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + ms / 1000);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(at); o.stop(at + ms / 1000 + 0.02);
+}
+
+/** Зөв/буруугийн дуу ба чичиргээ. Тохиргоогоор унтраана. */
+function sfx(ok) {
+  if (!settings.sfx) return;
+  const ctx = audioCtx();
+  if (ctx) {
+    /* Хөтөч контекстыг унтрааж мэднэ (таб далд болох г.м.). */
+    if (ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    const t = ctx.currentTime;
+    if (ok) {
+      // Дээшлэх хоёр нот — богино, зөөлөн.
+      blip(ctx, t, 660, 680, 80, 'sine', 0.10);
+      blip(ctx, t + 0.075, 990, 1010, 130, 'sine', 0.10);
+    } else {
+      // Доошлох бүдүүн дуу. Чанга биш — шийтгэл биш, тэмдэг.
+      blip(ctx, t, 250, 150, 190, 'triangle', 0.09);
+    }
+  }
+  /* Чичиргээ ЗӨВХӨН буруу дээр. Зөв бүрд чичирвэл мэдрэмж элэгдэнэ.
+     iOS Safari `vibrate`-ийг дэмждэггүй — тэнд чимээгүй алгасна. */
+  if (!ok && navigator.vibrate) {
+    try { navigator.vibrate(60); } catch (e) {}
+  }
+}
+
 function resolve(ok) {
+  sfx(ok);
   reveal();
   grade(cur.id, ok);
   done++; ok ? okN++ : ngN++;
@@ -1810,6 +1875,22 @@ $('btn-menu').onclick = () => {
   drawerOpen() ? closeDrawer() : openDrawer();
 };
 $('menu-close').onclick = closeDrawer;
+
+/** Тохиргооны товчны бичиг. */
+function refreshSfx() {
+  const b = $('btn-sfx');
+  if (b) b.textContent = settings.sfx
+    ? 'Хариултын дуу: асаалттай' : 'Хариултын дуу: унтраалттай';
+}
+if ($('btn-sfx')) {
+  $('btn-sfx').onclick = () => {
+    settings.sfx = settings.sfx ? 0 : 1;
+    save(KEY_S, settings);
+    refreshSfx();
+    if (settings.sfx) sfx(true);           // асаахад нэг удаа сонсгоно
+  };
+  refreshSfx();
+}
 $('scrim').onclick = closeDrawer;
 addEventListener('keydown',
   e => { if (e.key === 'Escape' && drawerOpen()) closeDrawer(); });
@@ -2205,6 +2286,7 @@ function examReveal() {
 
 /** Сурагчийн өөрийн дүгнэлт. */
 function examMark(ok) {
+  sfx(ok);
   const q = exQs[exIdx];
   exLog.push({ q: q, ok: ok });
   const run = exRun;

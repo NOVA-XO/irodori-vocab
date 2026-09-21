@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22e">
-<link rel="stylesheet" href="app.css?v=2026-09-22e">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22f">
+<link rel="stylesheet" href="app.css?v=2026-09-22f">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22e">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22e">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22f">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22f">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -523,6 +523,15 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <p class="hint" id="sync-none" hidden>Синк тохируулаагүй байна — явц зөвхөн
      энэ төхөөрөмжид хадгалагдана. Доорх нөөцлөх аргаар зөөж болно.</p>
 
+  <h2>Хариултын дуу</h2>
+  <p class="hint">Зөв хариулбал дээшлэх хоёр нот, буруу бол бүдүүн дуу
+     гарна. Буруу үед утас бас <b>чичирнэ</b> (Android; iPhone-д
+     хөтөч нь чичиргээг дэмждэггүй тул зөвхөн дуу гарна).
+     Нийтийн газарт дасгал хийхэд саад болбол унтраа.</p>
+  <div class="row">
+    <button id="btn-sfx" class="ghost sm">…</button>
+  </div>
+
   <h2>Өдрийн зорилт</h2>
   <p class="hint">Өдөрт хэдэн хариулт өгөхөөр төлөвлөж байна вэ. Нүүрэн дээрх
      зураас үүнээс хамаарна.</p>
@@ -563,7 +572,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-22e"></script>
-<script src="app.js?v=2026-09-22e"></script>
+<script src="sync-config.js?v=2026-09-22f"></script>
+<script src="app.js?v=2026-09-22f"></script>
 </body>
 </html>
