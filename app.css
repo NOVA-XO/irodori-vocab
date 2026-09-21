@@ -1,8 +1,7 @@
 /* Мартчихлаа — аппын ЦОРЫН ГАНЦ хэв маягийн файл
  *
  * Загвар НЭГ, өнгө хоёр. Анхдагчаар СИСТЕМИЙГ дагана; толгойн мөрний
- * товчоор гараар дарж болно (`data-theme`). (2026-09-21 хүртэл таван
- * загвар + `themes.css` байсан; бүгд хасагдсан.)
+ * товчоор гараар дарж болно (`data-theme`).
  *
  * Өнгө, радиус, зай бүрийг ТОКЕНООР бич. Хатуу утга бичвэл тэр газар
  * бараан горимд ЧИМЭЭГҮЙХЭН эвдэрнэ — нүдээр л олдоно (STATE §2.39).
@@ -13,17 +12,16 @@
      Байрлал, зай нь flashcards.world шиг намуухан хэвээр; өнгө нь эндээс.
      Дэвсгэр нь цэнхэрийн маш сул сүүдэртэй цагаан — палитрын хөх нь
      дэвсгэр болбол текст уншигдахаа болино. */
-  --bg:#f5f8ff; --card:#ffffff; --paper:#ffffff;
+  --bg:#f5f8ff; --card:#ffffff;
   --ink:#0b1540; --ink-2:#3c4a76; --ink-3:#5d6b95;
   --line:#dde7fb; --line-2:#bccff7;
-  --accent:#2470f0; --seal:#2470f0;
+  --accent:#2470f0;
   /* Хоёрдогч ба тодруулга — палитрын үлдсэн хоёр өнгө. */
   --accent-2:#61cef2;
   --hl:#f3f8a8; --hl-ink:#0b1540;
   /* Ногоон/улаан нь палитрт байхгүй ч УТГА агуулдаг тул хэвээр. */
   --ok:#166534; --ng:#b91c1c;
   --ok-bg:#f0fdf4; --ng-bg:#fef2f2;
-  --shadow:none;
 
   /* ХЭЛБЭРИЙН токенууд. */
   --r:16px;
@@ -47,7 +45,7 @@
      хэрэглэх газар нь өөр утгатай (жп бичиг · тод гарчиг · интерфэйс),
      тиймээс нэгийг нь дараа буцааж салгахад ганц мөр засна.
 
-     2026-09-21 хүртэл 明朝 (Noto Serif JP) байсан — 349 КБ, одоо хассан. */
+     2026-09-21 хүртэл япон бичигт сериф фонт байсан — 349 КБ, хассан. */
   --jps:"Noto Sans JP","Yu Gothic","Hiragino Sans","Meiryo",sans-serif;
   --jpd:"Noto Sans JP","Yu Gothic","Hiragino Sans","Meiryo",sans-serif;
   --jp:"Noto Sans JP","Yu Gothic","Hiragino Sans","Meiryo",sans-serif;
@@ -71,10 +69,10 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     /* Хэрэглэгчийн палитр: #0b1540 · #1e28c4 · #7b95ff · #a9d0fb */
-    --bg:#0b1540; --card:#131e52; --paper:#1a2765;
+    --bg:#0b1540; --card:#131e52;
     --ink:#e9f0ff; --ink-2:#a9d0fb; --ink-3:#8294c6;
     --line:#22306e; --line-2:#35458c;
-    --accent:#7b95ff; --seal:#7b95ff;
+    --accent:#7b95ff;
     --accent-2:#61cef2;
     /* Цайвар дээрх цайвар шар нь бараан дээр хэт цохилно — палитрын
        хамгийн хүчтэй хөхийг тодруулга болгов. */
@@ -90,10 +88,10 @@
 /* Гараар сонгосон бараан — дээрхтэй ИЖИЛ утгууд. */
 :root[data-theme="dark"]{
     /* Хэрэглэгчийн палитр: #0b1540 · #1e28c4 · #7b95ff · #a9d0fb */
-  --bg:#0b1540; --card:#131e52; --paper:#1a2765;
+  --bg:#0b1540; --card:#131e52;
   --ink:#e9f0ff; --ink-2:#a9d0fb; --ink-3:#8294c6;
   --line:#22306e; --line-2:#35458c;
-  --accent:#7b95ff; --seal:#7b95ff;
+  --accent:#7b95ff;
   --accent-2:#61cef2;
   /* Цайвар дээрх цайвар шар нь бараан дээр хэт цохилно — палитрын
      хамгийн хүчтэй хөхийг тодруулга болгов. */
@@ -117,7 +115,7 @@ body{
   -webkit-text-size-adjust:100%;
 }
 .jp{font-family:var(--jp)}
-/* Өмнө нь 明朝 байсан тул «зөвхөн япон текстэд» гэсэн хязгаар байв.
+/* Өмнө нь сериф байсан тул «зөвхөн япон текстэд» гэсэн хязгаар байв.
    Одоо Noto Sans JP — кириллд ч аюулгүй. */
 .jpd{font-family:var(--jpd)}
 
@@ -137,7 +135,6 @@ body{
   min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
 .bar .title:hover{color:var(--accent)}
-.bar .title small{color:var(--ink-2); font-weight:400; letter-spacing:.04em}
 .bar .icon{
   background:none; border:0; color:var(--ink-2); padding:6px 8px;
   display:flex; align-items:center; border-radius:2px;
@@ -219,7 +216,6 @@ button:active:not(:disabled){transform:scale(.985)}
 .ghost:hover{border-color:var(--ink)}
 .ghost.sm{padding:7px 11px; font-size:14px}
 .ghost.danger{color:var(--ng); border-color:var(--ng)}
-.bar .ghost{border:0; font-size:20px; padding:4px 10px; color:var(--ink-2)}
 .big{width:100%; padding:16px; font-size:16px}
 .ok{background:var(--ok-bg); color:var(--ok); border:1px solid currentColor}
 .ng{background:var(--ng-bg); color:var(--ng); border:1px solid currentColor}
@@ -487,7 +483,7 @@ button:disabled{opacity:.42; cursor:default}
 /* Хэрэглэгч ЛАТИНААР бичдэг (кана руу нь апп хөрвүүлж доор нь харуулна)
    тул энд япон фонт биш, UI-ийн фонт зөв. */
 #t-input{
-  width:100%; padding:14px 4px; font-size:19px; border-radius:0;
+  width:100%; padding:14px 4px; font-size:19px;
   border:var(--box-bd); border-bottom:1px solid var(--line-2);
   border-radius:var(--box-r); background:var(--box-bg); color:var(--ink);
   font-family:var(--ui);
@@ -623,14 +619,8 @@ a.ghost{display:inline-block; text-decoration:none}
 /* Дэвсгэрийн өнгийг `html` дээр тавьж, `body`-г тунгалаг үлдээнэ. */
 html{background:var(--bg)}
 
-/* 2026-09-21: ГҮНТЭЙ ДЭВСГЭР, 3D ЦАГИРАГ, НИСДЭГ КАРТ, ЦААСНЫ МӨХЛӨГ
-   бүгд ХАСАГДСАН. Аль нь ч мэдээлэл агуулдаггүй байсан — зөвхөн
-   чимэглэл. Загварын шинэ чиглэл нь намуухан, уншихад зориулсан
-   хуудас (лавлагаа: flashcards.world), тиймээс хөдөлгөөнт чимэглэл
-   зорилгодоо харшилна. Түүхийг `git log`-оос үз.
-
-   Үүнтэй хамт `#bg`, `.ring3d`, `.ringslot`, `.flyer`, `.seal`,
-   `--grain`, `--fx*` токенууд, `.nofx` анги мөн устсан. */
+/* 2026-09-21: хөдөлгөөнт чимэглэл бүхэлдээ хасагдсан. Аль нь ч
+   мэдээлэл агуулдаггүй байв. Дэлгэрэнгүйг `CHANGELOG.md`-ээс үз. */
 
 /* Хөдөлгөөн багасгахыг хүссэн хэрэглэгчид бүх анимацийг унтраана. */
 @media (prefers-reduced-motion:reduce){
@@ -642,7 +632,9 @@ html{background:var(--bg)}
 
 /* ── «Ярих» горим — микрофон ─────────────────────────────────────── */
 #pane-speak{justify-items:center; text-align:center}
-.mic{transition:background var(--dur,.2s) ease, transform var(--dur,.2s) ease}
+/* `--dur` токен хэзээ ч тодорхойлогдож байгаагүй — зөвхөн нөөц утга нь
+   ажилладаг байв. Утгыг нь шууд бичив. */
+.mic{transition:background .2s ease, transform .2s ease}
 .mic.rec{background:var(--ng); color:#fff; animation:micpulse 1.1s ease-in-out infinite}
 @keyframes micpulse{0%,100%{transform:scale(1)} 50%{transform:scale(1.04)}}
 .mic-hint{color:var(--ink-2); font-size:14px; min-height:20px}

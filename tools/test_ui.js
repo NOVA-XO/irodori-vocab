@@ -688,6 +688,36 @@ async function run(c) {
 
   /* ふりがな — ханзан дээрх жижиг кана. Уншлагын хосыг `build_exam.py`
      үүсгэж шалгасан; энд шалгах нь ХӨТӨЧ дээрх үр дүн. */
+  console.log('\n[13] Нүүрний картууд давхцахгүй');
+  /* «Санал хүсэлт» карт нь `.bigcards` торны ГАДНА байсан тул `gap`
+     үйлчлэхгүй, өмнөх карт дээрээ наалдаж байв. Зургаар баригдсан.
+     Энд ЯГ байрлалыг нь хэмжинэ — CSS уншиж таамаглахгүй. */
+  const laid = await c.ev(`
+    go('home');
+    await new Promise(r => setTimeout(r, 300));
+    /* НУУГДСАН картыг тооцохгүй: JLPT нь унтраалттай үед нуугддаг
+       бөгөөд түүний хэмжээс БҮГД тэг тул зайн тооцоог гажуудуулна.
+       (Загварчилсан мөр дотор ХАЖУУ хашилт бичиж болохгүй.) */
+    const cards = [...document.querySelectorAll('.bigcards .bigcard')]
+      .filter(c => c.getBoundingClientRect().height > 0);
+    const box = cards.map(c => c.getBoundingClientRect());
+    let worst = 999, overlap = 0;
+    for (let i = 1; i < box.length; i++) {
+      const gap = box[i].top - box[i - 1].bottom;
+      if (gap < worst) worst = gap;
+      if (gap < 0) overlap++;
+    }
+    return { n: cards.length, worst: Math.round(worst), overlap: overlap,
+             outside: document.querySelectorAll('.bigcard:not(.bigcards .bigcard)').length };
+  `);
+  ok('нүүрэнд харагдах карт 4+', laid && laid.n >= 4, JSON.stringify(laid));
+  ok('карт хоорондоо ДАВХЦААГҮЙ',
+    laid && laid.overlap === 0, JSON.stringify(laid));
+  ok('карт хооронд бодит зай бий',
+    laid && laid.worst >= 8, JSON.stringify(laid));
+  ok('торны ГАДНА карт үлдээгүй',
+    laid && laid.outside === 0, JSON.stringify(laid));
+
   console.log('\n[12] ふりがな — ruby/rt');
   /* `exScript`-ийг §9b аль хэдийн өөрчилсөн тул одоогийн УТГЫГ нь
      шалгах утгагүй. Шалгах ёстой зүйл нь: юу ч хадгалаагүй шинэ

@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22a">
-<link rel="stylesheet" href="app.css?v=2026-09-22a">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22b">
+<link rel="stylesheet" href="app.css?v=2026-09-22b">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22a">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22a">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22b">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -98,13 +98,14 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
       <b>Кана үсэг</b>
       <span>Хирагана ба катакана · <i id="n-kana">…</i></span>
     </button>
+    <!-- Торны ДОТОР байх ёстой — гадна нь байвал `gap` үйлчлэхгүй тул
+         өмнөх карт дээрээ наалдана. -->
+    <button class="bigcard quiet" data-go="feedback">
+      <span class="bc-jp">💬</span>
+      <b>Санал хүсэлт</b>
+      <span>Алдаа мэдэгдэх, шинэ санаа хэлэх — шууд GitHub дээр очно</span>
+    </button>
   </div>
-
-  <button class="bigcard quiet" data-go="feedback">
-    <span class="bc-jp">💬</span>
-    <b>Санал хүсэлт</b>
-    <span>Алдаа мэдэгдэх, шинэ санаа хэлэх — шууд GitHub дээр очно</span>
-  </button>
 
   <div id="voice-warn" class="warn" hidden></div>
   <p class="src"><b>Мартчихлаа</b> — мартахаас нь өмнө дахин асууна.
@@ -558,7 +559,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-22a"></script>
-<script src="app.js?v=2026-09-22a"></script>
+<script src="sync-config.js?v=2026-09-22b"></script>
+<script src="app.js?v=2026-09-22b"></script>
 </body>
 </html>

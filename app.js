@@ -81,8 +81,9 @@ function toKana(src) {
       if (p.length === len && KANA_MAP[p]) { hit = [p, KANA_MAP[p]]; break; }
     }
     if (hit) { out += hit[1]; i += hit[0].length; continue; }
-    // «n» + гийгүүлэгч -> ん
-    if (s[i] === 'n') { out += 'ん'; i++; continue; }
+    /* Энд «n» -> ん гэсэн нөөц зам байсан. ХҮРЭХГҮЙ: `KANA_MAP.n` нь
+       `ん` тул дээрх нэг үсгийн хайлт үргэлж түрүүлж олно. Браузерт
+       баталсан — nka->んか · shinbun->しんぶん · n->ん. */
     out += s[i]; i++;                                  // хараахан бүрэлдээгүй үсэг
   }
   return out;
@@ -457,7 +458,7 @@ const arrOf = (v, ok) => Array.isArray(v) ? v.filter(ok) : null;
 function cleanSettings(v) {
   const d = {
     lessons: [1, 2, 3], ref: false, script: 'kana', kgroups: ['gojuon'],
-    goal: 20, dir: 'jp2mn', kjn: [5], fx: 1, what: 'word',
+    goal: 20, dir: 'jp2mn', kjn: [5], what: 'word',
     book: 'starter', les: {}, n5les: [1, 2, 3],
   };
   if (!v || typeof v !== 'object' || Array.isArray(v)) return d;
@@ -465,7 +466,6 @@ function cleanSettings(v) {
   const out = Object.assign({}, d);
   if (BOOKS.includes(v.book)) out.book = v.book;
   out.ref = !!v.ref;
-  out.fx = v.fx ? 1 : 0;
   if (SCRIPTS.includes(v.script)) out.script = v.script;
   if (v.dir === 'mn2jp' || v.dir === 'jp2mn') out.dir = v.dir;
   if (v.what === 'word' || v.what === 'kanji') out.what = v.what;
@@ -1616,8 +1616,9 @@ function refreshHome() {
  * нийлүүлж тоолдог тул дээд, доод хоёр нь зөрж, «яагаад явц хөдөлсөнгүй
  * вэ?» гэсэн ойлгомжгүй байдал үүсгэдэг байв. */
 
-/* `j` = шошго нь япон бичиг үү. Тийм бол 明朝 (сериф) үсэгээр бичнэ;
-   кириллийг тэр үсгээр бичихээр сунжирч уншигдахаа больдог. */
+/* `j` = шошго нь япон бичиг үү. Өмнө нь сериф фонт ашигладаг байсан тул
+   энэ ялгаа чухал байв (кирилл тэр фонтод сунжирдаг). Одоо бүх бичиг
+   Noto Sans JP; тугийг үлдээсэн нь хэмжээ/зайг тааруулахад хэрэгтэй. */
 const STAT_TABS = [
   { k: 'starter', n: '入門', j: 1 }, { k: 'el1', n: '初級1', j: 1 },
   { k: 'el2', n: '初級2', j: 1 }, { k: 'n5', n: 'N5 үг' },
@@ -2598,6 +2599,12 @@ const OFFLINE_OK = 'serviceWorker' in navigator && location.protocol.indexOf('ht
 if (OFFLINE_OK) {
   window.addEventListener('load', () =>
     navigator.serviceWorker.register('sw.js').then(swState).catch(swState));
+} else {
+  /* `file://` эсвэл service worker-гүй хөтөч. Өмнө нь `swState()`-ыг
+     ЗӨВХӨН дээрх салаанаас дууддаг байсан тул доторх «энэ орчинд
+     ажиллахгүй» гэсэн мессеж хэзээ ч гардаггүй, мөр нь ХООСОН
+     үлддэг байв. */
+  addEventListener('load', swState);
 }
 function swState() {
   const el = $('sw-state');
