@@ -549,6 +549,48 @@ async function run(c) {
     await c.ev('go("home"); return 1;');
   }
 
+  /* НЭГ ФОНТ (2026-09-21l). Noto Sans JP нь япон, латин, кирилл
+     гурвууланг нь өөрөө үүрнэ. Энд шалгах гол зүйл нь «токен зөв
+     бичигдсэн үү» БИШ — «браузер үнэхээр ТҮҮГЭЭР зурж байна уу». */
+  console.log('\n[11] Фонт — бүх дэлгэц Noto Sans JP');
+  const f = await c.ev(`
+    await document.fonts.ready;
+    const fams = [...document.fonts].map(x => x.family);
+    const used = id => {
+      const el = document.getElementById(id);
+      return el ? getComputedStyle(el).fontFamily : null;
+    };
+    return {
+      faces:  fams.filter(x => x.indexOf('Noto Sans JP') >= 0).length,
+      serif:  fams.filter(x => x.indexOf('Noto Serif JP') >= 0).length,
+      body:   getComputedStyle(document.body).fontFamily,
+      // Кирилл нь Noto Sans JP-д БИЙ эсэх — үнэхээр ачаалагдсан фонтоор
+      cyr:    document.fonts.check('16px "Noto Sans JP"', 'Үгийн сан Ө'),
+      jp:     document.fonts.check('16px "Noto Sans JP"', '漢字ひらがな'),
+      tokens: ['--jp','--jpd','--jps','--ui','--disp'].map(t =>
+                getComputedStyle(document.documentElement).getPropertyValue(t).trim())
+    };
+  `);
+  ok('Noto Sans JP бүртгэгдсэн', Number(f.faces) > 0, JSON.stringify(f.faces));
+  ok('Noto Serif JP ХАСАГДСАН', Number(f.serif) === 0, JSON.stringify(f.serif));
+  // getComputedStyle нь нэрийг ХАШИЛТТАЙ буцаана: `"Noto Sans JP", ...`
+  ok('body нь Noto Sans JP', String(f.body).indexOf('"Noto Sans JP"') === 0, String(f.body));
+  ok('кирилл (Ү/Ө) Noto Sans JP-д бий', f.cyr === true, JSON.stringify(f.cyr));
+  ok('япон бичиг Noto Sans JP-д бий', f.jp === true, JSON.stringify(f.jp));
+  ok('таван токен БҮГД Noto Sans JP-ээр эхэлнэ',
+    Array.isArray(f.tokens) && f.tokens.length === 5
+      && f.tokens.every(t => t.indexOf('"Noto Sans JP"') === 0),
+    JSON.stringify(f.tokens));
+
+  // Устгасан сериф файлууд precache-д үлдвэл SW суулт БҮТЭЛГҮЙТНЭ.
+  const sw = await c.ev(`
+    const t = await (await fetch('sw.js', {cache:'no-store'})).text();
+    return { serif: (t.match(/nsjp-\\d/g) || []).length,
+             sans:  (t.match(/nsjps-\\d/g) || []).length };
+  `);
+  ok('sw.js-д сериф файл үлдээгүй', sw && sw.serif === 0, JSON.stringify(sw));
+  ok('sw.js-д sans 6 хэсэг байна', sw && sw.sans === 6, JSON.stringify(sw));
+
   console.log('\n[10] .busy — дасгалын үед дэвсгэр зогсоно');
   await c.ev('queue = ALL.slice(0,2); deck="vocab"; mode="flash"; enterStudy(); return 1');
   await sleep(100);

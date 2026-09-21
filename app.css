@@ -36,18 +36,20 @@
   --track-h:8px;
   --grain:0;
   --fx1:transparent; --fx2:transparent; --fx3:transparent; --fx-op:0;
-  /* Япон бичиг: 明朝-г ӨӨРСДӨӨ нийлүүлнэ (fonts/). Ингэснээр Windows,
-     Mac, Android гурав дээр ИЖИЛ харагдана — Yu Mincho нь Android дээр
-     байдаггүй. */
-  /* Япон SANS — шалгалтын бүтэн өгүүлбэрт. Сериф нь урт өгүүлбэрт
-     уншихад хүнд; мөн Noto Sans JP нь Windows-д байдаггүй тул өөрсдөө
-     нийлүүлнэ (fonts/nsjps-*.woff2). */
+  /* НЭГ ФОНТ — Noto Sans JP. Япон, латин, кирилл гурвууланг нь агуулна
+     (Ү/Ө орно — шалгасан), өөрсдөө нийлүүлдэг (fonts/nsjps-*.woff2) тул
+     Windows, Mac, Android, iOS дээр ИЖИЛ харагдана.
+
+     Доорх таван токен нь ОДОО бүгд ижил. Тусад нь үлдээсэн шалтгаан:
+     хэрэглэх газар нь өөр утгатай (жп бичиг · тод гарчиг · интерфэйс),
+     тиймээс нэгийг нь дараа буцааж салгахад ганц мөр засна.
+
+     2026-09-21 хүртэл 明朝 (Noto Serif JP) байсан — 349 КБ, одоо хассан. */
   --jps:"Noto Sans JP","Yu Gothic","Hiragino Sans","Meiryo",sans-serif;
-  --jpd:"Noto Serif JP","Yu Mincho","YuMincho","Hiragino Mincho ProN",
-        "Songti SC","SimSun",serif;
-  --jp:"Yu Gothic","Yu Gothic UI","Hiragino Sans","Noto Sans JP","Meiryo",sans-serif;
-  --ui:"Segoe UI","Noto Sans",system-ui,Arial,sans-serif;
-  --disp:"Segoe UI","Noto Sans",system-ui,Arial,sans-serif;
+  --jpd:"Noto Sans JP","Yu Gothic","Hiragino Sans","Meiryo",sans-serif;
+  --jp:"Noto Sans JP","Yu Gothic","Hiragino Sans","Meiryo",sans-serif;
+  --ui:"Noto Sans JP","Segoe UI",system-ui,Arial,sans-serif;
+  --disp:"Noto Sans JP","Segoe UI",system-ui,Arial,sans-serif;
   /* Монспэйс: Windows-ийн Consolas · Cascadia · Courier БҮГДЭД нь монгол
      Ү (U+04AE), Ө (U+04E8) БАЙХГҮЙ (34px-ээр зурж шалгав). Тиймээс
      Noto Sans Mono-г өөрсдөө нийлүүлнэ. */
@@ -66,7 +68,8 @@ body{
   -webkit-text-size-adjust:100%;
 }
 .jp{font-family:var(--jp)}
-/* 明朝 — зөвхөн ЯПОН текстэд. Кириллд хэрэглэвэл үсэг сунжирна. */
+/* Өмнө нь 明朝 байсан тул «зөвхөн япон текстэд» гэсэн хязгаар байв.
+   Одоо Noto Sans JP — кириллд ч аюулгүй. */
 .jpd{font-family:var(--jpd)}
 
 /* ---------- толгой ---------- */
@@ -345,7 +348,7 @@ button:disabled{opacity:.42; cursor:default}
 
 .prompt-sub{font-size:11px; color:var(--ink-3); letter-spacing:.18em;
             text-transform:uppercase}
-/* Гол үг — 明朝, аль болох том. Энэ бол хуудасны цорын ганц баатар. */
+/* Гол үг — аль болох том. Энэ бол хуудасны цорын ганц баатар. */
 .prompt{font-family:var(--jpd); font-size:52px; line-height:1.28; font-weight:400;
         word-break:break-word; letter-spacing:.02em}
 /* Утга нь бүтэн монгол өгүүлбэр байж болно. Механик, цахилгаан

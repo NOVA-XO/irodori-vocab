@@ -110,20 +110,23 @@ def main():
     print("japanese %d   latin+cyrillic %d" % (len(jp), len(lc)))
 
     css = ["/* Автоматаар үүсгэсэн — tools/build_fonts.py. ГАРААР ЗАСАХГҮЙ.",
-           " * Noto Sans Mono, Noto Serif JP, Noto Sans JP — SIL OFL 1.1.",
+           " * Noto Sans Mono, Noto Sans JP — SIL OFL 1.1.",
            " * Зөвхөн энэ аппад хэрэглэгддэг тэмдэгтээр огтолсон. */"]
 
-    # Латин+кирилл нь ЗӨВХӨН монспэйс хэрэгтэй: Windows-ийн бүх монспэйс
-    # фонтод (Consolas · Cascadia Mono · Courier New) монгол Ү (U+04AE) ба
-    # Ө (U+04E8) БАЙХГҮЙ тул тэдгээр үсэг өөр фонтоос орлогдож, монспэйс
-    # эгнээ эвдэрдэг. Бусад загвар нь системийн sans ашиглана — түүнд
-    # Ү/Ө бий тул татах шаардлагагүй.
-    # Noto Sans JP нь ШАЛГАЛТЫН бүтэн өгүүлбэрт — сериф нь урт өгүүлбэрт
-    # уншихад хүнд. Хоёуланг нь өөрсдөө нийлүүлнэ: Windows/Android/Mac
-    # дээр ИЖИЛ харагдах ёстой (Noto Sans JP нь Windows-д байдаггүй).
+    # Noto Sans JP нь аппын ЦОРЫН ГАНЦ үндсэн фонт (2026-09-21). Япон,
+    # латин, кирилл ГУРВУУЛАНГ нь агуулна — Google-ээс шалгав:
+    # Ү/Ө (U+4ae-4af, U+4e8-4e9) бий. Тиймээс монгол текст нь системийн
+    # фонт руу унахгүй, бүх төхөөрөмж дээр ИЖИЛ харагдана (Noto Sans JP
+    # нь Windows-д байдаггүй тул өөрсдөө нийлүүлнэ).
+    #
+    # Noto Serif JP-г ХАССАН: бүх загвар sans болсон тул 349 КБ дэмий
+    # татагдаж байв. Хэрэгтэй бол энэ жагсаалтад буцааж нэмнэ.
+    #
+    # Монспэйс нь зөвхөн тоо/код эгнүүлэхэд (`--mono`). Windows-ийн бүх
+    # монспэйс фонтод (Consolas · Cascadia Mono · Courier New) Ү ба Ө
+    # БАЙХГҮЙ тул эгнээ эвддэг — Noto Sans Mono-г өөрсдөө нийлүүлнэ.
     for family, tag, cs in (("Noto Sans Mono", "nsm", lc),
-                            ("Noto Serif JP", "nsjp", jp),
-                            ("Noto Sans JP", "nsjps", jp)):
+                            ("Noto Sans JP", "nsjps", jp + lc)):
         print(family)
         for name, rng in fetch_subsets(family, cs, tag):
             css.append("@font-face{font-family:'%s';font-style:normal;"

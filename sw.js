@@ -13,7 +13,7 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-09-21k';
+const VERSION = '2026-09-21l';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 
@@ -41,12 +41,6 @@ const EXTRA = [
   // монгол Ү/Ө байхгүй тул эдгээр нь гоо сайхны биш, ЗӨВ БИЧИХ асуудал.
   './fonts/fonts.css',
   './fonts/nsm-00.woff2',
-  './fonts/nsjp-00.woff2',
-  './fonts/nsjp-01.woff2',
-  './fonts/nsjp-02.woff2',
-  './fonts/nsjp-03.woff2',
-  './fonts/nsjp-04.woff2',
-  './fonts/nsjp-05.woff2',
   './fonts/nsjps-00.woff2',
   './fonts/nsjps-01.woff2',
   './fonts/nsjps-02.woff2',
