@@ -1774,6 +1774,13 @@ let exN = load(KEY_EXN, 15);
 if (![10, 15, 20].includes(exN)) exN = 15;
 let exMode = load(KEY_EXM, 'think');
 if (!['think', 'speak'].includes(exMode)) exMode = 'think';
+/* Бичгийн хэлбэр: ханз уншиж чаддаггүй сурагч кана сонгоно. Асуулт
+   бүр хоёр хэлбэрээр бэлдсэн (build_exam.py). */
+const KEY_EXS = 'irodori.examscript.v1';
+let exScript = load(KEY_EXS, 'kanji');
+if (!['kanji', 'kana'].includes(exScript)) exScript = 'kanji';
+const exQ = q => (exScript === 'kana' ? q.qKana : q.q) || q.q;
+const exA = q => (exScript === 'kana' ? q.modelKana : q.model) || q.model;
 
 /* ГҮЙЛТИЙН ТЭМДЭГ — docs/STATE.md §2.36. */
 let exRun = 0, exTimer = null;
@@ -1821,6 +1828,8 @@ function refreshExamSeg() {
   if (exMode === 'speak' && !examSpeakOK()) exMode = 'think';
   document.querySelectorAll('#seg-exam-mode button').forEach(b =>
     b.setAttribute('aria-pressed', b.dataset.m === exMode));
+  document.querySelectorAll('#seg-exam-script button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.s === exScript));
   const note = $('ex-mode-note');
   if (note) {
     note.textContent = !canListen
@@ -1861,7 +1870,7 @@ function renderExam() {
   $('ex-pos').textContent = (exIdx + 1) + ' / ' + exQs.length;
   $('ex-bar').style.width = Math.round(100 * exIdx / exQs.length) + '%';
   $('ex-topic').textContent = 'L' + q.lesson + ' · ' + q.topic;
-  $('ex-q').textContent = q.q;            // textContent — тарилтаас хамгаална
+  $('ex-q').textContent = exQ(q);         // textContent — тарилтаас хамгаална
   $('ex-qmn').textContent = q.qMn;
   $('ex-model').hidden = true;
   $('ex-reveal').hidden = false;
@@ -1883,7 +1892,7 @@ function examReveal() {
   const q = exQs[exIdx];
   stopRecog();
   $('ex-mic') && $('ex-mic').classList.remove('rec');
-  $('ex-model-jp').textContent = q.model;
+  $('ex-model-jp').textContent = exA(q);
   $('ex-model-mn').textContent = q.modelMn;
   $('ex-key').textContent = q.key ? 'Түлхүүр бүтэц: ' + q.key : '';
   $('ex-reveal').hidden = true;
@@ -1927,13 +1936,13 @@ function finishExam() {
     t.textContent = 'L' + w.q.lesson + ' · ' + w.q.topic;
     const qq = document.createElement('div');
     qq.className = 'ex-bad jp';
-    qq.textContent = w.q.q;
+    qq.textContent = exQ(w.q);
     const qm = document.createElement('div');
     qm.className = 'ex-wq';
     qm.textContent = w.q.qMn;
     const a = document.createElement('div');
     a.className = 'ex-good jp';
-    a.textContent = w.q.model;
+    a.textContent = exA(w.q);
     const am = document.createElement('div');
     am.className = 'ex-wq';
     am.textContent = w.q.modelMn + (w.q.key ? '  ·  ' + w.q.key : '');
@@ -1991,6 +2000,8 @@ document.querySelectorAll('#seg-exam-n button').forEach(b =>
   b.onclick = () => { exN = +b.dataset.n; save(KEY_EXN, exN); refreshExamSeg(); });
 document.querySelectorAll('#seg-exam-mode button').forEach(b =>
   b.onclick = () => { exMode = b.dataset.m; save(KEY_EXM, exMode); refreshExamSeg(); });
+document.querySelectorAll('#seg-exam-script button').forEach(b =>
+  b.onclick = () => { exScript = b.dataset.s; save(KEY_EXS, exScript); refreshExamSeg(); });
 $('btn-exam').onclick = startExam;
 $('ex-reveal').onclick = examReveal;
 $('ex-yes').onclick = () => examMark(true);

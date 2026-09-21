@@ -110,7 +110,7 @@ def main():
     print("japanese %d   latin+cyrillic %d" % (len(jp), len(lc)))
 
     css = ["/* Автоматаар үүсгэсэн — tools/build_fonts.py. ГАРААР ЗАСАХГҮЙ.",
-           " * Noto Serif · Noto Serif JP — SIL Open Font License 1.1 (fonts/OFL.txt).",
+           " * Noto Sans Mono, Noto Serif JP, Noto Sans JP — SIL OFL 1.1.",
            " * Зөвхөн энэ аппад хэрэглэгддэг тэмдэгтээр огтолсон. */"]
 
     # Латин+кирилл нь ЗӨВХӨН монспэйс хэрэгтэй: Windows-ийн бүх монспэйс
@@ -118,8 +118,12 @@ def main():
     # Ө (U+04E8) БАЙХГҮЙ тул тэдгээр үсэг өөр фонтоос орлогдож, монспэйс
     # эгнээ эвдэрдэг. Бусад загвар нь системийн sans ашиглана — түүнд
     # Ү/Ө бий тул татах шаардлагагүй.
+    # Noto Sans JP нь ШАЛГАЛТЫН бүтэн өгүүлбэрт — сериф нь урт өгүүлбэрт
+    # уншихад хүнд. Хоёуланг нь өөрсдөө нийлүүлнэ: Windows/Android/Mac
+    # дээр ИЖИЛ харагдах ёстой (Noto Sans JP нь Windows-д байдаггүй).
     for family, tag, cs in (("Noto Sans Mono", "nsm", lc),
-                            ("Noto Serif JP", "nsjp", jp)):
+                            ("Noto Serif JP", "nsjp", jp),
+                            ("Noto Sans JP", "nsjps", jp)):
         print(family)
         for name, rng in fetch_subsets(family, cs, tag):
             css.append("@font-face{font-family:'%s';font-style:normal;"

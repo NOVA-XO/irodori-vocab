@@ -13,7 +13,7 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-09-21h';
+const VERSION = '2026-09-21i';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 
@@ -47,6 +47,12 @@ const EXTRA = [
   './fonts/nsjp-03.woff2',
   './fonts/nsjp-04.woff2',
   './fonts/nsjp-05.woff2',
+  './fonts/nsjps-00.woff2',
+  './fonts/nsjps-01.woff2',
+  './fonts/nsjps-02.woff2',
+  './fonts/nsjps-03.woff2',
+  './fonts/nsjps-04.woff2',
+  './fonts/nsjps-05.woff2',
 ];
 
 self.addEventListener('install', e => {

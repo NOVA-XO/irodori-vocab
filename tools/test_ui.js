@@ -453,6 +453,21 @@ async function run(c) {
     ok('«бодож» төрөлд микрофон гарахгүй',
       await c.ev('return document.getElementById("ex-speak").hidden === true'));
 
+    // Ханз / кана сонголт — ханз уншиж чаддаггүй сурагчид.
+    const kanaOn = await c.ev('exScript = "kana"; renderExam();'
+      + 'await new Promise(r=>setTimeout(r,150));'
+      + 'const t = document.getElementById("ex-q").textContent;'
+      + 'return { t: t, k: /[\u3400-\u9fff]/.test(t) };');
+    ok('かな горимд ХАНЗ гарахгүй', kanaOn && kanaOn.k === false, JSON.stringify(kanaOn));
+    const kanjiOn = await c.ev('exScript = "kanji"; renderExam();'
+      + 'await new Promise(r=>setTimeout(r,150));'
+      + 'const t = document.getElementById("ex-q").textContent;'
+      + 'return { t: t, k: /[\u3400-\u9fff]/.test(t) };');
+    ok('漢字 горимд ханз гарна', kanjiOn && kanjiOn.k === true, JSON.stringify(kanjiOn));
+    ok('шалгалт Noto Sans JP фонт ашиглана',
+      String(await c.ev('return getComputedStyle(document.getElementById("ex-q")).fontFamily'))
+        .indexOf('Noto Sans JP') >= 0);
+
     await c.ev('document.getElementById("ex-reveal").click(); await new Promise(r=>setTimeout(r,120)); return 1;');
     ok('загвар хариулт нээгдэв',
       await c.ev('return document.getElementById("ex-model").hidden === false'
