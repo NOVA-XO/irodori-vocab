@@ -278,7 +278,8 @@ footer гарахгүй). Мөн xhigh reasoning + том даалгавар н�
 
 **Дүрэм:** Astra-г FOREGROUND-д (background биш) `-c model_reasoning_effort=low`
 ба ЖИЖИГ, нэг үр дүнтэй даалгавраар ажиллуул. Гаралт нь CRLF тул fenced
-блок задлахад `?
+блок задлахад `
+?
 ` хэрэглэ. 2026-09-15-нд StudyCard.jsx/css амжилттай
 гаргаж, browser-д баталсан (5/5).
 
@@ -499,6 +500,11 @@ node tools/test_ui.js
 
 # тест — ДОВТОЛГОО: аппыг зориудаар эвдэх 24 оролдлого. exit 0 = цэвэр
 node tools/test_attack.js
+
+# шалгалтын асуултын сан (Irodori 入門, 100 асуулт)
+# Асуултыг tools/build_exam.py дотор засаад дахин ажиллуулна.
+# Хариулт/сандруулагч бүр vocab.json-д БАЙХ ёстой — эс тэгвэл унана.
+python tools/build_exam.py
 
 # амьд хувилбарыг шалгах
 curl -s "https://nova-xo.github.io/irodori-vocab/index.html?n=$RANDOM" | grep -o 'app.js?v=[^"]*'
