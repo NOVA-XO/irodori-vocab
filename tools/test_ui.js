@@ -109,7 +109,9 @@ async function main() {
     '--headless=new', '--remote-debugging-port=' + PORT,
     '--no-first-run', '--no-default-browser-check',
     '--disable-gpu', '--mute-audio',
-    '--user-data-dir=' + require('os').tmpdir() + '\\irodori-uitest',
+    // ШИНЭ профайл бүрд: тогтмол профайл дээр хуучин service-worker
+    // кэш (ж: data/audio.json) тестийн үр дүнг гажуудуулдаг.
+    '--user-data-dir=' + require('os').tmpdir() + '\\irodori-uitest-' + Date.now(),
     'about:blank',
   ], { stdio: 'ignore' });
 
@@ -467,6 +469,17 @@ async function run(c) {
     // Асуултыг дуугаар уншуулах товч (TTS).
     ok('асуултын дуу товч байна',
       await c.ev('return !!document.getElementById("ex-say-q")'));
+    // Шалгалтын дуу нь VOICEVOX-ийн бэлэн бичлэгээс гарах ёстой (TTS биш):
+    // бичлэг нь төхөөрөмж бүрд ИЖИЛ, өргөлт нь зөв.
+    ok('асуулт бүрд VOICEVOX бичлэг бий',
+      await c.ev('return exQs.every(q => hasAudio("EXQ-" + q.id))'));
+    ok('загвар хариулт бүрд бичлэг бий',
+      await c.ev('return exQs.every(q => hasAudio("EXA-" + q.id))'));
+    ok('дуу товч бичлэг тоглуулна (TTS биш)',
+      await c.ev('let used=""; const op=playFile;'
+        + 'window.playFile=(id,f)=>{used=id; return true;};'
+        + 'examSay(exQs[exIdx], "q"); window.playFile=op;'
+        + 'return used.indexOf("EXQ-")===0;'));
     ok('дуу товч дарахад алдаа гарахгүй',
       await c.ev('try { document.getElementById("ex-say-q").click();'
         + 'await new Promise(r=>setTimeout(r,120)); return true; } catch(e) { return String(e.message); }') === true);

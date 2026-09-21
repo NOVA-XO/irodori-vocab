@@ -270,6 +270,23 @@ def main():
         ex = (it.get('ex') or '').strip()
         if ex:
             jobs.append(('EX-' + it['id'], ex, '', ex))
+    # Шалгалтын асуулт ба загвар хариулт — EXQ-/EXA-<асуултын id>.
+    # Эдгээр нь БҮТЭН ӨГҮҮЛБЭР тул өргөлтийн тэмдэглэгээгүй: хөдөлгүүрийн
+    # өөрийн морфологийн задлалаар уншина (жишээ өгүүлбэртэй ижил зарчим).
+    # Браузерын TTS нь хоолой, өргөлт нь төхөөрөмж бүрд өөр байдаг тул
+    # урьдчилан бэлдсэн бичлэг хавьгүй жигд.
+    exam_p = os.path.join(ROOT, 'data', 'exam-starter.json')
+    if os.path.exists(exam_p):
+        exam = json.load(io.open(exam_p, encoding='utf-8'))
+        for it in exam.get('items', []):
+            # 「」 хашилтыг хасна — хөдөлгүүр заримдаа гажуутай уншдаг.
+            q = re.sub('[「」『』]', '', (it.get('q') or '')).strip()
+            m = re.sub('[「」『』]', '', (it.get('model') or '')).strip()
+            if q:
+                jobs.append(('EXQ-' + it['id'], q, '', q))
+            if m:
+                jobs.append(('EXA-' + it['id'], m, '', m))
+
     for it in kanji['items']:
         code = it['id'].split('-')[1]
         on = [r for r in it['on'][:3] if r]

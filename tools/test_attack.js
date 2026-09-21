@@ -38,7 +38,8 @@ function getJSON(path, method) {
 (async () => {
   const chrome = spawn(CHROME, ['--headless=new', '--remote-debugging-port=' + PORT,
     '--no-first-run', '--disable-gpu', '--mute-audio',
-    '--user-data-dir=' + require('os').tmpdir() + '\\irodori-atk', 'about:blank'],
+    '--user-data-dir=' + require('os').tmpdir() + '\\irodori-atk-' + Date.now(),
+    'about:blank'],
     { stdio: 'ignore' });
   let tab = null;
   for (let i = 0; i < 60 && !tab; i++) {

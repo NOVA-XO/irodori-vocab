@@ -1875,11 +1875,11 @@ function renderExam() {
   // Дуудлагыг ҮРГЭЛЖ ханзтай хэлбэрээс уншуулна — кана горимд байсан ч.
   // TTS нь ханзтай өгүүлбэрийг илүү зөв уншдаг: кана дан бол үгийн зааг
   // алдагдаж «なんといいますか» гэхийг буруу өргөлтөөр уншиж магадгүй.
-  $('ex-say-q').hidden = !canSpeak;
+  $('ex-say-q').hidden = !(canSpeak || hasAudio('EXQ-' + q.id));
   // ЯРИХ горимд асуултыг автоматаар уншина — багш асууж байгаа мэт.
   // «Бодож» горимд уншихгүй: тэнд хэрэглэгч нүдээрээ уншиж байгаа.
   // renderExam нь дарлагын гинжнээс дуудагддаг тул iOS ч зөвшөөрнө.
-  if (exMode === 'speak' && canSpeak) speak(q.q);
+  if (exMode === 'speak') examSay(q, 'q');
   $('ex-model').hidden = true;
   $('ex-reveal').hidden = false;
   // Амаар төрөл
@@ -1901,7 +1901,7 @@ function examReveal() {
   stopRecog();
   $('ex-mic') && $('ex-mic').classList.remove('rec');
   $('ex-model-jp').textContent = exA(q);
-  $('ex-say-a').hidden = !canSpeak;
+  $('ex-say-a').hidden = !(canSpeak || hasAudio('EXA-' + q.id));
   $('ex-model-mn').textContent = q.modelMn;
   $('ex-key').textContent = q.key ? 'Түлхүүр бүтэц: ' + q.key : '';
   $('ex-reveal').hidden = true;
@@ -1980,6 +1980,7 @@ $('ex-mic').onclick = () => {
   if (canSpeak && (speechSynthesis.speaking || speechSynthesis.pending)) {
     speechSynthesis.cancel();
   }
+  if (player && !player.paused) { try { player.pause(); } catch (e) { /* байхгүй */ } }
   b.classList.add('rec'); b.textContent = '● Сонсож байна…';
   $('ex-mic-hint').textContent = 'Одоо хариулаарай…';
   $('ex-mic-text').textContent = '';
@@ -2017,8 +2018,18 @@ document.querySelectorAll('#seg-exam-mode button').forEach(b =>
 document.querySelectorAll('#seg-exam-script button').forEach(b =>
   b.onclick = () => { exScript = b.dataset.s; save(KEY_EXS, exScript); refreshExamSeg(); });
 $('btn-exam').onclick = startExam;
-$('ex-say-q').onclick = () => { const q = exQs[exIdx]; if (q) speak(q.q); };
-$('ex-say-a').onclick = () => { const q = exQs[exIdx]; if (q) speak(q.model); };
+/** Шалгалтын дуу: VOICEVOX-ийн УРЬДЧИЛАН бэлдсэн бичлэгийг тоглуулна.
+ *  Браузерын TTS нь төхөөрөмж бүрд өөр хоолой, өөр өргөлттэй тул жигд
+ *  бус сонсогддог. Бичлэг олдохгүй бол л TTS рүү ухарна. */
+function examSay(q, which) {
+  if (!q) return;
+  const id = (which === 'a' ? 'EXA-' : 'EXQ-') + q.id;
+  const text = which === 'a' ? q.model : q.q;
+  if (playFile(id, () => speak(text))) return;
+  speak(text);
+}
+$('ex-say-q').onclick = () => examSay(exQs[exIdx], 'q');
+$('ex-say-a').onclick = () => examSay(exQs[exIdx], 'a');
 $('ex-reveal').onclick = examReveal;
 $('ex-yes').onclick = () => examMark(true);
 $('ex-no').onclick = () => examMark(false);
