@@ -693,6 +693,19 @@ body::after{
 .ex-bad{color:var(--ink); font-family:var(--jps); font-size:19px; margin-top:5px}
 .ex-good{color:var(--ok); font-family:var(--jps); font-size:19px; margin-top:9px}
 #ex-done h2{margin-top:26px}
+/* ── ふりがな (ruby) ──────────────────────────────────────────────
+   Зөвхөн `.ruby` анги зүүсэн элементэд. Мөрийн өндрийг ЗААВАЛ
+   өсгөнө — эс тэгвэл дээд талын кана өмнөх мөр рүү дайрна. Болзолгүй
+   өсгөвөл ふりがな унтраалттай үед мөр дэмий сийрэгжинэ, тиймээс
+   хүрээлэв. */
+.ex-q.ruby, .ex-model-jp.ruby, .ex-bad.ruby, .ex-good.ruby{line-height:2.2}
+.ruby ruby{ruby-position:over; -webkit-ruby-position:before; ruby-align:center}
+.ruby rt{
+  font-family:var(--jps); font-size:.45em; font-weight:400;
+  line-height:1; color:var(--ink-2);
+  /* Уншлага нь ТУСЛАМЖ — гол бичгээс сулхан байх ёстой. */
+}
+
 .ex-qline{display:flex; align-items:flex-start; gap:10px}
 .ex-qline > :first-child{flex:1; min-width:0}
 .ex-say{position:static; flex:none; margin-top:2px}

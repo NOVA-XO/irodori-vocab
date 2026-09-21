@@ -1774,13 +1774,41 @@ let exN = load(KEY_EXN, 15);
 if (![10, 15, 20].includes(exN)) exN = 15;
 let exMode = load(KEY_EXM, 'think');
 if (!['think', 'speak'].includes(exMode)) exMode = 'think';
-/* Бичгийн хэлбэр: ханз уншиж чаддаггүй сурагч кана сонгоно. Асуулт
-   бүр хоёр хэлбэрээр бэлдсэн (build_exam.py). */
+/* Бичгийн хэлбэр — ГУРВАН сонголт (build_exam.py бүгдийг нь бэлддэг):
+     ruby  — ханз, дээр нь жижиг канаар уншлага (ふりがな). ӨГӨГДМӨЛ:
+             ханзыг СУРЧ байхад нь уншиж чадна, хоёрын хооронд сонгох
+             хэрэггүй.
+     kanji — цэвэр ханз, туслалцаагүй.
+     kana  — зөвхөн кана, ханз огт харагдахгүй. */
 const KEY_EXS = 'irodori.examscript.v1';
-let exScript = load(KEY_EXS, 'kanji');
-if (!['kanji', 'kana'].includes(exScript)) exScript = 'kanji';
+let exScript = load(KEY_EXS, 'ruby');
+if (!['ruby', 'kanji', 'kana'].includes(exScript)) exScript = 'ruby';
 const exQ = q => (exScript === 'kana' ? q.qKana : q.q) || q.q;
 const exA = q => (exScript === 'kana' ? q.modelKana : q.model) || q.model;
+
+/** Асуулт/хариултыг элемент рүү бичнэ. `ruby` горимд <ruby><rt> босгоно.
+ *
+ *  DOM зангаар барина — `innerHTML` ХЭРЭГЛЭХГҮЙ. Ингэснээр эдгээр дөрвөн
+ *  цэг нь `textContent`-ийн адил тарилтаас бүрэн хамгаалагдсан хэвээр
+ *  үлдэнэ (docs/STATE.md §2.29). Уншлагын хос нь `build_exam.py`-д
+ *  үүсч, тэндээ шалгагдсан. */
+function exInto(el, q, which) {
+  const pairs = q && (which === 'a' ? q.modelRuby : q.qRuby);
+  const plain = which === 'a' ? exA(q) : exQ(q);
+  el.textContent = '';
+  el.classList.toggle('ruby', exScript === 'ruby' && !!pairs);
+  if (exScript !== 'ruby' || !pairs) { el.textContent = plain; return; }
+  for (const pair of pairs) {
+    const base = pair[0], read = pair[1];
+    if (!read) { el.appendChild(document.createTextNode(base)); continue; }
+    const r = document.createElement('ruby');
+    r.appendChild(document.createTextNode(base));
+    const rt = document.createElement('rt');
+    rt.textContent = read;
+    r.appendChild(rt);
+    el.appendChild(r);
+  }
+}
 
 /* ГҮЙЛТИЙН ТЭМДЭГ — docs/STATE.md §2.36. */
 let exRun = 0, exTimer = null;
@@ -1870,7 +1898,7 @@ function renderExam() {
   $('ex-pos').textContent = (exIdx + 1) + ' / ' + exQs.length;
   $('ex-bar').style.width = Math.round(100 * exIdx / exQs.length) + '%';
   $('ex-topic').textContent = 'L' + q.lesson + ' · ' + q.topic;
-  $('ex-q').textContent = exQ(q);         // textContent — тарилтаас хамгаална
+  exInto($('ex-q'), q, 'q');              // DOM зангаар — тарилтаас хамгаална
   $('ex-qmn').textContent = q.qMn;
   // Дуудлагыг ҮРГЭЛЖ ханзтай хэлбэрээс уншуулна — кана горимд байсан ч.
   // TTS нь ханзтай өгүүлбэрийг илүү зөв уншдаг: кана дан бол үгийн зааг
@@ -1900,7 +1928,7 @@ function examReveal() {
   const q = exQs[exIdx];
   stopRecog();
   $('ex-mic') && $('ex-mic').classList.remove('rec');
-  $('ex-model-jp').textContent = exA(q);
+  exInto($('ex-model-jp'), q, 'a');
   $('ex-say-a').hidden = !(canSpeak || hasAudio('EXA-' + q.id));
   $('ex-model-mn').textContent = q.modelMn;
   $('ex-key').textContent = q.key ? 'Түлхүүр бүтэц: ' + q.key : '';
@@ -1945,13 +1973,13 @@ function finishExam() {
     t.textContent = 'L' + w.q.lesson + ' · ' + w.q.topic;
     const qq = document.createElement('div');
     qq.className = 'ex-bad jp';
-    qq.textContent = exQ(w.q);
+    exInto(qq, w.q, 'q');
     const qm = document.createElement('div');
     qm.className = 'ex-wq';
     qm.textContent = w.q.qMn;
     const a = document.createElement('div');
     a.className = 'ex-good jp';
-    a.textContent = exA(w.q);
+    exInto(a, w.q, 'a');
     const am = document.createElement('div');
     am.className = 'ex-wq';
     am.textContent = w.q.modelMn + (w.q.key ? '  ·  ' + w.q.key : '');

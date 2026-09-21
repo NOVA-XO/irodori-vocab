@@ -591,6 +591,91 @@ async function run(c) {
   ok('sw.js-д сериф файл үлдээгүй', sw && sw.serif === 0, JSON.stringify(sw));
   ok('sw.js-д sans 6 хэсэг байна', sw && sw.sans === 6, JSON.stringify(sw));
 
+  /* ふりがな — ханзан дээрх жижиг кана. Уншлагын хосыг `build_exam.py`
+     үүсгэж шалгасан; энд шалгах нь ХӨТӨЧ дээрх үр дүн. */
+  console.log('\n[12] ふりがな — ruby/rt');
+  /* `exScript`-ийг §9b аль хэдийн өөрчилсөн тул одоогийн УТГЫГ нь
+     шалгах утгагүй. Шалгах ёстой зүйл нь: юу ч хадгалаагүй шинэ
+     хэрэглэгчид ふりがな ОНОГДОНО, сонголт нь яг гурав. */
+  const seg = await c.ev(`
+    return { fallback: load(KEY_EXS, 'ruby'),
+             stored: localStorage.getItem(KEY_EXS),
+             btns: [...document.querySelectorAll('#seg-exam-script button')]
+                     .map(b => b.dataset.s) };
+  `);
+  ok('юу ч хадгалаагүй бол ふりがな оногдоно',
+    seg && seg.fallback === 'ruby', JSON.stringify(seg));
+  ok('бичгийн сонголт яг гурав: ruby/kanji/kana',
+    seg && JSON.stringify(seg.btns) === '["ruby","kanji","kana"]',
+    JSON.stringify(seg));
+
+  const ru = await c.ev(`
+    await loadExam();
+    const q = EXAM.items.find(x => x.id === "S01-01");
+    exScript = "ruby"; exN = 10; exMode = "think";
+    startExam();
+    await new Promise(r => setTimeout(r, 800));
+    exQs[exIdx] = q; exIdx = 0; renderExam();
+    await new Promise(r => setTimeout(r, 200));
+    const el = document.getElementById("ex-q");
+    // <ruby> дотор rt нь textContent-д ОРДОГ тул суурийг тусад нь цуглуулна.
+    const base = [...el.childNodes].map(n => n.nodeName === "RUBY"
+        ? n.firstChild.textContent : n.textContent).join("");
+    return {
+      rubies:  el.querySelectorAll("ruby").length,
+      rts:     el.querySelectorAll("rt").length,
+      firstRt: (el.querySelector("rt") || {}).textContent,
+      base: base, want: q.q,
+      cls: el.className,
+      lh: parseFloat(getComputedStyle(el).lineHeight),
+      fs: parseFloat(getComputedStyle(el).fontSize)
+    };
+  `);
+  ok('<ruby> элемент үүссэн', ru && ru.rubies > 0, JSON.stringify(ru));
+  ok('rt тоо нь ruby тоотой тэнцүү', ru && ru.rts === ru.rubies, JSON.stringify(ru));
+  ok('суурь бичиг нь ханзан хэлбэртэй ЯГ тэнцүү',
+    ru && ru.base === ru.want, JSON.stringify(ru));
+  ok('эхний уншлага «あさ»', ru && ru.firstRt === 'あさ', JSON.stringify(ru));
+  ok('.ruby анги зүүгдсэн',
+    ru && String(ru.cls).indexOf('ruby') >= 0, JSON.stringify(ru));
+  // Мөрийн өндөр өсөөгүй бол дээд мөрийн кана дайрна.
+  ok('мөрийн өндөр өссөн (кана дайрахгүй)',
+    ru && ru.lh > ru.fs * 1.9, JSON.stringify(ru));
+
+  const rk = await c.ev(`
+    exScript = "kanji"; renderExam(); await new Promise(r => setTimeout(r, 150));
+    const el = document.getElementById("ex-q");
+    const a = { rubies: el.querySelectorAll("ruby").length,
+                cls: el.className, txt: el.textContent };
+    exScript = "kana"; renderExam(); await new Promise(r => setTimeout(r, 150));
+    a.kanaTxt = el.textContent;
+    a.kanaKanji = /[\\u3400-\\u9fff]/.test(el.textContent);
+    exScript = "ruby";
+    return a;
+  `);
+  ok('漢字 горимд ruby үүсэхгүй', rk && rk.rubies === 0, JSON.stringify(rk));
+  ok('漢字 горимд .ruby анги авагдсан',
+    rk && String(rk.cls).indexOf('ruby') < 0, JSON.stringify(rk));
+  ok('かな горимд ханз гарахгүй', rk && rk.kanaKanji === false, JSON.stringify(rk));
+
+  // Шалгалтын өгөгдөл нь ТАТАЖ авдаг файл — хорлонтой бол яах вэ.
+  // `exInto()` нь DOM зангаар барьдаг тул ямар ч тэмдэгт ТЕКСТ л болно.
+  const rx = await c.ev(`
+    const el = document.getElementById("ex-q");
+    exScript = "ruby";
+    exInto(el, { q: "x", qKana: "x",
+                 qRuby: [["<img src=x onerror=window.__pwn=1>", "<b>r</b>"]] }, 'q');
+    await new Promise(r => setTimeout(r, 300));
+    return { imgs: el.querySelectorAll("img,b,script").length,
+             pwned: !!window.__pwn,
+             rt: (el.querySelector("rt") || {}).textContent };
+  `);
+  ok('хорлонтой ruby нь ЭЛЕМЕНТ үүсгэхгүй',
+    rx && rx.imgs === 0 && rx.pwned === false, JSON.stringify(rx));
+  ok('хорлонтой ruby нь ТЕКСТ болж үлдэнэ',
+    rx && rx.rt === '<b>r</b>', JSON.stringify(rx));
+  await c.ev('exAbort(); go("home"); return 1;');
+
   console.log('\n[10] .busy — дасгалын үед дэвсгэр зогсоно');
   await c.ev('queue = ALL.slice(0,2); deck="vocab"; mode="flash"; enterStudy(); return 1');
   await sleep(100);

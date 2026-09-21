@@ -554,6 +554,135 @@ Q = [
 ]
 
 
+KANJI_RE = re.compile(u"[々㐀-鿿]")
+# Араб тоо нь ханзтай ИЖИЛ — уншлага бичигдэх ёстой суурь. Тоог дараах
+# ханзнаасаа САЛГАЖ болохгүй: тоолуурын дуудлага өмнөх тооноос хамааран
+# өөрчлөгддөг (3階 さんがい · 5階 ごかい · 1,000円 せんえん).
+DIGIT_RE = re.compile(u"[0-9０-９,，]")
+
+
+LATIN_RE = re.compile(u"[A-Za-zＡ-Ｚａ-ｚ]")
+
+
+def _base(c):
+    return bool(KANJI_RE.match(c)) or bool(DIGIT_RE.match(c))
+
+
+def _kind(c):
+    """'b' = уншлагатай суурь · 'l' = латин (ХОЁР янзаар) · 'a' = зангуу."""
+    if _base(c):
+        return "b"
+    if LATIN_RE.match(c):
+        return "l"
+    return "a"
+
+
+def _classify(s):
+    out = []
+    for ch in s:
+        k = _kind(ch)
+        if out and out[-1][0] == k:
+            out[-1][1] += ch
+        else:
+            out.append([k, ch])
+    return out
+
+
+def _layouts(s):
+    """Латин үсгийн хоёрдмол байдлыг задалж бүх боломжит хуваалт гаргана.
+
+    Латин нь ЗАРИМДАА уншигдана (`M` → エム · `Tシャツ` → ティーシャツ),
+    ЗАРИМДАА хэвээрээ үлдэнэ (`ABC会社` → ABCがいしゃ). Аль нь болохыг
+    урьдчилж мэдэх аргагүй тул хоёуланг нь туршиж, аль нь эх канатай
+    таарахыг шийдэгчид шийдүүлнэ.
+
+    Буцаах нь [(суурь_мөн_үү, текст), ...] жагсаалтуудын жагсаалт;
+    зэрэгцээ ижил төрлийн хэсгүүд НЭГТГЭГДСЭН байна. ДАРААЛАЛ нь чухал:
+    латиныг уншлагагүй гэж үзсэн хувилбар ЭХЭЛНЭ. Дуудагч нь эхний
+    тохирсон хувилбараар зогсдог тул энэ нь дүрэм болно — «латин үсэг
+    канан хэлбэрт хэвээрээ байвал уншигдахгүй» (ABC会社 → ABCがいしゃ,
+    гэхдээ M → エム).
+    """
+    parts = _classify(s)
+    idx = [i for i, p in enumerate(parts) if p[0] == "l"]
+    outs = []
+    for mask in sorted(range(1 << len(idx)), key=lambda m: bin(m).count("1")):
+        kinds = [p[0] for p in parts]
+        for bit, i in enumerate(idx):
+            kinds[i] = "b" if (mask >> bit) & 1 else "a"
+        merged = []
+        for kind, (_, text) in zip(kinds, parts):
+            is_b = kind == "b"
+            if merged and merged[-1][0] == is_b:
+                merged[-1][1] += text
+            else:
+                merged.append([is_b, text])
+        cand = [(b, t) for b, t in merged]
+        if cand not in outs:
+            outs.append(cand)
+    return outs
+
+
+def ruby_pairs(surface, reading, cap=4):
+    """Ханз ба кана хоёрыг зэрэгцүүлж [[текст, уншлага], ...] гаргана.
+
+    Ханзгүй хэсгүүд нь ЗАНГУУ: тэдгээр нь канан хувилбарт ЯГ давтагдана.
+    Хоёр зангууны хооронд үлдсэн кана нь дундах ханзны уншлага болно.
+
+    Зангуу нь ханзны уншлага ДОТОР ч тааралдаж болно (日本に → にほんに:
+    эхний `に` нь `にほん`-ы дотор) тул ухрах хайлт хийж, ханз бүрд дор
+    хаяж 1 кана оногдуулна. Тоог энэ доод хязгаарт тооцохгүй — `1,000円`
+    нь 7 тэмдэгт боловч уншлага нь ердөө 4 кана.
+
+    Бүх шийдийг тоолж буцаана: 1-ээс олон бол ЭРГЭЛЗЭЭТЭЙ тул дуудагч
+    талд шийдүүлнэ (бид бүтэлгүйтгэдэг).
+    """
+    found = []
+
+    def solve(parts, pi, ri, acc):
+        if len(found) >= cap:
+            return
+        if pi == len(parts):
+            if ri == len(reading) and acc not in found:
+                found.append(list(acc))
+            return
+        is_b, text = parts[pi]
+        if not is_b:                       # зангуу — яг таарах ёстой
+            if reading[ri:ri + len(text)] == text:
+                acc.append([text, ""])
+                solve(parts, pi + 1, ri + len(text), acc)
+                acc.pop()
+            return
+        need = max(1, sum(1 for c in text if KANJI_RE.match(c)))
+        if pi + 1 == len(parts):           # төгсгөлийн суурь — үлдсэн бүх кана
+            if len(reading) - ri >= need:
+                acc.append([text, reading[ri:]])
+                if acc not in found:
+                    found.append(list(acc))
+                acc.pop()
+            return
+        nxt = parts[pi + 1][1]
+        start = ri + need
+        while True:
+            j = reading.find(nxt, start)
+            if j < 0:
+                return
+            acc.append([text, reading[ri:j]])
+            solve(parts, pi + 1, j, acc)
+            acc.pop()
+            start = j + 1
+
+    # Хувилбарууд нь давуу эрхийн дарааллаар ирнэ. ЭХНИЙ үр дүнтэй
+    # хувилбар дээр зогсоно — үлдсэнийг үзвэл латины хоёрдмол байдал
+    # хуурамч «эргэлзээ» болж харагдана. Нэг хувилбар дотор олон шийд
+    # гарвал тэр нь ЖИНХЭНЭ эргэлзээ.
+    for parts in _layouts(surface):
+        solve(parts, 0, 0, [])
+        if found:
+            break
+    return found
+
+
 def main():
     errs = []
     out = []
@@ -579,11 +708,36 @@ def main():
         for name, val in (("qKana", qkana), ("modelKana", mkana)):
             if kanji.search(val or ""):
                 errs.append("%s: %s-д ХАНЗ үлдсэн -> %s" % (qid, name, val))
-        out.append({
+        # ふりがな — ханз бүрийн дээр жижиг канаар. Энд үүсгээд ШАЛГАНА:
+        # уналт эсвэл эргэлзээ гарвал build зогсоно, апп руу хэзээ ч
+        # буруу хуваалт очихгүй.
+        rub = {}
+        for fld, surf, read in (("qRuby", qq, qkana),
+                                ("modelRuby", model, mkana)):
+            sols = ruby_pairs(surf, read)
+            if not sols:
+                errs.append("%s: %s зэрэгцүүлж чадсангүй -> %s / %s"
+                            % (qid, fld, surf, read))
+                continue
+            if len(sols) > 1:
+                errs.append("%s: %s ЭРГЭЛЗЭЭТЭЙ (%d хувилбар) -> %s"
+                            % (qid, fld, len(sols), surf))
+                continue
+            p = sols[0]
+            # Эргүүлээд хоёр эх мөрийг ЯГ сэргээж байх ёстой.
+            if "".join(t for t, _ in p) != surf:
+                errs.append("%s: %s ханзан хэлбэр сэргэхгүй" % (qid, fld))
+            if "".join(r or t for t, r in p) != read:
+                errs.append("%s: %s канан хэлбэр сэргэхгүй" % (qid, fld))
+            rub[fld] = p
+
+        item = {
             "id": qid, "lesson": lesson, "topic": topic,
             "q": qq, "qKana": qkana, "qMn": qmn,
             "model": model, "modelKana": mkana, "modelMn": modelmn, "key": key,
-        })
+        }
+        item.update(rub)
+        out.append(item)
 
     if len(Q) != 100:
         errs.append("Нийт асуулт %d (100 байх ёстой)" % len(Q))
@@ -600,7 +754,7 @@ def main():
         "note": "Сурагч асуултад хариулаад, загвар хариултыг харж өөрөө "
                 "«чадсан/чадаагүй» гэж тэмдэглэнэ. Ханз/кана сонголттой. "
                 "Багш tools/build_exam.py-д асуулт нэмж/заснаа дахин ажиллуулна.",
-        "version": 3,
+        "version": 4,
         "count": len(out),
         "items": out,
     }
@@ -608,7 +762,8 @@ def main():
     with io.open(dst, "w", encoding="utf-8", newline="") as f:
         f.write(json.dumps(doc, ensure_ascii=False, indent=1) + "\n")
 
-    print("OK  exam-starter.json  questions=%d  kind=self  (kanji+kana)" % len(out))
+    nr = sum(1 for it in out if it.get("qRuby"))
+    print("OK  exam-starter.json  questions=%d  ruby=%d  kind=self" % (len(out), nr))
     print("per lesson:", " ".join("L%d=%d" % (l, per_lesson[l])
                                   for l in sorted(per_lesson)))
 
