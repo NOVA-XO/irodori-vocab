@@ -1814,8 +1814,8 @@ function paintThemeColor(v) {
   if (metas.length < 2) return;
   const dark = v === 'dark' || (!v && matchesDark());
   metas.forEach(m => {
-    const own = m.media && m.media.indexOf('dark') >= 0 ? '#0b1540' : '#f5f8ff';
-    m.content = v ? (dark ? '#0b1540' : '#f5f8ff') : own;
+    const own = m.media && m.media.indexOf('dark') >= 0 ? '#0b1540' : '#a9d0fb';
+    m.content = v ? (dark ? '#0b1540' : '#a9d0fb') : own;
   });
 }
 

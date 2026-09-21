@@ -205,7 +205,7 @@ async function run(c) {
     { features: [{ name: 'prefers-color-scheme', value: 'light' }] });
   await sleep(150);
   const lt = await tok();
-  ok('цайвар: --bg нь #f5f8ff', lt.bg === '#f5f8ff', JSON.stringify(lt));
+  ok('цайвар: --bg нь #a9d0fb', lt.bg === '#a9d0fb', JSON.stringify(lt));
   ok('цайвар: бичиг бараан',   lt.ink === '#0b1540', JSON.stringify(lt));
 
   await c.send('Emulation.setEmulatedMedia',
@@ -252,7 +252,7 @@ async function run(c) {
     cyc && cyc[0].v === '' && cyc[0].bg === '#0b1540' && cyc[0].attr === null,
     JSON.stringify(cyc));
   ok('дарвал ЦАЙВАР — систем бараан байсан ч',
-    cyc && cyc[1].v === 'light' && cyc[1].bg === '#f5f8ff' && cyc[1].attr === 'light',
+    cyc && cyc[1].v === 'light' && cyc[1].bg === '#a9d0fb' && cyc[1].attr === 'light',
     JSON.stringify(cyc));
   ok('дахин дарвал БАРААН',
     cyc && cyc[2].v === 'dark' && cyc[2].bg === '#0b1540' && cyc[2].attr === 'dark',
