@@ -738,13 +738,70 @@ async function run(c) {
   ok('зай нь --list-gap (14px)',
     gaps && gaps.uniq[0] === 14, JSON.stringify(gaps));
 
-  // Цэс — зөвхөн «Явц». Бусад нь нүүрэн дээр карт болж байдаг.
-  const menu = await c.ev(
-    'return [...document.querySelectorAll("#menu button")].map(b => b.dataset.go);');
-  ok('цэсэнд ганцхан бичлэг',
-    Array.isArray(menu) && menu.length === 1, JSON.stringify(menu));
-  ok('тэр нь «Явц» (stats)',
-    Array.isArray(menu) && menu[0] === 'stats', JSON.stringify(menu));
+  /* Хажуугийн шургуулга. Нээхэд ХОЁР алхам (hidden -> дараагийн кадрт
+     `open`) тул зөвхөн `hidden`-ийг шалгавал хагас зураг гарна —
+     БОДИТ байрлалыг нь хэмжинэ. */
+  const dr = await c.ev(`
+    go('stats');
+    await new Promise(r => setTimeout(r, 200));
+    const m = document.getElementById('menu');
+    const sc = document.getElementById('scrim');
+    const closed = { hidden: m.hidden, scrim: sc.hidden };
+
+    document.getElementById('btn-menu').click();
+    await new Promise(r => setTimeout(r, 450));
+    const r1 = m.getBoundingClientRect();
+    const opened = {
+      hidden: m.hidden, scrim: sc.hidden,
+      left: Math.round(r1.left), w: Math.round(r1.width),
+      full: Math.round(r1.height) >= innerHeight - 2,
+      items: document.querySelectorAll('#menu button[data-go]').length,
+      icons: document.querySelectorAll('#menu button[data-go] svg.di').length,
+      shown: [...document.querySelectorAll('#menu button[data-go]')]
+               .filter(b => !b.hidden).length,
+      cur: [...document.querySelectorAll('#menu button[aria-current=\"true\"]')]
+               .map(b => b.dataset.go)
+    };
+
+    // Бүдгэрүүлэгч дээр дарвал хаагдах ёстой.
+    sc.click();
+    await new Promise(r => setTimeout(r, 450));
+    const afterScrim = { hidden: m.hidden, scrim: sc.hidden };
+
+    // Цэснээс шилжихэд шургуулга хаагдаж, дэлгэц солигдоно.
+    document.getElementById('btn-menu').click();
+    await new Promise(r => setTimeout(r, 400));
+    document.querySelector('#menu button[data-go=\"kana\"]').click();
+    await new Promise(r => setTimeout(r, 300));
+    const afterNav = { hidden: m.hidden, screen: screen };
+
+    return { closed, opened, afterScrim, afterNav };
+  `);
+  ok('эхлээд шургуулга ХААЛТТАЙ',
+    dr && dr.closed.hidden === true && dr.closed.scrim === true,
+    JSON.stringify(dr.closed));
+  ok('☰ дарвал нээгдэж ЗҮҮН ирмэгт ирнэ',
+    dr && dr.opened.hidden === false && dr.opened.left === 0,
+    JSON.stringify(dr.opened));
+  ok('бүтэн өндөртэй, 284px өргөн',
+    dr && dr.opened.full === true && dr.opened.w === 284,
+    JSON.stringify(dr.opened));
+  ok('бүдгэрүүлэгч гарч ирнэ',
+    dr && dr.opened.scrim === false, JSON.stringify(dr.opened));
+  ok('7 харагдах бичлэг (JLPT нуугдсан)',
+    dr && dr.opened.items === 8 && dr.opened.shown === 7,
+    JSON.stringify(dr.opened));
+  ok('бичлэг БҮР иконтой',
+    dr && dr.opened.icons === dr.opened.items, JSON.stringify(dr.opened));
+  ok('идэвхтэй хуудас тэмдэглэгдсэн',
+    dr && JSON.stringify(dr.opened.cur) === '["stats"]', JSON.stringify(dr.opened));
+  ok('бүдгэрүүлэгч дээр дарвал хаагдана',
+    dr && dr.afterScrim.hidden === true && dr.afterScrim.scrim === true,
+    JSON.stringify(dr.afterScrim));
+  ok('бичлэг дарвал хаагдаж шилжинэ',
+    dr && dr.afterNav.hidden === true && dr.afterNav.screen === 'kana',
+    JSON.stringify(dr.afterNav));
+  await c.ev('go("home"); return 1;');
 
   console.log('\n[12] ふりがな — ruby/rt');
   /* `exScript`-ийг §9b аль хэдийн өөрчилсөн тул одоогийн УТГЫГ нь

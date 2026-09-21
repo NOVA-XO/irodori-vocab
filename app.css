@@ -149,24 +149,55 @@ body{
 }
 .bar .icon:hover{color:var(--accent); background:transparent}
 
-/* ☰ цэс — цаасан дээр тавьсан хуудас. Ганцхан энд сүүдэр зөвшөөрнө. */
-.menu{
-  position:sticky; top:52px; z-index:8; max-width:660px; margin:0 auto;
-  background:var(--card); border:1px solid var(--line); border-radius:2px;
-  box-shadow:0 8px 26px rgba(0,0,0,.10); overflow:hidden; display:grid;
+/* ── ☰ Хажуугийн шургуулга ────────────────────────────────────────
+   Дизайн: Astra. Хоёр өөрчлөлт: `:has()`-ийн оронд JS-ээр `open` анги
+   (тэр нь DOM-ийн дараалалд хамаардаг тул эмзэг), бүдгэрүүлэгчид
+   `color-mix` биш тогтмол `rgba` (хоёр загварт ч зөв).
+
+   Нээх/хаах нь ХОЁР алхамтай: `hidden`-ийг авч, дараагийн кадрт `open`
+   анги нэмнэ — эс тэгвэл шилжилт ажиллахгүй (элемент `display:none`-
+   ээс шууд эцсийн байрлалдаа гарч ирнэ). */
+#scrim{
+  position:fixed; inset:0; z-index:100;
+  background:rgba(0,0,0,.45);
+  opacity:0; transition:opacity .22s ease-out;
 }
-.menu button{
-  background:none; border:0; border-bottom:1px solid var(--line);
-  color:var(--ink); text-align:left; padding:14px 18px; font-size:15px;
-  letter-spacing:.01em;
+#scrim.open{opacity:1}
+
+.drawer{
+  position:fixed; inset:0 auto 0 0; z-index:101;
+  width:284px; max-width:82vw; height:100dvh;
+  padding:calc(12px + env(safe-area-inset-top,0px)) 12px
+          calc(12px + env(safe-area-inset-bottom,0px))
+          calc(12px + env(safe-area-inset-left,0px));
+  display:flex; flex-direction:column; gap:4px;
+  overflow-y:auto; overscroll-behavior:contain;
+  background:var(--card); color:var(--ink); font-family:var(--ui);
+  transform:translateX(-100%);
+  transition:transform .22s ease-out;
 }
-.menu button:last-child{border-bottom:0}
-.menu button:hover{background:var(--bg)}
-.menu button[aria-current="true"]{color:var(--accent)}
-/* Идэвхтэй хуудсыг 朱 зураасаар заана — тод болгохын тулд өнгө нэмэхгүй. */
-.menu button[aria-current="true"]::before{
-  content:''; display:inline-block; width:14px; height:1px; margin-right:9px;
-  vertical-align:4px; background:var(--accent);
+.drawer.open{transform:translateX(0)}
+/* `display:flex` нь браузерын `[hidden]`-ийг дардаг (§2.10). */
+#scrim[hidden],.drawer[hidden]{display:none !important}
+
+.drawer button{
+  display:flex; align-items:center; gap:14px; flex:0 0 auto;
+  width:100%; min-height:48px; padding:12px 14px;
+  border:0; border-radius:var(--box-r); background:transparent;
+  color:var(--ink); font:inherit; font-size:15px; text-align:left;
+}
+.drawer .di{flex:0 0 22px; color:var(--ink-2)}
+.drawer button:hover{background:var(--sel-bg)}
+/* Идэвхтэй хуудас — дотогш суусан «шахмал». */
+.drawer button[aria-current="true"]{background:var(--sel-bg); color:var(--sel-fg)}
+.drawer button[aria-current="true"] .di{color:var(--sel-fg)}
+.drawer button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+/* Хаах товч нь мөрийн өндөртэй ижил — дээд зүүн буланд. */
+.drawer .drawer-x{width:48px; min-height:48px; padding:12px; margin-bottom:6px}
+.drawer .drawer-x .di{color:var(--ink-2)}
+
+@media (prefers-reduced-motion:reduce){
+  #scrim,.drawer{transition:none}
 }
 
 /* Нүүрний том сонголтууд — хайрцаггүй, зөвхөн хуваах шугам.

@@ -1466,10 +1466,10 @@ function show(name) {
   // Энэ нь `show()` дотор байх ЁСТОЙ — дасгал `go()`-гүйгээр шууд
   // `show('study')` дуудаж эхэлдэг.
   for (const s of SCREENS) $(s).hidden = (s !== name);
-  $('menu').hidden = true;
+  shutDrawer();
   // Дасгал дунд байхад ☰ биш ‹ — нэг дарлагаар гарах боломж хэрэгтэй.
   $('btn-menu').innerHTML = (name === 'study') ? ICON_BACK : ICON_MENU;
-  document.querySelectorAll('#menu button').forEach(b =>
+  document.querySelectorAll('#menu button[data-go]').forEach(b =>
     b.setAttribute('aria-current', b.dataset.go === name));
   window.scrollTo(0, 0);
 }
@@ -1765,10 +1765,54 @@ document.querySelectorAll('#kana-groups button').forEach(b =>
     save(KEY_S, settings); refreshHome();
   });
 $('btn-review').onclick = () => startSession('choice', true);
+/* ── Хажуугийн шургуулга ───────────────────────────────────────────
+ *
+ * ХОЁР алхамтай нээлт/хаалт. `hidden` нь `display:none` тул түүнийг
+ * авмагц шилжилт ажиллахгүй — элемент шууд эцсийн байрлалдаа гарч
+ * ирнэ. Тиймээс: `hidden`-ийг авч, ДАРААГИЙН КАДРТ `open` анги нэмнэ.
+ * Хаахдаа эсрэгээр: `open`-ыг авч, шилжилт дуусмагц `hidden`.
+ */
+let drawerT = null;
+
+function openDrawer() {
+  clearTimeout(drawerT);
+  $('scrim').hidden = false;
+  $('menu').hidden = false;
+  requestAnimationFrame(() => {
+    $('scrim').classList.add('open');
+    $('menu').classList.add('open');
+  });
+}
+
+/** Шургуулгыг ШУУД хаана (шилжилтгүй). `show()` нь ачаалалтын үед ч
+ *  дуудагддаг тул тэнд таймер ажиллуулах шаардлагагүй. */
+function shutDrawer() {
+  clearTimeout(drawerT);
+  for (const id of ['scrim', 'menu']) {
+    $(id).hidden = true;
+    $(id).classList.remove('open');
+  }
+}
+
+function closeDrawer() {
+  clearTimeout(drawerT);
+  $('scrim').classList.remove('open');
+  $('menu').classList.remove('open');
+  /* Шилжилт дуусахыг хүлээнэ. `transitionend` дээр найдвал хөдөлгөөн
+     унтраалттай үед хэзээ ч ирэхгүй тул таймер найдвартай. */
+  drawerT = setTimeout(shutDrawer, 240);
+}
+
+const drawerOpen = () => !$('menu').hidden;
+
 $('btn-menu').onclick = () => {
   if (screen === 'study') { go('home'); return; }     // дасгал дундаас гарах
-  $('menu').hidden = !$('menu').hidden;
+  drawerOpen() ? closeDrawer() : openDrawer();
 };
+$('menu-close').onclick = closeDrawer;
+$('scrim').onclick = closeDrawer;
+addEventListener('keydown',
+  e => { if (e.key === 'Escape' && drawerOpen()) closeDrawer(); });
 $('btn-profile').onclick = () => go('profile');
 /* Гарчиг дархад нүүр рүү. Толгойн мөр бүх дэлгэц дээр байдаг тул энэ нь
    хамгийн богино зам — цэс нээх шаардлагагүй. */
@@ -1853,11 +1897,11 @@ $('app-ver').textContent = VERSION;
 $('btn-reload').onclick = () => {
   location.replace(location.pathname + '?r=' + Date.now());
 };
-document.querySelectorAll('#menu button, .bigcard').forEach(b =>
+/* Шургуулгад шилжихгүй товч ч бий (хаах) — `[data-go]`-оор шүүнэ. */
+document.querySelectorAll('#menu button[data-go], .bigcard').forEach(b =>
   b.onclick = () => go(b.dataset.go));
-document.addEventListener('click', e => {                // гадуур дарвал цэс хаагдана
-  if (!$('menu').hidden && !e.target.closest('#menu, #btn-menu')) $('menu').hidden = true;
-});
+/* «Гадуур дарвал хаагдана» ажлыг одоо `#scrim` хариуцна — бүтэн
+   дэлгэцийг бүрхдэг тул баримт дээрх нэмэлт сонсогч хэрэггүй. */
 $('sel-all').onclick = () => { setLessons([...new Set(ALL.map(i => i.lesson))]); refreshHome(); };
 $('sel-none').onclick = () => { setLessons([]); refreshHome(); };
 $('inc-ref').onchange = e => { settings.ref = e.target.checked; save(KEY_S, settings); refreshHome(); };

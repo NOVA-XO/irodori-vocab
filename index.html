@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22d">
-<link rel="stylesheet" href="app.css?v=2026-09-22d">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22e">
+<link rel="stylesheet" href="app.css?v=2026-09-22e">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22d">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22d">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22e">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22e">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -44,12 +44,20 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   </button>
 </header>
 
-<!-- Цэс нь ЗӨВХӨН «Явц»-тай. Бусад бүх хэсэг (Irodori · Шалгалт ·
-     Кана · Санал хүсэлт) нүүрэн дээр карт болж байдаг, гарчиг дархад
-     нүүр рүү ордог тул цэсэнд давхардуулах шаардлагагүй. «Явц» нь
-     цорын ганц нүүрэнд байхгүй дэлгэц. -->
-<nav id="menu" class="menu" hidden>
-  <button data-go="stats">Явц</button>
+<!-- Хажуугаас гарах шургуулга. `#scrim` нь `#menu`-ийн ӨМНӨ байх
+     ёстой — давхарлалт (z-index) ба «гадуур дарвал хаагдана" хоёуланд
+     нь тэр дараалал хэрэгтэй. -->
+<div id="scrim" hidden></div>
+<nav id="menu" class="drawer" aria-label="Цэс" hidden>
+  <button class="drawer-x" id="menu-close" aria-label="Цэс хаах"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <button data-go="home"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-6h5v6"/></svg><span>Нүүр</span></button>
+  <button data-go="irodori"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4.5h6a3 3 0 0 1 3 3V20a2.5 2.5 0 0 0-2.5-2.5H4z"/><path d="M20 4.5h-6a3 3 0 0 0-3 3V20a2.5 2.5 0 0 1 2.5-2.5H20z"/></svg><span>Irodori сурах бичиг</span></button>
+  <button data-go="jlpt"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6.5v5c0 4.6 3.3 8.4 8 9.5 4.7-1.1 8-4.9 8-9.5v-5z"/><path d="M9 12l2 2 4-4"/></svg><span>JLPT бэлтгэл</span></button>
+  <button data-go="exam"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8a1 1 0 0 1 1 1v1h2v15H5V6h2V5a1 1 0 0 1 1-1z"/><path d="M9 12h6M9 16h4"/></svg><span>Шалгалт</span></button>
+  <button data-go="kana"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5 10.5 4.5 17 19.5"/><path d="M6.8 14.5h7.4"/><path d="M19.5 19.5V12"/><path d="M19.5 12a2.6 2.6 0 1 0-2.6 2.6"/></svg><span>Кана үсэг</span></button>
+  <button data-go="stats"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span>Явц</span></button>
+  <button data-go="feedback"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 15.5a2.5 2.5 0 0 1-2.5 2.5H8l-4 3V6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5z"/></svg><span>Санал хүсэлт</span></button>
+  <button data-go="profile"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.8 20c0-3.5 3.2-5.8 7.2-5.8s7.2 2.3 7.2 5.8"/></svg><span>Тохиргоо</span></button>
 </nav>
 
 <!-- ═══════════════════ НҮҮР ═══════════════════ -->
@@ -555,7 +563,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-22d"></script>
-<script src="app.js?v=2026-09-22d"></script>
+<script src="sync-config.js?v=2026-09-22e"></script>
+<script src="app.js?v=2026-09-22e"></script>
 </body>
 </html>
