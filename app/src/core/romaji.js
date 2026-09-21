@@ -151,6 +151,17 @@ function checkTyped(raw, item) {
   return set.has(normKana(toKana(raw))) || set.has(normRomaji(raw));
 }
 
+/** ЯРИХ горим: микрофоны таньсан япон текстийг УНШЛАГААР шалгана. Таних нь
+ *  ханз (私) эсвэл кана (わたし) буцааж болно — answerSet нь ханз (jp) ба
+ *  кана хоёуланг агуулдаг тул аль нь ч таарна. */
+function checkSpoken(transcript, item) {
+  const set = answerSet(item);
+  const n = normKana(transcript || '');
+  if (!n) return false;
+  if (set.has(n)) return true;
+  return readingVariants(n).some(v => set.has(v));
+}
+
 /* ══════════════════════ 3. Явц (localStorage) ══════════════════════ */
 
-export { toKana, checkTyped, normKana, normRomaji, answerSet, readingVariants, KANA_MAP };
+export { toKana, checkTyped, checkSpoken, normKana, normRomaji, answerSet, readingVariants, KANA_MAP };

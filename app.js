@@ -160,6 +160,18 @@ function checkTyped(raw, item) {
   return set.has(normKana(toKana(raw))) || set.has(normRomaji(raw));
 }
 
+/** ЯРИХ горим: микрофоны таньсан япон текстийг УНШЛАГААР шалгана.
+ *  Таних нь ханз (私) эсвэл кана (わたし) буцааж болно — `answerSet` нь
+ *  ханз (jp) ба кана хоёуланг агуулдаг тул аль нь ч таарна. Топик бөөс
+ *  は/へ/を-ийн дуудлагын хувилбарыг ч (readingVariants) хамруулна. */
+function checkSpoken(transcript, item) {
+  const set = answerSet(item);
+  const n = normKana(transcript || '');
+  if (!n) return false;
+  if (set.has(n)) return true;
+  return readingVariants(n).some(v => set.has(v));
+}
+
 /* ══════════════════════ 3. Явц (localStorage) ══════════════════════ */
 
 const KEY_P = 'irodori.progress.v1';
@@ -543,6 +555,44 @@ function rebuildPool() { pool = activeWords().filter(inPool); }
 const canSpeak = !!window.speechSynthesis;
 let jaVoice = null;
 
+/* ── Микрофоноор таних (Web Speech API) ─────────────────────────────
+ * «Ярих» горим: хэрэглэгч япон үгээ ХЭЛЭХ, браузер таниад уншлагаар нь
+ * шалгана. Chrome/Edge дэмждэг; Firefox үгүй. HTTPS шаардана (github.io
+ * зүгээр). Chrome нь дууг Google сервер рүү илгээж таниулдаг — товчийг
+ * дарж зөвшөөрсний дараа л ажиллана. */
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+const canListen = !!SpeechRec;
+let recog = null, recognizing = false;
+
+function startRecog(onInterim, onFinal, onError) {
+  if (!canListen) { if (onError) onError('unsupported'); return; }
+  try {
+    if (recog) { try { recog.abort(); } catch (e) { /* байхгүй */ } }
+    recog = new SpeechRec();
+    recog.lang = 'ja-JP';
+    recog.interimResults = true;
+    recog.maxAlternatives = 4;     // таних нь ойролцоо хувилбар өгдөг — бүгдийг шалгана
+    recog.continuous = false;
+    recognizing = true;
+    recog.onresult = e => {
+      let interim = '', finalRes = null;
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalRes = r; else interim += r[0].transcript;
+      }
+      if (finalRes) {
+        const alts = [];
+        for (let k = 0; k < finalRes.length; k++) alts.push(finalRes[k].transcript);
+        if (onFinal) onFinal(alts);
+      } else if (interim && onInterim) onInterim(interim);
+    };
+    recog.onerror = e => { recognizing = false; if (onError) onError(e.error || 'error'); };
+    recog.onend = () => { recognizing = false; };
+    recog.start();
+  } catch (e) { recognizing = false; if (onError) onError(String((e && e.message) || e)); }
+}
+function stopRecog() { if (recog && recognizing) { try { recog.stop(); } catch (e) { /* байхгүй */ } } }
+
 /* Гар утсан дээр getVoices() ХОЙШЛОН дүүрдэг тул хоолой олдох хүртэл хүлээж
    товчийг нуувал хэзээ ч гарч ирэхгүй. Мөн яг таарсан «ja» хоолой олдоогүй ч
    lang="ja-JP" гэж өгвөл систем өөрөө япон хоолой сонгодог. Тиймээс товчийг
@@ -758,8 +808,8 @@ function startSession(m, onlyDue, src) {
  *  ЗАДАЛДАГ байсан. */
 function soundBtnHidden() {
   if (!cur || !canHear(cur)) return true;
-  // «Бичих» ба урвуу чиглэлд асуулт нь монгол утга — дуу нь хариулт.
-  if ((mode === 'type' || isRev()) && !shown) return true;
+  // «Бичих», «Ярих» ба урвуу чиглэлд асуулт нь монгол утга — дуу нь хариулт.
+  if ((mode === 'type' || mode === 'speak' || isRev()) && !shown) return true;
   return false;
 }
 
@@ -771,7 +821,7 @@ function nextCard() {
   const card = $('card');
   if (card) card.classList.remove('flip');
   replay(card, 'in');
-  for (const p of ['pane-flash', 'pane-choice', 'pane-type', 'pane-next']) $(p).hidden = true;
+  for (const p of ['pane-flash', 'pane-choice', 'pane-type', 'pane-speak', 'pane-next']) $(p).hidden = true;
   $('answer').hidden = true;
   $('f-judge').hidden = true; $('f-show').hidden = false;
   $('p-sub').textContent = deck === 'kana'
@@ -824,6 +874,13 @@ function nextCard() {
     $('t-input').value = ''; $('t-kana').textContent = '';
     $('pane-type').hidden = false;
     setTimeout(() => $('t-input').focus(), 30);
+  } else if (mode === 'speak') {
+    // Утга харуулж → хэрэглэгч япон үгээ ХЭЛНЭ (bичих горимтой ижил чиглэл).
+    $('p-main').textContent = cur.mn || cur.jp; $('p-main').className = 'prompt mn';
+    $('mic-text').textContent = '';
+    $('mic-hint').textContent = 'Товчийг дараад япон үгээ хэлээрэй.';
+    $('mic-btn').classList.remove('rec');
+    $('pane-speak').hidden = false;
   } else if (mode === 'listen') {
     $('p-main').textContent = '🔊'; $('p-main').className = 'prompt';
     buildChoices();
@@ -1180,7 +1237,7 @@ function show(name) {
   // Дасгалаас ГАРАХ мөчид хэрэглээний тоог илгээнэ. `finish()` нь
   // `show('done')` дуудаж дуусдаг тул дуусгасан ч, дундуур гарсан ч
   // хоёулаа энд таарна.
-  if (screen === 'study' && name !== 'study') statsPing();
+  if (screen === 'study' && name !== 'study') { statsPing(); stopRecog(); }
   screen = name;
   // Дасгалын үед дэвсгэрийн анимацийг зогсооно (themes.css: `.busy`).
   // Энэ нь `show()` дотор байх ЁСТОЙ — дасгал `go()`-гүйгээр шууд
@@ -1518,6 +1575,46 @@ $('t-check').onclick = () => {
   answered = true;
   resolve(checkTyped($('t-input').value, cur));
 };
+
+/* «Ярих» горим — микрофоны товч. Дарахад таниж эхэлнэ; таньсан текстийг
+   ЯГ ХАРУУЛаад уншлагаар нь шалгана. Таних олон хувилбар өгдөг тул алийг
+   нь ч зөв бол хүлээнэ. */
+$('mic-btn').onclick = () => {
+  if (answered || recognizing) { if (recognizing) stopRecog(); return; }
+  const btn = $('mic-btn');
+  btn.classList.add('rec'); btn.textContent = '● Сонсож байна…';
+  $('mic-hint').textContent = 'Одоо хэлээрэй…';
+  $('mic-text').textContent = '';
+  startRecog(
+    interim => { $('mic-text').textContent = interim; },
+    alts => {
+      if (answered) return;
+      btn.classList.remove('rec'); btn.textContent = '🎤 Хэлэх';
+      const heard = alts[0] || '';
+      $('mic-text').textContent = heard || '(таниагүй)';
+      const ok = alts.some(a => checkSpoken(a, cur));
+      answered = true;
+      resolve(ok);
+    },
+    err => {
+      btn.classList.remove('rec'); btn.textContent = '🎤 Хэлэх';
+      $('mic-hint').textContent = err === 'not-allowed' || err === 'service-not-allowed'
+        ? 'Микрофон зөвшөөрөл өгөгдсөнгүй. Хаягийн зүүн талын 🔒-оос зөвшөөрнө үү.'
+        : err === 'no-speech' ? 'Дуу сонсогдсонгүй — дахин оролдоно уу.'
+        : err === 'unsupported' ? 'Энэ браузер микрофоны таниулт дэмжихгүй (Chrome/Edge ашиглана уу).'
+        : 'Таних боломжгүй байна — дахин оролдоно уу.';
+    }
+  );
+};
+$('mic-skip').onclick = () => {
+  if (answered) return;
+  stopRecog(); answered = true; resolve(false);
+};
+// Микрофоны таниулт дэмжихгүй браузерт «Ярих» горимыг идэвхгүй болгоно.
+if (!canListen) {
+  const sb = document.querySelector('[data-mode="speak"]');
+  if (sb) { sb.disabled = true; sb.title = 'Микрофоны таниулт зөвхөн Chrome/Edge дээр'; }
+}
 $('btn-next').onclick = nextCard;
 
 $('btn-continue').onclick = () => {

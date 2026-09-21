@@ -8,9 +8,9 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21a">
-<link rel="stylesheet" href="app.css?v=2026-09-21a">
-<link rel="stylesheet" href="themes.css?v=2026-09-21a">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21b">
+<link rel="stylesheet" href="app.css?v=2026-09-21b">
+<link rel="stylesheet" href="themes.css?v=2026-09-21b">
 <!-- Сонгосон загварыг CSS-ээс ӨМНӨ тавина. Эс тэгвэл хуудас эхлээд
      анхдагч 和-гаар нэг анивчаад дараа нь солигдоно. Тиймээс энэ нь
      app.js дотор биш, ЭНД байх ёстой. -->
@@ -18,8 +18,8 @@
 document.documentElement.setAttribute("data-theme",t);}catch(e){
 document.documentElement.setAttribute("data-theme","minimal");}</script>
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21a">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21a">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21b">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -170,6 +170,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
       <button class="mode" data-mode="flash"><b>Флашкарт</b><span>Карт эргүүлж өөрөө дүгнэнэ</span></button>
       <button class="mode" data-mode="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно</span></button>
       <button class="mode" data-mode="type"><b>Гараар бичих</b><span>Латинаар бичихэд кана болно</span></button>
+      <button class="mode" data-mode="speak"><b>Ярих</b><span>Микрофоноор япон үгээ хэлнэ</span></button>
       <button class="mode" data-mode="listen"><b>Сонсох</b><span>Дуудлагыг сонсоод утгыг таана</span></button>
     </div>
   </div>
@@ -332,6 +333,13 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
     <button class="primary big" id="t-check">Шалгах</button>
   </div>
 
+  <div id="pane-speak" class="pane" hidden>
+    <button class="primary big mic" id="mic-btn">🎤 Хэлэх</button>
+    <div class="mic-hint" id="mic-hint"></div>
+    <div class="mic-text jp" id="mic-text"></div>
+    <button class="ghost" id="mic-skip">Мэдэхгүй / алгасах</button>
+  </div>
+
   <div id="pane-next" class="pane" hidden>
     <div class="verdict" id="verdict"></div>
     <button class="primary big" id="btn-next">Дараах</button>
@@ -484,7 +492,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-21a"></script>
-<script src="app.js?v=2026-09-21a"></script>
+<script src="sync-config.js?v=2026-09-21b"></script>
+<script src="app.js?v=2026-09-21b"></script>
 </body>
 </html>

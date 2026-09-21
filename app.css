@@ -656,3 +656,12 @@ body::after{
     transition-duration:.001ms !important;
   }
 }
+
+/* ── «Ярих» горим — микрофон ─────────────────────────────────────── */
+#pane-speak{justify-items:center; text-align:center}
+.mic{transition:background var(--dur,.2s) ease, transform var(--dur,.2s) ease}
+.mic.rec{background:var(--ng); color:#fff; animation:micpulse 1.1s ease-in-out infinite}
+@keyframes micpulse{0%,100%{transform:scale(1)} 50%{transform:scale(1.04)}}
+.mic-hint{color:var(--ink-2); font-size:14px; min-height:20px}
+.mic-text{font-family:var(--jpd); font-size:30px; min-height:42px; color:var(--ink)}
+@media (prefers-reduced-motion: reduce){ .mic.rec{animation:none} }
