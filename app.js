@@ -1328,6 +1328,7 @@ function go(name) {
   if (name === 'stats') { refreshStats(); loadAllBooks().then(refreshStats); }
   if (name === 'profile') { refreshSync(); refreshUsage(); renderThemes(); applyFx(); }
   if (name === 'feedback') refreshFb();
+  if (name === 'exam') examSetup();
   if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) { placeRing(name); refreshHome(); }
   show(name);
 }
@@ -1771,6 +1772,15 @@ let exQs = [], exIdx = 0, exLog = [];
    Гүйлт бүр өөрийн тэмдгийг шалгана; гарах/дахин эхлэхэд тэмдэг ахина. */
 let exRun = 0, exTimer = null;
 
+/** Шалгалтын дэлгэц рүү орвол ЭХЛЭЭД тохиргоо гарна (шууд эхлэхгүй). */
+function examSetup() {
+  exAbort();
+  $('ex-setup').hidden = false;
+  $('ex-run').hidden = true;
+  $('ex-done').hidden = true;
+  refreshExamSeg();
+}
+
 /** Шалгалтын гүйлтийг хүчингүй болгоно (гарах, дахин эхлэх). */
 function exAbort() {
   exRun++;
@@ -1813,6 +1823,7 @@ function startExam() {
     if (pool.length < 4) { alert('Шалгалтын асуулт ачаалагдсангүй.'); return; }
     exQs = shuffle(pool).slice(0, Math.min(exN, pool.length));
     exIdx = 0; exLog = [];
+    $('ex-setup').hidden = true;
     $('ex-run').hidden = false; $('ex-done').hidden = true;
     show('exam');
     renderExam();
@@ -1901,7 +1912,7 @@ $('btn-exam').onclick = startExam;
 $('ex-again').onclick = startExam;
 $('ex-home').onclick = () => go('home');
 $('ex-quit').onclick = () => {
-  if (confirm('Шалгалтыг зогсоох уу?')) { exAbort(); go('irodori'); }
+  if (confirm('Шалгалтыг зогсоох уу?')) examSetup();
 };
 refreshExamSeg();
 document.querySelectorAll('#goal-pick button').forEach(b =>

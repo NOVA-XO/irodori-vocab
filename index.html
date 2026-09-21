@@ -8,9 +8,9 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21f">
-<link rel="stylesheet" href="app.css?v=2026-09-21f">
-<link rel="stylesheet" href="themes.css?v=2026-09-21f">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21g">
+<link rel="stylesheet" href="app.css?v=2026-09-21g">
+<link rel="stylesheet" href="themes.css?v=2026-09-21g">
 <!-- Сонгосон загварыг CSS-ээс ӨМНӨ тавина. Эс тэгвэл хуудас эхлээд
      анхдагч 和-гаар нэг анивчаад дараа нь солигдоно. Тиймээс энэ нь
      app.js дотор биш, ЭНД байх ёстой. -->
@@ -18,8 +18,8 @@
 document.documentElement.setAttribute("data-theme",t);}catch(e){
 document.documentElement.setAttribute("data-theme","minimal");}</script>
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21f">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21f">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21g">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21g">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -49,6 +49,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <button data-go="home">Нүүр</button>
   <button data-go="irodori">Irodori сурах бичиг</button>
   <button data-go="jlpt">JLPT бэлтгэл</button>
+  <button data-go="exam">Шалгалт</button>
   <button data-go="kana">Кана үсэг</button>
   <button data-go="feedback">Санал хүсэлт</button>
   <button data-go="stats">Явц</button>
@@ -92,6 +93,11 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
       <span class="bc-jp">N5</span>
       <b>JLPT бэлтгэл</b>
       <span>N5–N2-ын <i id="n-kanji">…</i> · N5-ийн 2077 үг, 50 хичээл</span>
+    </button>
+    <button class="bigcard" data-go="exam">
+      <span class="bc-jp jp">試験</span>
+      <b>Шалгалт</b>
+      <span>100 асуултаас санамсаргүй сонгож шалгана. Сурснаа хэр тогтоосноо мэдэх</span>
     </button>
     <button class="bigcard" data-go="kana">
       <span class="bc-jp jp">かな</span>
@@ -185,17 +191,6 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
     </div>
   </div>
 
-  <!-- Шалгалт: 100 асуултын сангаас санамсаргүй сонгоно. Дасгалаас
-       ЯЛГААТАЙ нь шууд хариу хэлэхгүй — эцэст нь оноо ба алдсаныг харуулна. -->
-  <div class="step">Шалгалт</div>
-  <p class="hint">Сурсанаа шалгах бол. <span class="jp">入門</span>-ий 100 асуултаас
-     санамсаргүй сонгож асууна. Хариултыг эцэст нь харуулна.</p>
-  <div class="seg" id="seg-exam-n">
-    <button data-n="10"><b>10 асуулт</b><span>богино</span></button>
-    <button data-n="15"><b>15 асуулт</b><span>дунд</span></button>
-    <button data-n="20"><b>20 асуулт</b><span>бүтэн</span></button>
-  </div>
-  <button id="btn-exam" class="primary big wide">Шалгалт эхлүүлэх</button>
 </section>
 
 <!-- ═══════════════════ JLPT ═══════════════════ -->
@@ -378,7 +373,24 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
 
 <!-- ═══════════════════ ШАЛГАЛТ ═══════════════════ -->
 <section id="exam" class="screen" hidden>
-  <div id="ex-run">
+  <!-- Тохиргоо: шалгалтын дэлгэц рүү орвол эхлээд энэ гарна. -->
+  <div id="ex-setup">
+    <h2>Шалгалт</h2>
+    <p class="hint"><span class="jp">Irodori 入門</span>-ий <b>100 асуултаас</b>
+       санамсаргүй сонгож асууна. Дасгалаас ялгаатай нь зөв/бурууг шууд
+       хэлэхгүй — эцэст нь оноо, алдсан асуулт бүрийг зөв хариултын хамт
+       харуулна.</p>
+    <div class="step">Хэдэн асуулт вэ</div>
+    <div class="seg" id="seg-exam-n">
+      <button data-n="10"><b>10 асуулт</b><span>богино</span></button>
+      <button data-n="15"><b>15 асуулт</b><span>дунд</span></button>
+      <button data-n="20"><b>20 асуулт</b><span>бүтэн</span></button>
+    </div>
+    <button id="btn-exam" class="primary big wide">Шалгалт эхлүүлэх</button>
+    <p class="hint">Шалгалт нь давтлагын явцад <b>нөлөөлөхгүй</b> — зөвхөн хэмжинэ.</p>
+  </div>
+
+  <div id="ex-run" hidden>
     <div class="ex-top">
       <span class="ex-pos" id="ex-pos">1 / 15</span>
       <div class="track"><span class="fill" id="ex-bar"></span></div>
@@ -530,7 +542,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-21f"></script>
-<script src="app.js?v=2026-09-21f"></script>
+<script src="sync-config.js?v=2026-09-21g"></script>
+<script src="app.js?v=2026-09-21g"></script>
 </body>
 </html>

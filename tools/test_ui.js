@@ -429,11 +429,18 @@ async function run(c) {
   {
     // Шалгалтын ӨМНӨХ явцыг тэмдэглэнэ — шалгалт үүнийг хөдөлгөх ЁСГҮЙ.
     await c.ev('window.__pBefore = JSON.stringify(progress); return 1;');
-    await c.ev('go("irodori"); await new Promise(r=>setTimeout(r,150));'
-      + 'const b=[...document.querySelectorAll("#seg-exam-n button")].find(x=>x.dataset.n==="10");'
+    // Шалгалт нь ТУСДАА хэсэг (нүүрнээс, хуучин JLPT картын байранд).
+    ok('нүүрэнд шалгалтын оролт бий',
+      await c.ev('return !!document.querySelector(\'[data-go="exam"]\')'));
+    await c.ev('go("exam"); await new Promise(r=>setTimeout(r,200)); return 1;');
+    ok('орвол эхлээд ТОХИРГОО гарна',
+      await c.ev('return screen === "exam" && !document.getElementById("ex-setup").hidden'
+        + ' && document.getElementById("ex-run").hidden'));
+    await c.ev('const b=[...document.querySelectorAll("#seg-exam-n button")].find(x=>x.dataset.n==="10");'
       + 'if(b) b.click(); document.getElementById("btn-exam").click();'
       + 'await new Promise(r=>setTimeout(r,900)); return 1;');
-    ok('шалгалт нээгдэв', await c.ev('return screen === "exam"'));
+    ok('шалгалт эхлэв', await c.ev('return screen === "exam"'));
+    ok('тохиргоо нуугдав', await c.ev('return document.getElementById("ex-setup").hidden === true'));
     ok('10 асуулт сонгогдов', Number(await c.ev('return exQs.length')) === 10);
     ok('4 сонголт гарна', Number(await c.ev('return document.getElementById("ex-opts").children.length')) === 4);
     // Бүгдийг ЗӨВ хариулна -> 100%
