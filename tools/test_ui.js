@@ -226,6 +226,70 @@ async function run(c) {
   await c.send('Emulation.setEmulatedMedia', { features: [] });
   await sleep(150);
 
+  /* Гараар дарах — ГУРВАН төлөв: систем → цайвар → бараан → систем.
+     Системийг БАРААН болгож эмуляцлаад «цайвар» сонгоход үнэхээр
+     цайвар болох ёстой: тэр нь `:root:not([data-theme="light"])`
+     сонгогч ажиллаж байгаагийн шууд нотолгоо. */
+  await c.send('Emulation.setEmulatedMedia',
+    { features: [{ name: 'prefers-color-scheme', value: 'dark' }] });
+  await sleep(120);
+
+  const cyc = await c.ev(`
+    const out = [];
+    const bg = () => getComputedStyle(document.documentElement)
+                       .getPropertyValue('--bg').trim();
+    applyScheme('');                       // систем (бараан)
+    out.push({ v: curScheme(), bg: bg(), attr: document.documentElement.dataset.theme || null });
+    document.getElementById('btn-scheme').click();
+    out.push({ v: curScheme(), bg: bg(), attr: document.documentElement.dataset.theme || null });
+    document.getElementById('btn-scheme').click();
+    out.push({ v: curScheme(), bg: bg(), attr: document.documentElement.dataset.theme || null });
+    document.getElementById('btn-scheme').click();
+    out.push({ v: curScheme(), bg: bg(), attr: document.documentElement.dataset.theme || null });
+    return out;
+  `);
+  ok('систем горим: бараан дагав',
+    cyc && cyc[0].v === '' && cyc[0].bg === '#0b1540' && cyc[0].attr === null,
+    JSON.stringify(cyc));
+  ok('дарвал ЦАЙВАР — систем бараан байсан ч',
+    cyc && cyc[1].v === 'light' && cyc[1].bg === '#f5f8ff' && cyc[1].attr === 'light',
+    JSON.stringify(cyc));
+  ok('дахин дарвал БАРААН',
+    cyc && cyc[2].v === 'dark' && cyc[2].bg === '#0b1540' && cyc[2].attr === 'dark',
+    JSON.stringify(cyc));
+  ok('гурав дахь даралт СИСТЕМ рүү эргэнэ',
+    cyc && cyc[3].v === '' && cyc[3].attr === null, JSON.stringify(cyc));
+
+  // Сонголт хадгалагдах ёстой — эс тэгвэл дахин нээхэд алдагдана.
+  const kept = await c.ev(`
+    applyScheme('dark');
+    const raw = localStorage.getItem('irodori.scheme.v1');
+    const icon = document.getElementById('btn-scheme').innerHTML.length;
+    const t = document.getElementById('btn-scheme').title;
+    applyScheme('');
+    return { raw: raw, icon: icon, title: t };
+  `);
+  ok('сонголт localStorage-д хадгалагдана',
+    kept && kept.raw === '"dark"', JSON.stringify(kept));
+  ok('товчны дүрс ба тайлбар шинэчлэгдэнэ',
+    kept && kept.icon > 50 && /бараан/.test(kept.title), JSON.stringify(kept));
+
+  await c.send('Emulation.setEmulatedMedia', { features: [] });
+  await sleep(120);
+
+  // Гарчиг дархад нүүр рүү — толгойн мөр бүх дэлгэц дээр байдаг.
+  const backHome = await c.ev(`
+    go('stats'); await new Promise(r => setTimeout(r, 150));
+    const was = screen;
+    document.getElementById('btn-home').click();
+    await new Promise(r => setTimeout(r, 200));
+    return { was: was, now: screen };
+  `);
+  ok('гарчиг дархад нүүр рүү',
+    backHome && backHome.was === 'stats' && backHome.now === 'home',
+    JSON.stringify(backHome));
+
+
   console.log('\n[5] Бүх сан × бүх горим — БОДИТ эхлэх замаар');
   // Төлөвийг гараар тавьж БОЛОХГҮЙ: `deck` ба `pool` хоёр зэрэг
   // солигдох ёстой. Гараар тавибал `simKey()` нь өмнөх сангийн

@@ -1769,6 +1769,82 @@ $('btn-menu').onclick = () => {
   $('menu').hidden = !$('menu').hidden;
 };
 $('btn-profile').onclick = () => go('profile');
+/* Гарчиг дархад нүүр рүү. Толгойн мөр бүх дэлгэц дээр байдаг тул энэ нь
+   хамгийн богино зам — цэс нээх шаардлагагүй. */
+$('btn-home').onclick = () => go('home');
+
+/* ── Цайвар / бараан ───────────────────────────────────────────────
+ *
+ * ГУРВАН төлөв: систем → цайвар → бараан → систем. Хоёр төлөвтэй
+ * болговол «системээ дага» гэдэг нь алдагдана — утас орой автоматаар
+ * бараан болдог хүнд тэр нь чухал.
+ *
+ * Хадгалсан утгыг `index.html`-ийн ЭРТ скрипт тавьдаг (анивчихаас
+ * сэргийлнэ); энд зөвхөн СОЛИХ ба дүрс зурах ажил үлдэнэ.
+ */
+const KEY_SC = 'irodori.scheme.v1';
+const SCHEMES = ['', 'light', 'dark'];          // '' = систем
+const SCHEME_LABEL = { '': 'Өнгө: системийн', light: 'Өнгө: цайвар', dark: 'Өнгө: бараан' };
+/* Дүрс: хагас дүүргэсэн дугуй (систем) · нар (цайвар) · сар (бараан). */
+const SCHEME_ICON = {
+  '': '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"'
+    + ' stroke-width="2"><circle cx="12" cy="12" r="8"/>'
+    + '<path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor" stroke="none"/></svg>',
+  light: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"'
+    + ' stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/>'
+    + '<path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2'
+    + 'M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></svg>',
+  dark: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"'
+    + ' stroke-width="2" stroke-linejoin="round">'
+    + '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7.5 7.5 0 1 0 10.5 10.5z"/></svg>',
+};
+
+function curScheme() {
+  const v = load(KEY_SC, '');
+  return SCHEMES.includes(v) ? v : '';
+}
+
+/** Хөтчийн хаягийн мөрний өнгө. `index.html`-д хоёр мөр (цайвар/бараан)
+ *  байгаа — систем горимд тэдгээр нь өөрсдөө таарна. Гараар дарсан үед
+ *  ХОЁУЛАНГ нь бодит өнгөөр дүүргэнэ, эс тэгвэл хөтөч системийнхийг
+ *  сонгож авна. */
+function paintThemeColor(v) {
+  const metas = document.querySelectorAll('meta[name="theme-color"]');
+  if (metas.length < 2) return;
+  const dark = v === 'dark' || (!v && matchesDark());
+  metas.forEach(m => {
+    const own = m.media && m.media.indexOf('dark') >= 0 ? '#0b1540' : '#f5f8ff';
+    m.content = v ? (dark ? '#0b1540' : '#f5f8ff') : own;
+  });
+}
+
+function matchesDark() {
+  try { return matchMedia('(prefers-color-scheme: dark)').matches; }
+  catch (e) { return false; }
+}
+
+function applyScheme(v) {
+  const r = document.documentElement;
+  if (v) r.setAttribute('data-theme', v); else r.removeAttribute('data-theme');
+  save(KEY_SC, v);
+  const b = $('btn-scheme');
+  if (b) { b.innerHTML = SCHEME_ICON[v]; b.title = SCHEME_LABEL[v]; }
+  paintThemeColor(v);
+}
+
+if ($('btn-scheme')) {
+  $('btn-scheme').onclick = () => {
+    const i = SCHEMES.indexOf(curScheme());
+    applyScheme(SCHEMES[(i + 1) % SCHEMES.length]);
+  };
+}
+applyScheme(curScheme());
+/* Систем горимд байхад хэрэглэгч утсаа бараан болговол хаягийн мөрний
+   өнгө ч дагах ёстой — CSS нь өөрөө дагадаг, мета нь дагадаггүй. */
+try {
+  matchMedia('(prefers-color-scheme: dark)')
+    .addEventListener('change', () => { if (!curScheme()) paintThemeColor(''); });
+} catch (e) { /* хуучин хөтөч — мета нь системийн мөрөөрөө ажиллана */ }
 
 $('app-ver').textContent = VERSION;
 /* Кэшийг тойрч ачаалах: hash биш ХАЙЛТЫН мөрийг өөрчилнө — hash солиход
