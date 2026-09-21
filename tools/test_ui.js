@@ -464,6 +464,13 @@ async function run(c) {
       + 'const t = document.getElementById("ex-q").textContent;'
       + 'return { t: t, k: /[\u3400-\u9fff]/.test(t) };');
     ok('漢字 горимд ханз гарна', kanjiOn && kanjiOn.k === true, JSON.stringify(kanjiOn));
+    // Асуултыг дуугаар уншуулах товч (TTS).
+    ok('асуултын дуу товч байна',
+      await c.ev('return !!document.getElementById("ex-say-q")'));
+    ok('дуу товч дарахад алдаа гарахгүй',
+      await c.ev('try { document.getElementById("ex-say-q").click();'
+        + 'await new Promise(r=>setTimeout(r,120)); return true; } catch(e) { return String(e.message); }') === true);
+
     ok('шалгалт Noto Sans JP фонт ашиглана',
       String(await c.ev('return getComputedStyle(document.getElementById("ex-q")).fontFamily'))
         .indexOf('Noto Sans JP') >= 0);

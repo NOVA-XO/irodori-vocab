@@ -8,9 +8,9 @@
 <!-- ?v=… нь КЭШ ЗАДЛАГЧ. GitHub Pages бүх файлд Cache-Control: max-age=600
      тавьдаг тул хувилбар сольсныг браузерт мэдэгдэх ганц найдвартай арга нь
      хаягийг өөрчлөх явдал. Шинэ хувилбар гаргах бүрд ЭНЭ ГУРВЫГ хамт сольно. -->
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21i">
-<link rel="stylesheet" href="app.css?v=2026-09-21i">
-<link rel="stylesheet" href="themes.css?v=2026-09-21i">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-21j">
+<link rel="stylesheet" href="app.css?v=2026-09-21j">
+<link rel="stylesheet" href="themes.css?v=2026-09-21j">
 <!-- Сонгосон загварыг CSS-ээс ӨМНӨ тавина. Эс тэгвэл хуудас эхлээд
      анхдагч 和-гаар нэг анивчаад дараа нь солигдоно. Тиймээс энэ нь
      app.js дотор биш, ЭНД байх ёстой. -->
@@ -18,8 +18,8 @@
 document.documentElement.setAttribute("data-theme",t);}catch(e){
 document.documentElement.setAttribute("data-theme","minimal");}</script>
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21i">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21i">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-21j">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-21j">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -410,7 +410,10 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
       <div class="track"><span class="fill" id="ex-bar"></span></div>
     </div>
     <div class="ex-topic" id="ex-topic"></div>
-    <div class="ex-q jp" id="ex-q"></div>
+    <div class="ex-qline">
+      <div class="ex-q jp" id="ex-q"></div>
+      <button class="speak ex-say" id="ex-say-q" title="Асуултыг сонсох">🔊</button>
+    </div>
     <div class="ex-qmn" id="ex-qmn"></div>
 
     <!-- Амаар хариулах төрөлд л гарна -->
@@ -423,7 +426,10 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
     <button id="ex-reveal" class="primary big wide">Загвар хариултыг харах</button>
 
     <div id="ex-model" hidden>
-      <div class="ex-model-jp jp" id="ex-model-jp"></div>
+      <div class="ex-qline">
+        <div class="ex-model-jp jp" id="ex-model-jp"></div>
+        <button class="speak ex-say" id="ex-say-a" title="Загвар хариултыг сонсох">🔊</button>
+      </div>
       <div class="ex-model-mn" id="ex-model-mn"></div>
       <div class="ex-key" id="ex-key"></div>
       <p class="hint">Та ингэж хариулж чадсан уу?</p>
@@ -577,7 +583,7 @@ document.documentElement.setAttribute("data-theme","minimal");}</script>
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-21i"></script>
-<script src="app.js?v=2026-09-21i"></script>
+<script src="sync-config.js?v=2026-09-21j"></script>
+<script src="app.js?v=2026-09-21j"></script>
 </body>
 </html>

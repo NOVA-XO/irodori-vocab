@@ -690,3 +690,6 @@ body::after{
 .ex-bad{color:var(--ink); font-family:var(--jps); font-size:19px; margin-top:5px}
 .ex-good{color:var(--ok); font-family:var(--jps); font-size:19px; margin-top:9px}
 #ex-done h2{margin-top:26px}
+.ex-qline{display:flex; align-items:flex-start; gap:10px}
+.ex-qline > :first-child{flex:1; min-width:0}
+.ex-say{position:static; flex:none; margin-top:2px}

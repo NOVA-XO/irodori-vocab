@@ -1872,6 +1872,14 @@ function renderExam() {
   $('ex-topic').textContent = 'L' + q.lesson + ' · ' + q.topic;
   $('ex-q').textContent = exQ(q);         // textContent — тарилтаас хамгаална
   $('ex-qmn').textContent = q.qMn;
+  // Дуудлагыг ҮРГЭЛЖ ханзтай хэлбэрээс уншуулна — кана горимд байсан ч.
+  // TTS нь ханзтай өгүүлбэрийг илүү зөв уншдаг: кана дан бол үгийн зааг
+  // алдагдаж «なんといいますか» гэхийг буруу өргөлтөөр уншиж магадгүй.
+  $('ex-say-q').hidden = !canSpeak;
+  // ЯРИХ горимд асуултыг автоматаар уншина — багш асууж байгаа мэт.
+  // «Бодож» горимд уншихгүй: тэнд хэрэглэгч нүдээрээ уншиж байгаа.
+  // renderExam нь дарлагын гинжнээс дуудагддаг тул iOS ч зөвшөөрнө.
+  if (exMode === 'speak' && canSpeak) speak(q.q);
   $('ex-model').hidden = true;
   $('ex-reveal').hidden = false;
   // Амаар төрөл
@@ -1893,6 +1901,7 @@ function examReveal() {
   stopRecog();
   $('ex-mic') && $('ex-mic').classList.remove('rec');
   $('ex-model-jp').textContent = exA(q);
+  $('ex-say-a').hidden = !canSpeak;
   $('ex-model-mn').textContent = q.modelMn;
   $('ex-key').textContent = q.key ? 'Түлхүүр бүтэц: ' + q.key : '';
   $('ex-reveal').hidden = true;
@@ -1966,6 +1975,11 @@ $('ex-mic').onclick = () => {
     return;
   }
   const q = exQs[exIdx];
+  // TTS ярьж байвал ТАСАЛНА — эс тэгвэл микрофон өөрийн уншсан асуултыг
+  // сонсож, хэрэглэгчийн хариулт мэт таних вий.
+  if (canSpeak && (speechSynthesis.speaking || speechSynthesis.pending)) {
+    speechSynthesis.cancel();
+  }
   b.classList.add('rec'); b.textContent = '● Сонсож байна…';
   $('ex-mic-hint').textContent = 'Одоо хариулаарай…';
   $('ex-mic-text').textContent = '';
@@ -2003,6 +2017,8 @@ document.querySelectorAll('#seg-exam-mode button').forEach(b =>
 document.querySelectorAll('#seg-exam-script button').forEach(b =>
   b.onclick = () => { exScript = b.dataset.s; save(KEY_EXS, exScript); refreshExamSeg(); });
 $('btn-exam').onclick = startExam;
+$('ex-say-q').onclick = () => { const q = exQs[exIdx]; if (q) speak(q.q); };
+$('ex-say-a').onclick = () => { const q = exQs[exIdx]; if (q) speak(q.model); };
 $('ex-reveal').onclick = examReveal;
 $('ex-yes').onclick = () => examMark(true);
 $('ex-no').onclick = () => examMark(false);
