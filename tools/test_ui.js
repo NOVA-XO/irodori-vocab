@@ -688,6 +688,94 @@ async function run(c) {
 
   /* ふりがな — ханзан дээрх жижиг кана. Уншлагын хосыг `build_exam.py`
      үүсгэж шалгасан; энд шалгах нь ХӨТӨЧ дээрх үр дүн. */
+  console.log('\n[15] Утасны «буцах» товч');
+  /* Түүхийг БОДИТООР ухраана (`history.back()`), зөвхөн функц дуудахгүй.
+     Урьд нь буцах товч ямар ч гүнзгий байсан САЙТААС гаргадаг байв. */
+  const hb = async () => c.ev(
+    'history.back(); await new Promise(r => setTimeout(r, 340)); return screen;');
+
+  await c.ev('go("home"); await new Promise(r=>setTimeout(r,200)); return 1;');
+  await c.ev('go("irodori"); await new Promise(r=>setTimeout(r,200)); return 1;');
+  await c.ev('go("stats"); await new Promise(r=>setTimeout(r,200)); return 1;');
+  ok('буцах → өмнөх дэлгэц', await hb() === 'irodori');
+  ok('дахин буцах → нүүр', await hb() === 'home');
+
+  // Шургуулга нээлттэй бол буцах нь ЭХЛЭЭД түүнийг хаана.
+  const bdr = await c.ev(`
+    go('kana'); await new Promise(r => setTimeout(r, 200));
+    document.getElementById('btn-menu').click();
+    await new Promise(r => setTimeout(r, 350));
+    const opened = drawerOpen();
+    history.back(); await new Promise(r => setTimeout(r, 360));
+    return { opened: opened, stillOpen: drawerOpen(), screen: screen };
+  `);
+  ok('буцах эхлээд ШУРГУУЛГЫГ хаана',
+    bdr && bdr.opened === true && bdr.stillOpen === false, JSON.stringify(bdr));
+  ok('шургуулга хаагдахад дэлгэц ХЭВЭЭР', bdr && bdr.screen === 'kana', JSON.stringify(bdr));
+
+  // Дасгал дундаас буцах — гарах ёстой.
+  const st = await c.ev(`
+    queue = ALL.slice(0, 3); deck = 'vocab'; mode = 'flash'; enterStudy();
+    await new Promise(r => setTimeout(r, 300));
+    const inStudy = screen;
+    history.back(); await new Promise(r => setTimeout(r, 360));
+    return { inStudy: inStudy, after: screen };
+  `);
+  ok('дасгалаас буцвал гарна',
+    st && st.inStudy === 'study' && st.after !== 'study', JSON.stringify(st));
+
+  // Цэсээр шилжсэний дараа НЭГ даралтаар буцах (хий бичлэггүй).
+  const ph = await c.ev(`
+    go('home'); await new Promise(r => setTimeout(r, 200));
+    document.getElementById('btn-menu').click();
+    await new Promise(r => setTimeout(r, 350));
+    document.querySelector('#menu button[data-go=\"stats\"]').click();
+    await new Promise(r => setTimeout(r, 300));
+    const at = screen;
+    history.back(); await new Promise(r => setTimeout(r, 360));
+    return { at: at, after: screen };
+  `);
+  ok('цэсээр шилжээд НЭГ даралтаар буцна',
+    ph && ph.at === 'stats' && ph.after === 'home', JSON.stringify(ph));
+
+  console.log('\n[16] Явц — НИЙТ тоо харуулахгүй');
+  const sv = await c.ev(`
+    /* Цэвэр явцтай хэрэглэгч: юу ч үзээгүй. */
+    const keep = progress;
+    progress = {};
+    go('stats'); refreshStats();
+    await new Promise(r => setTimeout(r, 250));
+    const empty = {
+      cards: document.querySelectorAll('#stat-sum div').length,
+      sumText: document.getElementById('stat-sum').textContent,
+      sections: document.getElementById('stat-sections').textContent,
+      tabsHidden: document.getElementById('seg-stat').hidden
+    };
+    /* Нэг үг үзсэн болгоё. */
+    progress = { [ALL[0].id]: { n: 1, c: 1, b: 1, d: today() } };
+    refreshStats();
+    await new Promise(r => setTimeout(r, 250));
+    const one = {
+      sections: document.querySelectorAll('#stat-sections .l').length,
+      tabs: document.querySelectorAll('#seg-stat button').length,
+      lessons: document.querySelectorAll('#stat-lessons .l').length
+    };
+    progress = keep; refreshStats();
+    return { empty: empty, one: one };
+  `);
+  ok('«нийт зүйл» хайрцаг УСТСАН',
+    sv && sv.empty.cards === 3 && !/нийт зүйл/.test(sv.empty.sumText),
+    JSON.stringify(sv.empty));
+  ok('юу ч үзээгүй бол хэсгийн жагсаалт ХООСОН',
+    sv && /Эхний дасгалаа/.test(sv.empty.sections), JSON.stringify(sv.empty));
+  ok('юу ч үзээгүй бол таб нуугдана',
+    sv && sv.empty.tabsHidden === true, JSON.stringify(sv.empty));
+  ok('нэг үг үзэхэд ЗӨВХӨН нэг хэсэг гарна',
+    sv && sv.one.sections === 1 && sv.one.tabs === 1, JSON.stringify(sv.one));
+  ok('дэлгэрэнгүйд зөвхөн эхэлсэн хичээл',
+    sv && sv.one.lessons === 1, JSON.stringify(sv.one));
+  await c.ev('go("home"); return 1;');
+
   console.log('\n[14] Хариултын дуу ба чичиргээ');
   /* «Алдаа гараагүй» гэдэг нь хангалтгүй — осциллятор ҮНЭХЭЭР үүсч,
      эхэлж байгааг тоолно. Мөн чичиргээ нь ЗӨВХӨН буруу дээр. */

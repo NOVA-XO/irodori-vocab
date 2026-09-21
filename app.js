@@ -1527,10 +1527,15 @@ function show(name) {
   if (screen === 'study' && name !== 'study') { statsPing(); stopRecog(); }
   // Шалгалтаас гарвал хойшлуулсан таймер ШИНЭ гүйлтэд нөлөөлөхгүй байх ёстой.
   if (screen === 'exam' && name !== 'exam') exAbort();
+  const wasScreen = screen;          // `navTo`-д хэрэгтэй — доор `screen` дарагдана
   screen = name;
   // Энэ нь `show()` дотор байх ЁСТОЙ — дасгал `go()`-гүйгээр шууд
   // `show('study')` дуудаж эхэлдэг.
   for (const s of SCREENS) $(s).hidden = (s !== name);
+  /* `go()` биш ЭНД бичнэ: дасгал нь `show('study')`-ээр шууд эхэлдэг
+     тул түүнээс ч буцах боломжтой байх ёстой. ӨМНӨХ дэлгэцтэй
+     харьцуулна — `screen` нь дээр аль хэдийн дарагдсан. */
+  if (name !== wasScreen) navTo(name);
   shutDrawer();
   // Дасгал дунд байхад ☰ биш ‹ — нэг дарлагаар гарах боломж хэрэгтэй.
   $('btn-menu').innerHTML = (name === 'study') ? ICON_BACK : ICON_MENU;
@@ -1538,6 +1543,42 @@ function show(name) {
     b.setAttribute('aria-current', b.dataset.go === name));
   window.scrollTo(0, 0);
 }
+
+/* ── Утасны «буцах» товч ───────────────────────────────────────────
+ *
+ * Дэлгэц солигдох бүрд түүхэнд бичлэг үлдээнэ. `popstate` ирэхэд тэр
+ * бичлэгийн дэлгэц рүү буцна — ГЭХДЭЭ дахин бичлэг үүсгэхгүй, эс
+ * тэгвэл буцах товч хэзээ ч дуусахгүй давталтад орно (`navBack` туг).
+ *
+ * Шургуулга нээхэд ч бичлэг үүсгэнэ. Ингэснээр нээлттэй байхад буцвал
+ * эхлээд шургуулга хаагдаж, дэлгэц хэвээр үлдэнэ.
+ */
+let navBack = false;
+
+/** Одоогийн түүхийн бичлэг нь шургуулгынх мөн үү. */
+const navIsDrawer = () => !!(history.state && history.state.drawer);
+
+function navTo(name) {
+  if (navBack) return;                       // `popstate`-аас ирсэн — дахин бичихгүй
+  try {
+    /* Шургуулгаас шилжиж байвал түүний бичлэгийг СОЛИНО, шинийг
+       нэмэхгүй — эс тэгвэл буцахад шургуулгын хий бичлэг дээр
+       тулж, хоёр удаа дарах шаардлагатай болно. */
+    const st = { scr: name };
+    if (navIsDrawer()) history.replaceState(st, '');
+    else history.pushState(st, '');
+  } catch (e) { /* түүх ажиллахгүй орчин — апп хэвийн үлдэнэ */ }
+}
+
+addEventListener('popstate', e => {
+  const st = e.state || { scr: 'home' };
+  /* Шургуулга нээлттэй бол эхлээд түүнийг хаана. */
+  if (!st.drawer && drawerOpen()) closeDrawer();
+  const want = st.scr || 'home';
+  if (want === screen) return;
+  navBack = true;
+  try { go(want); } finally { navBack = false; }
+});
 
 function go(name) {
   // JLPT түр унтраалттай үед тэр дэлгэц рүү орохыг хаана (гүн холбоос,
@@ -1717,13 +1758,21 @@ const pSeen = i => ((progress[i.id] || {}).n || 0) > 0;
 const pDone = i => ((progress[i.id] || {}).b || 0) >= 3;
 
 /** Нэг мөр: шошго · хоёр давхаргатай зураас · тоо. */
-function statBar(label, items, html) {
+/** Явцын нэг мөр.
+ *
+ *  `ofSeen` = үнэлэх суурь нь ҮЗСЭН зүйл мөн үү. ХЭСГИЙН түвшинд тийм:
+ *  «1036-аас 9» гэсэн тоо нь эхлэгчид айдас төрүүлнэ, харин «үзсэн
+ *  24-өөс 9 нь тогтсон» нь өөрийнх нь хийсэн ажлыг хэмжинэ.
+ *  ХИЧЭЭЛИЙН түвшинд нийт тоо нь жижиг бөгөөд хүрэх боломжтой зорилт
+ *  тул тэндээ үлдэнэ (9/50). */
+function statBar(label, items, html, ofSeen) {
   const seen = items.filter(pSeen).length, done = items.filter(pDone).length;
-  const w = x => (100 * x / Math.max(items.length, 1)) + '%';
+  const base = ofSeen ? seen : items.length;
+  const w = x => (100 * x / Math.max(base, 1)) + '%';
   return '<div class="l"><span>' + (html || esc(label)) + '</span><span class="track">'
     + '<span class="seen" style="width:' + w(seen) + '"></span>'
     + '<span class="fill" style="width:' + w(done) + '"></span></span>'
-    + '<span class="num">' + done + '/' + items.length + '</span></div>';
+    + '<span class="num">' + done + '/' + base + '</span></div>';
 }
 
 /** Сонгосон хэсгийн дотоод задаргаа: үг нь хичээлээр,
@@ -1733,44 +1782,69 @@ function statDetail(k) {
   if (!items.length) return '<p class="hint">Ачаалж байна…</p>';
   if (k === 'kana') {
     const G = [['gojuon', '五十音'], ['dakuten', '濁·半濁'], ['yoon', '拗音']];
-    return G.map(g => statBar(g[1], items.filter(i => i.group === g[0]),
-      '<span class="jpd">' + g[1] + '</span>')).join('');
+    const rows = G.map(g => items.filter(i => i.group === g[0]))
+      .map((set, i) => [set, G[i][1]])
+      .filter(([set]) => set.some(pSeen))
+      .map(([set, nm]) => statBar(nm, set, '<span class="jpd">' + nm + '</span>'));
+    return rows.length ? rows.join('')
+      : '<p class="hint">Энэ хэсгээс хараахан эхлээгүй байна.</p>';
   }
   if (k === 'kanji') {
-    const rows = [5, 4, 3, 2].map(n => statBar('N' + n, items.filter(i => i.n === n)));
+    const rows = [5, 4, 3, 2].map(n => [items.filter(i => i.n === n), 'N' + n])
+      .filter(([set]) => set.some(pSeen))
+      .map(([set, nm]) => statBar(nm, set));
     const rest = items.filter(i => !i.n);
     // JLPT жагсаалтад үгүй харин хичээлд гардаг ханз — түүнийг бас харуулна.
-    if (rest.length) rows.push(statBar('бусад', rest));
-    return rows.join('');
+    if (rest.some(pSeen)) rows.push(statBar('бусад', rest));
+    return rows.length ? rows.join('')
+      : '<p class="hint">Энэ хэсгээс хараахан эхлээгүй байна.</p>';
   }
-  return [...new Set(items.map(i => i.lesson))].sort((a, b) => a - b)
-    .map(l => statBar('L' + l, items.filter(i => i.lesson === l))).join('');
+  /* ЗӨВХӨН орж үзсэн хичээл. 18 хичээлийн 17 нь «0/86» гэж
+     жагсаагдвал явцын дэлгэц нь ажлын жагсаалт болно, явцын биш. */
+  const rows = [...new Set(items.map(i => i.lesson))].sort((a, b) => a - b)
+    .map(l => items.filter(i => i.lesson === l))
+    .filter(g => g.some(pSeen))
+    .map(g => statBar('L' + g[0].lesson, g));
+  return rows.length ? rows.join('')
+    : '<p class="hint">Энэ хэсгээс хараахан хичээл эхлээгүй байна.</p>';
 }
+
+/* Хэрэглэгч ЭХЭЛСЭН хэсэг мөн үү (дор хаяж нэг зүйл үзсэн). */
+const statStarted = k => statSet(k).some(pSeen);
 
 function refreshStats() {
   const seen = Object.keys(progress).length;
   const learned = Object.values(progress).filter(p => p.b >= 3).length;
   const tot = Object.values(progress).reduce((a, p) => a + p.n, 0);
   const cor = Object.values(progress).reduce((a, p) => a + p.c, 0);
-  const all = STAT_TABS.reduce((a, t) => a + statSet(t.k).length, 0);
+  /* «НИЙТ 6756 зүйл» гэсэн тоог ЗОРИУД харуулахгүй — эхлэгчид тэр нь
+     айдас төрүүлнэ. Хүн өөрийнхөө хийсэн ажлыг хармаар байдаг,
+     хийгээгүйгийнхээ уулыг биш. */
   $('stat-sum').innerHTML =
     '<div><b>' + seen + '</b><span>үзсэн</span></div>' +
     '<div><b>' + learned + '</b><span>тогтсон</span></div>' +
-    '<div><b>' + all + '</b><span>нийт зүйл</span></div>' +
     '<div><b>' + (tot ? Math.round(100 * cor / tot) : 0) + '%</b><span>зөв хариулт</span></div>';
 
-  $('stat-sections').innerHTML =
-    STAT_TABS.map(t => statBar(t.n, statSet(t.k), statName(t))).join('');
+  /* ЗӨВХӨН эхэлсэн хэсэг. Хөндөөгүй ном бүрийг «0/2077» гэж жагсаах
+     нь урам хугалахаас өөр ажил хийхгүй. */
+  const live = STAT_TABS.filter(t => statStarted(t.k));
+  $('stat-sections').innerHTML = live.length
+    ? live.map(t => statBar(t.n, statSet(t.k), statName(t), true)).join('')
+    : '<p class="hint">Эхний дасгалаа хийхэд энд явц чинь гарч ирнэ.</p>';
 
-  if (!statTab) statTab = STAT_TABS.some(t => t.k === settings.book) ? settings.book : 'starter';
+  /* Таб нь мөн эхэлсэн хэсгүүд. Хэрэв одоогийн таб хөндөгдөөгүй бол
+     эхэлсэн эхнийх рүү шилжинэ — эс тэгвэл хоосон жагсаалт гарна. */
+  if (!live.some(t => t.k === statTab)) statTab = live.length ? live[0].k : null;
   const tabs = $('seg-stat');
-  tabs.innerHTML = STAT_TABS.map(t =>
+  /* `<small>` дотор НИЙТ биш, өөрийнх нь ТОГТСОН тоо. */
+  tabs.innerHTML = live.map(t =>
     '<button data-s="' + escA(t.k) + '" aria-pressed="' + (t.k === statTab) + '">'
-    + statName(t) + '<small>' + statSet(t.k).length + '</small></button>').join('');
+    + statName(t) + '<small>' + statSet(t.k).filter(pDone).length + '</small></button>').join('');
   tabs.querySelectorAll('button').forEach(b =>
     b.onclick = () => { statTab = b.dataset.s; refreshStats(); });
+  tabs.hidden = !live.length;
 
-  $('stat-lessons').innerHTML = statDetail(statTab);
+  $('stat-lessons').innerHTML = statTab ? statDetail(statTab) : '';
 }
 
 /* ══════════════════════ 8. Холбоос ══════════════════════ */
@@ -1841,6 +1915,8 @@ let drawerT = null;
 
 function openDrawer() {
   clearTimeout(drawerT);
+  /* Түүхэнд бичлэг үлдээнэ — буцах товч эхлээд шургуулгыг хаана. */
+  try { history.pushState({ scr: screen, drawer: 1 }, ''); } catch (e) {}
   $('scrim').hidden = false;
   $('menu').hidden = false;
   requestAnimationFrame(() => {
@@ -1874,7 +1950,14 @@ $('btn-menu').onclick = () => {
   if (screen === 'study') { go('home'); return; }     // дасгал дундаас гарах
   drawerOpen() ? closeDrawer() : openDrawer();
 };
-$('menu-close').onclick = closeDrawer;
+/** Гараар хаах: шургуулгын түүхийн бичлэг дээр байвал ТҮҮХЭЭР буцна
+ *  (`popstate` нь хаалтыг хийнэ), эс тэгвэл шууд хаана. Ингэснээр
+ *  хий бичлэг үлдэхгүй. */
+function dismissDrawer() {
+  if (navIsDrawer()) { try { history.back(); return; } catch (e) {} }
+  closeDrawer();
+}
+$('menu-close').onclick = dismissDrawer;
 
 /** Тохиргооны товчны бичиг. */
 function refreshSfx() {
@@ -1891,9 +1974,9 @@ if ($('btn-sfx')) {
   };
   refreshSfx();
 }
-$('scrim').onclick = closeDrawer;
+$('scrim').onclick = dismissDrawer;
 addEventListener('keydown',
-  e => { if (e.key === 'Escape' && drawerOpen()) closeDrawer(); });
+  e => { if (e.key === 'Escape' && drawerOpen()) dismissDrawer(); });
 $('btn-profile').onclick = () => go('profile');
 /* Гарчиг дархад нүүр рүү. Толгойн мөр бүх дэлгэц дээр байдаг тул энэ нь
    хамгийн богино зам — цэс нээх шаардлагагүй. */
@@ -2810,6 +2893,9 @@ Promise.all([
     refreshSync();
     // Ачаалахад нэг удаа татаж уусгана — өөр төхөөрөмж дээр давтсан нь орж ирнэ.
     if (syncOn && syncCode) syncNow(true).then(refreshHome);
+    /* Түүхийн ЁЗООР. Үүнгүй бол эхний `popstate`-д `state` нь `null`
+       ирж, нүүр рүү буцах эсэхийг таамаглах шаардлагатай болно. */
+    try { history.replaceState({ scr: 'home' }, ''); } catch (e) {}
     show('home'); refreshHome(); autoStart(); pingUsage();
   })
   .catch(() => {
