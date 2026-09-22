@@ -791,6 +791,73 @@ async function run(c) {
   ok('алдаа гаргасан ч зөв/буруу тоо хэвээр бүртгэгдэнэ',
     cn && cn.okN === 5 && cn.ngN === 4, JSON.stringify(cn));
 
+  console.log('\n[26] Өдрийн зорилт — ХАРИУЛТ биш КАРТ тоолно');
+  /* Хэрэглэгч мэдээлсэн: 20 үгийн НЭГ дасгал хийхэд зорилт «109/20»
+     гэж гарсан. `tickDay()` нь `grade()` дотор байсан тул хариулт
+     бүрд өсдөг байв — алдсан карт мөчлөгт эргэж ирээд ДАХИН
+     бүртгэгддэг. §2.51-д дасгалын тоолуурыг зассан ч энэ тоолуур
+     хэвээр үлдсэн байсан.
+     ЦУВРАЛ нь тусдаа: буруу хариулсан ч тухайн өдөр давтсанд тооцно. */
+  const dc = await c.ev(`
+    const keepDays = days, keepProg = progress, keepSfx = settings.sfx;
+    settings.sfx = 0;
+    const out = {};
+
+    // ── (1) НЭГ картыг буруу, дараа нь зөв -> зорилт ЯГ 1
+    progress = {}; days = { last: -1, streak: 0, n: 0 };
+    queue = ALL.slice(0, 1); deck = 'vocab'; mode = 'flash';
+    missed = []; done = okN = ngN = 0;
+    enterStudy();
+    await new Promise(r => setTimeout(r, 300));
+    answered = false; resolve(false);
+    out.afterWrong = todayN();
+    nextCard();
+    await new Promise(r => setTimeout(r, 40));
+    answered = false; resolve(true);
+    out.afterRight = todayN();
+
+    // ── (2) Буруу хариулт ч ЦУВРАЛыг эхлүүлнэ
+    progress = {}; days = { last: -1, streak: 0, n: 0 };
+    queue = ALL.slice(0, 1); missed = []; done = okN = ngN = 0;
+    enterStudy();
+    await new Promise(r => setTimeout(r, 300));
+    answered = false; resolve(false);
+    out.streakOnWrong = streakN();
+    out.goalOnWrong = todayN();
+
+    // ── (3) 20 картын дасгал, 5 дээр нь алдана -> зорилт ЯГ 20
+    progress = {}; days = { last: -1, streak: 0, n: 0 };
+    queue = ALL.slice(0, 20); missed = []; done = okN = ngN = 0;
+    enterStudy();
+    await new Promise(r => setTimeout(r, 300));
+    let answers = 0;
+    for (let i = 0; i < 20; i++) {
+      answered = false; resolve(i >= 5); answers++;
+      nextCard();
+      await new Promise(r => setTimeout(r, 20));
+    }
+    for (let i = 0; i < 5; i++) {          // алдсан 5 нь эргэж ирсэн
+      answered = false; resolve(true); answers++;
+      nextCard();
+      await new Promise(r => setTimeout(r, 20));
+    }
+    out.answers = answers; out.goal = todayN(); out.done = done;
+
+    days = keepDays; progress = keepProg; settings.sfx = keepSfx;
+    show('home'); go('home');
+    return out;
+  `);
+  ok('буруу хариулт зорилтод ОРОХГҮЙ',
+    dc && dc.afterWrong === 0, JSON.stringify(dc));
+  ok('карт дуусахад зорилт ЯГ 1 нэмэгдэнэ',
+    dc && dc.afterRight === 1, JSON.stringify(dc));
+  ok('буруу хариулсан ч ЦУВРАЛ эхэлнэ',
+    dc && dc.streakOnWrong === 1 && dc.goalOnWrong === 0, JSON.stringify(dc));
+  ok('20 картын дасгал 25 хариулттай ч зорилт ЯГ 20',
+    dc && dc.answers === 25 && dc.goal === 20, JSON.stringify(dc));
+  ok('өдрийн зорилт нь дасгалын тоолууртай ТААРНА',
+    dc && dc.goal === dc.done, JSON.stringify(dc));
+
   console.log('\n[25] Дүгнэлтийн гол товч — «Дараагийн хэсэг» уу «Дахин эхлүүлэх» үү');
   /* «Дахин үзэх» гэсэн шошго ХУДАЛ байв: тэр товч нь ижил 20 үгийг биш,
      ДАРААГИЙН шинэ багцыг өгдөг (`buildQueue` нь `due → fresh → rest`).

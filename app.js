@@ -256,22 +256,36 @@ function saveProgress() {
 
 const KEY_D = 'irodori.days.v1';
 let progress = load(KEY_P, {});          // доор `cleanProgress`-оор шүүнэ
-/* Өдөр бүрийн хариултын тоо ба дараалсан өдрийн тоо. Явц (хайрцаг) удаан
-   хөдөлдөг тул ӨДӨР ТУТМЫН биелэлтийг тусад нь харуулах хэрэгтэй. */
+/* Өдөр бүрийн ДУУССАН КАРТЫН тоо ба дараалсан өдрийн тоо. Явц (хайрцаг)
+   удаан хөдөлдөг тул ӨДӨР ТУТМЫН биелэлтийг тусад нь харуулах хэрэгтэй. */
 let days = load(KEY_D, { last: -1, streak: 0, n: 0 });
 const todayN = () => (days.last === today() ? days.n : 0);
 const streakN = () => {
   const t = today();
   return (days.last === t || days.last === t - 1) ? (days.streak || 0) : 0;
 };
-function tickDay() {
+
+/** Өдрийн бүртгэл. `counts` нь зорилтын тоог нэмэх эсэхийг заана.
+ *
+ *  ХОЁР ӨӨР зүйлийг тусад нь бүртгэнэ:
+ *
+ *    · ЦУВРАЛ (streak) — «өнөөдөр давтсан уу». Хариулт бүрд шалгана:
+ *      бүгдийг буруу хариулсан ч тухайн өдөр давтсанд тооцогдоно.
+ *    · ЗОРИЛТ (`n`) — ДУУССАН КАРТЫН тоо, хариултын тоо БИШ.
+ *
+ *  Урьд нь `n` нь хариулт бүрд өсдөг байв. Алдсан карт мөчлөгийн
+ *  төгсгөлд эргэж ирж ДАХИН бүртгэгддэг тул 20 картын нэг дасгал
+ *  «109/20» гэж гардаг байсан (хэрэглэгч мэдээлсэн). Энэ нь §2.51-д
+ *  дасгалын тоолуур дээр зассан алдаатай ИЖИЛ — тэнд зассан ч энэ
+ *  тоолуур хэвээр үлдсэн байв. */
+function tickDay(counts) {
   const t = today();
   if (days.last !== t) {
     // Өчигдөр давтсан бол цуврал үргэлжилнэ, тасарсан бол 1-ээс эхэлнэ.
     days.streak = (days.last === t - 1) ? (days.streak || 0) + 1 : 1;
     days.last = t; days.n = 0;
   }
-  days.n++;
+  if (counts) days.n++;
   save(KEY_D, days);
 }
 const SCRIPTS = ['kana', 'ruby', 'kanji'];
@@ -528,7 +542,9 @@ function grade(id, ok) {
   p.d = today() + BOXES[p.b];
   progress[id] = p;
   saveProgress();
-  tickDay();
+  // Зөв хариулсан үед л карт мөчлөгөөс ГАРНА — `resolve()` дэх `done`-той
+  // ЯГ ижил дүрэм. Тиймээс өдрийн зорилт нь дасгалын тоолуурыг дагана.
+  tickDay(ok);
 }
 
 /* Өөр ТАБ бичсэн бол санах ойгоо шинэчилнэ. `storage` нь ЗӨВХӨН бусад
@@ -1530,7 +1546,7 @@ function finish() {
   $('fin-sum').textContent = '✓ ' + okN + '   ✗ ' + ngN;
   const left = settings.goal - todayN();
   $('fin-goal').textContent = left > 0
-    ? 'Өнөөдрийн зорилт хүртэл ' + left + ' хариулт үлдлээ (' + todayN() + '/' + settings.goal + ').'
+    ? 'Өнөөдрийн зорилт хүртэл ' + left + ' карт үлдлээ (' + todayN() + '/' + settings.goal + ').'
     : 'Өнөөдрийн зорилт биеллээ 🎉 (' + todayN() + '/' + settings.goal + ')';
 
   const box = $('fin-missed'); box.innerHTML = '';
