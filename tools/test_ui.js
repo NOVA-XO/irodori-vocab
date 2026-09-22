@@ -717,6 +717,73 @@ async function run(c) {
   ok('Japan Foundation кредит Тохиргоод бий',
     cr && cr.profFoundation === true, JSON.stringify(cr));
 
+  console.log('\n[23] Дасгалын тоолуур — алдсан карт тоог хэтрүүлэхгүй');
+  /* `done` нь ХАРИУЛТ тоолдог байсан. Алдсан карт мөчлөгийн төгсгөлд
+     эргэж ирдэг тул хариултын тоо картын тооноос давж, толгойд
+     «21/20» гэж гардаг байв (браузерт давтав: 5 картад 6/5).
+     Одоо `done` нь ДУУССАН КАРТЫГ тоолно. */
+  const cn = await c.ev(`
+    const keep = settings.sfx;
+    settings.sfx = 0;
+    queue = ALL.slice(0, 5); deck = 'vocab'; mode = 'flash'; enterStudy();
+    await new Promise(r => setTimeout(r, 300));
+    const seq = [];
+    const peek = () => seq.push(
+      document.getElementById('c-done').textContent + '/' +
+      document.getElementById('c-total').textContent);
+    peek();
+    for (let i = 0; i < 5; i++) {
+      answered = false;
+      resolve(i === 1);            // ЗӨВХӨН 2 дахь нь зөв, бусад буруу
+      peek(); nextCard();
+      await new Promise(r => setTimeout(r, 40));
+    }
+    // Алдсан 4 картыг эргүүлж зөв хариулна
+    for (let i = 0; i < 4; i++) {
+      answered = false; resolve(true); peek(); nextCard();
+      await new Promise(r => setTimeout(r, 40));
+    }
+    const last = seq[seq.length - 1];
+    const over = seq.filter(x => {
+      const p = x.split('/'); return +p[0] > +p[1];
+    });
+    settings.sfx = keep;
+    show('home'); go('home');
+    return { seq: seq, last: last, over: over, okN: okN, ngN: ngN };
+  `);
+  ok('тоолуур ХЭЗЭЭ Ч нийт тооноос хэтрэхгүй',
+    cn && cn.over.length === 0, JSON.stringify(cn));
+  ok('бүгдийг дуусгахад ЯГ 5/5',
+    cn && cn.last === '5/5', JSON.stringify(cn));
+  ok('алдаа гаргасан ч зөв/буруу тоо хэвээр бүртгэгдэнэ',
+    cn && cn.okN === 5 && cn.ngN === 4, JSON.stringify(cn));
+
+  if (jlptOn) {
+    console.log('\n[24] JLPT — N5…N2 ажиллана');
+    const jl = await c.ev(`
+      const keep = settings.kjn;
+      const lv = {};
+      for (const n of [5, 4, 3, 2]) {
+        settings.kjn = [n]; refreshHome();
+        await new Promise(r => setTimeout(r, 120));
+        lv['N' + n] = kanjiPool('jlpt').length;
+      }
+      settings.kjn = [5, 4, 3, 2]; refreshHome();
+      await new Promise(r => setTimeout(r, 120));
+      const all = kanjiPool('jlpt').length;
+      await loadN5();
+      settings.kjn = keep; refreshHome();
+      return { lv: lv, all: all, n5words: N5.length };
+    `);
+    ok('N5…N2 ханзны сан бүгд хоосон биш',
+      jl && [5, 4, 3, 2].every(n => jl.lv['N' + n] > 0), JSON.stringify(jl));
+    ok('дөрвөн түвшний нийлбэр нь нийттэй тэнцэнэ',
+      jl && jl.all === [5, 4, 3, 2].reduce((a, n) => a + jl.lv['N' + n], 0),
+      JSON.stringify(jl));
+    ok('N5-ийн үгийн сан ачаалагдана',
+      jl && jl.n5words > 2000, JSON.stringify(jl));
+  }
+
   console.log('\n[22] Engine — аудитаас гарсан засварууд');
 
   /* ЯПОН гараар зөв бичсэн хариултыг ТАТГАЛЗАЖ байв. `toKana()` нь
@@ -1316,9 +1383,11 @@ async function run(c) {
     JSON.stringify(dr.opened));
   ok('бүдгэрүүлэгч гарч ирнэ',
     dr && dr.opened.scrim === false, JSON.stringify(dr.opened));
-  ok('7 харагдах бичлэг (JLPT нуугдсан)',
-    dr && dr.opened.items === 8 && dr.opened.shown === 7,
-    JSON.stringify(dr.opened));
+  /* JLPT-ийн тугаас хамаарна — хатуу тоо бичвэл тугийг сольмогц унана. */
+  ok('шургуулгад 8 бичлэг, JLPT нь тугийг дагана',
+    dr && dr.opened.items === 8
+      && dr.opened.shown === (jlptOn ? 8 : 7),
+    JSON.stringify(dr.opened) + ' jlptOn=' + jlptOn);
   ok('бичлэг БҮР иконтой',
     dr && dr.opened.icons === dr.opened.items, JSON.stringify(dr.opened));
   ok('идэвхтэй хуудас тэмдэглэгдсэн',
