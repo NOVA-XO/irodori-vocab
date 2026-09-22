@@ -1779,7 +1779,7 @@ const STAT_TABS = [
   { k: 'kanji', n: 'Ханз' }, { k: 'kana', n: 'Кана' },
 ];
 const statName = t => '<span class="' + (t.j ? 'jpd' : '') + '">' + esc(t.n) + '</span>';
-let statTab = null;               // анх нээхэд идэвхтэй номоор эхлэнэ
+/* `statTab` хэрэггүй болов: таб байхгүй, ном бүр нэг дор гарна. */               // анх нээхэд идэвхтэй номоор эхлэнэ
 
 /** Явцын дэлгэцэд БҮХ сан хэрэгтэй — апп эхлэхэд зөвхөн идэвхтэй
  *  номоо татдаг (эхний ачаалал хөнгөн байх ёстой). Ганц удаа татаад
@@ -1873,33 +1873,41 @@ function refreshStats() {
     '<div><b>' + learned + '</b><span>тогтсон</span></div>' +
     '<div><b>' + (tot ? Math.round(100 * cor / tot) : 0) + '%</b><span>зөв хариулт</span></div>';
 
-  /* ЗӨВХӨН эхэлсэн хэсэг. Хөндөөгүй ном бүрийг «0/2077» гэж жагсаах
-     нь урам хугалахаас өөр ажил хийхгүй. */
-  const live = STAT_TABS.filter(t => statStarted(t.k));
-  $('stat-sections').innerHTML = live.length
-    ? live.map(t => statBar(t.n, statSet(t.k), statName(t), true)).join('')
-    : '<p class="hint">Эхний дасгалаа хийхэд энд явц чинь гарч ирнэ.</p>';
+  /* НОМ тус бүрийг гарчиг болгож, доор нь ТҮҮНИЙ хичээлүүдийг
+     эгнүүлнэ. Өмнө нь ном ба хичээл хоёр тусдаа хэсэгт байсан тул
+     «аль хичээлийн үгийг сурч байна» гэдгээ харахын тулд таб дарж
+     хайх шаардлагатай байв.
 
-  /* Таб нь мөн эхэлсэн хэсгүүд. Хэрэв одоогийн таб хөндөгдөөгүй бол
-     эхэлсэн эхнийх рүү шилжинэ — эс тэгвэл хоосон жагсаалт гарна. */
-  if (!live.some(t => t.k === statTab)) statTab = live.length ? live[0].k : null;
-  const tabs = $('seg-stat');
-  /* `<small>` дотор НИЙТ биш, өөрийнх нь ТОГТСОН тоо. */
-  tabs.innerHTML = live.map(t =>
-    '<button data-s="' + escA(t.k) + '" aria-pressed="' + (t.k === statTab) + '">'
-    + statName(t) + '<small>' + statSet(t.k).filter(pDone).length + '</small></button>').join('');
-  tabs.querySelectorAll('button').forEach(b =>
-    b.onclick = () => { statTab = b.dataset.s; refreshStats(); });
-  tabs.hidden = !live.length;
-  /* Юу ч эхлээгүй бол тайлбар, «Дэлгэрэнгүй» гарчиг хоёрыг нуух:
-     хоосон дэлгэц дээр гурван догол мөр тайлбар нь дэмий, харин
-     агуулгагүй гарчиг нь эвдэрсэн юм шиг харагдана. */
-  for (const id of ['st-h-sec', 'st-help1', 'st-help2', 'st-h-det']) {
+     ЗӨВХӨН эхэлсэн ном, эхэлсэн хичээл гарна — хөндөөгүйг жагсаах нь
+     урам хугалахаас өөр ажил хийхгүй. */
+  const live = STAT_TABS.filter(t => statStarted(t.k));
+  const box = $('stat-tree');
+  if (!live.length) {
+    box.className = '';
+    box.innerHTML = '<p class="hint">Эхний дасгалаа хийхэд энд явц чинь гарч ирнэ.</p>';
+  } else {
+    box.className = 'sttree';
+    box.innerHTML = live.map(t => {
+      const set = statSet(t.k);
+      const done = set.filter(pDone).length;
+      /* Номын ТҮВШНИЙ зураас хасагдсан: гарчиг дээр «N тогтсон» аль
+         хэдийн байгаа тул тэр нь давхардал, мөн хичээлийн зураасаас
+         өөр суурьтай (үзсэн vs бүтэн) учир гурван тоо будлиан
+         төрүүлж байв. Одоо гарчиг + хичээлүүд л үлдэнэ. */
+      const seenN = set.filter(pSeen).length;
+      return '<section>'
+        + '<h3>' + statName(t)
+        + '<small>' + done + ' тогтсон · ' + seenN + ' үзсэн</small></h3>'
+        + '<div class="statles les">' + statDetail(t.k) + '</div>'
+        + '</section>';
+    }).join('');
+  }
+
+  /* Юу ч эхлээгүй бол тайлбарыг нуух — хоосон дэлгэц дээр дэмий. */
+  for (const id of ['st-h-sec', 'st-help1']) {
     const el = $(id);
     if (el) el.hidden = !live.length;
   }
-
-  $('stat-lessons').innerHTML = statTab ? statDetail(statTab) : '';
 }
 
 /* ══════════════════════ 8. Холбоос ══════════════════════ */

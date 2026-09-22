@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22r">
-<link rel="stylesheet" href="app.css?v=2026-09-22r">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22t">
+<link rel="stylesheet" href="app.css?v=2026-09-22t">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22r">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22r">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22t">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22t">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -466,20 +466,11 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <h2>Явц</h2>
   <div id="stat-sum" class="statsum"></div>
 
-  <h2 id="st-h-sec">Хэсэг тус бүрээр</h2>
-  <p class="hint" id="st-help1">Үг, ханз, кана бүр <b>3 удаа зөв</b> хариулснаар «тогтсон» болж
-     тоологдоно (0→1→2→3-р хайрцаг). Нэг дасгалын дотор нэг зүйл ганц удаа
-     асуугддаг тул зураас <b>3 өөр удаагийн давталтаар</b> дүүрнэ.
+  <h2 id="st-h-sec">Ном тус бүрээр</h2>
+  <p class="hint" id="st-help1">Зүйл бүр <b>3 удаа зөв</b> хариулснаар «тогтсон» болно.
      <span class="lg"><i class="s"></i>үзсэн</span>
      <span class="lg"><i class="f"></i>тогтсон</span></p>
-  <p class="hint" id="st-help2">Хэсгийн зураас нь <b>үзсэн зүйлийнхээ</b> хэдийг тогтоосныг
-     харуулна — номын нийт тоог биш. Доорх «Дэлгэрэнгүй» хэсэгт хичээл
-     тус бүрийн бүтэн зорилт гарна.</p>
-  <div id="stat-sections" class="statles wide"></div>
-
-  <h2 id="st-h-det">Дэлгэрэнгүй</h2>
-  <div id="seg-stat" class="lessons stabs"></div>
-  <div id="stat-lessons" class="statles"></div>
+  <div id="stat-tree"></div>
 </section>
 
 <!-- ═══════════════════ ПРОФАЙЛ ═══════════════════ -->
@@ -599,7 +590,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   </div>
 </section>
 
-<script src="sync-config.js?v=2026-09-22r"></script>
-<script src="app.js?v=2026-09-22r"></script>
+<script src="sync-config.js?v=2026-09-22t"></script>
+<script src="app.js?v=2026-09-22t"></script>
 </body>
 </html>

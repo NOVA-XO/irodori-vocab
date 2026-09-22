@@ -330,17 +330,50 @@ async function run(c) {
     }
   }
 
-  console.log('\n[6] Явц дэлгэц — 6 таб бүр зурагдана');
+  console.log('\n[6] Явц дэлгэц — ном тус бүрийн доор ХИЧЭЭЛҮҮД');
   await c.ev('go("stats"); return 1');
   await sleep(400);
   await c.ev('return loadAllBooks().then(()=>refreshStats())');
   await sleep(300);
-  for (const t of ['starter', 'el1', 'el2', 'n5', 'kanji', 'kana']) {
-    const n = await c.ev(
-      'statTab=' + JSON.stringify(t) + '; refreshStats();' +
-      'return document.getElementById("stat-lessons").children.length');
-    ok('Явц таб ' + t + ' — мөр зурагдсан', n > 0, 'мөр: ' + n);
-  }
+  /* Хуучин бүтцэд таб дарж хичээл хайдаг байсан. Одоо ном тус бүр
+     гарчиг (h3) болж, доор нь ТҮҮНИЙ хичээлүүд эгнэнэ. Бүх номыг
+     «эхэлсэн» болгож хэд гарахыг шалгана. */
+  const tree = await c.ev(`
+    const keep = progress;
+    /* Ном бүрээс нэг зүйл үзсэн болгоно — эс тэгвэл зөвхөн эхэлсэн
+       ном гардаг тул мод хоосон байна. */
+    progress = {};
+    for (const t of STAT_TABS) {
+      const set = statSet(t.k);
+      if (set.length) progress[set[0].id] = { n: 1, c: 1, b: 1, d: today() };
+    }
+    refreshStats();
+    await new Promise(r => setTimeout(r, 250));
+    const secs = [...document.querySelectorAll('#stat-tree > section')];
+    const out = secs.map(sec => ({
+      title: sec.querySelector('h3') ? sec.querySelector('h3').textContent.trim() : null,
+      bars: sec.querySelectorAll('.statles.wide .l').length,
+      lessons: sec.querySelectorAll('.statles.les .l').length
+    }));
+    progress = keep; refreshStats();
+    return { n: secs.length, secs: out,
+             tabsGone: !document.getElementById('seg-stat'),
+             detailGone: !document.getElementById('stat-lessons') };
+  `);
+  ok('ном бүр өөрийн хэсэгтэй (6)', tree && tree.n === 6, JSON.stringify(tree));
+  ok('хэсэг бүр гарчигтай',
+    tree && tree.secs.every(x => x.title && x.title.length > 0), JSON.stringify(tree));
+  /* Номын ТҮВШНИЙ зураас ЗОРИУД хасагдсан: гарчиг дээр «N тогтсон ·
+     N үзсэн» аль хэдийн байгаа тул давхардал байв. */
+  ok('номын түвшний зураас байхгүй (гарчиг тоог агуулна)',
+    tree && tree.secs.every(x => x.bars === 0), JSON.stringify(tree));
+  ok('гарчиг тогтсон ба үзсэн хоёуланг харуулна',
+    tree && tree.secs.every(x => /тогтсон/.test(x.title) && /үзсэн/.test(x.title)),
+    JSON.stringify(tree));
+  ok('хэсэг бүрийн доор ХИЧЭЭЛийн мөр бий',
+    tree && tree.secs.every(x => x.lessons >= 1), JSON.stringify(tree));
+  ok('хуучин таб ба «Дэлгэрэнгүй» УСТСАН',
+    tree && tree.tabsGone && tree.detailGone, JSON.stringify(tree));
   const sum = await c.ev('return document.getElementById("stat-sum").textContent');
   ok('Явцын дүн хоосон биш', sum && sum.length > 5, sum);
 
@@ -1153,9 +1186,8 @@ async function run(c) {
     const empty = {
       cards: document.querySelectorAll('#stat-sum div').length,
       sumText: document.getElementById('stat-sum').textContent,
-      sections: document.getElementById('stat-sections').textContent,
-      tabsHidden: document.getElementById('seg-stat').hidden,
-      helpHidden: ['st-h-sec', 'st-help1', 'st-help2', 'st-h-det']
+      sections: document.getElementById('stat-tree').textContent,
+      helpHidden: ['st-h-sec', 'st-help1']
                     .every(id => document.getElementById(id).hidden)
     };
     /* Нэг үг үзсэн болгоё. */
@@ -1163,9 +1195,8 @@ async function run(c) {
     refreshStats();
     await new Promise(r => setTimeout(r, 250));
     const one = {
-      sections: document.querySelectorAll('#stat-sections .l').length,
-      tabs: document.querySelectorAll('#seg-stat button').length,
-      lessons: document.querySelectorAll('#stat-lessons .l').length
+      sections: document.querySelectorAll('#stat-tree > section').length,
+      lessons: document.querySelectorAll('#stat-tree .statles.les .l').length
     };
     progress = keep; refreshStats();
     return { empty: empty, one: one };
@@ -1175,12 +1206,11 @@ async function run(c) {
     JSON.stringify(sv.empty));
   ok('юу ч үзээгүй бол хэсгийн жагсаалт ХООСОН',
     sv && /Эхний дасгалаа/.test(sv.empty.sections), JSON.stringify(sv.empty));
-  ok('юу ч үзээгүй бол таб нуугдана',
-    sv && sv.empty.tabsHidden === true, JSON.stringify(sv.empty));
+
   ok('юу ч үзээгүй бол тайлбар ба гарчиг нуугдана',
     sv && sv.empty.helpHidden === true, JSON.stringify(sv.empty));
   ok('нэг үг үзэхэд ЗӨВХӨН нэг хэсэг гарна',
-    sv && sv.one.sections === 1 && sv.one.tabs === 1, JSON.stringify(sv.one));
+    sv && sv.one.sections === 1, JSON.stringify(sv.one));
   ok('дэлгэрэнгүйд зөвхөн эхэлсэн хичээл',
     sv && sv.one.lessons === 1, JSON.stringify(sv.one));
   await c.ev('go("home"); return 1;');

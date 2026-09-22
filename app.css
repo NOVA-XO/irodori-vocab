@@ -729,6 +729,26 @@ button:disabled{opacity:.42; cursor:default}
 .statsum span{font-size:10px; color:var(--ink-3); letter-spacing:.04em;
               text-transform:uppercase; margin-top:4px; display:block;
               overflow-wrap:anywhere}
+/* Явцын МОД: ном → түүний хичээлүүд. Өмнө нь ном ба хичээл хоёр
+   ТУСДАА хэсэгт байсан тул аль хичээлийг сурч байгаагаа харахын тулд
+   таб дарж хайх шаардлагатай байв. */
+.sttree{display:grid; gap:18px}
+.sttree > section{display:grid; gap:0}
+/* Номын гарчиг нь япон бичигтэй байж болно (入門) тул тэр фонтоор. */
+.sttree h3{
+  margin:0 0 6px; font-family:var(--jps); font-size:16px; font-weight:400;
+  color:var(--ink); display:flex; align-items:baseline; gap:8px;
+}
+.sttree h3 small{font-family:var(--ui); font-size:11.5px; color:var(--ink-3);
+                 letter-spacing:.04em}
+/* Хичээлийн эгнээ нь номынхоос догол мөрөөр дотогш. */
+.sttree .les{padding-left:12px; border-left:1px solid var(--line)}
+/* Хичээлийн шошго япон байж болно (五十音 · 濁·半濁) тул 34px-д
+   багтахгүй, хоёр мөр болдог. Багануудыг өргөсгөв. */
+.sttree .les .l{grid-template-columns:56px 1fr 52px}
+.sttree .les .l > span:first-child{font-family:var(--jps); font-size:12px;
+                                   white-space:nowrap}
+
 .statles{display:grid; gap:0}
 .statles .l{display:grid; grid-template-columns:38px 1fr 56px; gap:12px;
             align-items:center; font-size:12.5px; padding:7px 0;
