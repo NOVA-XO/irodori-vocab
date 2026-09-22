@@ -181,6 +181,72 @@ async function main() {
   await db.exec("delete from public.members");
   await resetFails();
 
+  console.log('\n[9] Даалгавар — L1–L8-аас 20 өөр асуулт');
+  await db.exec("delete from public.members");
+  await db.exec(`update public.classes set task =
+    '{"lessons":[1,2,3,4,5,6,7,8],"n":20,"since":"2026-09-22"}' where id = 'mica'`);
+  const D0 = (await one("select ('2026-09-22'::date - '1970-01-01'::date) as d")).d;
+  const putEx = (m, n, cls, exam) => one(
+    'select public.member_put($1,$2,$3::jsonb,0,0,0,0,$4,$5::jsonb) as r',
+    [m, n, JSON.stringify(cls), D0, exam === null ? null : JSON.stringify(exam)]).then(r => r.r);
+
+  const cl = (await one('select public.class_list() as l')).l;
+  ok('class_list даалгаврыг буцаана (MICA-д, Наран-д үгүй)',
+    cl.find(c => c.id === 'mica').task && cl.find(c => c.id === 'mica').task.n === 20
+      && cl.find(c => c.id === 'c2').task === null, JSON.stringify(cl));
+
+  await putEx('memberT00001', 'Бат', { mica: '5173', c2: '8264' }, {
+    'S01-01': [D0, 1, 1],          // тоологдоно, чадсан
+    'S03-02': [D0 + 1, 0, 3],      // тоологдоно, чадаагүй
+    'S08-05': [D0, 1, 8],          // тоологдоно, чадсан (L8 — хил)
+    'S02-01': [D0 - 1, 1, 2],      // since-ээс ӨМНӨ — тоологдохгүй
+    'S09-01': [D0, 1, 9],          // L9 — даалгаварт хамаарахгүй
+    'bad key!': [D0, 1, 1],        // буруу түлхүүр — хаягдана
+    'S04-01': 'not an array',      // буруу утга — хаягдана
+    'S05-01': ['x', 'y', 'z'],     // тоо биш — 0 болно (L0 тул тоологдохгүй)
+  });
+  await putEx('memberT00002', 'Болд', { mica: '5173' }, {});
+  ro = await roster('mica', '5173', 'memberT00001');
+  const rb = ro.rows.find(x => x.name === 'Бат'), rd = ro.rows.find(x => x.name === 'Болд');
+  ok('roster даалгаврыг буцаана', ro.task && ro.task.n === 20, JSON.stringify(ro.task));
+  ok('task_n = 3 (since-ээс өмнөх, L9, буруу мөр ТООЛОГДОХГҮЙ)', rb && rb.task_n === 3, JSON.stringify(rb));
+  ok('task_ok = 2 (чадсан)', rb && rb.task_ok === 2, JSON.stringify(rb));
+  ok('хариулаагүй гишүүн -> 0', rd && rd.task_n === 0 && rd.task_ok === 0, JSON.stringify(rd));
+  ok('ТҮҮХИЙ хариулт roster-д БУЦАХГҮЙ (ангийнхан бие биеийн хариултыг харахгүй)',
+    !JSON.stringify(ro).includes('S01-01') && ro.rows.every(x => !('exam' in x)), JSON.stringify(ro));
+  const stored = (await one("select exam from public.members where member='memberT00001'")).exam;
+  ok('буруу түлхүүр/утга ХАДГАЛАГДААГҮЙ', !('bad key!' in stored) && !('S04-01' in stored),
+    JSON.stringify(stored));
+  ok('тоо биш утга 0 болж хадгалагдсан', JSON.stringify(stored['S05-01']) === '[0,0,0]',
+    JSON.stringify(stored['S05-01']));
+
+  ro = await roster('c2', '8264', 'memberT00001');
+  ok('даалгаваргүй анги -> task null, task_n null', ro.task === null &&
+    ro.rows.every(x => x.task_n === null), JSON.stringify(ro));
+
+  // Хуучин клиент (p_exam илгээхгүй) — байгаа хариултыг ДАРЖ БИЧИХГҮЙ
+  await one("select public.member_put('memberT00001','Бат','{\"mica\":\"5173\"}'::jsonb,1,1,1,1,1) as r");
+  ro = await roster('mica', '5173', 'memberT00001');
+  ok('хуучин клиентын дуудлага (8 параметр) хариултыг УСТГАХГҮЙ',
+    ro.rows.find(x => x.name === 'Бат').task_n === 3, JSON.stringify(ro.rows));
+
+  // 200-аас олон түлхүүр -> 200 л
+  const many = {};
+  for (let i = 0; i < 260; i++) many['Q' + i] = [D0, 1, 1];
+  await putEx('memberT00003', 'Их', { mica: '5173' }, many);
+  const cnt = (await one("select (select count(*) from jsonb_object_keys(exam)) as n from public.members where member='memberT00003'")).n;
+  ok('хариулт 200 хүртэл хязгаарлагдана', Number(cnt) === 200, String(cnt));
+  // Хэт их өдөр/хичээл -> хязгаарлагдана, алдаа өгөхгүй
+  await putEx('memberT00004', 'Хэт', { mica: '5173' }, { S01: [9e15, 5, 9e15] });
+  const hx = (await one("select exam from public.members where member='memberT00004'")).exam;
+  ok('хэт их тоо -> хязгаарлагдана (алдаагүй)', JSON.stringify(hx.S01) === '[100000,1,100]',
+    JSON.stringify(hx));
+
+  const fns = (await one("select count(*) as n from pg_proc where proname = 'member_put'")).n;
+  ok('member_put ГАНЦ хувилбартай (хуучин гарын үсэг устсан)', Number(fns) === 1, String(fns));
+  await db.exec("delete from public.members");
+  await resetFails();
+
   console.log('\n[8] anon эрх — хүснэгт рүү ШУУД хандах ХААЛТТАЙ');
   await put('memberAAAA01', 'Бат', { mica: '5173' });
   await db.exec('set role anon');

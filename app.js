@@ -2356,6 +2356,25 @@ if (![10, 15, 20].includes(exN)) exN = 15;
    хичээлээр нэмэгдвэл тэр нь автоматаар орно. Хоосон массив = юу ч
    сонгоогүй (эхлүүлэх товч идэвхгүй). */
 const KEY_EXL = 'irodori.examles.v1';
+
+/* Шалгалтын ТҮҮХ — асуулт тутамд СҮҮЛИЙН хариулт:
+     { "S01-01": [өдөр, чадсан 0/1, хичээл], … }
+   Ангийн ДААЛГАВАР үүнээс тоологдоно (давхардалгүй асуулт — нэг асуултыг
+   хоёр удаа хариулсан ч нэг). Урьд нь шалгалтын үр дүн хаана ч
+   хадгалагддаггүй байв. Сервер ТООГ л буцаадаг — түүхий хариулт
+   ангийнханд харагдахгүй (SUPABASE.sql «ДААЛГАВАР»). */
+const KEY_EXH = 'irodori.examhist.v1';
+function cleanExHist(v) {
+  const out = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const k of Object.keys(v).slice(0, 200)) {
+    const x = v[k];
+    if (/^[A-Za-z0-9_-]{1,16}$/.test(k) && Array.isArray(x) && x.length === 3
+        && x.every(Number.isInteger)) out[k] = [x[0], x[1] ? 1 : 0, x[2]];
+  }
+  return out;
+}
+let exHist = cleanExHist(load(KEY_EXH, {}));
 let exLes = load(KEY_EXL, null);
 if (exLes !== null && !(Array.isArray(exLes) && exLes.every(Number.isInteger))) exLes = null;
 let exMode = load(KEY_EXM, 'think');
@@ -2392,6 +2411,9 @@ function examSetup() {
   $('ex-run').hidden = true;
   $('ex-done').hidden = true;
   refreshExamSeg();
+  renderExamTasks();
+  // Кэш хуучирсан байж магадгүй (даалгавар шинээр өгөгдсөн) — шинэчилнэ.
+  if (myClasses().length) loadClassList().then(renderExamTasks);
   // Чипэнд хичээл бүрийн асуултын тоо хэрэгтэй тул санг ЭНД татна.
   loadExam().then(renderExamLessons).catch(() => {
     const n = $('ex-les-note');
@@ -2410,6 +2432,31 @@ const examPool = () => {
   const sel = examLessonsSel();
   return ((EXAM && EXAM.items) || []).filter(q => sel.includes(q.lesson));
 };
+
+/** Миний ангиудын даалгавар — шалгалтын дэлгэцийн дээд талд. */
+function renderExamTasks() {
+  const box = $('ex-tasks');
+  if (!box) return;
+  const items = myClasses().map(id => ({ id: id, t: taskOf(id) })).filter(x => x.t);
+  box.innerHTML = items.map(x => {
+    const need = taskN(x.t), n = taskDoneLocal(x.t);
+    return '<li class="ex-task"><div class="ex-task-body">' +
+      '<p class="ex-task-label"><b>' + esc(className(x.id)) + '</b> · ' + esc(taskLabel(x.t)) + '</p>' +
+      TASK_STATE(Math.min(n, need), need).replace('Хийгээгүй · ', '') +
+      '</div><button class="ghost sm ex-task-pick" type="button" data-class-id="' + escA(x.id) + '"' +
+      ' aria-label="' + escA(className(x.id)) + ': Сонгох">Сонгох</button></li>';
+  }).join('');
+  box.hidden = !items.length;
+  box.querySelectorAll('.ex-task-pick').forEach(b => b.onclick = () => {
+    const t = taskOf(b.dataset.classId);
+    if (!t) return;
+    // Даалгаврын хичээлүүд ба асуултын тоо. 10/15/20-оос өөр бол 20.
+    exN = [10, 15, 20].includes(taskN(t)) ? taskN(t) : 20;
+    save(KEY_EXN, exN);
+    refreshExamSeg();
+    setExamLessons(t.lessons.map(x => x | 0));
+  });
+}
 
 function setExamLessons(v) {
   // Бүгдийг сонгосон бол `null` болгож хадгална — шинэ хичээл нэмэгдэхэд
@@ -2570,6 +2617,8 @@ function examMark(ok) {
   sfx(ok);
   const q = exQs[exIdx];
   exLog.push({ q: q, ok: ok });
+  exHist[q.id] = [today(), ok ? 1 : 0, q.lesson | 0];
+  save(KEY_EXH, exHist);
   const run = exRun;
   exTimer = setTimeout(() => {
     exTimer = null;
@@ -2580,6 +2629,8 @@ function examMark(ok) {
 }
 
 function finishExam() {
+  // Даалгавар хийсэн бол анги шууд харах ёстой — 2 минутын хязгааргүй.
+  memberSync(true);
   const good = exLog.filter(x => x.ok).length;
   const pct = exLog.length ? Math.round(100 * good / exLog.length) : 0;
   $('ex-pct').textContent = pct + '%';
@@ -2785,6 +2836,8 @@ $('btn-reset').onclick = async () => {
   save(KEY_P, progress);
   days = { last: -1, streak: 0, n: 0, ids: [] };
   save(KEY_D, days);
+  exHist = {};                          // шалгалтын түүх (даалгавар) ч
+  save(KEY_EXH, exHist);
   delete settings.last;                 // «Үргэлжлүүлэх» товч алга болно
   save(KEY_S, settings);
   refreshStats();
@@ -2966,6 +3019,34 @@ let classList = load(KEY_CLS, []);
 if (!Array.isArray(classList)) classList = [];
 
 const myClasses = () => Object.keys(me.codes);
+
+/* ── Даалгавар ─────────────────────────────────────────────────────
+   Анги бүр НЭГ даалгавартай байж болно (серверт, `classes.task`):
+     { lessons: [1..8], n: 20, since: '2026-09-22' }
+   = L1–L8-ын шалгалтын асуултаас 20 ӨӨР асуулт хариулах. */
+const taskOf = id => {
+  const t = (classList.find(c => c.id === id) || {}).task;
+  return (t && Array.isArray(t.lessons) && t.lessons.length) ? t : null;
+};
+const taskN = t => Math.max(1, t.n | 0);
+/** 'YYYY-MM-DD' -> `today()`-тай ижил өдрийн дугаар. */
+function dayOf(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  return m ? Math.floor(Date.UTC(+m[1], +m[2] - 1, +m[3]) / 864e5) : 0;
+}
+/** «L1–L8» (дараалсан) эсвэл «L1, L3, L5». */
+function lessonRange(ls) {
+  const a = [...new Set(ls.map(x => x | 0))].sort((x, y) => x - y);
+  if (!a.length) return '';
+  const run = a.every((x, i) => i === 0 || x === a[i - 1] + 1);
+  return run && a.length > 1 ? 'L' + a[0] + '–L' + a[a.length - 1] : a.map(x => 'L' + x).join(', ');
+}
+const taskLabel = t => lessonRange(t.lessons) + ' · ' + taskN(t) + ' асуулт';
+/** Энэ төхөөрөмж дээрх явц — СЕРВЕРТЭЙ ИЖИЛ дүрэм (SUPABASE.sql). */
+function taskDoneLocal(t) {
+  const since = dayOf(t.since), les = t.lessons.map(x => x | 0);
+  return Object.values(exHist).filter(h => les.includes(h[2]) && h[0] >= since).length;
+}
 const className = id => (classList.find(c => c.id === id) || {}).name || id;
 
 /** Серверээс ангийн жагсаалт. Бүтэлгүйтвэл кэш хэвээр. */
@@ -3037,6 +3118,8 @@ function memberSync(force) {
     p_today: todayN(),
     p_streak: streakN(),
     p_day: today(),
+    // Ангигүй бол илгээхгүй — сервер мөрийг устгана.
+    p_exam: ids.length ? exHist : null,
   };
   return rpc('member_put', body).then(res => {
     if (!res || typeof res !== 'object' || res.error) return res;
@@ -3220,7 +3303,26 @@ $('me-edit').onclick = () => openSetup(false);
 /* ── Ангийн дэлгэц ───────────────────────────────────────────────── */
 let klassRun = 0;
 
-const KL_ROW = r =>
+/** Даалгаврын төлөв — хийсэн эсэхийг нэг харцаар. */
+const TASK_STATE = (n, need) => n >= need
+  ? '<span class="task-state is-done">✓ Хийсэн</span>'
+  : '<span class="task-state">Хийгээгүй · ' + n + '/' + need + '</span>';
+
+/* Даалгавартай ангид мөр бүр ДААЛГАВРЫН ГҮЙЦЭТГЭЛ-ийг харуулна — цээжилсэн
+   үгийн тоог БИШ (хэрэглэгчийн шаардлага: «хэн даалгаврыг хэдэн %
+   гүйцэтгэсэн»). Даалгаваргүй ангид хуучин 4 тоо хэвээр. */
+const KL_TASK_ROW = (r, need) => {
+  const n = Math.min(r.taskN, need), pct = Math.round(100 * n / need), done = n >= need;
+  return '<li class="kl-member' + (r.me ? ' me' : '') + '">' +
+    '<div class="kl-member-head"><div class="kl-name"><b>' + esc(r.name) + '</b>' +
+    '<span class="kl-self">Би</span></div>' +
+    '<span class="task-state' + (done ? ' is-done' : '') + '">' + (done ? '✓ ' : '') + pct + '%</span></div>' +
+    '<div class="kl-prog' + (done ? ' is-done' : '') + '"><span class="track">' +
+    '<span class="fill" style="width:' + pct + '%"></span></span>' +
+    '<small>' + n + '/' + need + ' асуулт</small></div></li>';
+};
+
+const KL_ROW = (r, need) => need ? KL_TASK_ROW(r, need) :
   '<li class="kl-member' + (r.me ? ' me' : '') + '">' +
     '<div class="kl-name"><b>' + esc(r.name) + '</b><span class="kl-self">Би</span></div>' +
     '<dl class="kl-metrics">' +
@@ -3246,6 +3348,7 @@ function klassRow(r) {
     learned: Math.max(0, r.learned | 0),
     todayN: d === t ? Math.max(0, r.today | 0) : 0,
     streakN: (d === t || d === t - 1) ? Math.max(0, r.streak | 0) : 0,
+    taskN: Math.max(0, r.task_n | 0),
   };
 }
 
@@ -3290,10 +3393,22 @@ async function refreshKlass() {
       if (c) { c.name = r.name; save(KEY_CLS, classList); refreshMe(); }
     }
     const rows = (Array.isArray(r.rows) ? r.rows : []).map(klassRow);
+    // Серверийн даалгаврыг кэшэнд — шалгалтын дэлгэц ч харна.
+    const c = classList.find(x => x.id === id);
+    if (c && JSON.stringify(c.task || null) !== JSON.stringify(r.task || null)) {
+      c.task = r.task || null; save(KEY_CLS, classList);
+    }
+    const task = (r.task && Array.isArray(r.task.lessons) && r.task.lessons.length) ? r.task : null;
+    const need = task ? taskN(task) : 0;
+    const doneN = task ? rows.filter(x => x.taskN >= need).length : 0;
+    // Даалгавартай бол ГҮЙЦЭТГЭЛЭЭР эрэмбэлнэ — хэн хийгээгүй нь доороо.
+    if (task) rows.sort((a, b) => b.taskN - a.taskN || a.name.localeCompare(b.name));
     out.push('<section class="kl-class" aria-labelledby="kl-class-' + escA(id) + '">' +
       '<h3 id="kl-class-' + escA(id) + '"><span>' + esc(r.name || className(id)) + '</span>' +
       '<small>' + rows.length + ' хүн</small></h3>' +
-      '<ol class="kl-members">' + rows.map(KL_ROW).join('') + '</ol></section>');
+      (task ? '<p class="kl-task"><span>Даалгавар · ' + esc(taskLabel(task)) + '</span>' +
+              '<strong>' + doneN + '/' + rows.length + ' хийсэн</strong></p>' : '') +
+      '<ol class="kl-members">' + rows.map(x => KL_ROW(x, need)).join('') + '</ol></section>');
   }
   box.innerHTML = out.join('');
   /* `memberSync` дээр ч, roster дээр ч хаягдаж болно — аль алинд нь

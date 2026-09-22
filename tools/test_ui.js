@@ -1262,6 +1262,168 @@ async function run(c) {
     return 1;
   `);
 
+  console.log('\n[30] Ангийн даалгавар — L1–L8-аас 20 өөр асуулт');
+  /* Хуурамч сервер SQL-ийн дүрмийг дагана (SQL-ийг test_sql.js §9 шалгадаг):
+     task_n = даалгаврын хичээлээс since-ээс хойш хариулсан ӨӨР асуулт.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const tk = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const out = {};
+    const keep = { rpc: rpc, dev: isDevHost, me: JSON.parse(JSON.stringify(me)),
+                   hist: exHist, les: exLes, n: exN, cls: classList };
+    const TASK = { lessons: [1, 2, 3, 4, 5, 6, 7, 8], n: 20, since: '2026-01-01' };
+    const F = { classes: { mica: { name: 'MICA', code: '5173', task: TASK },
+                           c2: { name: 'Наран', code: '8264', task: null } },
+                members: {}, calls: [] };
+    const sinceDay = d => Math.floor(Date.UTC(+d.slice(0,4), +d.slice(5,7) - 1, +d.slice(8,10)) / 864e5);
+    const chk = (c, k) => !F.classes[c] ? 'none' : (String(k || '') === F.classes[c].code ? 'ok' : 'bad');
+    rpc = async (fn, b) => {
+      F.calls.push({ fn: fn, b: JSON.parse(JSON.stringify(b || {})) });
+      if (fn === 'class_list') return Object.keys(F.classes).map(id =>
+        ({ id: id, name: F.classes[id].name, task: F.classes[id].task }));
+      if (fn === 'class_join') return chk(b.p_class, b.p_code);
+      if (fn === 'member_put') {
+        const res = {}, ok = [];
+        for (const k in (b.p_classes || {})) { res[k] = chk(k, b.p_classes[k]); if (res[k] === 'ok') ok.push(k); }
+        if (!ok.length) { delete F.members[b.p_member]; return res; }
+        const prev = F.members[b.p_member] || {};
+        F.members[b.p_member] = { name: b.p_name, classes: ok, seen: b.p_seen, learned: b.p_learned,
+          today: b.p_today, streak: b.p_streak, day: b.p_day,
+          exam: b.p_exam === null || b.p_exam === undefined ? (prev.exam || {}) : b.p_exam };
+        return res;
+      }
+      if (fn === 'class_roster') {
+        const st = chk(b.p_class, b.p_code);
+        if (st !== 'ok') return { status: st };
+        const t = F.classes[b.p_class].task;
+        const rows = Object.keys(F.members).filter(id => F.members[id].classes.includes(b.p_class))
+          .map(id => {
+            const m = F.members[id], ex = Object.values(m.exam || {});
+            const inT = t ? ex.filter(h => t.lessons.includes(h[2]) && h[0] >= sinceDay(t.since)) : null;
+            return { name: m.name, seen: m.seen, learned: m.learned, today: m.today, streak: m.streak,
+              day: m.day, me: id === b.p_member,
+              task_n: t ? inT.length : null, task_ok: t ? inT.filter(h => h[1]).length : null };
+          });
+        return { status: 'ok', name: F.classes[b.p_class].name, task: t, rows: rows };
+      }
+      throw new Error('unknown ' + fn);
+    };
+    isDevHost = () => false;
+    me.codes = { mica: '5173', c2: '8264' }; me.other = false; me.lost = []; me.done = true;
+    me.name = 'Бат'; save(KEY_ME, me);
+    exHist = {}; save(KEY_EXH, exHist);
+    await loadClassList();
+
+    // Анги нэгт хоёр хүн: нэг нь ХИЙСЭН (20), нөгөө нь дутуу (12)
+    const mk = n => { const o = {}; for (let i = 0; i < n; i++) o['Z' + i] = [today(), 1, 1 + (i % 8)]; return o; };
+    F.members.memberDONE01 = { name: 'Болд', classes: ['mica'], seen: 1, learned: 1, today: 0, streak: 0, day: today(), exam: mk(20) };
+    F.members.memberHALF01 = { name: 'Сараа', classes: ['mica', 'c2'], seen: 1, learned: 1, today: 0, streak: 0, day: today(), exam: mk(12) };
+
+    // (1) Шалгалтын самбар — зөвхөн даалгавартай анги
+    go('exam'); await wait(600);
+    const box = document.getElementById('ex-tasks');
+    out.bannerShown = !box.hidden;
+    out.bannerItems = [...box.querySelectorAll('.ex-task')].map(li => li.textContent.replace(/\\s+/g, ' ').trim());
+
+    // (2) L1-ийн 6 асуултыг хариулна — түүхэнд 6
+    exLes = [1]; save(KEY_EXL, exLes); exN = 15; startExam(); await wait(400);
+    for (let i = 0; i < exQs.length; i++) { examMark(i % 2 === 0); await wait(220); }
+    out.hist1 = Object.keys(exHist).length;
+    out.histShape = JSON.stringify(Object.values(exHist)[0]);
+    // (3) ИЖИЛ 6 асуултыг дахин — давхардахгүй
+    examSetup(); await wait(300); startExam(); await wait(400);
+    for (let i = 0; i < exQs.length; i++) { examMark(true); await wait(220); }
+    out.hist2 = Object.keys(exHist).length;
+    await wait(200);
+    const put = F.calls.filter(x => x.fn === 'member_put').pop();
+    out.sentExam = put ? Object.keys(put.b.p_exam || {}).length : -1;
+
+    // (4) Самбар 6/20 харуулна; «Сонгох» -> L1–L8, 20 асуулт
+    examSetup(); await wait(400);
+    const bs = () => box.querySelector('.ex-task .task-state');
+    out.bannerAfter = bs() ? bs().textContent : null;
+    if (box.querySelector('.ex-task-pick')) box.querySelector('.ex-task-pick').click();
+    await wait(100);
+    out.pickLes = JSON.stringify(examLessonsSel());
+    out.pickN = exN;
+    out.pickNote = document.getElementById('ex-les-note').textContent;
+
+    // (5) Ангийн дэлгэц
+    go('klass'); await wait(600);
+    const secs = [...document.querySelectorAll('#kl-list .kl-class')];
+    const sec = t => secs.find(s => s.querySelector('h3 span').textContent === t);
+    const mica = sec('MICA'), naran = sec('Наран');
+    const kt = mica && mica.querySelector('.kl-task');
+    out.taskLine = kt ? kt.querySelector('span').textContent + ' | ' + kt.querySelector('strong').textContent : null;
+    const st = (s, n) => { const li = [...s.querySelectorAll('.kl-member')].find(l => l.querySelector('.kl-name b').textContent === n);
+                           return li && li.querySelector('.task-state') ? li.querySelector('.task-state').textContent : null; };
+    out.bold = mica && st(mica, 'Болд');
+    out.saraa = mica && st(mica, 'Сараа');
+    out.me = mica && st(mica, 'Бат');
+    out.order = mica ? [...mica.querySelectorAll('.kl-member .kl-name b')].map(b => b.textContent) : [];
+    out.micaMetrics = mica ? mica.querySelectorAll('.kl-metrics').length : -1;
+    out.naranMetrics = naran ? naran.querySelectorAll('.kl-metrics').length : -1;
+    const sli = mica && [...mica.querySelectorAll('.kl-member')].find(l => l.querySelector('.kl-name b').textContent === 'Сараа');
+    // null-д тэсвэртэй: нэг эвдрэл бусад шалгалтыг ДАРАХГҮЙ байх ёстой.
+    const q1 = (el, sel) => el && el.querySelector(sel);
+    out.saraaSmall = q1(sli, '.kl-prog small') ? q1(sli, '.kl-prog small').textContent : null;
+    out.saraaBar = q1(sli, '.kl-prog .fill') ? q1(sli, '.kl-prog .fill').style.width : null;
+    out.naranTask = naran ? !!naran.querySelector('.kl-task') : 'no-section';
+    out.naranStates = naran ? naran.querySelectorAll('.task-state').length : -1;
+
+    // (6) since-ээс ӨМНӨХ хариулт тоологдохгүй (орон нутгийн тооцоо)
+    out.localBefore = taskDoneLocal({ lessons: [1], n: 20, since: '2099-01-01' });
+
+    // (7) 20 өөр асуулт хүрвэл «Хийсэн»
+    for (let i = 0; i < 20; i++) exHist['Y' + i] = [today(), 1, 2];
+    save(KEY_EXH, exHist);
+    examSetup(); await wait(400);
+    out.bannerDone = bs() ? bs().textContent : null;
+    out.bannerDoneCls = bs() ? bs().className : '';
+
+    // (8) «Бусад» -> даалгаврын хариулт серверт ИЛГЭЭГДЭХГҮЙ
+    me.codes = {}; me.other = true; save(KEY_ME, me);
+    F.calls = []; lastMemberSync = 0; await memberSync(true);
+    const put2 = F.calls.filter(x => x.fn === 'member_put').pop();
+    out.otherExam = put2 ? JSON.stringify(put2.b.p_exam) : 'no-call';
+    examSetup(); await wait(300);
+    out.otherBanner = box.hidden;
+
+    rpc = keep.rpc; isDevHost = keep.dev; me = cleanMe(keep.me); save(KEY_ME, me);
+    exHist = keep.hist; save(KEY_EXH, exHist); exLes = keep.les; save(KEY_EXL, exLes);
+    exN = keep.n; classList = keep.cls; save(KEY_CLS, classList);
+    exAbort(); refreshMe(); go('home');
+    return out;
+  `);
+  ok('шалгалтын дэлгэцэд даалгавар — ЗӨВХӨН даалгавартай анги (MICA)',
+    tk && tk.bannerShown && tk.bannerItems.length === 1 && /MICA · L1–L8 · 20 асуулт/.test(tk.bannerItems[0]),
+    JSON.stringify(tk && tk.bannerItems));
+  ok('шалгалтын хариулт түүхэнд бүртгэгдэнэ [өдөр, 0/1, хичээл]',
+    tk && tk.hist1 === 6 && /^\[\d+,[01],1\]$/.test(tk.histShape), JSON.stringify(tk));
+  ok('ИЖИЛ асуултыг дахин хариулахад ДАВХАРДАХГҮЙ (6 хэвээр)', tk && tk.hist2 === 6, JSON.stringify(tk));
+  ok('шалгалт дуусахад хариулт серверт илгээгдэнэ', tk && tk.sentExam === 6, JSON.stringify(tk));
+  ok('самбар явцыг харуулна: 6/20', tk && tk.bannerAfter === '6/20', JSON.stringify(tk));
+  ok('«Сонгох» -> L1–L8 ба 20 асуулт',
+    tk && tk.pickLes === '[1,2,3,4,5,6,7,8]' && tk.pickN === 20 && tk.pickNote === '8 хичээл · 47 асуулт',
+    JSON.stringify(tk));
+  ok('ангийн дэлгэц: «Даалгавар · L1–L8 · 20 асуулт · 1/3 хийсэн»',
+    tk && tk.taskLine === 'Даалгавар · L1–L8 · 20 асуулт | 1/3 хийсэн', JSON.stringify(tk && tk.taskLine));
+  ok('20 хүрсэн гишүүн -> «✓ 100%»', tk && tk.bold === '✓ 100%', JSON.stringify(tk));
+  ok('дутуу гишүүн -> «60%», зураас 60%, «12/20 асуулт»',
+    tk && tk.saraa === '60%' && tk.saraaBar === '60%' && tk.saraaSmall === '12/20 асуулт', JSON.stringify(tk));
+  ok('өөрийн мөр ч гүйцэтгэлтэй (30%)', tk && tk.me === '30%', JSON.stringify(tk));
+  ok('даалгавартай ангид ЦЭЭЖИЛСЭН ҮГИЙН тоо ХАРАГДАХГҮЙ', tk && tk.micaMetrics === 0, JSON.stringify(tk));
+  ok('даалгаваргүй ангид (Наран) хуучин тоо хэвээр', tk && tk.naranMetrics > 0, JSON.stringify(tk));
+  ok('гүйцэтгэлээр эрэмбэлэгдсэн (Болд 100 · Сараа 60 · Бат 30)',
+    tk && tk.order.join() === 'Болд,Сараа,Бат', JSON.stringify(tk && tk.order));
+  ok('даалгаваргүй анги (Наран) -> даалгаврын мөр, төлөв БАЙХГҮЙ',
+    tk && tk.naranTask === false && tk.naranStates === 0, JSON.stringify(tk));
+  ok('since-ээс ӨМНӨХ хариулт тоологдохгүй', tk && tk.localBefore === 0, JSON.stringify(tk));
+  ok('20 өөр асуулт хүрвэл самбар «✓ Хийсэн»',
+    tk && tk.bannerDone === '✓ Хийсэн' && /is-done/.test(tk.bannerDoneCls), JSON.stringify(tk));
+  ok('«Бусад» -> хариулт серверт ИЛГЭЭГДЭХГҮЙ, самбар нуугдана',
+    tk && tk.otherExam === 'null' && tk.otherBanner === true, JSON.stringify(tk));
+
   console.log('\n[29] Шалгалт — ХИЧЭЭЛЭЭР сонгох');
   /* Хэрэглэгчийн хүсэлт: 100 асуултаас санамсаргүй биш, СОНГОСОН
      хичээлийн асуултаас. Асуулт бүр `lesson` талбартай. Хуваалцсан

@@ -506,6 +506,19 @@ alter table public.classes enable row level security;
 alter table public.members enable row level security;
 create index if not exists members_classes_idx on public.members using gin (classes);
 
+-- ── ДААЛГАВАР (2026-09-22 нэмэгдэв) ─────────────────────────────────────
+-- Анги бүр НЭГ даалгавартай байж болно:
+--   {"lessons": [1,2,3,4,5,6,7,8], "n": 20, "since": "2026-09-22"}
+-- = L1–L8-ын шалгалтын асуултаас 20 ӨӨР асуулт хариулах. `since`-ээс
+-- хойшхи хариулт л тоологдоно. Одоогоор эзэн SQL-ээр тавина (багшийн эрх
+-- хараахан байхгүй). Нууц биш — `class_list` ангийн нэртэй хамт буцаана.
+alter table public.classes add column if not exists task jsonb;
+-- Гишүүний шалгалтын хариулт: {"S01-01": [өдөр, чадсан 0/1, хичээл], …}.
+-- Асуулт тутамд СҮҮЛИЙН хариулт. ТҮҮХИЙГЭЭР нь клиент рүү буцаахгүй —
+-- ангийнхан бие биеийн аль асуултад юу гэж хариулсныг харахгүй;
+-- `class_roster` зөвхөн ТООГ бодож буцаана.
+alter table public.members add column if not exists exam jsonb not null default '{}'::jsonb;
+
 -- ── Кодыг шалгах — БҮХ ангийн хандалт энэ ганц газраар дамжина ─────────
 -- Буцаах утга: 'ok' | 'bad' | 'locked' | 'none'. Клиентэд «түгжигдсэн»
 -- гэдгийг «буруу»-гаас ялгаж хэлэх нь чухал — эс тэгвэл сурагч зөв
@@ -547,7 +560,7 @@ stable
 security definer
 set search_path = public
 as $cl$
-  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', name)
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', name, 'task', task)
                             order by sort, id), '[]'::jsonb)
   from public.classes;
 $cl$;
@@ -559,6 +572,11 @@ $cl$;
 -- болсныг мэднэ.
 -- Ангигүй үлдвэл (эсвэл нэр хоосон) мөрийг УСТГАНА — «Бусад»-ын нэр
 -- серверт үлдэх ёсгүй.
+-- Параметр нэмэгдсэн тул хуучин гарын үсгийг УНАГААНА — эс тэгвэл хоёр
+-- функц зэрэгцэж, PostgREST аль нь гэдгийг ялгаж чадахгүй (ping-д ч ийм
+-- байсан). `p_exam` нь default-тай тул кэшлэгдсэн ХУУЧИН клиент тасрахгүй.
+drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int);
+
 create or replace function public.member_put(
   p_member  text,
   p_name    text,
@@ -567,7 +585,8 @@ create or replace function public.member_put(
   p_learned int default 0,
   p_today   int default 0,
   p_streak  int default 0,
-  p_day     int default null)
+  p_day     int default null,
+  p_exam    jsonb default null)
 returns jsonb
 language plpgsql
 security definer
@@ -580,6 +599,7 @@ declare
   st  text;
   nm  text   := left(btrim(coalesce(p_name, '')), 40);
   cap int;
+  ex  jsonb  := null;                   -- null = хуучин клиент, байгааг хадгална
 begin
   if p_member is null or length(p_member) not between 8 and 64 then
     return jsonb_build_object('error', 'bad member');
@@ -608,20 +628,36 @@ begin
     return res;
   end if;
 
+  -- Шалгалтын хариултыг ЦЭВЭРЛЭЖ хадгална: 200 хүртэл түлхүүр, id-ийн
+  -- хэлбэр, [өдөр, 0/1, хичээл] — бүгд хязгаарлагдсан бүхэл тоо.
+  -- Анон түлхүүрээр дуудагддаг тул хорлонтой ачааллыг ЭНД зогсооно;
+  -- `class_roster` энэ өгөгдөл дээр төрөл хөрвүүлдэг.
+  if jsonb_typeof(p_exam) = 'object' then
+    select coalesce(jsonb_object_agg(e.key, jsonb_build_array(
+             least(greatest(public.jnum(e.value -> 0), 0), 100000)::int,
+             case when public.jnum(e.value -> 1) > 0 then 1 else 0 end,
+             least(greatest(public.jnum(e.value -> 2), 0), 100)::int)), '{}'::jsonb)
+      into ex
+      from (select * from jsonb_each(p_exam) limit 200) e
+     where e.key ~ '^[A-Za-z0-9_-]{1,16}$' and jsonb_typeof(e.value) = 'array';
+  end if;
+
   insert into public.members as m
-    (member, name, classes, seen, learned, today, streak, day)
+    (member, name, classes, seen, learned, today, streak, day, exam)
   values
     (p_member, nm, ok,
      least(greatest(coalesce(p_seen,    0), 0), 1000000),
      least(greatest(coalesce(p_learned, 0), 0), 1000000),
      least(greatest(coalesce(p_today,   0), 0), 100000),
      least(greatest(coalesce(p_streak,  0), 0), 100000),
-     p_day)
+     p_day, coalesce(ex, '{}'::jsonb))
   on conflict (member) do update
     set name = excluded.name, classes = excluded.classes,
         seen = excluded.seen, learned = excluded.learned,
         today = excluded.today, streak = excluded.streak,
-        day = excluded.day, updated_at = now();
+        day = excluded.day, updated_at = now(),
+        -- `p_exam` илгээгээгүй (хуучин клиент) бол байгааг ДАРЖ БИЧИХГҮЙ.
+        exam = coalesce(ex, m.exam);
   return res;
 end;
 $mp$;
@@ -639,19 +675,47 @@ security definer
 set search_path = public
 as $cr$
 declare
-  st text := public.class_join(p_class, p_code);
+  st    text := public.class_join(p_class, p_code);
+  tk    jsonb;
+  les   int[] := '{}';
+  since date  := '1970-01-01';
 begin
   if st <> 'ok' then
     return jsonb_build_object('status', st);
   end if;
+  select task into tk from public.classes where id = p_class;
+  if jsonb_typeof(tk) = 'object' then
+    if jsonb_typeof(tk -> 'lessons') = 'array' then
+      les := array(select public.jnum(x)::int from jsonb_array_elements(tk -> 'lessons') x);
+    end if;
+    if coalesce(tk ->> 'since', '') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
+      since := (tk ->> 'since')::date;
+    end if;
+  else
+    tk := null;
+  end if;
+  -- `task_n` — даалгаврын хичээлээс `since`-ээс хойш хариулсан ӨӨР асуулт;
+  -- `task_ok` — тэдгээрийн «чадсан». Түүхий хариулт БУЦАХГҮЙ.
+  -- `day` нь клиентийн өдрийн дугаар (1970-01-01-ээс хойш) тул огноо
+  -- болгож `since`-тэй тулгана.
   return jsonb_build_object(
     'status', 'ok',
     'name', (select name from public.classes where id = p_class),
+    'task', tk,
     'rows', (
       select coalesce(jsonb_agg(jsonb_build_object(
                'name', m.name, 'seen', m.seen, 'learned', m.learned,
                'today', m.today, 'streak', m.streak, 'day', m.day,
-               'me', m.member = p_member)
+               'me', m.member = p_member,
+               'task_n', case when tk is null then null else (
+                 select count(*) from jsonb_each(m.exam) e
+                  where public.jnum(e.value -> 2)::int = any(les)
+                    and ('1970-01-01'::date + public.jnum(e.value -> 0)::int) >= since) end,
+               'task_ok', case when tk is null then null else (
+                 select count(*) from jsonb_each(m.exam) e
+                  where public.jnum(e.value -> 2)::int = any(les)
+                    and ('1970-01-01'::date + public.jnum(e.value -> 0)::int) >= since
+                    and public.jnum(e.value -> 1) > 0) end)
              order by m.learned desc, m.seen desc, m.name), '[]'::jsonb)
       from public.members m
       where p_class = any(m.classes)
@@ -661,9 +725,9 @@ $cr$;
 
 revoke all on function public.class_join(text, text)  from public;
 revoke all on function public.class_list()            from public;
-revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int) from public;
+revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb) from public;
 revoke all on function public.class_roster(text, text, text) from public;
 grant execute on function public.class_join(text, text)  to anon;
 grant execute on function public.class_list()            to anon;
-grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int) to anon;
+grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb) to anon;
 grant execute on function public.class_roster(text, text, text) to anon;
