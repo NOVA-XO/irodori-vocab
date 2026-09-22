@@ -1843,6 +1843,13 @@ function refreshStats() {
   tabs.querySelectorAll('button').forEach(b =>
     b.onclick = () => { statTab = b.dataset.s; refreshStats(); });
   tabs.hidden = !live.length;
+  /* Юу ч эхлээгүй бол тайлбар, «Дэлгэрэнгүй» гарчиг хоёрыг нуух:
+     хоосон дэлгэц дээр гурван догол мөр тайлбар нь дэмий, харин
+     агуулгагүй гарчиг нь эвдэрсэн юм шиг харагдана. */
+  for (const id of ['st-h-sec', 'st-help1', 'st-help2', 'st-h-det']) {
+    const el = $(id);
+    if (el) el.hidden = !live.length;
+  }
 
   $('stat-lessons').innerHTML = statTab ? statDetail(statTab) : '';
 }
@@ -1977,7 +1984,8 @@ if ($('btn-sfx')) {
 $('scrim').onclick = dismissDrawer;
 addEventListener('keydown',
   e => { if (e.key === 'Escape' && drawerOpen()) dismissDrawer(); });
-$('btn-profile').onclick = () => go('profile');
+/* Толгойн мөрөнд профайлын товч БАЙХГҮЙ — «Тохиргоо» нь хажуугийн
+   шургуулгад байдаг тул давхардал байв. */
 /* Гарчиг дархад нүүр рүү. Толгойн мөр бүх дэлгэц дээр байдаг тул энэ нь
    хамгийн богино зам — цэс нээх шаардлагагүй. */
 $('btn-home').onclick = () => go('home');

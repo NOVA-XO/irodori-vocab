@@ -688,6 +688,21 @@ async function run(c) {
 
   /* ふりがな — ханзан дээрх жижиг кана. Уншлагын хосыг `build_exam.py`
      үүсгэж шалгасан; энд шалгах нь ХӨТӨЧ дээрх үр дүн. */
+  console.log('\n[18] Толгойн мөр — давхардалгүй');
+  const bar = await c.ev(`
+    return { buttons: [...document.querySelectorAll('.bar > button')].map(b => b.id),
+             profileBtn: !!document.getElementById('btn-profile'),
+             inDrawer: [...document.querySelectorAll('#menu button[data-go]')]
+                         .some(b => b.dataset.go === 'profile') };
+  `);
+  ok('толгойд яг гурван удирдлага (☰ · гарчиг · ◐)',
+    bar && JSON.stringify(bar.buttons) === '["btn-menu","btn-home","btn-scheme"]',
+    JSON.stringify(bar));
+  ok('профайлын товч УСТСАН',
+    bar && bar.profileBtn === false, JSON.stringify(bar));
+  ok('Тохиргоо нь шургуулганд бий',
+    bar && bar.inDrawer === true, JSON.stringify(bar));
+
   console.log('\n[17] Слайд товч ба номын ふりがな');
   /* Тодруулга нь JS-ээр зөөгддөггүй — `:has()`-аар `aria-pressed`-ээс
      дагадаг. Тиймээс CSS-ийг уншиж таамаглахгүй, БОДИТ байрлалыг
@@ -797,7 +812,9 @@ async function run(c) {
       cards: document.querySelectorAll('#stat-sum div').length,
       sumText: document.getElementById('stat-sum').textContent,
       sections: document.getElementById('stat-sections').textContent,
-      tabsHidden: document.getElementById('seg-stat').hidden
+      tabsHidden: document.getElementById('seg-stat').hidden,
+      helpHidden: ['st-h-sec', 'st-help1', 'st-help2', 'st-h-det']
+                    .every(id => document.getElementById(id).hidden)
     };
     /* Нэг үг үзсэн болгоё. */
     progress = { [ALL[0].id]: { n: 1, c: 1, b: 1, d: today() } };
@@ -818,6 +835,8 @@ async function run(c) {
     sv && /Эхний дасгалаа/.test(sv.empty.sections), JSON.stringify(sv.empty));
   ok('юу ч үзээгүй бол таб нуугдана',
     sv && sv.empty.tabsHidden === true, JSON.stringify(sv.empty));
+  ok('юу ч үзээгүй бол тайлбар ба гарчиг нуугдана',
+    sv && sv.empty.helpHidden === true, JSON.stringify(sv.empty));
   ok('нэг үг үзэхэд ЗӨВХӨН нэг хэсэг гарна',
     sv && sv.one.sections === 1 && sv.one.tabs === 1, JSON.stringify(sv.one));
   ok('дэлгэрэнгүйд зөвхөн эхэлсэн хичээл',
