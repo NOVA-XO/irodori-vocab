@@ -256,36 +256,60 @@ function saveProgress() {
 
 const KEY_D = 'irodori.days.v1';
 let progress = load(KEY_P, {});          // доор `cleanProgress`-оор шүүнэ
-/* Өдөр бүрийн ДУУССАН КАРТЫН тоо ба дараалсан өдрийн тоо. Явц (хайрцаг)
-   удаан хөдөлдөг тул ӨДӨР ТУТМЫН биелэлтийг тусад нь харуулах хэрэгтэй. */
-let days = load(KEY_D, { last: -1, streak: 0, n: 0 });
+/* Өдөр тутмын биелэлт. Явц (хайрцаг) удаан хөдөлдөг тул үүнийг тусад
+   нь харуулах хэрэгтэй.
+
+   `ids` — ӨНӨӨДӨР судалсан үгийн id-ууд. Тоог ЭНДЭЭС гаргана: нэг үг
+   өдөрт НЭГ л удаа тоологдоно. Зөвхөн тоологч байсан үед ижил үгийг
+   дахин судлахад дахин нэмэгддэг байв («40/20»). */
+let days = load(KEY_D, { last: -1, streak: 0, n: 0, ids: [] });
 const todayN = () => (days.last === today() ? days.n : 0);
 const streakN = () => {
   const t = today();
   return (days.last === t || days.last === t - 1) ? (days.streak || 0) : 0;
 };
 
-/** Өдрийн бүртгэл. `counts` нь зорилтын тоог нэмэх эсэхийг заана.
+/** Өдрийн бүртгэл. `id` нь судалсан үг, `counts` нь тоололд орох эсэх.
  *
  *  ХОЁР ӨӨР зүйлийг тусад нь бүртгэнэ:
  *
  *    · ЦУВРАЛ (streak) — «өнөөдөр давтсан уу». Хариулт бүрд шалгана:
  *      бүгдийг буруу хариулсан ч тухайн өдөр давтсанд тооцогдоно.
- *    · ЗОРИЛТ (`n`) — ДУУССАН КАРТЫН тоо, хариултын тоо БИШ.
+ *    · ЗОРИЛТ (`n`) — өнөөдөр судалсан ӨӨР ӨӨР ҮГИЙН тоо.
  *
- *  Урьд нь `n` нь хариулт бүрд өсдөг байв. Алдсан карт мөчлөгийн
- *  төгсгөлд эргэж ирж ДАХИН бүртгэгддэг тул 20 картын нэг дасгал
- *  «109/20» гэж гардаг байсан (хэрэглэгч мэдээлсэн). Энэ нь §2.51-д
- *  дасгалын тоолуур дээр зассан алдаатай ИЖИЛ — тэнд зассан ч энэ
- *  тоолуур хэвээр үлдсэн байв. */
-function tickDay(counts) {
+ *  Хоёр удаа хэт тоолж байсан. Эхлээд `n` нь ХАРИУЛТ бүрд өсдөг байв
+ *  (алдсан карт мөчлөгт эргэж ирдэг тул «109/20»). Дараа нь ДУУССАН
+ *  КАРТ-аар тоолсон ч ижил үгийг дахин судлахад дахин нэмэгдсэн
+ *  («40/20»). Одоо id-г цуглуулж ДАВХАРДАЛГҮЙ тоолно. */
+function tickDay(id, counts) {
   const t = today();
   if (days.last !== t) {
     // Өчигдөр давтсан бол цуврал үргэлжилнэ, тасарсан бол 1-ээс эхэлнэ.
     days.streak = (days.last === t - 1) ? (days.streak || 0) + 1 : 1;
-    days.last = t; days.n = 0;
+    days.last = t; days.ids = [];
   }
-  if (counts) days.n++;
+  if (!Array.isArray(days.ids)) days.ids = [];
+  if (counts && id && days.ids.indexOf(id) < 0) days.ids.push(id);
+  days.n = days.ids.length;
+  save(KEY_D, days);
+}
+
+/** Хуучин хэлбэрээс шилжих: `ids` байхгүй бол ӨНӨӨДӨР судалсан үгсийг
+ *  `progress`-оос сэргээнэ.
+ *
+ *  `grade()` нь `p.d = today() + BOXES[p.b]` гэж бичдэг тул
+ *  `p.d - BOXES[p.b] === today()` нь тухайн үгийг ӨНӨӨДӨР судалсныг
+ *  ЯГ заана — `d` ба `b` хоёр ҮРГЭЛЖ хамт бичигддэг тул хуурамч
+ *  тохироо гарахгүй. Ингэснээр шилжилт нь өнөөдрийн бодит ажлыг
+ *  хаялгүй, зөвхөн ДАВХАРДЛЫГ л арилгана. */
+function recoverDayIds() {
+  if (Array.isArray(days.ids)) return;
+  const t = today();
+  days.ids = days.last !== t ? [] : Object.keys(progress).filter(id => {
+    const p = progress[id];
+    return p && (p.d - BOXES[p.b]) === t;
+  });
+  days.n = days.ids.length;
   save(KEY_D, days);
 }
 const SCRIPTS = ['kana', 'ruby', 'kanji'];
@@ -533,6 +557,7 @@ function cleanProgress(v) {
    хоёрын ДАРАА байх ёстой — тэдгээр нь `const` (TDZ). */
 progress = cleanProgress(progress);
 settings = cleanSettings(settings);
+recoverDayIds();          // `progress` цэвэрлэгдсэний ДАРАА — түүнээс уншина
 
 function grade(id, ok) {
   const p = progress[id] || { b: 0, d: 0, n: 0, c: 0, w: 0 };
@@ -543,8 +568,9 @@ function grade(id, ok) {
   progress[id] = p;
   saveProgress();
   // Зөв хариулсан үед л карт мөчлөгөөс ГАРНА — `resolve()` дэх `done`-той
-  // ЯГ ижил дүрэм. Тиймээс өдрийн зорилт нь дасгалын тоолуурыг дагана.
-  tickDay(ok);
+  // ЯГ ижил дүрэм. `id` нь давхардлыг таслана: ижил үгийг өдөрт хоёр
+  // удаа судалсан ч зорилт НЭГ л удаа нэмэгдэнэ.
+  tickDay(id, ok);
 }
 
 /* Өөр ТАБ бичсэн бол санах ойгоо шинэчилнэ. `storage` нь ЗӨВХӨН бусад
@@ -555,8 +581,17 @@ window.addEventListener('storage', e => {
     progress = mergeProgress(load(KEY_P, {}), progress);
     if (screen !== 'study') { refreshHome(); refreshStats(); }
   } else if (e.key === KEY_D) {
+    // Нэгтгэхдээ НЭГДЭЛ (union) авна: хоёр таб өөр өөр үг судалсан бол
+    // хоёулаа тоологдох ёстой. Зөвхөн «том тоог нь ав» гэвэл нөгөө
+    // табын үгс алга болно.
     const d = load(KEY_D, days);
-    if (d && d.last === days.last && (d.n || 0) > (days.n || 0)) days = d;
+    if (d && d.last === days.last) {
+      const mine = Array.isArray(days.ids) ? days.ids : [];
+      const his = Array.isArray(d.ids) ? d.ids : [];
+      days.ids = mine.concat(his.filter(x => mine.indexOf(x) < 0));
+      days.n = days.ids.length;
+      days.streak = Math.max(days.streak || 0, d.streak || 0);
+    }
   }
 });
 
@@ -1546,7 +1581,7 @@ function finish() {
   $('fin-sum').textContent = '✓ ' + okN + '   ✗ ' + ngN;
   const left = settings.goal - todayN();
   $('fin-goal').textContent = left > 0
-    ? 'Өнөөдрийн зорилт хүртэл ' + left + ' карт үлдлээ (' + todayN() + '/' + settings.goal + ').'
+    ? 'Өнөөдрийн зорилт хүртэл ' + left + ' үг үлдлээ (' + todayN() + '/' + settings.goal + ').'
     : 'Өнөөдрийн зорилт биеллээ 🎉 (' + todayN() + '/' + settings.goal + ')';
 
   const box = $('fin-missed'); box.innerHTML = '';
@@ -2685,7 +2720,7 @@ $('btn-reset').onclick = async () => {
   progress = {};
   progGen++;                            // нислэгт байгаа синкийг хүчингүй болгоно
   save(KEY_P, progress);
-  days = { last: -1, streak: 0, n: 0 };
+  days = { last: -1, streak: 0, n: 0, ids: [] };
   save(KEY_D, days);
   delete settings.last;                 // «Үргэлжлүүлэх» товч алга болно
   save(KEY_S, settings);

@@ -791,7 +791,7 @@ async function run(c) {
   ok('алдаа гаргасан ч зөв/буруу тоо хэвээр бүртгэгдэнэ',
     cn && cn.okN === 5 && cn.ngN === 4, JSON.stringify(cn));
 
-  console.log('\n[26] Өдрийн зорилт — ХАРИУЛТ биш КАРТ тоолно');
+  console.log('\n[26] Өдрийн зорилт — нэг үгийг НЭГ л удаа тоолно');
   /* Хэрэглэгч мэдээлсэн: 20 үгийн НЭГ дасгал хийхэд зорилт «109/20»
      гэж гарсан. `tickDay()` нь `grade()` дотор байсан тул хариулт
      бүрд өсдөг байв — алдсан карт мөчлөгт эргэж ирээд ДАХИН
@@ -843,6 +843,46 @@ async function run(c) {
     }
     out.answers = answers; out.goal = todayN(); out.done = done;
 
+    // ── (4) ЯГ ижил 20 үгийг ДАХИН судална -> зорилт 20 хэвээр
+    queue = ALL.slice(0, 20); missed = []; done = okN = ngN = 0;
+    enterStudy();
+    await new Promise(r => setTimeout(r, 300));
+    for (let i = 0; i < 20; i++) {
+      answered = false; resolve(true);
+      nextCard();
+      await new Promise(r => setTimeout(r, 20));
+    }
+    out.goalAfterRepeat = todayN();
+
+    // ── (5) ӨӨР 20 үг судалбал зорилт 40 болно (давхардал биш)
+    queue = ALL.slice(20, 40); missed = []; done = okN = ngN = 0;
+    enterStudy();
+    await new Promise(r => setTimeout(r, 300));
+    for (let i = 0; i < 20; i++) {
+      answered = false; resolve(true);
+      nextCard();
+      await new Promise(r => setTimeout(r, 20));
+    }
+    out.goalAfterFresh = todayN();
+
+    // ── (6) ХУУЧИН хэлбэрээс шилжих: ids байхгүй бол progress-оос сэргээнэ.
+    //    grade() нь d = today() + BOXES[b] гэж бичдэг тул
+    //    d - BOXES[b] === today() нь ӨНӨӨДӨР судалсныг ЯГ заана.
+    progress = {};
+    for (const it of ALL.slice(0, 7)) {
+      progress[it.id] = { n:1, c:1, w:0, b:2, d: today() + BOXES[2] };
+    }
+    // ӨЧИГДӨР судалсан үг — тоололд ОРОХ ЁСГҮЙ
+    progress[ALL[50].id] = { n:1, c:1, w:0, b:2, d: today() - 1 + BOXES[2] };
+    days = { last: today(), streak: 3, n: 40 };     // хуучин хэлбэр, ХЭТЭРСЭН
+    recoverDayIds();
+    out.migGoal = todayN(); out.migStreak = streakN();
+
+    // ── (7) Өчигдрийн хуучин бичлэг — өнөөдрийн тоо 0-ээс эхэлнэ
+    days = { last: today() - 1, streak: 3, n: 40 };
+    recoverDayIds();
+    out.migOld = todayN();
+
     days = keepDays; progress = keepProg; settings.sfx = keepSfx;
     show('home'); go('home');
     return out;
@@ -853,10 +893,20 @@ async function run(c) {
     dc && dc.afterRight === 1, JSON.stringify(dc));
   ok('буруу хариулсан ч ЦУВРАЛ эхэлнэ',
     dc && dc.streakOnWrong === 1 && dc.goalOnWrong === 0, JSON.stringify(dc));
-  ok('20 картын дасгал 25 хариулттай ч зорилт ЯГ 20',
+  ok('20 үгийн дасгал 25 хариулттай ч зорилт ЯГ 20',
     dc && dc.answers === 25 && dc.goal === 20, JSON.stringify(dc));
   ok('өдрийн зорилт нь дасгалын тоолууртай ТААРНА',
     dc && dc.goal === dc.done, JSON.stringify(dc));
+  ok('ИЖИЛ 20 үгийг дахин судалбал зорилт 20 ХЭВЭЭР',
+    dc && dc.goalAfterRepeat === 20, JSON.stringify(dc));
+  ok('ӨӨР 20 үг судалбал зорилт 40 болно',
+    dc && dc.goalAfterFresh === 40, JSON.stringify(dc));
+  ok('шилжилт: хэтэрсэн 40 нь бодит 7 болж ЗАСАГДАНА',
+    dc && dc.migGoal === 7, JSON.stringify(dc));
+  ok('шилжилт: ЦУВРАЛ хэвээр үлдэнэ',
+    dc && dc.migStreak === 3, JSON.stringify(dc));
+  ok('шилжилт: өчигдрийн бичлэгээс өнөөдрийн тоо 0',
+    dc && dc.migOld === 0, JSON.stringify(dc));
 
   console.log('\n[25] Дүгнэлтийн гол товч — «Дараагийн хэсэг» уу «Дахин эхлүүлэх» үү');
   /* «Дахин үзэх» гэсэн шошго ХУДАЛ байв: тэр товч нь ижил 20 үгийг биш,
