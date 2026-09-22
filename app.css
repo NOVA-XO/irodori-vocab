@@ -200,6 +200,73 @@ body{
   #scrim,.drawer{transition:none}
 }
 
+/* ── Тохиргооны мөр ───────────────────────────────────────────────
+   Дизайн: Astra (хэрэглэгчийн өгсөн iOS/Android маягийн лавлагаагаар).
+   Бүлгийн гарчиг нь картны ГАДНА, мөр тус бүр өөрийн карт, зүүнд икон,
+   баруунд унтраалга эсвэл жижиг товч.
+
+   Astra-гийн `.set > button:not(.sw)` дүрмийг ХАСАВ — тэр нь аппын
+   `.ghost` товчийг дарж бичдэг тул нэг дэлгэц дээр хоёр өөр товчны
+   загвар үүсэх байсан. */
+.set{
+  display:flex; align-items:center; gap:14px;
+  min-height:60px; padding:14px 16px;
+  border:1px solid var(--line); border-radius:var(--box-r);
+  background:var(--card); color:var(--ink); font-family:var(--ui);
+}
+.set + .set{margin-top:8px}
+/* Гарчиг нь хуудасны дэвсгэр дээр — картны дотор БИШ. */
+h2:has(+ .set){
+  margin:26px 4px 8px; padding:0; border:0; background:none;
+  color:var(--ink-3); font:500 12.5px/1.4 var(--ui);
+}
+.set > .set-i{
+  display:grid; place-items:center; flex:none;
+  width:34px; height:34px; border-radius:10px;
+  background:color-mix(in srgb, var(--accent) 12%, transparent);
+  color:var(--accent);
+}
+.set-i > svg{display:block; width:22px; height:22px}
+.set > .set-t{flex:1; min-width:0; overflow-wrap:anywhere}
+/* ШУУД хүүхдэд л — дэд шошго доторх `<b>` инлайн хэвээр байх ёстой. */
+.set-t > b{display:block; color:var(--ink); font-size:15px; font-weight:600;
+           line-height:1.35}
+.set-t > span{display:block; margin-top:2px; color:var(--ink-3);
+              font-size:12.5px; line-height:1.4}
+.set-t > span b{font-weight:600; color:var(--ink-2)}
+
+/* Өргөн удирдлага нь ТЕКСТИЙН баганын доор эгнэнэ (иконы доор биш). */
+.set-col{display:grid; grid-template-columns:34px minmax(0,1fr); gap:12px 14px}
+.set-col > .set-i{grid-area:1 / 1}
+.set-col > .set-t{grid-area:1 / 2}
+.set-col > :not(.set-i):not(.set-t){grid-column:2; min-width:0; justify-self:stretch}
+
+/* Унтраалга. Төлөвийг ЗӨВХӨН `aria-checked` удирдана. */
+.sw{
+  position:relative; flex:none; width:48px; height:28px; padding:3px;
+  border:0; border-radius:999px; background:var(--line-2);
+  transition:background-color .18s ease;
+}
+.sw > i{
+  display:block; width:22px; height:22px; border-radius:50%;
+  background:var(--card); transform:translateX(0); pointer-events:none;
+  transition:transform .18s ease, background-color .18s ease;
+}
+.sw[aria-checked="true"]{background:var(--accent)}
+.sw[aria-checked="true"] > i{background:#fff; transform:translateX(20px)}
+.sw:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+
+@media (max-width:359.98px){
+  .set{display:grid; grid-template-columns:34px minmax(0,1fr); gap:12px 14px}
+  .set > .set-i{grid-area:1 / 1}
+  .set > .set-t{grid-area:1 / 2}
+  .set > :not(.set-i):not(.set-t){grid-column:2; min-width:0; justify-self:stretch}
+  .set > .sw{justify-self:start}
+}
+@media (prefers-reduced-motion:reduce){
+  .sw,.sw > i{transition:none}
+}
+
 /* ── Слайд товч (хоёр сонголт) ─────────────────────────────────────
    Дизайн: Astra. Хоёр л сонголттой асуултад хоёр том карт + бүтэн
    өгүүлбэр тайлбар нь хэт хүнд. Оронд нь нэг жижиг зурвас, гүйдэг

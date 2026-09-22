@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22k">
-<link rel="stylesheet" href="app.css?v=2026-09-22k">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22n">
+<link rel="stylesheet" href="app.css?v=2026-09-22n">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22k">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22k">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22n">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22n">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -484,98 +484,122 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
 
 <!-- ═══════════════════ ПРОФАЙЛ ═══════════════════ -->
 <section id="profile" class="screen" hidden>
-  <h2>Япон бичиг</h2>
-  <p class="hint">Япон үг, өгүүлбэрийг юугаар харуулах вэ. Энэ сонголт
-     <b>апп даяар</b> үйлчилнэ — үгийн карт, шалгалт хоёуланд нь.</p>
-  <div class="seg" id="seg-script">
-    <button data-s="kana"><b class="jp">かな</b><span>Зөвхөн кана — ханз огт харагдахгүй</span></button>
-    <button data-s="ruby"><b class="jp">ふりがな</b><span>Ханз, дээр нь жижиг канаар уншлага</span></button>
-    <button data-s="kanji"><b class="jp">漢字</b><span>Цэвэр ханз — туслалцаагүй</span></button>
+
+  <h2>Дасгал</h2>
+
+  <div class="set set-col">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19.5 9 5l6 14.5"/><path d="M5.3 14.5h7.4"/><path d="M19.5 19.5V12"/><path d="M19.5 12a2.6 2.6 0 1 0-2.6 2.6"/></svg></span>
+    <div class="set-t"><b>Япон бичиг</b>
+      <span>Апп даяар. Картын урд талд ふりがな гарахгүй.</span></div>
+    <div class="seg" id="seg-script">
+      <button data-s="kana"><b class="jp">かな</b><span>Ханзгүй</span></button>
+      <button data-s="ruby"><b class="jp">ふりがな</b><span>Ханз + уншлага</span></button>
+      <button data-s="kanji"><b class="jp">漢字</b><span>Туслалцаагүй</span></button>
+    </div>
   </div>
-  <p class="hint">Үгийн картын <b>урд талд</b> ふりがな гарахгүй — уншлага нь
-     таах ёстой хариулт учраас. Ар тал нээгдэхэд харагдана.</p>
 
-  <h2>Хаяг · бүртгэл</h2>
+  <div class="set">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3l5-4v13l-5-4H4z"/><path d="M16.5 9a4.5 4.5 0 0 1 0 6"/><path d="M19 6.5a8 8 0 0 1 0 11"/></svg></span>
+    <div class="set-t"><b>Хариултын дуу</b>
+      <span>Буруу үед утас чичирнэ (Android)</span></div>
+    <button class="sw" id="btn-sfx" role="switch" aria-checked="true"
+            aria-label="Хариултын дуу"><i></i></button>
+  </div>
 
-  <div id="sync-box" hidden>
-    <p class="hint">Явц энэ төхөөрөмжид хадгалагдана. Утас, компьютер хоёрын
-      явцыг нийлүүлэхийг хүсвэл <b>нэг удаа код үүсгээд</b> нөгөө төхөөрөмж дээрээ
-      тэр кодоо оруулна. Код бол түлхүүр — <b>хэн нэгэнд битгий өг</b>.</p>
-    <div class="synccode" id="sync-code">—</div>
+  <div class="set set-col">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/></svg></span>
+    <div class="set-t"><b>Өдрийн зорилт</b><span>Өдөрт хэдэн хариулт</span></div>
+    <div class="row" id="goal-pick">
+      <button data-goal="10" class="ghost sm">10</button>
+      <button data-goal="20" class="ghost sm">20</button>
+      <button data-goal="30" class="ghost sm">30</button>
+      <button data-goal="50" class="ghost sm">50</button>
+    </div>
+  </div>
+
+  <h2>Явц</h2>
+
+  <div class="set set-col" id="sync-box" hidden>
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6"/><path d="M4 12a8 8 0 0 1 13.7-5.6"/><path d="M17.5 3.5v3.2h-3.2"/><path d="M6.5 20.5v-3.2h3.2"/></svg></span>
+    <div class="set-t"><b>Төхөөрөмж хооронд</b>
+      <span>Код үүсгээд нөгөө төхөөрөмж дээрээ оруулна. Код бол
+            түлхүүр — хэнд ч бүү өг.</span></div>
+    <div class="synccode" id="sync-code" hidden>—</div>
     <div class="row">
-      <button id="btn-sync-new" class="ghost sm">Шинэ код үүсгэх</button>
+      <button id="btn-sync-new" class="ghost sm">Шинэ код</button>
       <button id="btn-sync-link" class="ghost sm">Кодоор холбох</button>
-      <button id="btn-sync-now" class="ghost sm">Одоо нийлүүлэх</button>
-      <button id="btn-sync-off" class="ghost sm danger">Салгах</button>
+      <button id="btn-sync-now" class="ghost sm" hidden>Нийлүүлэх</button>
+      <button id="btn-sync-off" class="ghost sm danger" hidden>Салгах</button>
     </div>
     <div id="sync-state" class="hint"></div>
   </div>
-  <p class="hint" id="sync-none" hidden>Синк тохируулаагүй байна — явц зөвхөн
-     энэ төхөөрөмжид хадгалагдана. Доорх нөөцлөх аргаар зөөж болно.</p>
-
-  <h2>Хариултын дуу</h2>
-  <p class="hint">Зөв хариулбал дээшлэх хоёр нот, буруу бол бүдүүн дуу
-     гарна. Буруу үед утас бас <b>чичирнэ</b> (Android; iPhone-д
-     хөтөч нь чичиргээг дэмждэггүй тул зөвхөн дуу гарна).
-     Нийтийн газарт дасгал хийхэд саад болбол унтраа.</p>
-  <div class="row">
-    <button id="btn-sfx" class="ghost sm">…</button>
+  <div class="set" id="sync-none" hidden>
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.7 5.6"/><path d="M4 12a8 8 0 0 1 13.7-5.6"/><path d="M17.5 3.5v3.2h-3.2"/><path d="M6.5 20.5v-3.2h3.2"/></svg></span>
+    <div class="set-t"><b>Төхөөрөмж хооронд</b>
+      <span>Тохируулаагүй — явц зөвхөн энэ төхөөрөмжид</span></div>
   </div>
 
-  <h2>Өдрийн зорилт</h2>
-  <p class="hint">Өдөрт хэдэн хариулт өгөхөөр төлөвлөж байна вэ. Нүүрэн дээрх
-     зураас үүнээс хамаарна.</p>
-  <div class="row" id="goal-pick">
-    <button data-goal="10" class="ghost sm">10</button>
-    <button data-goal="20" class="ghost sm">20</button>
-    <button data-goal="30" class="ghost sm">30</button>
-    <button data-goal="50" class="ghost sm">50</button>
+  <div class="set set-col">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v10"/><path d="M8 10.5l4 4 4-4"/><path d="M4.5 18.5h15"/></svg></span>
+    <div class="set-t"><b>Нөөц</b>
+      <span>Файлаар хадгалж, өөр төхөөрөмж рүү зөөнө</span></div>
+    <div class="row">
+      <button id="btn-export" class="ghost sm">Хадгалах (.json)</button>
+      <button id="btn-import" class="ghost sm">Сэргээх</button>
+      <button id="btn-reset" class="ghost sm danger">Явцыг устгах</button>
+    </div>
+    <div id="reset-state" class="hint"></div>
+    <input type="file" id="file-import" accept="application/json" hidden>
   </div>
 
-  <h2>Нөөц</h2>
-  <div class="row">
-    <button id="btn-export" class="ghost sm">Явцыг хадгалах (.json)</button>
-    <button id="btn-import" class="ghost sm">Сэргээх</button>
-    <button id="btn-reset" class="ghost sm danger">Явцыг устгах</button>
+  <h2>Дуу ба офлайн</h2>
+
+  <div class="set set-col">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="17.5" r="2.6"/><circle cx="17.5" cy="15.5" r="2.6"/><path d="M9.6 17.5V7l10.5-2v10.5"/></svg></span>
+    <div class="set-t"><b>Дуудлагын бичлэг</b><span id="audio-info"></span></div>
+    <div class="row">
+      <button id="btn-offline" class="ghost sm">Офлайнд татах</button>
+      <button id="btn-diag" class="ghost sm">🔊 Шалгах</button>
+    </div>
+    <div id="dl-state" class="hint"></div>
+    <pre id="diag" class="diag" hidden></pre>
   </div>
-  <div id="reset-state" class="hint"></div>
-  <input type="file" id="file-import" accept="application/json" hidden>
 
-  <h2>Дуу</h2>
-  <p class="hint" id="audio-info"></p>
-  <div class="row">
-    <button id="btn-offline" class="ghost sm">Бүх дууг офлайнд татах</button>
-    <button id="btn-diag" class="ghost sm">🔊 Дууг шалгах</button>
+  <div class="set">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18.5h9.5a3.5 3.5 0 0 0 .3-7A5.5 5.5 0 0 0 6.6 12 3.3 3.3 0 0 0 7 18.5z"/></svg></span>
+    <div class="set-t"><b>Офлайн горим</b><span id="sw-state">Шалгаж байна…</span></div>
   </div>
-  <div id="dl-state" class="hint"></div>
-  <pre id="diag" class="diag" hidden></pre>
 
-  <h2>Хэрэглээ</h2>
-  <div id="use-stat" class="statsum"></div>
-  <p class="hint" id="use-note">Ачаалж байна…</p>
+  <div class="set">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12a8.5 8.5 0 1 1-2.5-6"/><path d="M20.5 4.5V10h-5.5"/></svg></span>
+    <div class="set-t"><b>Хувилбар</b><span><b id="app-ver">—</b></span></div>
+    <button id="btn-reload" class="ghost sm">Шинэчлэх</button>
+  </div>
 
-  <h2>Офлайн</h2>
-  <p class="hint" id="sw-state">Шалгаж байна…</p>
+  <h2>Аппын талаар</h2>
 
-  <h2>Хувилбар</h2>
-  <p class="hint">Апп шинэчлэгдээгүй мэт санагдвал энд дарж кэшийг тойрч
-     дахин ачаална. Хувилбар: <b id="app-ver">—</b></p>
-  <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
+  <div class="set set-col">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg></span>
+    <div class="set-t"><b>Хэрэглээ</b></div>
+    <div id="use-stat" class="statsum"></div>
+    <div class="hint" id="use-note">Ачаалж байна…</div>
+  </div>
 
-  <!-- ЛИЦЕНЗИЙН ШААРДЛАГАТАЙ кредит. Нүүрнээс зөөсөн (тэнд хэт их
-       текст болж байсан) ГЭХДЭЭ устгаж БОЛОХГҮЙ: VOICEVOX-ийн лиценз
-       «VOICEVOX:四国めたん» гэсэн бичгийг шаарддаг, Irodori нь
+  <!-- ЛИЦЕНЗИЙН ШААРДЛАГАТАЙ кредит — устгаж БОЛОХГҮЙ: VOICEVOX-ийн
+       лиценз «VOICEVOX:四国めたん» гэсэн бичгийг шаарддаг, Irodori нь
        The Japan Foundation-ы эрхтэй бүтээл. -->
-  <h2>Эх сурвалж · зохиогчийн эрх</h2>
-  <p class="src"><b>Мартчихлаа</b> — мартахаас нь өмнө дахин асууна.
-     <span class="jp">Irodori</span> ба JLPT-ийн шинэ үг, ханз.<br>
-     Эх сурвалж: <b>Irodori 入門 ことばリスト</b> (монгол орчуулга) — The Japan&nbsp;Foundation.
-     Энэ апп нь зөвхөн хувийн давталтад зориулагдсан.<br>
-     Дуудлага: <b>VOICEVOX:<span class="jp">四国めたん</span></b><br>
-     Фонт: <b>Noto Sans JP</b> · <b>Noto Sans Mono</b> — SIL OFL 1.1.</p>
+  <div class="set set-col">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><path d="M12 7.7v.01"/></svg></span>
+    <div class="set-t"><b>Эх сурвалж · зохиогчийн эрх</b></div>
+    <p class="src"><b>Irodori 入門 ことばリスト</b> (монгол орчуулга) —
+       The Japan&nbsp;Foundation. Энэ апп нь зөвхөн хувийн давталтад.<br>
+       Дуудлага: <b>VOICEVOX:<span class="jp">四国めたん</span></b><br>
+       Ханзны утга: <b>KANJIDIC2</b> (EDRDG) — CC BY-SA 4.0<br>
+       Фонт: <b>Noto Sans JP</b> · <b>Noto Sans Mono</b> — SIL OFL 1.1</p>
+  </div>
 </section>
 
-<script src="sync-config.js?v=2026-09-22k"></script>
-<script src="app.js?v=2026-09-22k"></script>
+<script src="sync-config.js?v=2026-09-22n"></script>
+<script src="app.js?v=2026-09-22n"></script>
 </body>
 </html>

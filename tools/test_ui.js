@@ -994,22 +994,39 @@ async function run(c) {
   ok('дасгалд хариулахад дуу гарна (resolve-д холбогдсон)',
     flow && flow.afterResolve > 0, JSON.stringify(flow));
 
+  /* Товч нь одоо УНТРААЛГА. `aria-checked` нь зөвхөн атрибут — CSS
+     үнэхээр бөмбөлгийг гүйлгэж байгааг БАЙРЛАЛААР хэмжинэ. */
   const btn = await c.ev(`
+    go('profile');
+    await new Promise(r => setTimeout(r, 250));
     const b = document.getElementById('btn-sfx');
     if (!b) return null;
+    const knob = b.querySelector('i');
+    const dx = () => Math.round(knob.getBoundingClientRect().left
+                                - b.getBoundingClientRect().left);
     const was = settings.sfx;
     settings.sfx = 1; refreshSfx();
-    const on = b.textContent;
+    await new Promise(r => setTimeout(r, 250));
+    const on = { aria: b.getAttribute('aria-checked'), x: dx() };
     settings.sfx = 0; refreshSfx();
-    const off = b.textContent;
+    await new Promise(r => setTimeout(r, 250));
+    const off = { aria: b.getAttribute('aria-checked'), x: dx() };
     settings.sfx = was; refreshSfx();
-    return { on: on, off: off, def: cleanSettings({}).sfx };
+    return { on: on, off: off, def: cleanSettings({}).sfx,
+             role: b.getAttribute('role'),
+             icons: document.querySelectorAll('#profile .set-i svg').length,
+             cards: document.querySelectorAll('#profile .set').length };
   `);
-  ok('тохиргооны товч байна', !!btn, JSON.stringify(btn));
-  ok('товчны бичиг төлөвөө харуулна',
-    btn && /асаалттай/.test(btn.on) && /унтраалттай/.test(btn.off),
-    JSON.stringify(btn));
+  ok('унтраалга байна (role=switch)',
+    btn && btn.role === 'switch', JSON.stringify(btn));
+  ok('aria-checked төлөвөө дагана',
+    btn && btn.on.aria === 'true' && btn.off.aria === 'false', JSON.stringify(btn));
+  ok('бөмбөлөг ҮНЭХЭЭР гүйнэ',
+    btn && btn.on.x > btn.off.x + 10, JSON.stringify(btn));
   ok('анхдагчаар АСААЛТТАЙ', btn && btn.def === 1, JSON.stringify(btn));
+  ok('тохиргооны мөр бүр иконтой',
+    btn && btn.icons === btn.cards, JSON.stringify(btn));
+  await c.ev('go("home"); return 1;');
 
   console.log('\n[13] Нүүрний картууд давхцахгүй');
   /* «Санал хүсэлт» карт нь `.bigcards` торны ГАДНА байсан тул `gap`

@@ -631,8 +631,16 @@ function refreshSync() {
   box.hidden = !syncOn;
   const none = document.getElementById('sync-none');
   if (none) none.hidden = syncOn;
+  /* Кодгүй үед КОДЫН хайрцгийг нуух. Урьд нь «— холбогдоогүй —» гэсэн
+     ӨГҮҮЛБЭРИЙГ тэр хайрцагт бичдэг байсан — тэр нь 20px монспэйс,
+     өргөн зайтай, код харуулахаар зохиосон тул сонин харагддаг байв. */
   const el = document.getElementById('sync-code');
-  if (el) el.textContent = syncCode || '— холбогдоогүй —';
+  if (el) { el.hidden = !syncCode; el.textContent = syncCode || ''; }
+  /* Холбогдоогүй үед «Нийлүүлэх», «Салгах» хоёр нь утгагүй. */
+  for (const id of ['btn-sync-now', 'btn-sync-off']) {
+    const b = document.getElementById(id);
+    if (b) b.hidden = !syncCode;
+  }
 }
 
 /* ══════════════════════ 4. Өгөгдөл ══════════════════════ */
@@ -1969,8 +1977,9 @@ $('menu-close').onclick = dismissDrawer;
 /** Тохиргооны товчны бичиг. */
 function refreshSfx() {
   const b = $('btn-sfx');
-  if (b) b.textContent = settings.sfx
-    ? 'Хариултын дуу: асаалттай' : 'Хариултын дуу: унтраалттай';
+  /* Товч нь одоо УНТРААЛГА: төлөвийг `aria-checked` хэлнэ. CSS нь
+     түүнээс л гүйлгэдэг тул JS-д өөр ажил байхгүй. */
+  if (b) b.setAttribute('aria-checked', settings.sfx ? 'true' : 'false');
 }
 if ($('btn-sfx')) {
   $('btn-sfx').onclick = () => {
