@@ -200,6 +200,51 @@ body{
   #scrim,.drawer{transition:none}
 }
 
+/* ── Слайд товч (хоёр сонголт) ─────────────────────────────────────
+   Дизайн: Astra. Хоёр л сонголттой асуултад хоёр том карт + бүтэн
+   өгүүлбэр тайлбар нь хэт хүнд. Оронд нь нэг жижиг зурвас, гүйдэг
+   тодруулгатай.
+
+   Тодруулгыг JS-ЭЭР зөөхгүй — `:has()`-аар товчны `aria-pressed`-ээс
+   өөрөө дагана. Тиймээс JS-ийн одоогийн код (`aria-pressed` тавих)
+   хөндөгдөхгүй. */
+.pill{
+  position:relative; isolation:isolate;
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  width:100%; height:44px; padding:3px;
+  border:1px solid var(--line); border-radius:var(--r);
+  background:var(--card); font-family:var(--jps);
+}
+.pill-ind{
+  position:absolute; z-index:0; inset:3px auto 3px 3px;
+  width:calc((100% - 6px) / 2);
+  border-radius:calc(var(--r) - 4px);
+  background:var(--sel-bg); pointer-events:none;
+  transform:translateX(0); transition:transform .2s ease;
+}
+.pill:has(> button:last-child[aria-pressed="true"]) > .pill-ind{
+  transform:translateX(100%);
+}
+.pill > button{
+  position:relative; z-index:1;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  min-width:0; padding:0 10px;
+  border:0; border-radius:calc(var(--r) - 4px); background:transparent;
+  color:var(--ink-2); font:inherit; font-size:15px; line-height:1;
+}
+.pill > button[aria-pressed="true"]{color:var(--sel-fg); font-weight:600}
+.pill > button > i{
+  font-family:var(--ui); font-size:12px; font-style:normal;
+  font-weight:400; opacity:.6;
+}
+.pill > button:focus-visible{outline:2px solid var(--accent); outline-offset:-2px}
+@media (prefers-reduced-motion:reduce){ .pill-ind{transition:none} }
+
+/* Номын сонголт — зөвхөн япон бичиг, ханзан дээр уншлага.
+   Тайлбар, тоо хасагдсан тул карт нь өөрөө жижиг болно. */
+#seg-book button{padding:14px 12px; text-align:center}
+#seg-book b{font-family:var(--jps); font-size:22px; line-height:2.1}
+
 /* Нүүрний том сонголтууд — хайрцаггүй, зөвхөн хуваах шугам.
    Зүүн талын том япон үсэг нь мөрийн «толгой» болно. */
 .bigcards{display:grid; gap:var(--list-gap); border-top:var(--list-top)}

@@ -688,6 +688,54 @@ async function run(c) {
 
   /* ふりがな — ханзан дээрх жижиг кана. Уншлагын хосыг `build_exam.py`
      үүсгэж шалгасан; энд шалгах нь ХӨТӨЧ дээрх үр дүн. */
+  console.log('\n[17] Слайд товч ба номын ふりがな');
+  /* Тодруулга нь JS-ээр зөөгддөггүй — `:has()`-аар `aria-pressed`-ээс
+     дагадаг. Тиймээс CSS-ийг уншиж таамаглахгүй, БОДИТ байрлалыг
+     хэмжинэ: `:has()` ажиллахгүй бол тодруулга хөдлөхгүй. */
+  const pl = await c.ev(`
+    go('irodori');
+    await new Promise(r => setTimeout(r, 350));
+    const pos = () => {
+      const i = document.querySelector('#seg-dir .pill-ind');
+      const p = document.getElementById('seg-dir');
+      return Math.round(i.getBoundingClientRect().left
+                        - p.getBoundingClientRect().left);
+    };
+    settings.dir = 'jp2mn'; refreshHome();
+    await new Promise(r => setTimeout(r, 320));
+    const left = pos();
+    settings.dir = 'mn2jp'; refreshHome();
+    await new Promise(r => setTimeout(r, 320));
+    const right = pos();
+    settings.dir = 'jp2mn'; refreshHome();
+
+    const pillW = document.getElementById('seg-dir').getBoundingClientRect().width;
+    return {
+      left: left, right: right, pillW: Math.round(pillW),
+      pills: document.querySelectorAll('.pill').length,
+      inds: document.querySelectorAll('.pill .pill-ind').length,
+      twoEach: [...document.querySelectorAll('.pill')]
+                 .every(p => p.querySelectorAll('button').length === 2),
+      bookRt: document.querySelectorAll('#seg-book rt').length,
+      bookRuby: document.querySelectorAll('#seg-book ruby').length,
+      bookText: document.getElementById('seg-book').textContent.trim(),
+      kles: !!document.getElementById('n-kles')
+    };
+  `);
+  ok('слайд товч хоёр бий (юу давтах · чиглэл)',
+    pl && pl.pills === 2 && pl.inds === 2, JSON.stringify(pl));
+  ok('слайд бүр ЯГ хоёр сонголттой', pl && pl.twoEach === true, JSON.stringify(pl));
+  ok('тодруулга ҮНЭХЭЭР гүйнэ',
+    pl && pl.right > pl.left + 50, JSON.stringify(pl));
+  ok('тодруулга хагасаар гүйнэ',
+    pl && Math.abs((pl.right - pl.left) - pl.pillW / 2) < 8, JSON.stringify(pl));
+  ok('ном бүр ふりがな-тай (3 ruby)',
+    pl && pl.bookRuby === 3 && pl.bookRt === 3, JSON.stringify(pl));
+  ok('номын шошгоос УРТ тайлбар хасагдсан',
+    pl && !/Суурь шат|Анхан шат/.test(pl.bookText), JSON.stringify(pl));
+  ok('ханзны тоо (#n-kles) хэвээр бий', pl && pl.kles === true, JSON.stringify(pl));
+  await c.ev('go("home"); return 1;');
+
   console.log('\n[15] Утасны «буцах» товч');
   /* Түүхийг БОДИТООР ухраана (`history.back()`), зөвхөн функц дуудахгүй.
      Урьд нь буцах товч ямар ч гүнзгий байсан САЙТААС гаргадаг байв. */

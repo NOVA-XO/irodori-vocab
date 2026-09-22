@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22g">
-<link rel="stylesheet" href="app.css?v=2026-09-22g">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22h">
+<link rel="stylesheet" href="app.css?v=2026-09-22h">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22g">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22g">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22h">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22h">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -134,9 +134,9 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
        дэлгэцээс эхлүүлэхэд сугалах карт олдохгүй. -->
   <div class="step">一 · Ном</div>
   <div class="seg" id="seg-book">
-    <button data-b="starter"><b class="jp">入門</b><span>Суурь шат · A1 · 1232 үг</span></button>
-    <button data-b="el1"><b class="jp">初級1</b><span>Анхан шат 1 · A2 · 1192 үг</span></button>
-    <button data-b="el2"><b class="jp">初級2</b><span>Анхан шат 2 · A2 · 1786 үг</span></button>
+    <button data-b="starter"><b class="jp ruby"><ruby>入門<rt>にゅうもん</rt></ruby></b></button>
+    <button data-b="el1"><b class="jp ruby"><ruby>初級<rt>しょきゅう</rt></ruby>1</b></button>
+    <button data-b="el2"><b class="jp ruby"><ruby>初級<rt>しょきゅう</rt></ruby>2</b></button>
   </div>
 
   <div class="step">二 · Хичээл</div>
@@ -149,16 +149,20 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <p class="hint" id="vocab-hint"></p>
 
   <div class="step">三 · Юу давтах вэ</div>
-  <div class="seg" id="seg-what">
-    <button data-w="word"><b>Шинэ үг</b><span>Тухайн хичээлийн шинэ үгс</span></button>
-    <button data-w="kanji"><b>Шинэ ханз</b><span>Тэдгээр үгэнд гарсан ханз · <i id="n-kles">—</i></span></button>
+  <div class="pill" id="seg-what">
+    <span class="pill-ind" aria-hidden="true"></span>
+    <button data-w="word">Шинэ үг</button>
+    <button data-w="kanji">Шинэ ханз</button>
   </div>
+  <p class="hint">Ханзны горимд сонгосон хичээлийн үгэнд гарсан
+     <i id="n-kles">—</i> асуугдана.</p>
 
   <div id="wrap-word">
     <div class="step">四 · Чиглэл</div>
-    <div class="seg" id="seg-dir">
-      <button data-d="jp2mn"><b class="jp">日本語 → Монгол</b><span>Япон үгийг харж утгыг нь таана</span></button>
-      <button data-d="mn2jp"><b>Монгол → <span class="jp">日本語</span></b><span>Утгыг харж япон үгийг нь таана — илүү хүнд</span></button>
+    <div class="pill" id="seg-dir">
+      <span class="pill-ind" aria-hidden="true"></span>
+      <button data-d="jp2mn" title="Япон үгийг харж утгыг нь таана">あ<i>→</i>А</button>
+      <button data-d="mn2jp" title="Утгыг харж япон үгийг нь таана — илүү хүнд">А<i>→</i>あ</button>
     </div>
 
     <div class="step">五 · Дасгал</div>
@@ -575,7 +579,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
 </section>
 
-<script src="sync-config.js?v=2026-09-22g"></script>
-<script src="app.js?v=2026-09-22g"></script>
+<script src="sync-config.js?v=2026-09-22h"></script>
+<script src="app.js?v=2026-09-22h"></script>
 </body>
 </html>
