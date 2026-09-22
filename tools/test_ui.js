@@ -791,6 +791,57 @@ async function run(c) {
   ok('алдаа гаргасан ч зөв/буруу тоо хэвээр бүртгэгдэнэ',
     cn && cn.okN === 5 && cn.ngN === 4, JSON.stringify(cn));
 
+  console.log('\n[25] Дүгнэлтийн гол товч — «Дараагийн хэсэг» уу «Дахин эхлүүлэх» үү');
+  /* «Дахин үзэх» гэсэн шошго ХУДАЛ байв: тэр товч нь ижил 20 үгийг биш,
+     ДАРААГИЙН шинэ багцыг өгдөг (`buildQueue` нь `due → fresh → rest`).
+     Одоо шошго нь үлдсэн ШИНЭ үгээс хамаарна. */
+  const fb = await c.ev(`
+    const keepProg = progress, keepLast = settings.last, keepSfx = settings.sfx;
+    settings.sfx = 0;
+    const out = {};
+
+    // ── (1) Хичээлд ШИНЭ үг ҮЛДСЭН үе
+    progress = {};
+    deck = 'vocab'; mode = 'flash'; wordSrc = 'book';
+    rebuildPool();
+    out.poolN = pool.length;
+    // Багцын ЦӨӨН хэсгийг л үзсэн болгоно
+    for (const it of pool.slice(0, 3)) progress[it.id] = { n:1, c:1, b:1, d:'2099-01-01' };
+    okN = 3; ngN = 0; missed = [];
+    // Хуурамч утгаар дарна: эс тэгвэл энэ шалгуур нь HTML-ийн анхдагч
+    // шошготой давхцаж, finish() огт бичээгүй ч тэнцэх байв.
+    // (Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal.)
+    document.getElementById('fin-again').textContent = '<бичигдээгүй>';
+    finish();
+    await new Promise(r => setTimeout(r, 200));
+    out.more = document.getElementById('fin-again').textContent.trim();
+
+    // ── (2) Хичээлийн үг БҮГД үзэгдсэн үе
+    for (const it of pool) progress[it.id] = { n:1, c:1, b:1, d:'2099-01-01' };
+    finish();
+    await new Promise(r => setTimeout(r, 200));
+    out.all = document.getElementById('fin-again').textContent.trim();
+
+    // ── (3) Товч нь ҮНЭХЭЭР дараагийн ШИНЭ үгсийг өгөх үү
+    progress = {};
+    rebuildPool();
+    const first = buildQueue(false).map(x => x.id);
+    for (const id of first) progress[id] = { n:1, c:1, b:1, d:'2099-01-01' };
+    const second = buildQueue(false).map(x => x.id);
+    out.overlap = second.filter(id => first.includes(id)).length;
+    out.firstN = first.length; out.secondN = second.length;
+
+    progress = keepProg; settings.last = keepLast; settings.sfx = keepSfx;
+    show('home'); go('home');
+    return out;
+  `);
+  ok('шинэ үг үлдсэн бол «Дараагийн хэсэг»',
+    fb && fb.more === 'Дараагийн хэсэг', JSON.stringify(fb));
+  ok('бүгд үзэгдсэн бол «Дахин эхлүүлэх»',
+    fb && fb.all === 'Дахин эхлүүлэх', JSON.stringify(fb));
+  ok('товч нь ҮНЭХЭЭР шинэ үг өгнө — багцууд ДАВХАРДАХГҮЙ',
+    fb && fb.firstN > 0 && fb.secondN > 0 && fb.overlap === 0, JSON.stringify(fb));
+
   if (jlptOn) {
     console.log('\n[24] JLPT — N5…N2 ажиллана');
     const jl = await c.ev(`
