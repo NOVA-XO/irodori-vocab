@@ -2352,6 +2352,12 @@ let EXAM = null;                       // татсан сан (нэг удаа)
 let exQs = [], exIdx = 0, exLog = [];
 let exN = load(KEY_EXN, 15);
 if (![10, 15, 20].includes(exN)) exN = 15;
+/* Сонгосон ХИЧЭЭЛҮҮД. `null` = бүгд (анхдагч) — ингэснээр сан шинэ
+   хичээлээр нэмэгдвэл тэр нь автоматаар орно. Хоосон массив = юу ч
+   сонгоогүй (эхлүүлэх товч идэвхгүй). */
+const KEY_EXL = 'irodori.examles.v1';
+let exLes = load(KEY_EXL, null);
+if (exLes !== null && !(Array.isArray(exLes) && exLes.every(Number.isInteger))) exLes = null;
 let exMode = load(KEY_EXM, 'think');
 if (!['think', 'speak'].includes(exMode)) exMode = 'think';
 /* Шалгалт нь өөрийн гэсэн бичгийн тохиргоогүй — апп даяарх
@@ -2386,6 +2392,59 @@ function examSetup() {
   $('ex-run').hidden = true;
   $('ex-done').hidden = true;
   refreshExamSeg();
+  // Чипэнд хичээл бүрийн асуултын тоо хэрэгтэй тул санг ЭНД татна.
+  loadExam().then(renderExamLessons).catch(() => {
+    const n = $('ex-les-note');
+    if (n) n.textContent = 'Асуултыг ачаалж чадсангүй. Холболтоо шалгана уу.';
+  });
+}
+
+const examLessonsAll = () => EXAM
+  ? [...new Set((EXAM.items || []).map(q => q.lesson))].sort((a, b) => a - b) : [];
+/** Сонгосон хичээлүүд — `null` бол бүгд. Санд байхгүй дугаарыг хасна. */
+const examLessonsSel = () => {
+  const all = examLessonsAll();
+  return exLes === null ? all : exLes.filter(l => all.includes(l));
+};
+const examPool = () => {
+  const sel = examLessonsSel();
+  return ((EXAM && EXAM.items) || []).filter(q => sel.includes(q.lesson));
+};
+
+function setExamLessons(v) {
+  // Бүгдийг сонгосон бол `null` болгож хадгална — шинэ хичээл нэмэгдэхэд
+  // автоматаар орно.
+  const all = examLessonsAll();
+  exLes = (all.length && v.length === all.length) ? null : v.slice().sort((a, b) => a - b);
+  save(KEY_EXL, exLes);
+  renderExamLessons();
+}
+
+function renderExamLessons() {
+  const box = $('ex-lessons');
+  if (!box || !EXAM) return;
+  const sel = examLessonsSel();
+  box.innerHTML = '';
+  for (const l of examLessonsAll()) {
+    const n = EXAM.items.filter(q => q.lesson === l).length;
+    const b = document.createElement('button');
+    b.innerHTML = 'L' + l + '<small>' + n + '</small>';
+    b.setAttribute('aria-pressed', sel.includes(l));
+    b.onclick = () => {
+      const cur = examLessonsSel(), i = cur.indexOf(l);
+      i < 0 ? cur.push(l) : cur.splice(i, 1);
+      setExamLessons(cur);
+    };
+    box.appendChild(b);
+  }
+  /* Сонгосон хичээлд асуулт цөөн бол (ж: L1 = 6) сонгосон тоогоор биш,
+     БАЙГАА бүгдийг асууна — үүнийг ил хэлнэ. */
+  const pool = examPool().length;
+  const note = $('ex-les-note');
+  if (note) note.textContent = !sel.length ? 'Хичээл сонгоно уу.'
+    : sel.length + ' хичээл · ' + pool + ' асуулт'
+      + (pool < exN ? ' — бүгдийг нь асууна' : '');
+  $('btn-exam').disabled = !pool;
 }
 
 /** Шалгалтын гүйлтийг хүчингүй болгоно (гарах, дахин эхлэх). */
@@ -2442,8 +2501,9 @@ function startExam() {
   withTimeout(loadExam(), 15000).then(d => {
     btn.disabled = false;
     if (run !== exRun) return;
-    const pool = (d.items || []).slice();
-    if (!pool.length) { alert('Шалгалтын асуулт ачаалагдсангүй.'); return; }
+    const pool = examPool();
+    if (!(d.items || []).length) { alert('Шалгалтын асуулт ачаалагдсангүй.'); return; }
+    if (!pool.length) { renderExamLessons(); return; }   // хичээл сонгоогүй
     exQs = shuffle(pool).slice(0, Math.min(exN, pool.length));
     exIdx = 0; exLog = [];
     $('ex-setup').hidden = true;
@@ -2610,7 +2670,9 @@ $('ex-mic').onclick = () => {
 };
 
 document.querySelectorAll('#seg-exam-n button').forEach(b =>
-  b.onclick = () => { exN = +b.dataset.n; save(KEY_EXN, exN); refreshExamSeg(); });
+  b.onclick = () => { exN = +b.dataset.n; save(KEY_EXN, exN); refreshExamSeg(); renderExamLessons(); });
+$('ex-all').onclick = () => setExamLessons(examLessonsAll());
+$('ex-none').onclick = () => setExamLessons([]);
 document.querySelectorAll('#seg-exam-mode button').forEach(b =>
   b.onclick = () => { exMode = b.dataset.m; save(KEY_EXM, exMode); refreshExamSeg(); });
 $('btn-exam').onclick = startExam;

@@ -1262,6 +1262,73 @@ async function run(c) {
     return 1;
   `);
 
+  console.log('\n[29] Шалгалт — ХИЧЭЭЛЭЭР сонгох');
+  /* Хэрэглэгчийн хүсэлт: 100 асуултаас санамсаргүй биш, СОНГОСОН
+     хичээлийн асуултаас. Асуулт бүр `lesson` талбартай. Хуваалцсан
+     профайл тул төгсгөлд сонголтыг «бүгд» (null) болгож буцаана.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const ex = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const keepN = exN, out = {};
+    exLes = null; save(KEY_EXL, null);
+    exN = 15;
+    go('exam'); await wait(600);
+    const chips = () => [...document.querySelectorAll('#ex-lessons button')];
+    const note = () => document.getElementById('ex-les-note').textContent;
+    out.chips = chips().length;
+    out.pressedAll = chips().every(b => b.getAttribute('aria-pressed') === 'true');
+    out.noteAll = note();
+    out.l1small = chips()[0] && chips()[0].querySelector('small').textContent;
+
+    document.getElementById('ex-none').click();
+    out.pressedNone = chips().filter(b => b.getAttribute('aria-pressed') === 'true').length;
+    out.noteNone = note();
+    out.btnNone = document.getElementById('btn-exam').disabled;
+
+    // Зөвхөн L1 (6 асуулт) — 15 гэж сонгосон ч 6-г л асууна
+    chips()[0].click();
+    out.noteL1 = note();
+    out.btnL1 = document.getElementById('btn-exam').disabled;
+    startExam(); await wait(400);
+    out.l1len = exQs.length;
+    out.l1only = exQs.every(q => q.lesson === 1);
+
+    // L1-L3, 10 асуулт
+    examSetup(); await wait(400);
+    chips()[1].click(); chips()[2].click();
+    exN = 10; renderExamLessons();
+    out.noteL123 = note();
+    out.stored = localStorage.getItem(KEY_EXL);
+    startExam(); await wait(400);
+    out.l123len = exQs.length;
+    out.l123only = exQs.every(q => [1, 2, 3].includes(q.lesson));
+    out.topic = document.getElementById('ex-topic').textContent;
+
+    // Бүгдийг сонгоход null болж хадгалагдана
+    examSetup(); await wait(400);
+    document.getElementById('ex-all').click();
+    out.storedAll = localStorage.getItem(KEY_EXL);   // load() нь null-д анхдагчаа өгдөг тул ТҮҮХИЙгээр
+
+    exN = keepN; exLes = null; save(KEY_EXL, null);
+    exAbort(); go('home');
+    return out;
+  `);
+  ok('18 хичээлийн чип, анхдагчаар БҮГД сонгогдсон',
+    ex && ex.chips === 18 && ex.pressedAll, JSON.stringify(ex));
+  ok('чип дээр асуултын тоо (L1 = 6)', ex && ex.l1small === '6', JSON.stringify(ex));
+  ok('бүгд үед «18 хичээл · 100 асуулт»', ex && ex.noteAll === '18 хичээл · 100 асуулт', JSON.stringify(ex));
+  ok('«Цэвэрлэх» -> юу ч сонгоогүй, эхлүүлэх товч ИДЭВХГҮЙ',
+    ex && ex.pressedNone === 0 && ex.btnNone && /сонгоно/.test(ex.noteNone), JSON.stringify(ex));
+  ok('зөвхөн L1 -> «1 хичээл · 6 асуулт — бүгдийг нь асууна»',
+    ex && ex.noteL1 === '1 хичээл · 6 асуулт — бүгдийг нь асууна' && !ex.btnL1, JSON.stringify(ex));
+  ok('L1 шалгалт: 15 гэсэн ч 6 асуулт, бүгд L1',
+    ex && ex.l1len === 6 && ex.l1only, JSON.stringify(ex));
+  ok('L1–L3, 10 асуулт: зөвхөн тэр гурван хичээлээс',
+    ex && ex.l123len === 10 && ex.l123only && ex.noteL123 === '3 хичээл · 18 асуулт', JSON.stringify(ex));
+  ok('асуултын дээр хичээлийн дугаар харагдана', ex && /^L[123] · /.test(ex.topic), JSON.stringify(ex));
+  ok('сонголт хадгалагдана [1,2,3]; бүгдийг сонгоход null',
+    ex && ex.stored === '[1,2,3]' && ex.storedAll === 'null', JSON.stringify(ex));
+
   console.log('\n[25] Дүгнэлтийн гол товч — «Дараагийн хэсэг» уу «Дахин эхлүүлэх» үү');
   /* «Дахин үзэх» гэсэн шошго ХУДАЛ байв: тэр товч нь ижил 20 үгийг биш,
      ДАРААГИЙН шинэ багцыг өгдөг (`buildQueue` нь `due → fresh → rest`).

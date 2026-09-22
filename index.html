@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22z">
-<link rel="stylesheet" href="app.css?v=2026-09-22z">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-23a">
+<link rel="stylesheet" href="app.css?v=2026-09-23a">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22z">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22z">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-23a">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-23a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -91,7 +91,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
     <button class="bigcard" data-go="exam">
       <span class="bc-jp jp">試験</span>
       <b>Шалгалт</b>
-      <span>100 асуултаас санамсаргүй сонгож шалгана. Сурснаа хэр тогтоосноо мэдэх</span>
+      <span>Хичээлээ сонгоод 100 асуултаас шалгана. Сурснаа хэр тогтоосноо мэдэх</span>
     </button>
     <button class="bigcard" data-go="kana">
       <span class="bc-jp jp">かな</span>
@@ -354,9 +354,19 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <!-- Тохиргоо: шалгалтын дэлгэц рүү орвол эхлээд энэ гарна. -->
   <div id="ex-setup">
     <h2>Шалгалт</h2>
-    <p class="hint"><span class="jp">Irodori 入門</span>-ий <b>100 асуултаас</b>
-       санамсаргүй сонгож асууна. Багш асуусан юм шиг япон асуулт гарах ба
-       та хариулна. Дараа нь <b>загвар хариултыг</b> харж өөрөө дүгнэнэ.</p>
+    <p class="hint"><span class="jp">Irodori 入門</span>-ий <b>сонгосон хичээлүүдээс</b>
+       санамсаргүй асууна. Япон асуултад хариулаад <b>загвар хариулттай</b>
+       тулгаж өөрөө дүгнэнэ.</p>
+
+    <!-- Асуулт бүр `lesson` талбартай (build_exam.py). Үгийн дэлгэцийн
+         `.lessons` чипийг ЯГ тэр хэлбэрээр ашиглана. -->
+    <div class="step">Хичээл</div>
+    <div id="ex-lessons" class="lessons"></div>
+    <div class="row">
+      <button id="ex-all" class="ghost sm">Бүгд</button>
+      <button id="ex-none" class="ghost sm">Цэвэрлэх</button>
+    </div>
+    <p class="hint" id="ex-les-note"></p>
 
     <div class="step">Хариулах арга</div>
     <div class="seg" id="seg-exam-mode">
@@ -651,7 +661,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   </div>
 </section>
 
-<script src="sync-config.js?v=2026-09-22z"></script>
-<script src="app.js?v=2026-09-22z"></script>
+<script src="sync-config.js?v=2026-09-23a"></script>
+<script src="app.js?v=2026-09-23a"></script>
 </body>
 </html>
