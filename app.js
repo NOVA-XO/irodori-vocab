@@ -2918,6 +2918,16 @@ function loadClassList() {
   }).catch(() => classList);
 }
 
+/** Ангийн НЭРИЙГ серверээс шинэчилнэ.
+ *
+ *  Нэр серверт солигдоход (ж: «2-р анги» -> «Наран») Тохиргооны карт
+ *  КЭШЭЭС уншдаг. Урьд нь кэш зөвхөн тохируулах дэлгэц нээхэд
+ *  шинэчлэгддэг байсан тул аль хэдийн элссэн сурагч хуучин нэрийг
+ *  ҮҮРД харах байв. Тиймээс апп нээгдэх бүрд нэг удаа. */
+function refreshClassNames() {
+  return loadClassList().then(() => refreshMe());
+}
+
 /** Тохиргоо дэлгэцийн карт ба цэсний «Анги» мөр. */
 function refreshMe() {
   const n = $('me-name'), c = $('me-classes');
@@ -3213,6 +3223,10 @@ async function refreshKlass() {
       continue;
     }
     if (r.status === 'locked') { msgs.push('«' + className(id) + '» түр түгжигдсэн.'); continue; }
+    if (typeof r.name === 'string' && r.name && r.name !== className(id)) {
+      const c = classList.find(x => x.id === id);
+      if (c) { c.name = r.name; save(KEY_CLS, classList); refreshMe(); }
+    }
     const rows = (Array.isArray(r.rows) ? r.rows : []).map(klassRow);
     out.push('<section class="kl-class" aria-labelledby="kl-class-' + escA(id) + '">' +
       '<h3 id="kl-class-' + escA(id) + '"><span>' + esc(r.name || className(id)) + '</span>' +
@@ -3462,7 +3476,7 @@ Promise.all([
        хэрэглэгчид ч (хэрэглэгчийн шаардлага). Тохируулсан бол ангийн
        тоог шинэчилж, холбоосоор ирсэн дасгалыг эхлүүлнэ. */
     if (!me.done) openSetup(true);
-    else { autoStart(); memberSync(true); }
+    else { autoStart(); memberSync(true); refreshClassNames(); }
   })
   .catch(() => {
     document.getElementById('home').innerHTML =

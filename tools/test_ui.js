@@ -1224,6 +1224,37 @@ async function run(c) {
   ok('шинэ кодоор дахин элсэхэд мэдэгдэл арилна',
     k4 && k4.lostAfterRejoin.length === 0 && k4.cardAfterRejoin === 'MICA', JSON.stringify(k4));
 
+  /* Нэр серверт солигдоход (2-р анги -> Наран) КЭШ шинэчлэгдэх ёстой.
+     Урьд нь зөвхөн тохируулах дэлгэц нээхэд шинэчлэгддэг байсан тул
+     аль хэдийн элссэн сурагч хуучин нэрийг үүрд хардаг байв. */
+  const k5 = await c.ev(wait + `
+    const F = window.__fake, out = {};
+    me.codes = { mica: '5173', c2: '8264' }; me.lost = []; me.other = false; save(KEY_ME, me);
+    classList = [{ id: 'mica', name: 'MICA' }, { id: 'c2', name: '2-р анги' }];
+    save(KEY_CLS, classList);
+    F.classes.c2.name = 'Наран';
+    refreshMe();
+    out.before = document.getElementById('me-classes').textContent;
+    // (1) Апп нээгдэх үеийн шинэчлэл
+    await refreshClassNames();
+    out.afterBoot = document.getElementById('me-classes').textContent;
+    out.cached = (load(KEY_CLS, []).find(x => x.id === 'c2') || {}).name;
+    // (2) Ангийн дэлгэц серверийн нэрээр кэшээ засна
+    classList = [{ id: 'mica', name: 'MICA' }, { id: 'c2', name: '2-р анги' }];
+    save(KEY_CLS, classList); refreshMe();
+    go('klass'); await wait(500);
+    out.afterRoster = document.getElementById('me-classes').textContent;
+    out.heading = [...document.querySelectorAll('#kl-list .kl-class h3 span')].map(x => x.textContent);
+    F.classes.c2.name = '2-р анги';
+    return out;
+  `);
+  ok('шинэчлэхээс өмнө хуучин нэр (тестийн нөхцөл зөв)',
+    k5 && /2-р анги/.test(k5.before), JSON.stringify(k5));
+  ok('апп нээгдэхэд ангийн нэр серверээс шинэчлэгдэнэ',
+    k5 && k5.afterBoot === 'MICA · Наран' && k5.cached === 'Наран', JSON.stringify(k5));
+  ok('ангийн дэлгэц серверийн нэрээр кэшийг засна',
+    k5 && k5.afterRoster === 'MICA · Наран' && k5.heading.includes('Наран'), JSON.stringify(k5));
+
   await c.ev(`
     rpc = window.__orig.rpc; isDevHost = window.__orig.dev;
     me = cleanMe(window.__orig.me); save(KEY_ME, me); refreshMe();
