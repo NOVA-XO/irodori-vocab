@@ -908,6 +908,47 @@ async function run(c) {
   ok('шилжилт: өчигдрийн бичлэгээс өнөөдрийн тоо 0',
     dc && dc.migOld === 0, JSON.stringify(dc));
 
+  console.log('\n[27] Явцын дэлгэц — ҮГЭЭР тоолно, хариултаар БИШ');
+  /* Хэрэглэгчийн шаардлага: апп даяар тоолол нь ҮГИЙН id-гаар явна,
+     картын/хариултын тоогоор БИШ. Өдрийн зорилтыг зассаны дараа явцын
+     дэлгэц ч ижил дүрмээр тоолж байгааг БАТЛАНА (уншаад итгэхгүй).
+     ЦОР ГАНЦ хариултад суурилсан тоо нь «зөв хариулт %» — тэр нь
+     НЯГТРАЛ учир хариултаас бодогдох нь ЗӨВ. */
+  const pcount = await c.ev(`
+    const keepProg = progress, keepDays = days;
+    const A = ALL[0].id, B = ALL[1].id, C = ALL[2].id;
+    /* saveProgress() нь localStorage-аас БУЦААЖ нэгтгэдэг (өөр табаас
+       хамгаалах зориулалттай) тул зөвхөн хувьсагчийг тэглэхэд өмнөх
+       тестүүдийн 42 үг эргэж ирдэг. Хадгалалтыг ч цэвэрлэнэ. */
+    const rawP = localStorage.getItem(KEY_P);
+    localStorage.removeItem(KEY_P);
+    progress = {}; days = { last: -1, streak: 0, n: 0, ids: [] };
+    // A-г ГУРВАН удаа алдаад дөрөв дэх удаад зөв; B, C нэг удаа зөв
+    grade(A, false); grade(A, false); grade(A, false); grade(A, true);
+    grade(B, true); grade(C, true);
+    refreshStats();
+    await new Promise(r => setTimeout(r, 200));
+    const nums = [...document.querySelectorAll('#stat-sum b')].map(x => x.textContent.trim());
+    const out = {
+      seen: nums[0], learned: nums[1], pct: nums[2],
+      answers: progress[A].n + progress[B].n + progress[C].n,
+      goal: todayN()
+    };
+    progress = keepProg; days = keepDays;
+    if (rawP === null) localStorage.removeItem(KEY_P);
+    else localStorage.setItem(KEY_P, rawP);
+    refreshStats(); show('home'); go('home');
+    return out;
+  `);
+  ok('«үзсэн» нь ҮГИЙН тоо — 6 хариулт ч 3 үг',
+    pcount && pcount.seen === '3' && pcount.answers === 6, JSON.stringify(pcount));
+  ok('«тогтсон» нь ҮГИЙН тоо',
+    pcount && pcount.learned === '0', JSON.stringify(pcount));
+  ok('«зөв хариулт %» нь ХАРИУЛТААС бодогдоно (3/6)',
+    pcount && pcount.pct === '50%', JSON.stringify(pcount));
+  ok('өдрийн зорилт ч ҮГЭЭР — 3',
+    pcount && pcount.goal === 3, JSON.stringify(pcount));
+
   console.log('\n[25] Дүгнэлтийн гол товч — «Дараагийн хэсэг» уу «Дахин эхлүүлэх» үү');
   /* «Дахин үзэх» гэсэн шошго ХУДАЛ байв: тэр товч нь ижил 20 үгийг биш,
      ДАРААГИЙН шинэ багцыг өгдөг (`buildQueue` нь `due → fresh → rest`).
