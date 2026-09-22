@@ -11,6 +11,7 @@ tools/speakers.txt
 # Үүсгэсэн mp3 нь репод ОРНО, хөдөлгүүр өөрөө ОРОХГҮЙ.
 tools/_vv/
 tools/_kd/
+tools/_pg/
 tools/kanji_missing.txt
 tools/_src/
 tools/n5_raw.json

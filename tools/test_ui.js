@@ -159,7 +159,20 @@ async function run(c) {
 
   console.log('\n[1] Ачаалалт');
   ok('үгийн сан ачаалагдсан', await c.ev('return ALL.length') > 1000);
-  ok('нүүр дэлгэц гарсан', await c.ev('return screen === "home"'));
+  /* Шинэ профайл = нэр, анги тохируулаагүй -> ЭХЛЭЭД тохируулах дэлгэц.
+     Дараагийн бүх тест нүүрнээс эхэлдэг тул «Бусад»-аар дуусгана. */
+  ok('анх ороход ТОХИРУУЛАХ дэлгэц гарна', await c.ev('return screen === "setup"'));
+  ok('анх ороход «Болих» НУУГДМАЛ',
+    await c.ev('return document.getElementById("su-cancel").hidden === true'));
+  await c.ev(`
+    document.getElementById('su-name').value = 'Тест';
+    document.getElementById('su-other').click();
+    await saveSetup();
+    return 1;
+  `);
+  ok('«Бусад»-аар дуусгахад нүүр дэлгэц гарсан', await c.ev('return screen === "home"'));
+  ok('нэр ба «Бусад» хадгалагдсан',
+    await c.ev('const m = load(KEY_ME, {}); return m.done === true && m.name === "Тест" && m.other === true'));
   ok('ханз ачаалагдсан', await c.ev('return KANJI.length') > 1000);
   ok('кана ачаалагдсан', await c.ev('return KANA.length') === 107);
   // Чимэглэлүүд 2026-09-21-нд ХАСАГДСАН. Буцаж орж ирвэл энд баригдана.
@@ -949,6 +962,275 @@ async function run(c) {
   ok('өдрийн зорилт ч ҮГЭЭР — 3',
     pcount && pcount.goal === 3, JSON.stringify(pcount));
 
+  console.log('\n[28] Нэр ба анги — хуурамч сервертэй');
+  /* Сервер рүү ЖИНХЭНЭ хүсэлт явуулахгүй: `rpc`-г SQL-ийн дүрмийг яг
+     дагадаг хуурамч хувилбараар сольно (SQL-ийг өөрөө `test_sql.js`
+     бодит Postgres дээр шалгадаг). `isDevHost`-ийг ч солино — эс тэгвэл
+     localhost дээр `memberSync` юу ч илгээхгүй.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  await c.ev(`
+    const F = window.__fake = {
+      classes: { mica: { name: 'MICA', code: '5173' }, c2: { name: '2-р анги', code: '8264' } },
+      members: {}, calls: [], offline: false,
+    };
+    window.__orig = { rpc: rpc, dev: isDevHost, me: JSON.parse(JSON.stringify(me)) };
+    const chk = (c, k) => !F.classes[c] ? 'none'
+      : (String(k || '').trim() === F.classes[c].code ? 'ok' : 'bad');
+    rpc = async (fn, b) => {
+      F.calls.push({ fn: fn, b: JSON.parse(JSON.stringify(b || {})) });
+      if (F.offline) throw new Error('offline');
+      if (fn === 'class_list') return Object.keys(F.classes).map(id => ({ id: id, name: F.classes[id].name }));
+      if (fn === 'class_join') return chk(b.p_class, b.p_code);
+      if (fn === 'member_put') {
+        const res = {}, ok = [];
+        for (const k in (b.p_classes || {})) { res[k] = chk(k, b.p_classes[k]); if (res[k] === 'ok') ok.push(k); }
+        if (!ok.length || !String(b.p_name || '').trim()) delete F.members[b.p_member];
+        else F.members[b.p_member] = { name: b.p_name, classes: ok, seen: b.p_seen,
+          learned: b.p_learned, today: b.p_today, streak: b.p_streak, day: b.p_day };
+        return res;
+      }
+      if (fn === 'class_roster') {
+        const st = chk(b.p_class, b.p_code);
+        if (st !== 'ok') return { status: st };
+        const rows = Object.keys(F.members).filter(id => F.members[id].classes.includes(b.p_class))
+          .map(id => Object.assign({ me: id === b.p_member }, F.members[id]))
+          .sort((x, y) => y.learned - x.learned);
+        rows.forEach(r => delete r.classes);
+        return { status: 'ok', name: F.classes[b.p_class].name, rows: rows };
+      }
+      throw new Error('unknown ' + fn);
+    };
+    isDevHost = () => false;
+    return 1;
+  `);
+
+  const wait = 'const wait = ms => new Promise(r => setTimeout(r, ms));';
+  const k1 = await c.ev(wait + `
+    const F = window.__fake, out = {};
+    openSetup(false);
+    await wait(300);
+    const box = document.getElementById('su-classes');
+    const tg = id => box.querySelector('.su-toggle[data-c="' + id + '"]');
+    const code = id => document.querySelector('.su-code[data-c="' + id + '"]');
+    const err = id => document.querySelector('.su-err[data-c="' + id + '"]');
+    out.items = box.querySelectorAll('.su-toggle').length;
+    out.names = [...box.querySelectorAll('.su-choice-name')].map(x => x.textContent);
+    out.title = document.getElementById('su-title').textContent;
+    out.cancelShown = !document.getElementById('su-cancel').hidden;
+    out.otherBefore = document.getElementById('su-other').getAttribute('aria-pressed');
+    out.boxHiddenBefore = getComputedStyle(code('mica').parentNode).display === 'none';
+
+    tg('mica').click();
+    out.otherAfterClass = document.getElementById('su-other').getAttribute('aria-pressed');
+    out.boxShownAfter = getComputedStyle(code('mica').parentNode).display !== 'none';
+
+    // Нэргүй -> хадгалахгүй
+    document.getElementById('su-name').value = '  ';
+    code('mica').value = '5173';
+    await saveSetup();
+    out.noName = document.getElementById('su-note').textContent;
+    out.noNameInvalid = document.getElementById('su-name').getAttribute('aria-invalid');
+
+    // Буруу код
+    document.getElementById('su-name').value = 'Бат';
+    code('mica').value = '0000';
+    await saveSetup();
+    out.wrongErr = err('mica').hidden ? '' : err('mica').textContent;
+    out.wrongSaved = Object.keys(load(KEY_ME, {}).codes || {});
+    out.stillSetup = screen;
+
+    // Зөв код
+    code('mica').value = '5173';
+    await saveSetup();
+    await wait(150);
+    out.screen = screen;
+    out.codes = me.codes;
+    out.navShown = !document.getElementById('nav-klass').hidden;
+    out.member = F.members[me.id] || null;
+    out.meName = document.getElementById('me-name').textContent;
+    out.meClasses = document.getElementById('me-classes').textContent;
+    return out;
+  `);
+  ok('ангиуд СЕРВЕРИЙН нэрээр зурагдана (MICA, 2-р анги)',
+    k1 && k1.items === 2 && k1.names.join('|') === 'MICA|2-р анги', JSON.stringify(k1));
+  ok('засах үед гарчиг «Профайл засах», «Болих» харагдана',
+    k1 && k1.title === 'Профайл засах' && k1.cancelShown, JSON.stringify(k1));
+  ok('кодын талбар анги сонгох хүртэл НУУГДМАЛ, сонгоход гарна',
+    k1 && k1.boxHiddenBefore && k1.boxShownAfter, JSON.stringify(k1));
+  ok('анги сонгоход «Бусад» АВТОМАТААР унтарна',
+    k1 && k1.otherBefore === 'true' && k1.otherAfterClass === 'false', JSON.stringify(k1));
+  ok('нэргүй бол хадгалахгүй',
+    k1 && /Нэрээ/.test(k1.noName) && k1.noNameInvalid === 'true', JSON.stringify(k1));
+  ok('буруу код -> ангийн доор алдаа, ХАДГАЛАХГҮЙ',
+    k1 && /буруу/.test(k1.wrongErr) && k1.wrongSaved.length === 0 && k1.stillSetup === 'setup',
+    JSON.stringify(k1));
+  ok('зөв код -> хадгалагдаж Тохиргоо руу буцна',
+    k1 && k1.screen === 'profile' && k1.codes.mica === '5173', JSON.stringify(k1));
+  ok('серверт НЭР ба тоотой бүртгэгдсэн',
+    k1 && k1.member && k1.member.name === 'Бат' && k1.member.classes.join() === 'mica',
+    JSON.stringify(k1));
+  ok('цэсэнд «Анги» гарч ирнэ', k1 && k1.navShown, JSON.stringify(k1));
+  ok('Тохиргооны карт нэр ба ангийг харуулна',
+    k1 && k1.meName === 'Бат' && k1.meClasses === 'MICA', JSON.stringify(k1));
+
+  const k2 = await c.ev(wait + `
+    const F = window.__fake, out = {}, t = today();
+    F.members.memberB0001 = { name: 'Болд', classes: ['mica'], seen: 40, learned: 9, today: 4, streak: 2, day: t };
+    F.members.memberS0001 = { name: 'Сараа', classes: ['mica'], seen: 5, learned: 1, today: 7, streak: 6, day: t - 5 };
+    F.members.memberC0001 = { name: 'Цэцэг', classes: ['c2'], seen: 60, learned: 20, today: 8, streak: 3, day: t - 1 };
+    F.members.memberX0001 = { name: '<img src=x onerror="window.__xss=1">', classes: ['mica'],
+      seen: 0, learned: 0, today: 0, streak: 0, day: t };
+
+    // Хоёр дахь ангид НЭМЖ элсэнэ
+    openSetup(false);
+    await wait(300);
+    document.querySelector('#su-classes .su-toggle[data-c="c2"]').click();
+    document.querySelector('.su-code[data-c="c2"]').value = '8264';
+    await saveSetup();
+    await wait(150);
+    out.codes = Object.keys(me.codes).sort();
+
+    go('klass');
+    await wait(500);
+    const secs = [...document.querySelectorAll('#kl-list .kl-class')];
+    out.secs = secs.map(s => ({
+      title: s.querySelector('h3 span').textContent,
+      count: s.querySelector('h3 small').textContent,
+      rows: [...s.querySelectorAll('.kl-member')].map(li => ({
+        name: li.querySelector('.kl-name b').textContent,
+        me: li.classList.contains('me'),
+        v: [...li.querySelectorAll('dd')].map(d => d.firstChild.textContent)
+      }))
+    }));
+    out.xss = !!window.__xss;
+    out.imgs = document.querySelectorAll('#kl-list img').length;
+    out.note = document.getElementById('kl-note').textContent;
+    return out;
+  `);
+  const sec = (t) => k2 && k2.secs.find(s => s.title === t);
+  const row = (t, n) => sec(t) && sec(t).rows.find(r => r.name === n);
+  ok('ХОЁР ангид зэрэг элссэн', k2 && k2.codes.join() === 'c2,mica', JSON.stringify(k2 && k2.codes));
+  ok('ангийн дэлгэц хоёр ангийг хоёуланг харуулна',
+    k2 && k2.secs.length === 2 && sec('MICA') && sec('2-р анги'), JSON.stringify(k2));
+  ok('анги бүр ЗӨВХӨН өөрийн гишүүдтэй (Цэцэг MICA-д БАЙХГҮЙ)',
+    sec('MICA') && !row('MICA', 'Цэцэг') && row('2-р анги', 'Цэцэг'), JSON.stringify(k2));
+  ok('тогтсоноор эрэмбэлэгдсэн (Болд 9 эхэнд)',
+    sec('MICA') && sec('MICA').rows[0].name === 'Болд', JSON.stringify(sec('MICA')));
+  ok('өөрийн мөр тэмдэглэгдсэн (ГАНЦ)',
+    sec('MICA') && sec('MICA').rows.filter(r => r.me).length === 1 && row('MICA', 'Бат').me,
+    JSON.stringify(sec('MICA')));
+  ok('өнөөдөр идэвхтэй: өнөөдөр 4, дараалан 2',
+    row('MICA', 'Болд') && row('MICA', 'Болд').v.join() === '9,40,4,2', JSON.stringify(row('MICA', 'Болд')));
+  ok('ӨЧИГДӨР идэвхтэй: өнөөдөр 0 (хуучин 8 БИШ), дараалан 3 хэвээр',
+    row('2-р анги', 'Цэцэг') && row('2-р анги', 'Цэцэг').v.join() === '20,60,0,3',
+    JSON.stringify(row('2-р анги', 'Цэцэг')));
+  ok('5 хоногийн өмнө: өнөөдөр 0, дараалан 0 (тасарсан)',
+    row('MICA', 'Сараа') && row('MICA', 'Сараа').v.join() === '1,5,0,0',
+    JSON.stringify(row('MICA', 'Сараа')));
+  ok('гишүүний тоо гарчигт', sec('MICA') && sec('MICA').count === '4 хүн', JSON.stringify(sec('MICA')));
+  ok('нэр дэх HTML ГҮЙЦЭТГЭГДЭХГҮЙ (XSS)', k2 && !k2.xss && k2.imgs === 0, JSON.stringify(k2 && k2.xss));
+
+  const k3 = await c.ev(wait + `
+    const F = window.__fake, out = {};
+    F.calls = [];
+    openSetup(false);
+    await wait(300);
+    document.getElementById('su-other').click();
+    out.classesAfterOther = [...document.querySelectorAll('#su-classes .su-toggle')]
+      .filter(b => b.getAttribute('aria-pressed') === 'true').length;
+    await saveSetup();
+    await wait(150);
+    const put = F.calls.filter(x => x.fn === 'member_put').pop();
+    out.nameSent = put ? put.b.p_name : null;
+    out.classesSent = put ? JSON.stringify(put.b.p_classes) : null;
+    out.gone = !(me.id in F.members);
+    out.navHidden = document.getElementById('nav-klass').hidden;
+    out.other = me.other; out.codes = Object.keys(me.codes);
+    out.meClasses = document.getElementById('me-classes').textContent;
+    F.calls = [];
+    lastMemberSync = 0;
+    await memberSync(true);
+    out.callsAfter = F.calls.length;
+    return out;
+  `);
+  ok('«Бусад» дарахад БҮХ анги унтарна', k3 && k3.classesAfterOther === 0, JSON.stringify(k3));
+  ok('«Бусад» руу шилжихэд серверийн мөр УСТАНА', k3 && k3.gone, JSON.stringify(k3));
+  ok('устгах хүсэлтэд НЭР ИЛГЭЭГДЭХГҮЙ (хоосон)',
+    k3 && k3.nameSent === '' && k3.classesSent === '{}', JSON.stringify(k3));
+  ok('цэснээс «Анги» алга болно', k3 && k3.navHidden, JSON.stringify(k3));
+  ok('Тохиргооны карт «Бусад»', k3 && k3.meClasses === 'Бусад' && k3.other, JSON.stringify(k3));
+  ok('«Бусад» дараа нь сервер рүү ОГТ хүсэлт явахгүй', k3 && k3.callsAfter === 0, JSON.stringify(k3));
+
+  const k4 = await c.ev(wait + `
+    const F = window.__fake, out = {};
+    // Дахин MICA-д элсээд, өөрчлөөгүй хадгалахад кодыг ДАХИН шалгахгүй
+    openSetup(false); await wait(300);
+    document.querySelector('#su-classes .su-toggle[data-c="mica"]').click();
+    document.querySelector('.su-code[data-c="mica"]').value = '5173';
+    await saveSetup(); await wait(150);
+    F.calls = [];
+    openSetup(false); await wait(300);
+    await saveSetup(); await wait(150);
+    out.joinsOnResave = F.calls.filter(x => x.fn === 'class_join').length;
+
+    // Сүлжээ тасарсан үед шинэ анги нэмэх
+    F.offline = true;
+    openSetup(false); await wait(300);
+    document.querySelector('#su-classes .su-toggle[data-c="c2"]').click();
+    document.querySelector('.su-code[data-c="c2"]').value = '8264';
+    await saveSetup();
+    out.offNote = document.getElementById('su-note').textContent;
+    out.offCodes = Object.keys(me.codes).sort().join();
+    out.offScreen = screen;
+    F.offline = false;
+
+    // Багш кодоо сольсон
+    F.classes.mica.code = '1111';
+    go('klass'); await wait(500);
+    out.afterChange = Object.keys(me.codes).join();
+    out.changeNote = document.getElementById('kl-note').textContent;
+    out.navHidden = document.getElementById('nav-klass').hidden;
+    // Хаягдсан кодыг дахин ИЛГЭЭХГҮЙ (таах хязгаарыг бүгд хамтдаа дуусгахгүйн тулд)
+    F.calls = []; lastMemberSync = 0;
+    await memberSync(true);
+    const put = F.calls.filter(x => x.fn === 'member_put').pop();
+    out.resent = put ? Object.keys(put.b.p_classes || {}).join() : 'none';
+    // Цэсэнд «Анги» алга болсон ч ТОХИРГООНЫ картаас шалтгааныг харна
+    refreshMe();
+    out.cardAfterChange = document.getElementById('me-classes').textContent;
+    // Шинэ кодоор дахин элсэхэд мэдэгдэл арилна
+    F.classes.mica.code = '4455';
+    openSetup(false); await wait(300);
+    document.querySelector('#su-classes .su-toggle[data-c="mica"]').click();
+    document.querySelector('.su-code[data-c="mica"]').value = '4455';
+    await saveSetup(); await wait(150);
+    out.lostAfterRejoin = me.lost.slice();
+    out.cardAfterRejoin = document.getElementById('me-classes').textContent;
+    F.classes.mica.code = '5173';
+    return out;
+  `);
+  ok('өөрчлөөгүй кодыг дахин шалгахгүй (таах хязгаар зарцуулахгүй)',
+    k4 && k4.joinsOnResave === 0, JSON.stringify(k4));
+  ok('сүлжээ алга -> хадгалахгүй, мэдэгдэнэ',
+    k4 && /Сүлжээ/.test(k4.offNote) && k4.offCodes === 'mica' && k4.offScreen === 'setup',
+    JSON.stringify(k4));
+  ok('код солигдвол -> хуучин код ХАЯГДАНА, мэдэгдэнэ',
+    k4 && k4.afterChange === '' && /солигдсон/.test(k4.changeNote), JSON.stringify(k4));
+  ok('хаягдсан кодыг дахин ИЛГЭЭХГҮЙ', k4 && k4.resent !== 'mica', JSON.stringify(k4));
+  ok('ангигүй болоход цэснээс «Анги» алга', k4 && k4.navHidden, JSON.stringify(k4));
+  ok('Тохиргооны карт «код солигдсон» гэж хэлнэ (цэснээс алга болсон ч)',
+    k4 && /MICA/.test(k4.cardAfterChange) && /код солигдсон/.test(k4.cardAfterChange),
+    JSON.stringify(k4));
+  ok('шинэ кодоор дахин элсэхэд мэдэгдэл арилна',
+    k4 && k4.lostAfterRejoin.length === 0 && k4.cardAfterRejoin === 'MICA', JSON.stringify(k4));
+
+  await c.ev(`
+    rpc = window.__orig.rpc; isDevHost = window.__orig.dev;
+    me = cleanMe(window.__orig.me); save(KEY_ME, me); refreshMe();
+    show('home'); go('home');
+    return 1;
+  `);
+
   console.log('\n[25] Дүгнэлтийн гол товч — «Дараагийн хэсэг» уу «Дахин эхлүүлэх» үү');
   /* «Дахин үзэх» гэсэн шошго ХУДАЛ байв: тэр товч нь ижил 20 үгийг биш,
      ДАРААГИЙН шинэ багцыг өгдөг (`buildQueue` нь `due → fresh → rest`).
@@ -1622,9 +1904,10 @@ async function run(c) {
     JSON.stringify(dr.opened));
   ok('бүдгэрүүлэгч гарч ирнэ',
     dr && dr.opened.scrim === false, JSON.stringify(dr.opened));
-  /* JLPT-ийн тугаас хамаарна — хатуу тоо бичвэл тугийг сольмогц унана. */
-  ok('шургуулгад 8 бичлэг, JLPT нь тугийг дагана',
-    dr && dr.opened.items === 8
+  /* JLPT-ийн тугаас хамаарна — хатуу тоо бичвэл тугийг сольмогц унана.
+     9 дэх нь «Анги» — зөвхөн ангид элссэн үед харагдана (энэ үед үгүй). */
+  ok('шургуулгад 9 бичлэг, «Анги» нуугдмал, JLPT нь тугийг дагана',
+    dr && dr.opened.items === 9
       && dr.opened.shown === (jlptOn ? 8 : 7),
     JSON.stringify(dr.opened) + ' jlptOn=' + jlptOn);
   ok('бичлэг БҮР иконтой',

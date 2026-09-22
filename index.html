@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22x">
-<link rel="stylesheet" href="app.css?v=2026-09-22x">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22y">
+<link rel="stylesheet" href="app.css?v=2026-09-22y">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22x">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22x">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22y">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22y">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -51,6 +51,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <button data-go="exam"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 4h8a1 1 0 0 1 1 1v1h2v15H5V6h2V5a1 1 0 0 1 1-1z"/><path d="M9 12h6M9 16h4"/></svg><span>Шалгалт</span></button>
   <button data-go="kana"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5 10.5 4.5 17 19.5"/><path d="M6.8 14.5h7.4"/><path d="M19.5 19.5V12"/><path d="M19.5 12a2.6 2.6 0 1 0-2.6 2.6"/></svg><span>Кана үсэг</span></button>
   <button data-go="stats"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span>Явц</span></button>
+  <button data-go="klass" id="nav-klass" hidden><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M21 20v-2a6 6 0 0 0-4-5.65"/></svg><span>Анги</span></button>
   <button data-go="feedback"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 15.5a2.5 2.5 0 0 1-2.5 2.5H8l-4 3V6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5z"/></svg><span>Санал хүсэлт</span></button>
   <button data-go="profile"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.8 20c0-3.5 3.2-5.8 7.2-5.8s7.2 2.3 7.2 5.8"/></svg><span>Тохиргоо</span></button>
 </nav>
@@ -476,7 +477,63 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
 </section>
 
 <!-- ═══════════════════ ПРОФАЙЛ ═══════════════════ -->
+<!-- ═══════════════════ НЭР БА АНГИ ═══════════════════
+     Анх орохдоо ба Тохиргооноос засахдаа ИЖИЛ дэлгэц (`openSetup`).
+     Ангийн сонголтыг JS зурна — серверээс ирсэн нэрээр (`class_list`). -->
+<section id="setup" class="screen" aria-labelledby="su-title" hidden>
+  <h2 id="su-title">Танилцъя</h2>
+
+  <div class="su-field">
+    <label class="su-label" for="su-name">Нэр</label>
+    <input id="su-name" type="text" maxlength="40"
+           autocomplete="name" spellcheck="false" required>
+  </div>
+
+  <h2 id="su-classes-label">Анги</h2>
+  <div class="su-choices" role="group" aria-labelledby="su-classes-label">
+    <div id="su-classes"></div>
+    <div class="su-other-wrap">
+      <button id="su-other" class="su-toggle" type="button" aria-pressed="false">
+        <span class="su-mark" aria-hidden="true"></span>
+        <span class="su-choice-name">Бусад</span>
+        <small>Ангигүй</small>
+      </button>
+    </div>
+  </div>
+
+  <p id="su-note" class="su-status" role="status" aria-atomic="true"></p>
+  <div class="su-actions">
+    <button id="su-save" class="primary big" type="button">Хадгалах</button>
+    <button id="su-cancel" class="ghost" type="button">Болих</button>
+  </div>
+</section>
+
+<section id="klass" class="screen" aria-labelledby="kl-title" hidden>
+  <div class="kl-head">
+    <h2 id="kl-title">Анги</h2>
+    <button id="kl-refresh" class="ghost sm" type="button"
+            aria-label="Шинэчлэх" title="Шинэчлэх">
+      <svg viewBox="0 0 24 24" width="20" height="20"
+           fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round"
+           aria-hidden="true">
+        <path d="M20 12a8 8 0 0 1-13.7 5.6M4 12a8 8 0 0 1 13.7-5.6"/>
+        <path d="M17.5 3.5v3.2h-3.2M6.5 20.5v-3.2h3.2"/>
+      </svg>
+    </button>
+  </div>
+  <p id="kl-note" class="kl-status" role="status" aria-atomic="true"></p>
+  <div id="kl-list"></div>
+</section>
+
 <section id="profile" class="screen" hidden>
+
+  <!-- Нэр ба анги. Засахад `openSetup(false)`. -->
+  <div class="set">
+    <span class="set-i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.8 20c0-3.5 3.2-5.8 7.2-5.8s7.2 2.3 7.2 5.8"/></svg></span>
+    <div class="set-t"><b id="me-name">—</b><span id="me-classes">—</span></div>
+    <button id="me-edit" class="ghost sm" type="button">Засах</button>
+  </div>
 
   <h2>Дасгал</h2>
 
@@ -594,7 +651,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   </div>
 </section>
 
-<script src="sync-config.js?v=2026-09-22x"></script>
-<script src="app.js?v=2026-09-22x"></script>
+<script src="sync-config.js?v=2026-09-22y"></script>
+<script src="app.js?v=2026-09-22y"></script>
 </body>
 </html>

@@ -1622,7 +1622,7 @@ function finish() {
 /* ══════════════════════ 7. Дэлгэц солих ба нүүр ══════════════════════ */
 
 const SCREENS = ['home', 'irodori', 'jlpt', 'kana', 'study', 'done', 'exam',
-                 'feedback', 'stats', 'profile'];
+                 'feedback', 'stats', 'profile', 'setup', 'klass'];
 let screen = 'home';
 
 /* JLPT хэсгийг ТҮР унтраасан. Буцаахдаа зөвхөн энэ тугийг `true` болгоно —
@@ -1639,7 +1639,7 @@ function show(name) {
   // Дасгалаас ГАРАХ мөчид хэрэглээний тоог илгээнэ. `finish()` нь
   // `show('done')` дуудаж дуусдаг тул дуусгасан ч, дундуур гарсан ч
   // хоёулаа энд таарна.
-  if (screen === 'study' && name !== 'study') { statsPing(); stopRecog(); }
+  if (screen === 'study' && name !== 'study') { statsPing(); memberSync(); stopRecog(); }
   // Шалгалтаас гарвал хойшлуулсан таймер ШИНЭ гүйлтэд нөлөөлөхгүй байх ёстой.
   if (screen === 'exam' && name !== 'exam') exAbort();
   const wasScreen = screen;          // `navTo`-д хэрэгтэй — доор `screen` дарагдана
@@ -1702,7 +1702,8 @@ function go(name) {
   // Явц нь БҮХ санг харуулдаг тул нээхэд бусад номыг татна. Эхлээд
   // байгаагаараа зурж, ирсэн хойно нь дахин зурна — хоосон дэлгэц харагдахгүй.
   if (name === 'stats') { refreshStats(); loadAllBooks().then(refreshStats); }
-  if (name === 'profile') { refreshSync(); refreshUsage(); }
+  if (name === 'profile') { refreshSync(); refreshUsage(); refreshMe(); }
+  if (name === 'klass') refreshKlass();
   if (name === 'feedback') refreshFb();
   if (name === 'exam') examSetup();
   if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
@@ -2726,6 +2727,8 @@ $('btn-reset').onclick = async () => {
   save(KEY_S, settings);
   refreshStats();
   refreshHome();
+  // Анги ч ТЭГ тоог харах ёстой — эс тэгвэл жагсаалтад хуучин тоо үлдэнэ.
+  memberSync(true);
 
   /* СИНК нь устгасныг БУЦААЖ ТАТНА: `syncNow()` нь локал ба үүлний
      өгөгдлийг уусгадаг тул хоосон локал + бүтэн үүл = бүгд буцна.
@@ -2841,6 +2844,392 @@ if (!devId) {
   devId = [...a].map(b => b.toString(36)).join('').slice(0, 22);
   save(KEY_DEV, devId);
 }
+
+/* ══════════════════════ 10b. Нэр ба анги ══════════════════════
+ *
+ * Багш даалгавар өгөөд сурагчид хийж байгаа эсэхийг харах зорилготой.
+ * Хүн НЭРээ бичиж, анги(уд)-аа сонгоно — эсвэл «Бусад». Ангийн гишүүд
+ * бие биеийнхээ явцыг харна; «Бусад» зөвхөн өөрийнхийгөө (Явц).
+ *
+ * НЭР ХААШАА ОЧДОГ ВЭ:
+ *   · Үргэлж энэ төхөөрөмж дээр (`KEY_ME`).
+ *   · Серверт ЗӨВХӨН ангид элссэн үед. «Бусад» бол нэр огт илгээгдэхгүй —
+ *     өмнө нь ангид байсан бол серверийн мөрийг устгах хүсэлт нь ч ХООСОН
+ *     нэртэй явна.
+ *
+ * Хамгаалалт серверт (SUPABASE.sql «АНГИ»): анги бүр 4 оронтой кодтой,
+ * буруу оролдлогыг цагт 50-аар хязгаарладаг. Клиент зөвхөн СЕРВЕР ЗӨВ
+ * гэж баталсан кодыг хадгална.
+ */
+const KEY_ME = 'irodori.me.v1';
+const KEY_CLS = 'irodori.classes.v1';      // ангийн нэрсийн кэш — офлайн үед
+
+/* Гишүүний id нь `devId`-ээс ТУСДАА: хэрэглээний нэргүй тоог (ping)
+   нэртэй холбох боломж үлдээхгүйн тулд. */
+function newMemberId() {
+  const a = new Uint8Array(16);
+  (crypto || window.crypto).getRandomValues(a);
+  return 'm' + [...a].map(b => b.toString(36)).join('').slice(0, 23);
+}
+
+/** Хадгалсан бичлэгийг шалгаж цэвэрлэнэ — гараар засагдсан ч апп унахгүй. */
+function cleanMe(v) {
+  const o = (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+  const codes = {};
+  if (o.codes && typeof o.codes === 'object' && !Array.isArray(o.codes)) {
+    for (const k in o.codes) {
+      if (/^[a-z0-9_-]{1,20}$/.test(k) && /^\d{4}$/.test(String(o.codes[k]))) {
+        codes[k] = String(o.codes[k]);
+      }
+    }
+  }
+  return {
+    id: (typeof o.id === 'string' && /^[a-z0-9]{8,64}$/.test(o.id)) ? o.id : newMemberId(),
+    name: typeof o.name === 'string' ? o.name.trim().slice(0, 40) : '',
+    codes: codes,
+    other: !!o.other && !Object.keys(codes).length,
+    done: !!o.done,
+    // Сервер СҮҮЛД баталсан ангиуд. «Бусад» руу шилжсэн хүний мөрийг
+    // устгах хэрэгтэй эсэхийг үүгээр мэднэ — хоосон бол сүлжээ огт дуудахгүй.
+    srv: Array.isArray(o.srv) ? o.srv.filter(x => typeof x === 'string') : [],
+    // Код нь СОЛИГДСОН тул хаягдсан ангиуд. Дахин элсэх эсвэл «Бусад»
+    // сонгох хүртэл мэдэгдэнэ — эс тэгвэл анги ЧИМЭЭГҮЙ алга болно.
+    lost: Array.isArray(o.lost) ? o.lost.filter(x => typeof x === 'string').slice(0, 10) : [],
+  };
+}
+
+let me = cleanMe(load(KEY_ME, null));
+save(KEY_ME, me);                          // шинэ id-г нэг удаа бэхэлнэ
+let classList = load(KEY_CLS, []);
+if (!Array.isArray(classList)) classList = [];
+
+const myClasses = () => Object.keys(me.codes);
+const className = id => (classList.find(c => c.id === id) || {}).name || id;
+
+/** Серверээс ангийн жагсаалт. Бүтэлгүйтвэл кэш хэвээр. */
+function loadClassList() {
+  if (!syncOn) return Promise.resolve(classList);
+  return rpc('class_list', {}).then(l => {
+    if (Array.isArray(l)) {
+      classList = l.filter(c => c && typeof c.id === 'string' && typeof c.name === 'string');
+      save(KEY_CLS, classList);
+    }
+    return classList;
+  }).catch(() => classList);
+}
+
+/** Тохиргоо дэлгэцийн карт ба цэсний «Анги» мөр. */
+function refreshMe() {
+  const n = $('me-name'), c = $('me-classes');
+  if (n) n.textContent = me.name || 'Нэр оруулаагүй';
+  if (c) {
+    const txt = myClasses().length
+      ? myClasses().map(className).join(' · ')
+      : (me.other ? 'Бусад' : 'Анги сонгоогүй');
+    c.textContent = me.lost.length
+      ? txt + ' · ' + me.lost.map(className).join(', ') + ': код солигдсон'
+      : txt;
+  }
+  const nav = $('nav-klass');
+  if (nav) nav.hidden = !myClasses().length;
+}
+
+/* ── Серверт тоо илгээх ──────────────────────────────────────────── */
+let lastMemberSync = 0;
+
+/** Нэр, анги, тоог серверт илгээнэ.
+ *
+ *  Хариу нь анги тус бүрийн төлөв ({"mica":"ok","c2":"bad"}):
+ *    bad / none — код солигдсон эсвэл анги устсан. Кодыг ХАЯНА: эс
+ *                 тэгвэл дасгал бүрд хуучин кодоор оролдож, ангийн
+ *                 таах хязгаарыг (цагт 50) бүх сурагч хамтдаа дуусгана.
+ *    locked     — түр. Кодыг ҮЛДЭЭНЭ.
+ *  2 минутад нэгээс олонгүй (`force`-оос бусад үед). */
+function memberSync(force) {
+  if (!syncOn || isDevHost()) return Promise.resolve(null);
+  const ids = myClasses();
+  // «Бусад» бөгөөд серверт юу ч үлдээгүй — дуудах шалтгаан алга.
+  if (!ids.length && !me.srv.length) return Promise.resolve(null);
+  const now = Date.now();
+  if (!force && now - lastMemberSync < 120000) return Promise.resolve(null);
+  lastMemberSync = now;
+
+  const v = Object.values(progress);
+  const body = {
+    p_member: me.id,
+    // Ангигүй бол НЭР ИЛГЭЭХГҮЙ — сервер мөрийг устгана.
+    p_name: ids.length ? me.name : '',
+    p_classes: ids.length ? me.codes : {},
+    p_seen: v.length,
+    p_learned: v.filter(p => (p.b || 0) >= 3).length,
+    p_today: todayN(),
+    p_streak: streakN(),
+    p_day: today(),
+  };
+  return rpc('member_put', body).then(res => {
+    if (!res || typeof res !== 'object' || res.error) return res;
+    let dropped = false;
+    for (const k of ids) {
+      if (res[k] === 'bad' || res[k] === 'none') {
+        delete me.codes[k]; dropped = true;
+        if (!me.lost.includes(k)) me.lost.push(k);
+      }
+    }
+    me.srv = Object.keys(res).filter(k => res[k] === 'ok');
+    save(KEY_ME, me);
+    if (dropped) refreshMe();
+    return res;
+  }).catch(() => null);
+}
+
+/* ── Тохируулах дэлгэц ───────────────────────────────────────────── */
+let setupFirst = false;
+
+const SU_ITEM = c =>
+  '<div class="su-item">' +
+    '<button class="su-toggle" type="button" data-c="' + escA(c.id) + '" aria-pressed="false"' +
+    ' aria-controls="su-codebox-' + escA(c.id) + '">' +
+      '<span class="su-mark" aria-hidden="true"></span>' +
+      '<span class="su-choice-name">' + esc(c.name) + '</span>' +
+    '</button>' +
+    '<div class="su-codebox" id="su-codebox-' + escA(c.id) + '">' +
+      '<label class="su-label" for="su-code-' + escA(c.id) + '">4 оронтой код</label>' +
+      '<input class="su-code" id="su-code-' + escA(c.id) + '" data-c="' + escA(c.id) + '"' +
+      ' type="text" inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}"' +
+      ' autocomplete="off" spellcheck="false" aria-describedby="su-err-' + escA(c.id) + '">' +
+      '<p class="su-err" id="su-err-' + escA(c.id) + '" data-c="' + escA(c.id) + '" role="alert" hidden></p>' +
+    '</div>' +
+  '</div>';
+
+function suNote(msg, isErr) {
+  const n = $('su-note');
+  n.textContent = msg || '';
+  n.classList.toggle('is-error', !!isErr);
+}
+
+function suErr(id, msg) {
+  const e = document.querySelector('.su-err[data-c="' + id + '"]');
+  const i = document.querySelector('.su-code[data-c="' + id + '"]');
+  if (e) { e.textContent = msg || ''; e.hidden = !msg; }
+  if (i) i.setAttribute('aria-invalid', msg ? 'true' : 'false');
+}
+
+function renderSetupClasses() {
+  const box = $('su-classes');
+  box.innerHTML = classList.map(SU_ITEM).join('');
+  for (const c of classList) {
+    const on = c.id in me.codes;
+    const b = box.querySelector('.su-toggle[data-c="' + c.id + '"]');
+    const i = box.querySelector('.su-code[data-c="' + c.id + '"]');
+    b.setAttribute('aria-pressed', on);
+    i.value = me.codes[c.id] || '';
+    b.onclick = () => {
+      const now = b.getAttribute('aria-pressed') !== 'true';
+      b.setAttribute('aria-pressed', now);
+      if (now) { $('su-other').setAttribute('aria-pressed', 'false'); i.focus(); }
+      suErr(c.id, ''); suNote('');
+    };
+    i.oninput = () => { i.value = i.value.replace(/\D/g, '').slice(0, 4); suErr(c.id, ''); };
+  }
+}
+
+/** first = анх удаа (буцах товчгүй). */
+function openSetup(first) {
+  setupFirst = !!first;
+  $('su-title').textContent = first ? 'Танилцъя' : 'Профайл засах';
+  $('su-cancel').hidden = !!first;
+  $('su-name').value = me.name;
+  $('su-name').removeAttribute('aria-invalid');
+  $('su-other').setAttribute('aria-pressed', me.other && !myClasses().length);
+  renderSetupClasses();
+  suNote(syncOn ? '' : 'Анги холбогдох боломжгүй — зөвхөн «Бусад».');
+  show('setup');
+  // Жагсаалтыг шинэчилнэ. Хэрэглэгч аль хэдийн дарж эхэлсэн бол
+  // зурсан сонголтыг нь устгахгүйн тулд зөвхөн ӨӨРЧЛӨГДСӨН үед дахин зурна.
+  const before = JSON.stringify(classList);
+  loadClassList().then(() => {
+    if (screen !== 'setup') return;
+    if (JSON.stringify(classList) !== before) {
+      const keep = {};
+      document.querySelectorAll('#su-classes .su-toggle').forEach(b => {
+        const i = document.querySelector('.su-code[data-c="' + b.dataset.c + '"]');
+        keep[b.dataset.c] = { on: b.getAttribute('aria-pressed') === 'true', code: i ? i.value : '' };
+      });
+      renderSetupClasses();
+      for (const id in keep) {
+        const b = document.querySelector('#su-classes .su-toggle[data-c="' + id + '"]');
+        const i = document.querySelector('.su-code[data-c="' + id + '"]');
+        if (b) b.setAttribute('aria-pressed', keep[id].on);
+        if (i) i.value = keep[id].code;
+      }
+    }
+    if (syncOn && !classList.length) suNote('Анги ачаалж чадсангүй. Дараа Тохиргооноос нэмж болно.');
+  });
+}
+
+$('su-other').onclick = () => {
+  $('su-other').setAttribute('aria-pressed', 'true');
+  document.querySelectorAll('#su-classes .su-toggle').forEach(b => {
+    b.setAttribute('aria-pressed', 'false');
+    suErr(b.dataset.c, '');
+  });
+  suNote('');
+};
+
+$('su-name').oninput = () => $('su-name').removeAttribute('aria-invalid');
+
+let setupRun = 0;                          // гүйлтийн тэмдэг (§2.36): давхар дарлага
+
+async function saveSetup() {
+  const run = ++setupRun;
+  const name = $('su-name').value.trim().slice(0, 40);
+  if (!name) {
+    $('su-name').setAttribute('aria-invalid', 'true');
+    $('su-name').focus();
+    suNote('Нэрээ бичнэ үү.', true);
+    return;
+  }
+  const picked = [...document.querySelectorAll('#su-classes .su-toggle')]
+    .filter(b => b.getAttribute('aria-pressed') === 'true').map(b => b.dataset.c);
+  const other = $('su-other').getAttribute('aria-pressed') === 'true';
+  if (!picked.length && !other) {
+    suNote('Анги эсвэл «Бусад»-ыг сонгоно уу.', true);
+    return;
+  }
+
+  // Код бүрийг СЕРВЕРЭЭР батална. Өмнө нь баталсан, өөрчлөгдөөгүй кодыг
+  // дахин илгээхгүй — таах хязгаараас дэмий зарцуулахгүй.
+  const codes = {};
+  let bad = false;
+  for (const id of picked) {
+    const code = (document.querySelector('.su-code[data-c="' + id + '"]').value || '').trim();
+    if (!/^\d{4}$/.test(code)) { suErr(id, '4 оронтой код оруулна уу.'); bad = true; continue; }
+    codes[id] = code;
+  }
+  if (bad) { suNote('Кодоо шалгана уу.', true); return; }
+
+  const btn = $('su-save');
+  btn.disabled = true;
+  suNote(picked.length ? 'Шалгаж байна…' : '');
+  try {
+    for (const id of picked) {
+      if (me.codes[id] === codes[id]) continue;
+      let st;
+      try { st = await rpc('class_join', { p_class: id, p_code: codes[id] }); }
+      catch (e) { suNote('Сүлжээ алга — дахин оролдоно уу.', true); return; }
+      if (run !== setupRun) return;
+      if (st === 'ok') continue;
+      suErr(id, st === 'locked' ? 'Түр түгжигдсэн — 1 цагийн дараа оролдоно уу.'
+              : st === 'none' ? 'Анги олдсонгүй.' : 'Код буруу.');
+      bad = true;
+    }
+    if (bad) { suNote('Кодоо шалгана уу.', true); return; }
+
+    me.name = name;
+    me.codes = codes;
+    me.other = !picked.length;
+    // Дахин элссэн анги, эсвэл «Бусад» — мэдэгдэх шаардлага дууслаа.
+    me.lost = me.other ? [] : me.lost.filter(k => !(k in codes));
+    me.done = true;
+    save(KEY_ME, me);
+    refreshMe();
+    suNote('');
+    memberSync(true);
+    go(setupFirst ? 'home' : 'profile');
+  } finally {
+    if (run === setupRun) btn.disabled = false;
+  }
+}
+
+$('su-save').onclick = () => { saveSetup(); };
+$('su-cancel').onclick = () => go('profile');
+$('me-edit').onclick = () => openSetup(false);
+
+/* ── Ангийн дэлгэц ───────────────────────────────────────────────── */
+let klassRun = 0;
+
+const KL_ROW = r =>
+  '<li class="kl-member' + (r.me ? ' me' : '') + '">' +
+    '<div class="kl-name"><b>' + esc(r.name) + '</b><span class="kl-self">Би</span></div>' +
+    '<dl class="kl-metrics">' +
+      '<div class="kl-learned"><dt>тогтсон</dt><dd>' + r.learned + '</dd></div>' +
+      '<div><dt>үзсэн</dt><dd>' + r.seen + '</dd></div>' +
+      '<div><dt>өнөөдөр</dt><dd>' + r.todayN + '</dd></div>' +
+      '<div><dt>дараалан</dt><dd>' + r.streakN + '<small>өд.</small></dd></div>' +
+    '</dl>' +
+  '</li>';
+
+/** Серверийн мөрийг ЭНЭ төхөөрөмжийн өдрөөр тайлбарлана.
+ *
+ *  `today`/`streak` нь `day` өдрийнх. Өчигдөр 20 үг хийгээд өнөөдөр
+ *  ороогүй хүн «өнөөдөр 20» гэж харагдах ёсгүй. Сервер UTC-ээр
+ *  тоолдог тул шийдвэрийг энд — хэрэглэгчийн өдрөөр гаргана. */
+function klassRow(r) {
+  const t = today();
+  const d = Number.isFinite(r.day) ? r.day : -1;
+  return {
+    name: String(r.name || ''),
+    me: !!r.me,
+    seen: Math.max(0, r.seen | 0),
+    learned: Math.max(0, r.learned | 0),
+    todayN: d === t ? Math.max(0, r.today | 0) : 0,
+    streakN: (d === t || d === t - 1) ? Math.max(0, r.streak | 0) : 0,
+  };
+}
+
+function klassNote(msg, isErr) {
+  const n = $('kl-note');
+  n.textContent = msg || '';
+  n.classList.toggle('is-error', !!isErr);
+}
+
+async function refreshKlass() {
+  const run = ++klassRun;
+  const ids = myClasses();
+  const box = $('kl-list');
+  if (!ids.length) {
+    box.innerHTML = '';
+    klassNote(me.lost.length ? lostMsg()
+      : 'Та ангид элсээгүй байна. Тохиргооноос нэмж болно.', me.lost.length > 0);
+    return;
+  }
+  if (!syncOn) { klassNote('Анги холбогдох боломжгүй.', true); return; }
+  klassNote('Ачаалж байна…');
+  // Өөрийн сүүлийн тоог ЭХЛЭЭД илгээнэ — эс тэгвэл жагсаалтад өөрийгөө
+  // хуучин тоотой харна.
+  await memberSync(true);
+  if (run !== klassRun) return;
+  const out = [], msgs = [];
+  for (const id of myClasses()) {
+    let r;
+    try {
+      r = await rpc('class_roster', { p_class: id, p_code: me.codes[id], p_member: me.id });
+    } catch (e) { msgs.push('Сүлжээ алга.'); continue; }
+    if (run !== klassRun) return;
+    if (!r || r.status === 'bad' || r.status === 'none') {
+      delete me.codes[id];
+      if (!me.lost.includes(id)) me.lost.push(id);
+      save(KEY_ME, me); refreshMe();
+      continue;
+    }
+    if (r.status === 'locked') { msgs.push('«' + className(id) + '» түр түгжигдсэн.'); continue; }
+    const rows = (Array.isArray(r.rows) ? r.rows : []).map(klassRow);
+    out.push('<section class="kl-class" aria-labelledby="kl-class-' + escA(id) + '">' +
+      '<h3 id="kl-class-' + escA(id) + '"><span>' + esc(r.name || className(id)) + '</span>' +
+      '<small>' + rows.length + ' хүн</small></h3>' +
+      '<ol class="kl-members">' + rows.map(KL_ROW).join('') + '</ol></section>');
+  }
+  box.innerHTML = out.join('');
+  /* `memberSync` дээр ч, roster дээр ч хаягдаж болно — аль алинд нь
+     `me.lost`-д бичигддэг тул мэдэгдлийг ЭНДЭЭС нэг удаа гаргана. */
+  if (me.lost.length) msgs.unshift(lostMsg());
+  klassNote(msgs.join(' '), msgs.length > 0);
+}
+
+const lostMsg = () => me.lost.map(k => '«' + className(k) + '»').join(', ')
+  + ' ангийн код солигдсон — Тохиргооноос дахин оруулна уу.';
+
+$('kl-refresh').onclick = () => { refreshKlass(); };
 
 let fbKind = 'bug';
 
@@ -3068,7 +3457,12 @@ Promise.all([
     /* Түүхийн ЁЗООР. Үүнгүй бол эхний `popstate`-д `state` нь `null`
        ирж, нүүр рүү буцах эсэхийг таамаглах шаардлагатай болно. */
     try { history.replaceState({ scr: 'home' }, ''); } catch (e) {}
-    show('home'); refreshHome(); autoStart(); pingUsage();
+    show('home'); refreshHome(); refreshMe(); pingUsage();
+    /* Нэр, анги тохируулаагүй бол ЭХЛЭЭД асууна — одоо байгаа
+       хэрэглэгчид ч (хэрэглэгчийн шаардлага). Тохируулсан бол ангийн
+       тоог шинэчилж, холбоосоор ирсэн дасгалыг эхлүүлнэ. */
+    if (!me.done) openSetup(true);
+    else { autoStart(); memberSync(true); }
   })
   .catch(() => {
     document.getElementById('home').innerHTML =

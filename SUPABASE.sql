@@ -6,6 +6,8 @@
 --  ЗАРЧИМ
 --  · Хувийн мэдээлэл ХАДГАЛАХГҮЙ — и-мэйл ч, нэр ч үгүй.
 --    Зөвхөн санамсаргүй код ба «аль үгийг хэдэн удаа давтсан» гэсэн тоо.
+--    ҮЛ ХАМААРАХ ГАНЦ ЗҮЙЛ: АНГИд элссэн хүний НЭР (доорх «АНГИ» хэсэг).
+--    «Бусад» гэж сонгосон хүний нэр төхөөрөмжөөс гарахгүй.
 --  · Хүснэгт рүү ШУУД хандахыг хаана. Хэрэв анон түлхүүрээр шууд
 --    `select * from progress` хийж чаддаг байсан бол хэн ч БҮХ хүний
 --    мөрийг татаж авах байсан. Тиймээс зөвхөн доорх хоёр функцээр,
@@ -445,3 +447,223 @@ $ud$;
 
 revoke all on function public.usage_days() from public;
 grant execute on function public.usage_days() to anon;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  АНГИ  (2026-09-22 нэмэгдэв)
+-- ═══════════════════════════════════════════════════════════════════════
+--  Багш даалгавар өгөөд сурагчид хийж байгаа эсэхийг харах зорилготой.
+--
+--  ЗАРЧМЫН ӨӨРЧЛӨЛТ. Энэ файлын эхэнд «нэр ч үгүй» гэж бичсэн. Анги нь
+--  НЭР хадгална — гэхдээ ЗӨВХӨН ангид элссэн хүнийх. «Бусад» гэж
+--  сонгосон хүний нэр төхөөрөмжөөс ГАРАХГҮЙ: `member_put` нь ангигүй
+--  хүний мөрийг хадгалахын оронд УСТГАНА.
+--
+--  ХАМГААЛАЛТ. Репо ба сайт хоёулаа нийтэд нээлттэй, нэвтрэлт байхгүй
+--  (зөвхөн анон түлхүүр). Тиймээс анги бүр 4 оронтой КОДтой:
+--    · Код нь энэ файлд БИЧИГДЭХГҮЙ — репо нийтэд нээлттэй. Репогийн
+--      гадна хадгалж (`00-admin/secrets/`), SQL Editor-т гараар оруулна.
+--    · 4 орон = 10 000 хувилбар — таахад амархан. Тиймээс анги тус бүрд
+--      буруу оролдлогыг ЦАГТ 50-аар хязгаарлана (дунджаар ~100 цаг
+--      таана). Хүрвэл тухайн анги
+--      1 цаг ТҮГЖИГДЭНЭ (зөв кодыг ч хүлээж авахгүй) — эс тэгвэл
+--      түгжээг зөв таамаглалаар «тойрох» боломжтой болно.
+--    · Үнэ: IP-гүй тул халдагч болон жинхэнэ сурагчийг ялгахгүй. Хэн
+--      нэгэн зориуд 50 удаа буруу оруулбал анги 1 цаг хаагдана.
+--      Жижиг ангийн хэрэгсэлд хүлээн зөвшөөрөх эрсдэл.
+--    · Яагаад 20 биш 50: багш кодоо сольход анги бүх сурагчийн апп
+--      ХУУЧИН кодоор нэг удаа оролдоно (клиент татгалзсан кодыг дахин
+--      илгээхгүй). 30 сурагчтай ангид 20 нь шууд түгжих байв.
+--    · Хүснэгт рүү шууд хандах ХААЛТТАЙ (RLS, policy байхгүй). Код ба
+--      гишүүний id хэзээ ч клиент рүү буцахгүй.
+--
+--  ТАНИХ ТЭМДЭГ. `member` нь клиентийн санамсаргүй id — `devices.dev`-ээс
+--  ТУСДАА. Хэрэглээний нэргүй тоог нэртэй холбохгүйн тулд.
+--  Хязгаар: нэг хүн хоёр төхөөрөмжөөр орвол хоёр мөр болно.
+
+create table if not exists public.classes (
+  id        text primary key,               -- 'mica', 'c2' — клиент үүгээр ялгана
+  name      text not null,                  -- дэлгэцэнд гарах нэр
+  code      text not null,                  -- 4 орон; энэ файлд БИЧИГДЭХГҮЙ
+  sort      int  not null default 0,
+  fails     int  not null default 0,        -- одоогийн цонхны буруу оролдлого
+  fail_from timestamptz not null default now()
+);
+
+create table if not exists public.members (
+  member     text primary key,
+  name       text   not null,
+  classes    text[] not null default '{}',
+  seen       int    not null default 0,     -- үзсэн үг
+  learned    int    not null default 0,     -- тогтсон үг (хайрцаг >= 3)
+  today      int    not null default 0,     -- `day` өдөр судалсан өөр үг
+  streak     int    not null default 0,
+  day        int,                           -- клиентийн өдрийн дугаар (today())
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+alter table public.classes enable row level security;
+alter table public.members enable row level security;
+create index if not exists members_classes_idx on public.members using gin (classes);
+
+-- ── Кодыг шалгах — БҮХ ангийн хандалт энэ ганц газраар дамжина ─────────
+-- Буцаах утга: 'ok' | 'bad' | 'locked' | 'none'. Клиентэд «түгжигдсэн»
+-- гэдгийг «буруу»-гаас ялгаж хэлэх нь чухал — эс тэгвэл сурагч зөв
+-- кодоо дахин дахин оруулж, «буруу» гэж сонсоод будилна.
+create or replace function public.class_join(p_class text, p_code text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $cj$
+declare
+  c public.classes%rowtype;
+begin
+  -- `for update` — зэрэг оролдлогууд тоолуурыг зөв нэмэхийн тулд.
+  select * into c from public.classes where id = p_class for update;
+  if not found then
+    return 'none';
+  end if;
+  if c.fail_from < now() - interval '1 hour' then
+    update public.classes set fails = 0, fail_from = now() where id = p_class;
+    c.fails := 0;
+  end if;
+  if c.fails >= 50 then
+    return 'locked';
+  end if;
+  if p_code is not null and btrim(p_code) = c.code then
+    return 'ok';
+  end if;
+  update public.classes set fails = fails + 1 where id = p_class;
+  return 'bad';
+end;
+$cj$;
+
+-- ── Ангийн жагсаалт — нэр л; код, гишүүн ГАРАХГҮЙ ──────────────────────
+create or replace function public.class_list()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = public
+as $cl$
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', name)
+                            order by sort, id), '[]'::jsonb)
+  from public.classes;
+$cl$;
+
+-- ── Гишүүнчлэл ба тоо хадгалах ──────────────────────────────────────────
+-- `p_classes` = {"mica": "1234", "c2": "5678"} — анги бүрийн КОД.
+-- Зөвхөн код нь ТААРСАН ангид бүртгэнэ. Буцаах утга нь анги тус бүрийн
+-- төлөв ({"mica":"ok","c2":"bad"}) — клиент түүгээр аль код нь хүчингүй
+-- болсныг мэднэ.
+-- Ангигүй үлдвэл (эсвэл нэр хоосон) мөрийг УСТГАНА — «Бусад»-ын нэр
+-- серверт үлдэх ёсгүй.
+create or replace function public.member_put(
+  p_member  text,
+  p_name    text,
+  p_classes jsonb,
+  p_seen    int default 0,
+  p_learned int default 0,
+  p_today   int default 0,
+  p_streak  int default 0,
+  p_day     int default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $mp$
+declare
+  ok  text[] := '{}';
+  res jsonb  := '{}'::jsonb;
+  k   text;
+  st  text;
+  nm  text   := left(btrim(coalesce(p_name, '')), 40);
+  cap int;
+begin
+  if p_member is null or length(p_member) not between 8 and 64 then
+    return jsonb_build_object('error', 'bad member');
+  end if;
+
+  if jsonb_typeof(p_classes) = 'object' then
+    for k in select jsonb_object_keys(p_classes) loop
+      st := public.class_join(k, p_classes ->> k);
+      if st = 'ok' then
+        -- Анги тутамд 200 гишүүн. Кодтой хүн санамсаргүй id-гаар
+        -- хуурамч гишүүн үржүүлэхээс хамгаална.
+        select count(*) into cap from public.members
+         where k = any(classes) and member <> p_member;
+        if cap >= 200 then
+          st := 'full';
+        else
+          ok := ok || k;
+        end if;
+      end if;
+      res := res || jsonb_build_object(k, st);
+    end loop;
+  end if;
+
+  if cardinality(ok) = 0 or nm = '' then
+    delete from public.members where member = p_member;
+    return res;
+  end if;
+
+  insert into public.members as m
+    (member, name, classes, seen, learned, today, streak, day)
+  values
+    (p_member, nm, ok,
+     least(greatest(coalesce(p_seen,    0), 0), 1000000),
+     least(greatest(coalesce(p_learned, 0), 0), 1000000),
+     least(greatest(coalesce(p_today,   0), 0), 100000),
+     least(greatest(coalesce(p_streak,  0), 0), 100000),
+     p_day)
+  on conflict (member) do update
+    set name = excluded.name, classes = excluded.classes,
+        seen = excluded.seen, learned = excluded.learned,
+        today = excluded.today, streak = excluded.streak,
+        day = excluded.day, updated_at = now();
+  return res;
+end;
+$mp$;
+
+-- ── Ангийн гишүүдийн явц ────────────────────────────────────────────────
+-- Код буруу/түгжигдсэн бол гишүүн огт гарахгүй. `me` нь зөвхөн тухайн
+-- хүний мөрийг тэмдэглэнэ — бусдын `member` id буцахгүй.
+-- `today`/`streak` нь `day` өдрийнх: хуучирсан эсэхийг клиент өөрийн
+-- өдрийн дугаартай тулгаж шийднэ (сервер UTC, хэрэглэгч UTC+8).
+create or replace function public.class_roster(p_class text, p_code text,
+                                               p_member text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $cr$
+declare
+  st text := public.class_join(p_class, p_code);
+begin
+  if st <> 'ok' then
+    return jsonb_build_object('status', st);
+  end if;
+  return jsonb_build_object(
+    'status', 'ok',
+    'name', (select name from public.classes where id = p_class),
+    'rows', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+               'name', m.name, 'seen', m.seen, 'learned', m.learned,
+               'today', m.today, 'streak', m.streak, 'day', m.day,
+               'me', m.member = p_member)
+             order by m.learned desc, m.seen desc, m.name), '[]'::jsonb)
+      from public.members m
+      where p_class = any(m.classes)
+    ));
+end;
+$cr$;
+
+revoke all on function public.class_join(text, text)  from public;
+revoke all on function public.class_list()            from public;
+revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int) from public;
+revoke all on function public.class_roster(text, text, text) from public;
+grant execute on function public.class_join(text, text)  to anon;
+grant execute on function public.class_list()            to anon;
+grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int) to anon;
+grant execute on function public.class_roster(text, text, text) to anon;
