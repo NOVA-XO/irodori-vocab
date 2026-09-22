@@ -777,6 +777,56 @@ async function run(c) {
   ok('салгасныг хэрэглэгчид ил хэлнэ',
     rs && /САЛГА/.test(rs.fell.msg), JSON.stringify(rs.fell));
 
+  /* Явц нь ГУРВАН хадгалалтад тархсан. Урьд нь зөвхөн `progress`
+     цэвэрлэгддэг байсан тул нүүрэн дээрх «Өнөөдрийн зорилт 21/20» ба
+     «дараалсан өдөр» хэвээр үлдэж, хэрэглэгч устгаагүй гэж ойлгодог
+     байв. Тиймээс НҮҮРЭН ДЭЭРХ бодит тоог шалгана. */
+  const rz = await c.ev(`
+    const realConfirm = window.confirm;
+    const keep = { p: progress, d: days, s: settings.last };
+    progress = {};
+    for (let i = 0; i < 7; i++) progress[ALL[i].id] = { n: 3, c: 3, b: 3, d: today() };
+    save(KEY_P, progress);
+    days = { last: today(), streak: 5, n: 21 }; save(KEY_D, days);
+    settings.last = { d: 'vocab', m: 'choice' }; save(KEY_S, settings);
+    go('home'); refreshHome();
+    await new Promise(r => setTimeout(r, 300));
+    const before = {
+      goal: document.getElementById('goal-done').textContent,
+      streak: document.getElementById('streak-n').textContent,
+      cont: !document.getElementById('btn-continue').hidden
+    };
+    window.confirm = () => true;
+    await document.getElementById('btn-reset').onclick();
+    await new Promise(r => setTimeout(r, 400));
+    go('home'); refreshHome();
+    await new Promise(r => setTimeout(r, 300));
+    const after = {
+      goal: document.getElementById('goal-done').textContent,
+      streak: document.getElementById('streak-n').textContent,
+      bar: document.getElementById('goal-bar').style.width,
+      cont: !document.getElementById('btn-continue').hidden,
+      lsDays: localStorage.getItem(KEY_D),
+      lsLast: (JSON.parse(localStorage.getItem(KEY_S) || '{}').last) || null
+    };
+    window.confirm = realConfirm;
+    progress = keep.p; days = keep.d; settings.last = keep.s;
+    save(KEY_P, progress); save(KEY_D, days); save(KEY_S, settings);
+    return { before: before, after: after };
+  `);
+  ok('туршилтын өмнө тоонууд БАЙСАН',
+    rz && rz.before.goal === '21' && rz.before.streak === '5' && rz.before.cont === true,
+    JSON.stringify(rz.before));
+  ok('устгахад ӨНӨӨДРИЙН ЗОРИЛТ тэг болно',
+    rz && rz.after.goal === '0' && rz.after.bar === '0%', JSON.stringify(rz.after));
+  ok('устгахад ДАРААЛСАН ӨДӨР тэг болно',
+    rz && rz.after.streak === '0', JSON.stringify(rz.after));
+  ok('«Үргэлжлүүлэх» товч алга болно',
+    rz && rz.after.cont === false, JSON.stringify(rz.after));
+  ok('days ба settings.last хадгалалтаас ч арилна',
+    rz && /"n":0/.test(rz.after.lsDays) && rz.after.lsLast === null,
+    JSON.stringify(rz.after));
+
   console.log('\n[18] Толгойн мөр — давхардалгүй');
   const bar = await c.ev(`
     return { buttons: [...document.querySelectorAll('.bar > button')].map(b => b.id),
