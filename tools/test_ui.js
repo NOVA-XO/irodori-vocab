@@ -688,6 +688,95 @@ async function run(c) {
 
   /* ふりがな — ханзан дээрх жижиг кана. Уншлагын хосыг `build_exam.py`
      үүсгэж шалгасан; энд шалгах нь ХӨТӨЧ дээрх үр дүн. */
+  console.log('\n[20] Нүүр цэвэр, кредит алдаагүй');
+  const cr = await c.ev(`
+    go('home'); await new Promise(r => setTimeout(r, 250));
+    const home = document.getElementById('home').textContent;
+    const prof = document.getElementById('profile').textContent;
+    return {
+      homeFeedback: !!document.querySelector('#home [data-go=\"feedback\"]'),
+      homeSrc: !!document.querySelector('#home .src'),
+      homeBy: /novueira/.test(home),
+      homeGit: !!document.querySelector('#home .follow'),
+      profVoicevox: /VOICEVOX/.test(prof),
+      profFoundation: /Japan/.test(prof)
+    };
+  `);
+  ok('нүүрнээс санал хүсэлт хасагдсан',
+    cr && cr.homeFeedback === false, JSON.stringify(cr));
+  ok('нүүрнээс тайлбарын блок хасагдсан',
+    cr && cr.homeSrc === false, JSON.stringify(cr));
+  ok('«Developed by novueira» хэвээр',
+    cr && cr.homeBy === true, JSON.stringify(cr));
+  ok('GitHub-ийн холбоос хэвээр',
+    cr && cr.homeGit === true, JSON.stringify(cr));
+  /* ЛИЦЕНЗ шаардана: VOICEVOX-ийн кредит аппад БАЙХ ёстой.
+     Нүүрнээс зөөсөн боловч УСТГАЖ БОЛОХГҮЙ. */
+  ok('VOICEVOX кредит Тохиргоод БИЙ (лиценз)',
+    cr && cr.profVoicevox === true, JSON.stringify(cr));
+  ok('Japan Foundation кредит Тохиргоод бий',
+    cr && cr.profFoundation === true, JSON.stringify(cr));
+
+  console.log('\n[19] «Явцыг устгах» товч');
+  /* Хоёр БОДИТ алдаа байсан:
+       1) хариу мэдэгдэл байхгүй — Профайл дээр байхад юу ч харагдахгүй
+          тул хэрэглэгч товч эвдэрсэн гэж ойлгодог;
+       2) синк буцааж татдаг — `syncNow()` нь локал ба үүлийг уусгадаг
+          тул хоосон локал + бүтэн үүл = бүгд буцна.
+     Тиймээс ЗӨВХӨН локал устгалтыг шалгах нь хангалтгүй. */
+  const rs = await c.ev(`
+    const realRpc = window.rpc;
+    const realConfirm = window.confirm;
+    const keep = { p: progress, code: syncCode };
+
+    // ── А · үүлний устгалт АЖИЛЛАНА ──
+    const calls = [];
+    window.rpc = fn => { calls.push(fn); return Promise.resolve(null); };
+    window.confirm = () => true;
+    syncCode = 'abcd1234efgh';
+    progress = {};
+    for (let i = 0; i < 4; i++) progress[ALL[i].id] = { n: 2, c: 2, b: 2, d: today() };
+    save(KEY_P, progress);
+    await document.getElementById('btn-reset').onclick();
+    await new Promise(r => setTimeout(r, 220));
+    const good = {
+      calls: calls.slice(),
+      left: Object.keys(progress).length,
+      ls: Object.keys(JSON.parse(localStorage.getItem(KEY_P) || '{}')).length,
+      code: syncCode,
+      msg: document.getElementById('reset-state').textContent
+    };
+
+    // ── Б · үүлний устгалт УНАНА (хуучин SQL) ──
+    window.rpc = () => Promise.reject(new Error('no such function'));
+    syncCode = 'abcd1234efgh'; save(KEY_C, syncCode);
+    progress = {};
+    for (let i = 0; i < 4; i++) progress[ALL[i].id] = { n: 2, c: 2, b: 2, d: today() };
+    save(KEY_P, progress);
+    await document.getElementById('btn-reset').onclick();
+    await new Promise(r => setTimeout(r, 260));
+    const fell = {
+      left: Object.keys(progress).length,
+      code: syncCode,
+      msg: document.getElementById('reset-state').textContent
+    };
+
+    window.rpc = realRpc; window.confirm = realConfirm;
+    progress = keep.p; syncCode = keep.code;
+    save(KEY_P, progress); save(KEY_C, syncCode);
+    return { good: good, fell: fell };
+  `);
+  ok('устгахад явц ХОЁУЛАНГААС нь (санах ой + localStorage) арилна',
+    rs && rs.good.left === 0 && rs.good.ls === 0, JSON.stringify(rs.good));
+  ok('ҮҮЛНИЙ хуулбарыг ч устгана (wipe_progress)',
+    rs && rs.good.calls.includes('wipe_progress'), JSON.stringify(rs.good));
+  ok('хэрэглэгчид ХАРИУ мэдэгдэнэ',
+    rs && rs.good.msg.length > 5, JSON.stringify(rs.good));
+  ok('үүл устгаж чадаагүй бол синкийг САЛГАНА (явц буцаж ирэхгүй)',
+    rs && rs.fell.left === 0 && rs.fell.code === null, JSON.stringify(rs.fell));
+  ok('салгасныг хэрэглэгчид ил хэлнэ',
+    rs && /САЛГА/.test(rs.fell.msg), JSON.stringify(rs.fell));
+
   console.log('\n[18] Толгойн мөр — давхардалгүй');
   const bar = await c.ev(`
     return { buttons: [...document.querySelectorAll('.bar > button')].map(b => b.id),
@@ -944,7 +1033,9 @@ async function run(c) {
     return { n: cards.length, worst: Math.round(worst), overlap: overlap,
              outside: document.querySelectorAll('.bigcard:not(.bigcards .bigcard)').length };
   `);
-  ok('нүүрэнд харагдах карт 4+', laid && laid.n >= 4, JSON.stringify(laid));
+  /* JLPT нуугдсан, «Санал хүсэлт» нь шургуулганд зөөгдсөн тул
+     нүүрэнд Irodori · Шалгалт · Кана гурав харагдана. */
+  ok('нүүрэнд харагдах карт 3+', laid && laid.n >= 3, JSON.stringify(laid));
   ok('карт хоорондоо ДАВХЦААГҮЙ',
     laid && laid.overlap === 0, JSON.stringify(laid));
   ok('карт хооронд бодит зай бий',

@@ -125,6 +125,35 @@ begin
 end;
 $pp$;
 
+-- ─────────────────────────────────────────────────────────────────────
+--  Явцыг УСТГАХ (2026-09-22 нэмэгдэв)
+--
+--  `put_progress` нь сервер дээр УУСГАДАГ (`v_old || winners`) тул
+--  хоосон өгөгдөл түлхэх нь үүлний хуулбарыг цэвэрлэдэггүй. Иймд
+--  аппын «Явцыг устгах» товч нь локалыг л устгаад, дараагийн синк нь
+--  бүгдийг БУЦААЖ ТАТДАГ байв — товч нь үнэхээр ажиллахгүй.
+--
+--  Энэ функц нь тухайн кодын мөрийг бүрэн устгана. Хувийн мэдээлэл
+--  гарахгүй: код мэддэг хүн зөвхөн ӨӨРИЙН мөрийг устгана.
+-- ─────────────────────────────────────────────────────────────────────
+
+create or replace function public.wipe_progress(p_code text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $wp$
+begin
+  if p_code is null or length(p_code) not between 8 and 64 then
+    raise exception 'bad code';
+  end if;
+  delete from public.progress where code = p_code;
+end;
+$wp$;
+
+revoke all on function public.wipe_progress(text) from public;
+grant execute on function public.wipe_progress(text) to anon;
+
 -- Анон хэрэглэгчид ЗӨВХӨН энэ хоёр функцийг дуудах эрх өгнө.
 revoke all on function public.jnum(jsonb) from public;
 revoke all on function public.get_progress(text) from public;

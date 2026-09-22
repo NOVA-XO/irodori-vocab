@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22i">
-<link rel="stylesheet" href="app.css?v=2026-09-22i">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-22k">
+<link rel="stylesheet" href="app.css?v=2026-09-22k">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22i">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22i">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-22k">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-22k">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -97,21 +97,9 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
       <b>Кана үсэг</b>
       <span>Хирагана ба катакана · <i id="n-kana">…</i></span>
     </button>
-    <!-- Торны ДОТОР байх ёстой — гадна нь байвал `gap` үйлчлэхгүй тул
-         өмнөх карт дээрээ наалдана. -->
-    <button class="bigcard quiet" data-go="feedback">
-      <span class="bc-jp">💬</span>
-      <b>Санал хүсэлт</b>
-      <span>Алдаа мэдэгдэх, шинэ санаа хэлэх — шууд GitHub дээр очно</span>
-    </button>
   </div>
 
   <div id="voice-warn" class="warn" hidden></div>
-  <p class="src"><b>Мартчихлаа</b> — мартахаас нь өмнө дахин асууна.
-     <span class="jp">Irodori</span> ба JLPT-ийн шинэ үг, ханз.<br>
-     Эх сурвалж: <b>Irodori 入門 ことばリスト</b> (монгол орчуулга) — The Japan&nbsp;Foundation.
-     Энэ апп нь зөвхөн хувийн давталтад зориулагдсан.<br>
-     Дуудлага: <b>VOICEVOX:<span class="jp">四国めたん</span></b></p>
   <p class="by">Developed by <b>novueira</b></p>
   <a class="follow" href="https://github.com/NOVA-XO" target="_blank" rel="noopener noreferrer">
     <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
@@ -550,6 +538,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
     <button id="btn-import" class="ghost sm">Сэргээх</button>
     <button id="btn-reset" class="ghost sm danger">Явцыг устгах</button>
   </div>
+  <div id="reset-state" class="hint"></div>
   <input type="file" id="file-import" accept="application/json" hidden>
 
   <h2>Дуу</h2>
@@ -572,9 +561,21 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <p class="hint">Апп шинэчлэгдээгүй мэт санагдвал энд дарж кэшийг тойрч
      дахин ачаална. Хувилбар: <b id="app-ver">—</b></p>
   <div class="row"><button id="btn-reload" class="ghost sm">Шинэчилж ачаалах</button></div>
+
+  <!-- ЛИЦЕНЗИЙН ШААРДЛАГАТАЙ кредит. Нүүрнээс зөөсөн (тэнд хэт их
+       текст болж байсан) ГЭХДЭЭ устгаж БОЛОХГҮЙ: VOICEVOX-ийн лиценз
+       «VOICEVOX:四国めたん» гэсэн бичгийг шаарддаг, Irodori нь
+       The Japan Foundation-ы эрхтэй бүтээл. -->
+  <h2>Эх сурвалж · зохиогчийн эрх</h2>
+  <p class="src"><b>Мартчихлаа</b> — мартахаас нь өмнө дахин асууна.
+     <span class="jp">Irodori</span> ба JLPT-ийн шинэ үг, ханз.<br>
+     Эх сурвалж: <b>Irodori 入門 ことばリスト</b> (монгол орчуулга) — The Japan&nbsp;Foundation.
+     Энэ апп нь зөвхөн хувийн давталтад зориулагдсан.<br>
+     Дуудлага: <b>VOICEVOX:<span class="jp">四国めたん</span></b><br>
+     Фонт: <b>Noto Sans JP</b> · <b>Noto Sans Mono</b> — SIL OFL 1.1.</p>
 </section>
 
-<script src="sync-config.js?v=2026-09-22i"></script>
-<script src="app.js?v=2026-09-22i"></script>
+<script src="sync-config.js?v=2026-09-22k"></script>
+<script src="app.js?v=2026-09-22k"></script>
 </body>
 </html>

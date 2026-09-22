@@ -2579,9 +2579,34 @@ $('btn-diag').onclick = () => {
   }, 3000);
 };
 
-$('btn-reset').onclick = () => {
-  if (confirm('Бүх явцыг устгах уу? Буцаах боломжгүй.')) {
-    progress = {}; save(KEY_P, progress); refreshStats(); refreshHome();
+$('btn-reset').onclick = async () => {
+  const st = $('reset-state');
+  const say = t => { if (st) st.textContent = t; };
+  if (!confirm('Бүх явцыг устгах уу? Буцаах боломжгүй.')) return;
+
+  progress = {};
+  save(KEY_P, progress);
+  refreshStats();
+  refreshHome();
+
+  /* СИНК нь устгасныг БУЦААЖ ТАТНА: `syncNow()` нь локал ба үүлний
+     өгөгдлийг уусгадаг тул хоосон локал + бүтэн үүл = бүгд буцна.
+     `put_progress` нь сервер дээр ч уусгадаг тул хоосон түлхэх нь
+     цэвэрлэхгүй. Тиймээс үүлний хуулбарыг ТУСАД НЬ устгана. */
+  if (!syncOn || !syncCode) { say('Явц устлаа.'); return; }
+  say('Үүлний хуулбарыг устгаж байна…');
+  try {
+    await rpc('wipe_progress', { p_code: syncCode });
+    say('Явц устлаа — энэ төхөөрөмж болон үүлнээс хоёуланд нь.');
+  } catch (e) {
+    /* Сервер дээр `wipe_progress` хараахан байхгүй (хуучин SUPABASE.sql).
+       Синкийг салгаснаар үүлний хуулбар буцаж ирэхгүй болно. */
+    syncCode = null;
+    save(KEY_C, syncCode);
+    refreshSync();
+    say('Явц устлаа. Үүлний хуулбарыг устгаж чадсангүй тул синкийг '
+      + 'САЛГАЛАА — эс тэгвэл явц буцаж ирэх байсан. Дахин холбохын '
+      + 'өмнө SUPABASE.sql-ийн шинэ хэсгийг ажиллуулна уу.');
   }
 };
 $('btn-export').onclick = () => {
