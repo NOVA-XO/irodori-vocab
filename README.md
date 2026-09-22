@@ -273,6 +273,7 @@ tools/build_kanji.py               KANJIDIC2 + JLPT -> data/kanji.json
 tools/kanji_mn*.json               ханзны монгол утга (гараар, түвшин тус бүрээр)
 tools/build_audio.py               VOICEVOX -> audio/*.mp3 (өргөлтийг номоор)
 tools/test_answers.js              хариулт шалгагчийн тест (node)
+tools/test_audio.py                дуудлагын дүрмийн тест (VOICEVOX асаалттай)
 ```
 
 ### Өгөгдөл хэрхэн гарсан бэ

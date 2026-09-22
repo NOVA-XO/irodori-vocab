@@ -159,19 +159,118 @@ def vv_accent(kata, speaker):
     return a
 
 
-def notation(accent_text, speaker):
+# ── Бөөсний は / へ ────────────────────────────────────────────────────
+# «AquesTalk風記法» (`is_kana=true`) нь ТОЛЬ БИЧИГ ХЭРЭГЛЭХГҮЙ, кана бүрийг
+# ҮСГЭЭР нь уншина. Тиймээс бөөсний は нь «ha» болж дуудагдана:
+#     こんばんは○ -> コンバンハ' -> ko N ba N HA   буруу
+#     зөв нь                        ko N ba N WA
+# Хөдөлгүүрээс фонемийг шууд уншиж баталсан.
+#
+# Засвар: тэмдэглэгээ үүсгэхийн ӨМНӨ эх ХИРАГАНА-г хөдөлгүүрийн ТОЛИОР
+# уншуулж, は/へ нь бөөс болж уншигдсан эсэхийг ТҮҮНЭЭС асууна.
+#
+# ЯАГААД ХАНЗААР асуудаг вэ: толиос ГАНЦ КАНА мөр асуувал хөдөлгүүр
+# эхний は-г бөөс гэж андуурна. Ханз нь утгыг тодруулдаг (шалгав):
+#     母  -> ha ha      харин  はは -> wa wa   буруу
+#     歯  -> ha         харин  は   -> wa      буруу
+#     18  -> ju u ha chi  харин じゅうはち -> ju u wa chi  буруу
+# 19 жишээн дээр: ханзаар 19/19 зөв, канагаар 8/19. Тиймээс шийдвэрийг
+# ЗӨВХӨН үгийн бичигдэх хэлбэрээс (`jp`) асууна.
+#
+# を нь `is_kana` горимд ч «o» болдог тул засах шаардлагагүй (шалгав).
+PARTICLE_KANA = {'ハ': 'ワ', 'ヘ': 'エ'}
+PARTICLE_PHON = {'ハ': 'wa', 'ヘ': 'e'}
+# Олон хэлбэр/тайлбар агуулсан бичлэгийг тольд өгөхгүй — задлалт тэнцэхгүй
+JP_UNSAFE = '／/（）()〜～ 　'
+JP_STRIP = '。、…「」『』？?！!'
+
+
+def jp_clean(jp):
+    """Тольд өгөх бэлтгэл. Аюултай бол '' буцаана.
+
+    Захын «～» нь орхигдсон хэсгийг заадаг (`～はちょっと…`) тул хасаж
+    болно. ДУНДАХ «～» (`～度～分`) нь үгийн бүтцийг эвддэг тул няцаана.
+    """
+    s = ''.join(c for c in (jp or '') if c not in JP_STRIP).strip('～〜')
+    return '' if not s or any(c in s for c in JP_UNSAFE) else s
+
+_dict_cache = {}
+
+
+def dict_moras(text, speaker):
+    """Хөдөлгүүрийн ТОЛЬ БИЧГЭЭР уншсан фонемийн жагсаалт."""
+    key = (text, speaker)
+    if key not in _dict_cache:
+        try:
+            ph = api('/accent_phrases', {'text': text, 'speaker': speaker})
+            ms = [((m.get('consonant') or '') + m['vowel'])
+                  for p in ph for m in p['moras']]
+        except Exception:
+            ms = None
+        _dict_cache[key] = ms
+    return _dict_cache[key]
+
+
+def fix_particles(ms, jp, speaker):
+    """`ms` доторх ハ/ヘ нь БӨӨС бол ワ/エ болгоно.
+
+    `jp` нь үгийн БИЧИГДЭХ хэлбэр (ханзтай). Шийдвэрийг хөдөлгүүрийн
+    толь бичиг гаргана. Мора тоо зөрвөл байрлалаар тулгах найдваргүй
+    тул огт хөндөхгүй — алдаа гаргахаас алгассан нь дээр.
+    """
+    if not any(m in PARTICLE_KANA for m in ms):
+        return ms
+    jp = jp_clean(jp)
+    if not jp:
+        return ms
+    # Бөөс нь БИЧИГДСЭН байж л уншигдана: бичигдэх хэлбэрт нь «は» алга
+    # бол ямар ч тольны хариу түүнийг «wa» болгож чадахгүй. Энэ нь
+    # `～ha` (гектар, латин) мэтийг няцаана — толь түүнийг ヘ гэж уншаад
+    # エ болгох гэж оролддог.
+    allow = {k for k, ch in (('ハ', 'は'), ('ヘ', 'へ')) if ch in jp}
+    if not allow:
+        return ms
+    dm = dict_moras(jp, speaker)
+    if not dm or len(dm) != len(ms):
+        return ms
+    return [PARTICLE_KANA[m]
+            if m in allow and phon == PARTICLE_PHON[m] else m
+            for m, phon in zip(ms, dm)]
+
+
+def notation(accent_text, speaker, jp=''):
     """Номын тэмдэглэгээг VOICEVOX-ийн «AquesTalk風記法» болгоно.
 
     Жишээ:  ミャ↓ンマー          -> ミャ'ンマア
             ブラジル○           -> ブラジル'      (ганцаараа дуудахад ижил)
             なまえ○／おなまえ○   -> ナマエ'、オナマエ'
 
+    `jp` нь үгийн бичигдэх хэлбэр — зөвхөн бөөсний は/へ-г ялгахад
+    хэрэглэнэ (`fix_particles`).
+
     Ном ӨРГӨЛТ ЗААГААГҮЙ бол '' буцаана — тэр үед хөдөлгүүрийн өөрийн
     тольд даалгах нь таамаглахаас дээр.
     """
+    raw = split_segments(accent_text or '')
+    parts_ms = [seg_accent(seg) for seg, _ in raw]
+    seps = [sep for _, sep in raw]
+
+    # ── Бөөсний は/へ — `expand_choon`-оос ӨМНӨ ────────────────────
+    # «、» тусгаарлагч нь ӨӨР ХЭЛБЭР гэсэн үг (`はし／おはし`); тэдгээрийг
+    # нийлүүлбэл `jp`-тэй тэнцэхгүй. Бусад тохиолдолд хэсгүүд нь НЭГ
+    # хэллэгийн үргэлжлэл (`さくねん○は いろいろ○…`) тул нийлүүлж
+    # бүтнээр нь тольтой тулгана.
+    if '、' not in seps:
+        flat = [m for ms, _ in parts_ms for m in ms]
+        fixed = fix_particles(flat, jp, speaker)
+        if fixed is not flat:
+            i = 0
+            for k, (ms, drop) in enumerate(parts_ms):
+                parts_ms[k] = (fixed[i:i + len(ms)], drop)
+                i += len(ms)
+
     segs, marked = [], False
-    for seg, sep in split_segments(accent_text or ''):
-        ms, drop = seg_accent(seg)
+    for (ms, drop), sep in zip(parts_ms, seps):
         ms = expand_choon(ms)
         if not ms:
             continue
@@ -260,8 +359,10 @@ def main():
         say = it.get('kana') or it.get('jp') or ''
         if not say:
             continue
+        # 4 дэх талбар нь БИЧИГДЭХ хэлбэр — `notation` бөөсний は/へ-г
+        # ялгахад толиос асуухдаа хэрэглэнэ.
         jobs.append((it['id'], to_kata(re.sub('[（）()～〜]', '', say).replace('／', '、')),
-                     it.get('accent', ''), say))
+                     it.get('accent', ''), it.get('jp') or ''))
     for it in kana['items']:
         jobs.append((it['id'], it['kata'], '', it['hira']))
     # Жишээ өгүүлбэр — EX-<үгийн id>. N5-ийн 97%-д нь бий. Өргөлтийн
@@ -301,14 +402,14 @@ def main():
 
     os.makedirs(AUDIO, exist_ok=True)
     ok, skip, fail = 0, 0, []
-    for i, (id_, kata, acc, raw) in enumerate(jobs, 1):
+    for i, (id_, kata, acc, jp) in enumerate(jobs, 1):
         dst = os.path.join(AUDIO, id_ + '.mp3')
         if os.path.exists(dst) and not a.force:
             skip += 1
             ok += 1
             continue
         try:
-            wav = synth(kata, notation(acc, a.speaker), a.speaker, a.speed)
+            wav = synth(kata, notation(acc, a.speaker, jp), a.speaker, a.speed)
             p = subprocess.run(
                 [ff, '-hide_banner', '-loglevel', 'error', '-y', '-i', 'pipe:0',
                  '-codec:a', 'libmp3lame', '-b:a', a.bitrate, '-ac', '1', '-ar', '24000',
