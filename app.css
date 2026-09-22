@@ -255,6 +255,9 @@ h2:has(+ .set){
 .sw[aria-checked="true"]{background:var(--accent)}
 .sw[aria-checked="true"] > i{background:#fff; transform:translateX(20px)}
 .sw:focus-visible{outline:2px solid var(--accent); outline-offset:3px}
+/* Унтраалга нь 48×28 — хуруунд жижиг. ХАРАГДАХ хэмжээг нь өсгөхгүйгээр
+   дарах талбайг л өргөтгөнө (нийт 56×42). */
+.sw::after{content:''; position:absolute; inset:-7px -4px}
 
 @media (max-width:359.98px){
   .set{display:grid; grid-template-columns:34px minmax(0,1fr); gap:12px 14px}
@@ -278,7 +281,8 @@ h2:has(+ .set){
 .pill{
   position:relative; isolation:isolate;
   display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
-  width:100%; height:44px; padding:3px;
+  /* 48px: дотоод товч 42px болж, хуруунд таарна (44px үед 36px байв). */
+  width:100%; height:48px; padding:3px;
   border:1px solid var(--line); border-radius:var(--r);
   background:var(--card); font-family:var(--jps);
 }
@@ -376,7 +380,9 @@ button:active:not(:disabled){transform:scale(.985)}
 .ghost{background:transparent; color:var(--ink); border:1px solid var(--line-2);
        padding:9px 14px}
 .ghost:hover{border-color:var(--ink)}
-.ghost.sm{padding:7px 11px; font-size:14px}
+/* Утсан дээр хуруу таарахын тулд 40px доод хязгаар (шалгахад 39px
+   байсан — заагаас доогуур). */
+.ghost.sm{padding:8px 11px; font-size:14px; min-height:40px}
 .ghost.danger{color:var(--ng); border-color:var(--ng)}
 .big{width:100%; padding:16px; font-size:16px}
 .ok{background:var(--ok-bg); color:var(--ok); border:1px solid currentColor}
@@ -404,7 +410,7 @@ button:disabled{opacity:.42; cursor:default}
 .lessons button{
   padding:11px 0 9px; background:var(--box-bg); border:1px solid var(--line);
   color:var(--ink-2); font-size:13px; border-radius:var(--r); letter-spacing:.02em;
-}
+; min-height:40px}
 .lessons button:hover{border-color:var(--ink-3); color:var(--ink)}
 .lessons button[aria-pressed="true"]{
   background:var(--sel-bg); border-color:var(--sel-bg); color:var(--sel-fg);
@@ -704,16 +710,25 @@ button:disabled{opacity:.42; cursor:default}
            padding:12px 0 calc(12px + env(safe-area-inset-bottom))}
 
 /* ---------- явц ---------- */
-.statsum{display:grid; grid-template-columns:repeat(4,1fr); gap:var(--list-gap);
+/* ДӨРВӨН ТОГТМОЛ багана байсан нь нарийн дэлгэцэнд халиж байв: 320px
+   утсан дээр Тохиргоо доторх зай 206px, харин агуулга 313px. `auto-fit`
+   нь зай хүрэхэд 4, хүрэхгүй бол 2 багана болж дугтуйлна. */
+.statsum{display:grid; grid-template-columns:repeat(auto-fit,minmax(70px,1fr));
+         gap:var(--list-gap);
          border-top:var(--list-top); border-bottom:var(--box-sep)}
 .statsum div{background:var(--box-bg); border:var(--box-bd);
              border-radius:var(--box-r); box-shadow:var(--elev);
              padding:18px 6px; text-align:center}
-.statsum div + div{border-left:var(--box-sep)}
+/* Дугтуйлсан үед хоёр дахь мөрийн эхний нүдэнд зүүн хүрээ гарах нь
+   эвгүй. Нүд бүр өөрийн `--box-bd` хүрээтэй тул нэмэлт хэрэггүй. */
 .statsum b{display:block; font-family:var(--disp); font-size:26px; line-height:1.1;
            color:var(--ink)}
-.statsum span{font-size:10px; color:var(--ink-3); letter-spacing:.1em;
-              text-transform:uppercase; margin-top:4px; display:block}
+/* `.1em` зай нь «ТӨХӨӨРӨМЖ» гэсэн урт шошгыг 76px нүдэнд багтахгүй
+   болгож байв (нарийн утсан дээр шалгав). Зайг багасгаж, шаардлагатай
+   бол таслан бичихийг зөвшөөрөв. */
+.statsum span{font-size:10px; color:var(--ink-3); letter-spacing:.04em;
+              text-transform:uppercase; margin-top:4px; display:block;
+              overflow-wrap:anywhere}
 .statles{display:grid; gap:0}
 .statles .l{display:grid; grid-template-columns:38px 1fr 56px; gap:12px;
             align-items:center; font-size:12.5px; padding:7px 0;

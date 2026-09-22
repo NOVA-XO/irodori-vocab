@@ -717,6 +717,142 @@ async function run(c) {
   ok('Japan Foundation кредит Тохиргоод бий',
     cr && cr.profFoundation === true, JSON.stringify(cr));
 
+  console.log('\n[22] Engine — аудитаас гарсан засварууд');
+
+  /* ЯПОН гараар зөв бичсэн хариултыг ТАТГАЛЗАЖ байв. `toKana()` нь
+     латинд зориулагдсан ([^a-z\\-'] бүхнийг хаядаг) тул `ねこ` → ''
+     болж, ЗӨВ хариулт «буруу» болдог байсан. */
+  const ct = await c.ev(`
+    const mk = k => ({ kana: k, jp: k, mn: 'x', id: 'T', romaji: '' });
+    const pairs = [
+      ['ねこ', 'ねこ'], ['ねこ', 'ネコ'],
+      ['おちゃ', 'おちゃ'], ['せんせい', 'せんせい'],
+      ['にほん', 'にほん']
+    ];
+    const bad = pairs.filter(([k, t]) => !checkTyped(t, mk(k)));
+    /* Латин зам ХЭВЭЭР ажиллах ёстой. */
+    const latin = checkTyped('neko', { kana: 'ねこ', jp: '猫', mn: 'x', romaji: 'neko' });
+    /* БУРУУ хариулт хэвээр буруу байх ёстой (хэт өгөөмөр болоогүй). */
+    const wrong = checkTyped('いぬ', mk('ねこ'));
+    return { nbad: bad.length, bad: bad, latin: latin, wrong: wrong };
+  `);
+  ok('ЯПОН гараар бичсэн зөв хариултыг хүлээж авна',
+    ct && ct.nbad === 0, JSON.stringify(ct));
+  ok('латин зам хэвээр ажиллана', ct && ct.latin === true, JSON.stringify(ct));
+  ok('буруу хариулт ХЭВЭЭР буруу', ct && ct.wrong === false, JSON.stringify(ct));
+
+  /* Шалгалтад 160мс дотор хоёр удаа дарвал нэг асуулт хоёр удаа
+     бүртгэгдэж, ДАРААГИЙН асуулт хариулагдалгүй алгасагддаг байв. */
+  const dbl = await c.ev(`
+    await loadExam();
+    exN = 10; exMode = 'think'; startExam();
+    await new Promise(r => setTimeout(r, 700));
+    const i0 = exIdx, n0 = exLog.length;
+    examMark(true); examMark(true); examMark(false);
+    await new Promise(r => setTimeout(r, 500));
+    const out = { di: exIdx - i0, dn: exLog.length - n0 };
+    exAbort(); go('home');
+    return out;
+  `);
+  ok('шалгалтад хурдан хэд дарсан ч НЭГ л бүртгэгдэнэ',
+    dbl && dbl.dn === 1 && dbl.di === 1, JSON.stringify(dbl));
+
+  /* Синк нислэгт байхад явцаа устгавал, буцаж ирсэн үүлний өгөгдөл
+     устгасныг ЭРГҮҮЛЖ тавьдаг байв (`syncCode` өөрчлөгддөггүй тул
+     одоо байсан хамгаалалт үүнийг барихгүй). */
+  const fl = await c.ev(`
+    const realRpc = window.rpc;
+    const keep = { p: progress, c: syncCode };
+    const calls = [];
+    window.rpc = (fn, args) => {
+      calls.push(fn);
+      if (fn === 'get_progress')
+        return new Promise(r => setTimeout(() =>
+          r({ 'L01-001': { n: 5, c: 5, b: 3, d: 1 } }), 400));
+      if (fn === 'put_progress') return Promise.resolve(args.p_data);
+      return Promise.resolve(null);
+    };
+    syncCode = 'abcd1234efgh';
+    progress = { 'L01-001': { n: 5, c: 5, b: 3, d: 1 } }; save(KEY_P, progress);
+    const flight = syncNow(true);
+    await new Promise(r => setTimeout(r, 120));
+    progress = {}; progGen++; save(KEY_P, progress);
+    await flight;
+    await new Promise(r => setTimeout(r, 200));
+    const out = { mem: Object.keys(progress).length,
+                  ls: Object.keys(JSON.parse(localStorage.getItem(KEY_P) || '{}')).length,
+                  put: calls.includes('put_progress') };
+    window.rpc = realRpc;
+    progress = keep.p; syncCode = keep.c; save(KEY_P, progress);
+    return out;
+  `);
+  ok('нислэгт байсан синк устгалтыг БУЦААХГҮЙ',
+    fl && fl.mem === 0 && fl.ls === 0, JSON.stringify(fl));
+  ok('устгасны дараа үүл рүү дахин БИЧИХГҮЙ',
+    fl && fl.put === false, JSON.stringify(fl));
+
+  /* Бэлэн mp3 тоглож байхад TTS эхэлбэл хоёр дуу давхцана. */
+  const ov = await c.ev(`
+    let paused = 0;
+    const real = player.pause;
+    Object.defineProperty(player, 'paused', { value: false, configurable: true });
+    player.pause = () => { paused++; };
+    speak('テスト');
+    player.pause = real;
+    delete player.paused;
+    try { speechSynthesis.cancel(); } catch (e) {}
+    return paused;
+  `);
+  ok('TTS эхлэхээс өмнө бичлэг зогсоно', ov === 1, JSON.stringify(ov));
+
+  console.log('\n[21] Кана «сонсоод таах» — ижил дуутай сонголт');
+  /* Япон хэлэнд дараах хосууд ИЖИЛ дуудагдана; дууны файл нь ч байт
+     хүртэл ижил (шалгав):
+         お/を · じ/ぢ · ず/づ · じゃ/ぢゃ · じゅ/ぢゅ · じょ/ぢょ
+     Тэднийг сонголтод зэрэг гаргавал сурагч чихээрээ ЯЛГАЖ ЧАДАХГҮЙ.
+     Хэрэглэгч үүнийг «буруу дуудлага» гэж мэдээлсэн.
+
+     Кана БҮРИЙГ 25 удаа зурж шалгана — санамсаргүй сонголт тул нэг
+     удаа зурахад алдаа мэдэгдэхгүй байж болно. */
+  const kl = await c.ev(`
+    const keep = { d: deck, k: kmode, p: pool, c: cur };
+    deck = 'kana'; kmode = 'klisten'; pool = KANA.slice();
+    const bad = []; let built = 0;
+    for (const k of KANA) {
+      cur = k;
+      for (let t = 0; t < 25; t++) {
+        buildChoices(); built++;
+        const txts = [...document.querySelectorAll('#choices button')]
+          .map(b => b.textContent);
+        const set = txts.map(h => KANA.find(x => x.hira === h)).filter(Boolean);
+        const sounds = set.map(x => x.mn);
+        if (sounds.length !== new Set(sounds).size) {
+          bad.push(k.hira + ' -> ' + sounds.join(',')); break;
+        }
+        if (!txts.includes(k.hira)) { bad.push(k.hira + ' зөв хариулт алга'); break; }
+        if (txts.length !== 4) { bad.push(k.hira + ' сонголт ' + txts.length); break; }
+      }
+    }
+    deck = keep.d; kmode = keep.k; pool = keep.p; cur = keep.c;
+    return { kana: KANA.length, built: built, nbad: bad.length,
+             bad: bad.slice(0, 6) };
+  `);
+  ok('107 кана × 25 зурaлт — сонголт бүрэн'.replace('a', 'а'),
+    kl && kl.kana === 107 && kl.built >= 2600, JSON.stringify(kl));
+  ok('ИЖИЛ дуутай сонголт хэзээ ч зэрэг гарахгүй',
+    kl && kl.nbad === 0, JSON.stringify(kl));
+
+  /* Өгөгдлийн талаас нь ч бататгана: ижил дуутай хос үнэхээр байгаа
+     эсэх. Байхгүй бол дээрх тест утгагүй болно (хуурамч тайван). */
+  const pairs = await c.ev(`
+    const g = {};
+    for (const k of KANA) (g[k.mn] = g[k.mn] || []).push(k.hira);
+    return Object.entries(g).filter(([, v]) => v.length > 1)
+             .map(([m, v]) => m + ':' + v.join('/'));
+  `);
+  ok('ижил дуутай хос ҮНЭХЭЭР байна (тест утгатай)',
+    Array.isArray(pairs) && pairs.length >= 5, JSON.stringify(pairs));
+
   console.log('\n[19] «Явцыг устгах» товч');
   /* Хоёр БОДИТ алдаа байсан:
        1) хариу мэдэгдэл байхгүй — Профайл дээр байхад юу ч харагдахгүй

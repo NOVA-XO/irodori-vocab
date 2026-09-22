@@ -158,7 +158,16 @@ function answerSet(item) {
 
 function checkTyped(raw, item) {
   const set = answerSet(item);
-  return set.has(normKana(toKana(raw))) || set.has(normRomaji(raw));
+  /* ЯПОН гараар шууд бичсэнийг ЗААВАЛ хүлээж авна.
+     `toKana()` нь латинд зориулагдсан: `[^a-z\-']` бүхнийг хаядаг тул
+     `ねこ` → `''` болж, ЗӨВ хариултыг «буруу» гэж тэмдэглэдэг байв
+     (браузерт баталсан). Япон IME, катакана, ханз — гурвуулан унадаг.
+     `answerSet` нь `normKana`-гаар хэвийн болгож хадгалдаг тул оролтыг
+     ч мөн тэгж хэвийн болгоод тулгахад хангалттай: катакана→хирагана
+     хөрвөж, ханз хэвээр дамжина. */
+  return set.has(normKana(raw))
+      || set.has(normKana(toKana(raw)))
+      || set.has(normRomaji(raw));
 }
 
 /* ── ОМОНИМЫН зураглал: ханз → уншлага ─────────────────────────────
@@ -594,16 +603,25 @@ function syncSay(msg) {
   if (el) el.textContent = msg;
 }
 
+/* Явцын ҮЙЛДЛИЙН тоолуур. Синк нь сүлжээнд нислэгт байхад хэрэглэгч
+   явцаа УСТГАвал, буцаж ирсэн үүлний өгөгдөл устгасныг эргүүлж тавьдаг
+   байв (`syncCode` нь өөрчлөгддөггүй тул одоо байгаа хамгаалалт үүнийг
+   барихгүй). Тиймээс §2.36-ийн ГҮЙЛТИЙН ТЭМДГИЙГ өгөгдөлд ч хэрэглэв:
+   устгал бүрд ахиулж, синк буцахдаа шалгана. */
+let progGen = 0;
+
 async function syncNow(quiet) {
   // Кодыг ЭХЭНД нь барьж авна. `syncCode` нь дэлхийн хувьсагч тул
   // GET явж байхад хэрэглэгч өөр код холбовол PUT нь ШИНЭ код руу
   // ХУУЧИН кодын явцыг бичих байсан — хоёр хүний явц холилдоно.
   const code = syncCode;
+  const gen = progGen;                       // §2.36 — гүйлтийн тэмдэг
   if (!syncOn || !code) return;
   try {
     if (!quiet) syncSay('нийлүүлж байна…');
     const remote = await rpc('get_progress', { p_code: code });
     if (syncCode !== code) return;             // энэ хооронд код солигдов
+    if (gen !== progGen) return;               // энэ хооронд ЯВЦ УСТСАН
     // Үүлнээс ирсэн өгөгдлийг ч ИТГЭЛГҮЙГЭЭР шүүнэ: кодоо мэддэг хэн ч
     // ямар ч хэлбэрийн jsonb бичиж чадна.
     const merged = mergeProgress(progress, cleanProgress(remote || {}));
@@ -614,6 +632,7 @@ async function syncNow(quiet) {
     // нь эхнийхийг устгадаг байв.
     const saved = await rpc('put_progress', { p_code: code, p_data: merged });
     if (syncCode !== code) return;
+    if (gen !== progGen) return;               // устгал PUT-ийн дараа ирэв
     if (saved && typeof saved === 'object') {
       progress = mergeProgress(progress, saved);
       saveProgress();
@@ -861,6 +880,9 @@ document.addEventListener('keydown', unlockSpeech, { once: true });
 let lastUtterance = null;
 
 function speak(text) {
+  /* Бэлэн mp3 тоглож байхад TTS эхэлбэл хоёр дуу ДАВХЦАНА (өмнөх
+     картын бичлэг + шинэ картын TTS). Эхлээд бичлэгийг зогсооно. */
+  try { if (player && !player.paused) player.pause(); } catch (e) {}
   if (!canSpeak || !text) return;
   const clean = text.replace(/[／/].*$/, '').replace(/[（(].*?[）)]/g, '').trim();
   if (!clean) return;
@@ -1162,7 +1184,17 @@ function buildChoices() {
   // Урагш чиглэлд сонголтууд нь МОНГОЛ утга байх ёстой. `optText` нь утга
   // дутуу үед япон үг рүү ухардаг тул тэр бичлэгүүдийг сандруулагчид
   // оруулбал жагсаалтад япон үг холилдож, хариултыг задалж өгнө.
+  /* «Сонсоод таах» горимд сандруулагч нь ЯГ ИЖИЛ дуутай байж болохгүй.
+     Япон хэлэнд дараах хосууд ИЖИЛ дуудагдана — дууны файл нь ч байт
+     хүртэл ижил байдаг (шалгав):
+         お / を · じ / ぢ · ず / づ · じゃ/ぢゃ · じゅ/ぢゅ · じょ/ぢょ
+     Тэдгээрийг сонголтод зэрэг гаргавал сурагч чихээрээ ЯЛГАЖ ЧАДАХГҮЙ:
+     «о» гэж сонсоод お дарахад апп «буруу» гэж хэлнэ. Бусад горимд
+     (h2k · k2h · sound) харьцуулалт нь БИЧГЭЭР явдаг тул асуудалгүй. */
+  const sameSound = x => deck === 'kana' && kmode === 'klisten'
+    && (x.mn === cur.mn || x.romaji === cur.romaji);
   const usable = x => x.id !== cur.id && optText(x) && optText(x) !== want
+    && !sameSound(x)
     && (deck !== 'vocab' || isRev() || !!(x.mn || '').trim());
   let cand = pool.filter(usable);
   if (cand.length < 3) {
@@ -2386,6 +2418,11 @@ function examReveal() {
 
 /** Сурагчийн өөрийн дүгнэлт. */
 function examMark(ok) {
+  /* Хойшлуулсан таймер ГҮЙЖ байвал энэ даралтыг ҮЛ ТООНО. 160мс дотор
+     хоёр удаа дарвал нэг асуулт хоёр удаа бүртгэгдэж, индекс хоёр
+     ахиад ДАРААГИЙН асуулт хариулагдалгүй алгасагддаг байв (браузерт
+     баталсан: exIdx 0 → 2, exLog 0 → 2). */
+  if (exTimer) return;
   sfx(ok);
   const q = exQs[exIdx];
   exLog.push({ q: q, ok: ok });
@@ -2598,6 +2635,7 @@ $('btn-reset').onclick = async () => {
      «Өнөөдрийн зорилт 21/20» ба «дараалсан өдөр» хэвээр үлдэж,
      хэрэглэгч устгаагүй гэж ойлгодог байв. */
   progress = {};
+  progGen++;                            // нислэгт байгаа синкийг хүчингүй болгоно
   save(KEY_P, progress);
   days = { last: -1, streak: 0, n: 0 };
   save(KEY_D, days);
