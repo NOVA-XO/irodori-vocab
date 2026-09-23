@@ -2020,6 +2020,148 @@ async function run(c) {
     gr && gr.badPct === '0%' && gr.missN >= 20, JSON.stringify(gr));
   ok('дасгалын id нь дүрмийнхээ id-аар эхэлнэ', gr && gr.idOk, JSON.stringify(gr && gr.idOk));
 
+  console.log('\n[39] Ярианы хариулт — ЗӨӨЛӨН үнэлгээ');
+  /* Шалгалт чөлөөт хариулттай тул хатуу тэнцүүлж БОЛОХГҮЙ:
+     「はい、しちじにおきます」 ба 「しちじにおきます」 хоёулаа зөв.
+     Гурван зэрэг: ok (зөв) · near (ойролцоо) · off (өөр хариулт).
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const sp = await c.ev(`
+    const Q = (model, kana, key) => ({ model: model, modelKana: kana, key: key });
+    const T = [
+      // [сонссон, загвар, кана, key, хүлээж буй зэрэг, тайлбар]
+      ['おはようございます', 'おはようございます。', 'おはようございます。', 'あいさつ', 'ok'],
+      ['はい、しちじにおきます', '七時に起きます。', 'しちじにおきます。', '時間', 'ok'],
+      ['おはよう', 'おはようございます。', 'おはようございます。', 'あいさつ', 'near'],
+      ['ペンかして', 'ペンを貸してください。', 'ペンをかしてください。', '依頼', 'near'],
+      ['こんばんは', 'おはようございます。', 'おはようございます。', 'あいさつ', 'off'],
+      ['ろくじです', '七時に起きます。', 'しちじにおきます。', '時間', 'off'],
+      ['', 'おはようございます。', 'おはようございます。', 'あいさつ', 'none'],
+    ];
+    const out = { rows: [], bad: [] };
+    for (const t of T) {
+      const j = judgeSpoken(t[0] ? [t[0]] : [], Q(t[1], t[2], t[3]));
+      out.rows.push(t[0] + ' -> ' + j.band + ' (' + j.sim + ')');
+      if (j.band !== t[4]) out.bad.push(t[0] + ' = ' + j.band + ' (хүлээсэн ' + t[4] + ')');
+    }
+    // Таних системийн ХЭД ХЭДЭН хувилбарын аль нэг нь таарвал зөв
+    const alt = judgeSpoken(['ごめんなさい', 'おはようございます'],
+                            Q('おはようございます。', 'おはようございます。', 'あいさつ'));
+    out.altBand = alt.band;
+
+    // key нь БҮТЭЦ бол зөвлөгөөнд гарна; АНГИЛАЛ бол гарахгүй
+    const st = judgeSpoken(['ペンをかして'],
+      Q('ペンを貸してください。', 'ペンをかしてください。', 'てください'));
+    const cat = judgeSpoken(['ペンをかして'],
+      Q('ペンを貸してください。', 'ペンをかしてください。', '依頼'));
+    out.structKey = st.key; out.structHas = st.hasKey;
+    out.catKey = cat.key; out.catHas = cat.hasKey;
+    out.structText = judgeText(st);
+    out.okText = judgeText(judgeSpoken(['おはようございます'],
+      Q('おはようございます。', 'おはようございます。', 'あいさつ')));
+
+    // Хоосон/хог оролтод УНАХГҮЙ
+    let crashed = null;
+    try {
+      judgeSpoken(null, Q('あ', 'あ', ''));
+      judgeSpoken([''], Q('', '', ''));
+      judgeSpoken(['あ'], Q('あ', 'あ', ''));
+    } catch (e) { crashed = String(e && e.message); }
+    out.crashed = crashed;
+    return out;
+  `);
+  ok('долоон жишээ бүгд хүлээсэн зэрэгтээ таарна',
+    sp && sp.bad.length === 0, JSON.stringify(sp && sp.bad));
+  ok('таних хувилбаруудын аль нэг таарвал ЗӨВ гэж үзнэ',
+    sp && sp.altBand === 'ok', JSON.stringify(sp && sp.altBand));
+  ok('key нь БҮТЭЦ үед зөвлөгөөнд нэрлэгдэнэ',
+    sp && sp.structKey === 'てください' && sp.structHas === false,
+    JSON.stringify(sp && [sp.structKey, sp.structHas]));
+  ok('key нь АНГИЛАЛ (依頼) бол бүтэц гэж заахгүй — төөрөгдүүлэхгүй',
+    sp && sp.catKey === '' && sp.catHas === null,
+    JSON.stringify(sp && [sp.catKey, sp.catHas]));
+  ok('зөвлөгөө МОНГОЛООР, аппын загвараар угсрагдана',
+    sp && /Ойролцоо/.test(sp.structText) && /てください/.test(sp.structText)
+      && /Зөв байна/.test(sp.okText), JSON.stringify(sp && sp.structText));
+  ok('хоосон, хог оролтод унахгүй', sp && sp.crashed === null,
+    JSON.stringify(sp && sp.crashed));
+
+  console.log('\n[40] Нарийвчилсан үнэлгээ — прокси руу дуудах зам');
+  /* API түлхүүр браузерт БАЙХГҮЙ: апп зөвхөн Supabase-ийн Edge Function
+     рүү ханддаг. Энд тэр дуудлагыг хуурамчаар орлуулж (stub) шалгана —
+     жинхэнэ LLM рүү явуулахгүй (тогтворгүй, квот иддэг).
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const ai = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const keepFetch = window.fetch, keepSync = { url: SYNC.url, key: SYNC.key };
+    const out = { calls: [] };
+    SYNC.url = 'https://test.example.co'; SYNC.key = 'eyJtest';
+    const Q = { q: 'ペンを貸してください。', model: 'ペンを貸してください。',
+                modelKana: 'ペンをかしてください。', key: 'てください' };
+
+    const stub = reply => {
+      window.fetch = (u, o) => {
+        out.calls.push({ url: String(u), body: o && o.body,
+                         auth: o && o.headers && o.headers.Authorization,
+                         key: o && o.headers && o.headers.apikey });
+        return Promise.resolve(reply);
+      };
+    };
+
+    // (1) Амжилттай хариу -> монгол бичвэр АППААС угсрагдана
+    stub({ ok: true, json: () => Promise.resolve(
+      { band: 'near', missing: ['ください'], better: 'ペンを貸してください。', src: 'groq' }) });
+    const r1 = await aiJudge('ペンをかして', Q);
+    out.band1 = r1 && r1.band;
+    out.text1 = r1 && aiText(r1);
+    out.url = out.calls[0] && out.calls[0].url;
+    out.sentKey = out.calls[0] && out.calls[0].key;
+    out.sentAuth = !!(out.calls[0] && out.calls[0].auth);
+    out.bodyHasHeard = !!(out.calls[0] && out.calls[0].body.indexOf('ペンをかして') >= 0);
+    // Түлхүүр ЯВААГҮЙ байх ёстой — зөвхөн anon түлхүүр
+    out.bodyNoSecret = !!(out.calls[0]
+      && out.calls[0].body.indexOf('gsk_') < 0 && out.calls[0].body.indexOf('AIza') < 0);
+
+    // (2) 503 (нийлүүлэгч байхгүй) -> null, локал үнэлгээ хэвээр
+    stub({ ok: false, status: 503, json: () => Promise.resolve({ error: 'no provider' }) });
+    out.r503 = await aiJudge('ペンをかして', Q);
+
+    // (3) Сүлжээний алдаа -> null, УНАХГҮЙ
+    window.fetch = () => Promise.reject(new Error('offline'));
+    out.rErr = await aiJudge('ペンをかして', Q);
+
+    // (4) Гэрээ зөрчсөн хариу (band алга) -> null
+    stub({ ok: true, json: () => Promise.resolve({ hello: 'world' }) });
+    out.rBad = await aiJudge('ペンをかして', Q);
+
+    // (5) SYNC тохируулаагүй бол ОГТ дуудахгүй
+    SYNC.url = '';
+    out.callsBefore = out.calls.length;
+    out.rNoSync = await aiJudge('ペンをかして', Q);
+    out.callsAfter = out.calls.length;
+
+    // (6) Монгол бичвэрийн хувилбарууд
+    out.okText = aiText({ band: 'ok', missing: [], better: '' });
+    out.offText = aiText({ band: 'off', missing: ['おはよう'], better: '' });
+
+    window.fetch = keepFetch; SYNC.url = keepSync.url; SYNC.key = keepSync.key;
+    return out;
+  `);
+  ok('дуудлага Edge Function руу явна (/functions/v1/judge)',
+    ai && /\/functions\/v1\/judge$/.test(ai.url || ''), JSON.stringify(ai && ai.url));
+  ok('зөвхөн ANON түлхүүр явна — LLM-ийн түлхүүр браузерт БАЙХГҮЙ',
+    ai && ai.sentKey === 'eyJtest' && ai.sentAuth && ai.bodyNoSecret, JSON.stringify(ai));
+  ok('сонссон текст хүсэлтэд орно', ai && ai.bodyHasHeard, JSON.stringify(ai));
+  ok('амжилттай хариунаас МОНГОЛ зөвлөгөө угсрагдана',
+    ai && ai.band1 === 'near' && /Ойролцоо/.test(ai.text1)
+      && /ください/.test(ai.text1), JSON.stringify(ai && ai.text1));
+  ok('503, сүлжээний алдаа, гэрээ зөрчсөн хариу — бүгд null (локал үнэлгээ хэвээр)',
+    ai && ai.r503 === null && ai.rErr === null && ai.rBad === null, JSON.stringify(ai));
+  ok('синк тохируулаагүй бол прокси руу ОГТ хандахгүй',
+    ai && ai.rNoSync === null && ai.callsAfter === ai.callsBefore, JSON.stringify(ai));
+  ok('«зөв» ба «өөр хариулт»-ын бичвэр ч монголоор',
+    ai && /Зөв байна/.test(ai.okText) && /Өөр хариулт/.test(ai.offText),
+    JSON.stringify(ai && [ai.okText, ai.offText]));
+
   console.log('\n[34] «Явцыг устгах» — шалгалтын хариулт серверээс ч устана');
   /* Уусгалт нэмсний дараа хоосон түүх юу ч устгахаа больсон (зөв). Гэвч
      устгах товч ч устгаж чадахаа больсон: хэрэглэгч шалгалтын дэлгэцэд

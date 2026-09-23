@@ -1232,3 +1232,16 @@ html{background:var(--bg)}
 @media (max-width:380px){
   .gr-q{font-size:21px}
 }
+
+/* Ярианы үнэлгээний зэрэг. Өнгө нь дасгалын зөв/буруутай ИЖИЛ утгатай
+   байх ёстой — сурагч аль хэдийн сурсан дохиог дахин сурахгүй. */
+.mic-hint.is-ok{color:var(--ok)}
+.mic-hint.is-near{color:var(--accent-2)}
+.mic-hint.is-off{color:var(--ng)}
+
+/* Залруулсан өгүүлбэр — LLM-ийн санал болгосон бүтэн хариулт. */
+.mic-fix{margin-top:8px; padding:9px 13px; border-radius:12px;
+  background:var(--ok-bg); color:var(--ok); font-size:16px}
+.mic-note{font-size:11.5px; color:var(--ink-3); line-height:1.5; margin-top:10px}
+/* Нарийвчилсан хариуг хүлээж байгааг мэдэгдэнэ — чимээгүй зогсохгүй. */
+.mic-hint.is-wait::after{content:' …'; opacity:.6}

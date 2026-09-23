@@ -2450,6 +2450,132 @@ let exRun = 0, exTimer = null;
    шийдвэр. Даалгаврыг нүүрний хамгийн дээрх картаас нэг дарлагаар
    эхлүүлнэ (`renderHomeTasks`), тэр нь хангалттай. Энд эхлүүлбэл
    тохиргооны дэлгэц рүү хүрэх гарц ч үгүй болно. */
+/* ── НАРИЙВЧИЛСАН үнэлгээ (LLM, прокшиор) ───────────────────────────
+ *
+ * Локал үнэлгээ нь тэмдэгтийн ижилслээр ажилладаг тул «өөр үгээр зөв
+ * хэлсэн» хариултыг ялгаж чаддаггүй. LLM түүнийг ялгана. Гэхдээ:
+ *   · зөвхөн ЭРГЭЛЗЭЭТЭЙ (near/off) хариултад дуудна — квот хэмнэнэ,
+ *     бас бүрэн зөв хариултад зөвлөгөө хэрэггүй;
+ *   · офлайн, квот дүүрсэн, алдаа — бүгдэд нь ЛОКАЛ үнэлгээ хэвээр;
+ *   · LLM монголоор бичихгүй: {band, missing, better} гэсэн JSON л
+ *     буцаана, монгол өгүүлбэрийг ЭНД угсарна.
+ */
+function aiJudge(heard, q) {
+  if (!SYNC.url || !navigator.onLine) return Promise.resolve(null);
+  const url = SYNC.url.replace(/\/+$/, '') + '/functions/v1/judge';
+  const headers = { 'Content-Type': 'application/json', apikey: SYNC.key };
+  if (/^eyJ/.test(SYNC.key)) headers.Authorization = 'Bearer ' + SYNC.key;
+  const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  // Сурагч хариултаа хэлчихээд удаан хүлээх ёсгүй — 8 секундээс хойш
+  // локал үнэлгээгээрээ үлдэнэ.
+  const timer = ctl ? setTimeout(() => ctl.abort(), 8000) : null;
+  return fetch(url, {
+    method: 'POST', headers: headers, signal: ctl ? ctl.signal : undefined,
+    body: JSON.stringify({ q: q.q, model: q.model, key: q.key || '', heard: heard }),
+  }).then(r => (r.ok ? r.json() : null))
+    .catch(() => null)
+    .then(r => { if (timer) clearTimeout(timer); return r && r.band ? r : null; });
+}
+
+/** LLM-ийн бүтэцтэй хариултыг МОНГОЛ өгүүлбэр болгоно. */
+function aiText(r) {
+  const miss = (r.missing || []).filter(Boolean);
+  if (r.band === 'ok') return '✓ Зөв байна.';
+  if (r.band === 'near') {
+    return miss.length
+      ? '≈ Ойролцоо байна — «' + miss.join('», «') + '» нэмбэл илүү хүчтэй.'
+      : '≈ Ойролцоо байна — загвартай тулгаж хараарай.';
+  }
+  return miss.length
+    ? '× Өөр хариулт — «' + miss.join('», «') + '» хэрэгтэй.'
+    : '× Өөр хариулт сонсогдлоо.';
+}
+
+/* ═════════ ЯРИАНЫ ХАРИУЛТЫН ЗӨӨЛӨН ҮНЭЛГЭЭ ═════════
+ *
+ * Шалгалт нь ЧӨЛӨӨТ хариулттай тул «яг таарсан уу» гэж ХАТУУ шалгаж
+ * болохгүй: 「はい、7時に起きます」 ба 「7時です」 хоёулаа зөв. Тиймээс
+ * ойролцоо байдлыг хэмжээд ГУРВАН зэрэг гаргана — сурагч өөрөө эцсийн
+ * шийдээ гаргах эрхтэй хэвээр.
+ *
+ * Яагаад биграм вэ: япон хэлийг үг болгон салгахад морфологийн задлагч
+ * хэрэгтэй (хэдэн МБ толь). Тэмдэгтийн ХОСООР харьцуулах нь тийм
+ * хэрэгсэлгүйгээр, офлайн, шууд ажиллана.
+ */
+
+/** Хоёр мөрийн тэмдэгтийн ХОСЫН ижилсэл (Dice): 0 … 1. */
+function dice2(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.length < 2 || b.length < 2) return a === b ? 1 : 0;
+  const bag = new Map();
+  for (let i = 0; i < a.length - 1; i++) {
+    const g = a.slice(i, i + 2);
+    bag.set(g, (bag.get(g) || 0) + 1);
+  }
+  let hit = 0;
+  for (let i = 0; i < b.length - 1; i++) {
+    const g = b.slice(i, i + 2);
+    const n = bag.get(g) || 0;
+    if (n > 0) { bag.set(g, n - 1); hit++; }
+  }
+  return 2 * hit / (a.length - 1 + b.length - 1);
+}
+
+/** Сонссон хариултыг загвартай харьцуулж зэрэг, зөвлөгөө гаргана.
+ *
+ *  alts — таних системийн БҮХ хувилбар (эхнийх нь хамгийн магадлалтай).
+ *  Аль нэг нь таарвал зөвд тооцно: чөлөөт ярианы таних нь нэг л
+ *  хувилбараар шүүхэд хэтэрхий хатуу.
+ */
+function judgeSpoken(alts, q) {
+  const list = (Array.isArray(alts) ? alts : [alts]).filter(Boolean);
+  if (!list.length) return { band: 'none', sim: 0 };
+  const m1 = normKana(q.modelKana || q.model);
+  const m2 = normKana(q.model);
+  let sim = 0;
+  for (const a of list) {
+    const h = normKana(a);
+    if (!h) continue;
+    sim = Math.max(sim, dice2(h, m1), dice2(h, m2));
+  }
+  /* `key` талбар нь заримдаа БҮТЭЦ (〜てください), заримдаа АНГИЛАЛ
+     (依頼, 注文) байдаг. Ангиллыг «бүтэц дутуу» гэж хэлбэл төөрөгдүүлнэ —
+     тиймээс зөвхөн загвар хариултад БОДИТООР байгаа түлхүүрийг шалгана. */
+  const key = normKana((q.key || '').replace(/[〜～]/g, ''));
+  const isStruct = key.length >= 2 && (m1.includes(key) || m2.includes(key));
+  const hasKey = isStruct
+    ? list.some(a => normKana(a).includes(key)) : null;
+
+  let band = sim >= 0.70 ? 'ok' : sim >= 0.40 ? 'near' : 'off';
+  // Бүтэц нь бүтнээрээ сонсогдсон атал ижилсэл бага бол «ойролцоо»
+  // хүртэл өргөнө: сурагч зөв бүтцээр ӨӨР агуулга хэлсэн байж болно.
+  if (band === 'off' && hasKey === true && sim >= 0.25) band = 'near';
+  /* Харин ЗОРИЛТОТ БҮТЭЦ дутуу бол «бүтэн зөв» гэж хэлэхгүй: шалгалт нь
+     яг тэр бүтцийг хэрэглэж чадаж байгааг шалгадаг. 「ペンをかして」 нь
+     утгаараа ойлгомжтой ч 「ください」 байхгүй тул эелдэг биш — сурагчид
+     үүнийг хэлэх нь зөвлөгөөний ГОЛ утга. */
+  if (band === 'ok' && hasKey === false) band = 'near';
+  return { band: band, sim: Math.round(sim * 100), hasKey: hasKey,
+           key: isStruct ? (q.key || '') : '' };
+}
+
+/** Үнэлгээг МОНГОЛООР үг болгоно — бичвэрийг апп өөрөө угсарна. */
+function judgeText(j) {
+  if (j.band === 'none') return 'Сонсогдсонгүй — дахин оролдоно уу.';
+  if (j.band === 'ok') {
+    return j.hasKey === true
+      ? '✓ Зөв байна — «' + j.key + '» бүтэц ч таарлаа.'
+      : '✓ Зөв байна.';
+  }
+  if (j.band === 'near') {
+    return j.hasKey === false
+      ? '≈ Ойролцоо байна — «' + j.key + '» бүтцийг нэмбэл илүү хүчтэй.'
+      : '≈ Ойролцоо байна. Загвартай тулгаж хараарай.';
+  }
+  return '× Өөр хариулт сонсогдлоо. Загвар хариултыг хараарай.';
+}
+
 /* ═══════════════════ ДҮРМИЙН ДАСГАЛ ═══════════════════
  *
  * Шалгалтаас ЯЛГААТАЙ: энд хариулт нь 4 сонголттой тул апп ӨӨРӨӨ
@@ -2946,14 +3072,28 @@ $('ex-mic').onclick = () => {
       if (exQs[exIdx] !== q) return;          // асуулт солигдсон бол үл тоох
       const heard = alts[0] || '';
       $('ex-mic-text').textContent = heard || '(таниагүй)';
-      // ЗӨВЛӨМЖ: түлхүүр бүтэц сонсогдов уу. Оноо энэнд даатгахгүй —
-      // чөлөөт яриаг таних нь найдваргүй.
-      const core = (q.key || '').replace(/[〜～]/g, '');
-      const hit = core && alts.some(a => normKana(a).includes(normKana(core)));
-      $('ex-mic-hint').textContent = !heard
-        ? 'Сонсогдсонгүй — дахин оролдоно уу.'
-        : hit ? '✓ «' + q.key + '» бүтэц сонсогдлоо.'
-        : 'Загвар хариултыг харж өөрөө дүгнээрэй.';
+      /* ЗӨӨЛӨН үнэлгээ: гурван зэрэг + зөвлөгөө. Оноог энэнд
+         ДААТГАХГҮЙ — сурагч загвартай тулгаж өөрөө эцэслэнэ. */
+      const j = judgeSpoken(heard ? alts : [], q);
+      const hint = $('ex-mic-hint');
+      const fix = $('ex-mic-fix');
+      hint.className = 'mic-hint is-' + j.band;
+      hint.textContent = judgeText(j);
+      fix.textContent = ''; fix.hidden = true;
+      // Эргэлзээтэй бол НАРИЙВЧИЛЖ шалгуулна (боломжтой үед).
+      if (heard && j.band !== 'ok') {
+        hint.classList.add('is-wait');
+        aiJudge(heard, q).then(r => {
+          hint.classList.remove('is-wait');
+          if (!r || exQs[exIdx] !== q) return;   // асуулт солигдсон бол үл тоох
+          hint.className = 'mic-hint is-' + r.band;
+          hint.textContent = aiText(r);
+          if (r.better) {
+            fix.textContent = r.better;
+            fix.hidden = false;
+          }
+        });
+      }
     },
     err => {
       b.classList.remove('rec'); b.textContent = '🎤 Хариулах';
