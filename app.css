@@ -1090,3 +1090,45 @@ html{background:var(--bg)}
 .kl-prog.is-done .fill{background:var(--ok)}
 .kl-prog small{flex:none; color:var(--ink-2); font-size:11.5px;
                font-variant-numeric:tabular-nums}
+
+/* ═══════════ Багшийн самбар (дизайн: Astra, 2026-09-23) ═══════════ */
+.kl-teach{min-width:0; margin:0 0 12px}
+.kl-teach-head{display:flex; flex-wrap:wrap; align-items:center;
+               justify-content:space-between; gap:8px}
+.kl-badge{padding:2px 8px; border-radius:var(--r);
+          background:var(--sel-bg); color:var(--sel-fg);
+          font-size:11.5px; font-weight:600; line-height:1.5}
+.kl-teach .kl-task-edit{min-width:0; max-width:100%; min-height:44px; overflow-wrap:anywhere}
+.kl-teach > .kl-task{margin:0}
+.kl-form{display:grid; gap:14px; min-width:0; margin:4px 0 0;
+         padding-top:14px; border-top:1px solid var(--line)}
+.kl-form fieldset{min-inline-size:0; margin:0; padding:0; border:0}
+.kl-form legend{padding:0; margin-bottom:6px}
+.kl-form .kl-les{grid-template-columns:repeat(5,minmax(0,1fr))}
+.kl-form .seg{gap:6px}
+.kl-form .kl-n{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kl-form .kl-days{grid-template-columns:repeat(4,minmax(0,1fr))}
+.kl-form .seg button{min-width:0; min-height:44px; padding:9px 4px; text-align:center}
+.kl-form .seg button b{font-size:16px}
+.kl-form .kl-les button{min-width:0; min-height:44px}
+.kl-form .su-actions > button{min-width:0; max-width:100%; overflow-wrap:anywhere}
+.kl-form .kl-del{color:var(--ng)}
+.kl-form .kl-msg{margin:0}
+.kl-due{margin:0; color:var(--ink-2); font-size:12.5px; line-height:1.6;
+        overflow-wrap:anywhere; font-variant-numeric:tabular-nums}
+.kl-due time{color:var(--ink); font-weight:500}
+.kl-teach button:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+@media (min-width:480px){ .kl-form .kl-les{grid-template-columns:repeat(6,minmax(0,1fr))} }
+
+/* Хугацаа — гүйцэтгэлээс ТУСДАА мөрөнд */
+.kl-task > span{flex:1 1 160px}
+.task-deadline{display:block; min-width:0; margin:0; color:var(--ink-2);
+               font-size:11.5px; line-height:1.6;
+               font-variant-numeric:tabular-nums; overflow-wrap:anywhere}
+.kl-task > .task-deadline{flex:0 0 100%}
+.task-deadline.is-today{color:var(--sel-fg); font-weight:600}
+.task-deadline.is-expired{color:var(--ink-3)}
+@media (max-width:420px){
+  .ex-task{grid-template-columns:minmax(0,1fr); gap:8px}
+  .ex-task-pick{justify-self:end}
+}

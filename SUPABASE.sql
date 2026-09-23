@@ -508,11 +508,16 @@ create index if not exists members_classes_idx on public.members using gin (clas
 
 -- ── ДААЛГАВАР (2026-09-22 нэмэгдэв) ─────────────────────────────────────
 -- Анги бүр НЭГ даалгавартай байж болно:
---   {"lessons": [1,2,3,4,5,6,7,8], "n": 20, "since": "2026-09-22"}
--- = L1–L8-ын шалгалтын асуултаас 20 ӨӨР асуулт хариулах. `since`-ээс
--- хойшхи хариулт л тоологдоно. Одоогоор эзэн SQL-ээр тавина (багшийн эрх
--- хараахан байхгүй). Нууц биш — `class_list` ангийн нэртэй хамт буцаана.
+--   {"lessons":[1..8], "n":20, "since":"2026-09-22", "until":"2026-09-25", "days":3}
+-- = L1–L8-ын шалгалтын асуултаас 20 ӨӨР асуулт хариулах. ЗӨВХӨН
+-- `since`..`until` хоорондох хариулт тоологдоно — хугацаа дуусахад хувь
+-- ЗОГСОНО (хэрэглэгчийн шийдвэр). `until` байхгүй бол хугацаагүй.
+-- Багш аппаасаа `task_set`-ээр тавина. Нууц биш — `class_list` буцаана.
 alter table public.classes add column if not exists task jsonb;
+-- Багшийн код — сурагчийнхаас ТУСДАА, 6 оронтой (2026-09-23). Багш үүгээр
+-- жагсаалтыг харах ба ДААЛГАВАР тавих эрхтэй. Багш жагсаалтад ОРОХГҮЙ:
+-- `member_put` нь зөвхөн 'ok' (сурагчийн код) үед мөр үүсгэнэ.
+alter table public.classes add column if not exists tcode text;
 -- Гишүүний шалгалтын хариулт: {"S01-01": [өдөр, чадсан 0/1, хичээл], …}.
 -- Асуулт тутамд СҮҮЛИЙН хариулт. ТҮҮХИЙГЭЭР нь клиент рүү буцаахгүй —
 -- ангийнхан бие биеийн аль асуултад юу гэж хариулсныг харахгүй;
@@ -520,7 +525,7 @@ alter table public.classes add column if not exists task jsonb;
 alter table public.members add column if not exists exam jsonb not null default '{}'::jsonb;
 
 -- ── Кодыг шалгах — БҮХ ангийн хандалт энэ ганц газраар дамжина ─────────
--- Буцаах утга: 'ok' | 'bad' | 'locked' | 'none'. Клиентэд «түгжигдсэн»
+-- Буцаах утга: 'ok' | 'teacher' | 'bad' | 'locked' | 'none'. Клиентэд «түгжигдсэн»
 -- гэдгийг «буруу»-гаас ялгаж хэлэх нь чухал — эс тэгвэл сурагч зөв
 -- кодоо дахин дахин оруулж, «буруу» гэж сонсоод будилна.
 create or replace function public.class_join(p_class text, p_code text)
@@ -546,6 +551,10 @@ begin
   end if;
   if p_code is not null and btrim(p_code) = c.code then
     return 'ok';
+  end if;
+  -- Багшийн код. Ижил таах хязгаарт хамаарна.
+  if p_code is not null and c.tcode is not null and btrim(p_code) = c.tcode then
+    return 'teacher';
   end if;
   update public.classes set fails = fails + 1 where id = p_class;
   return 'bad';
@@ -679,8 +688,11 @@ declare
   tk    jsonb;
   les   int[] := '{}';
   since date  := '1970-01-01';
+  upto  date  := 'infinity';
 begin
-  if st <> 'ok' then
+  -- Сурагч ба БАГШ хоёулаа жагсаалтыг харна. Багш өөрөө жагсаалтад
+  -- ордоггүй тул түүнд зөвхөн харах эрх.
+  if st <> 'ok' and st <> 'teacher' then
     return jsonb_build_object('status', st);
   end if;
   select task into tk from public.classes where id = p_class;
@@ -691,6 +703,10 @@ begin
     if coalesce(tk ->> 'since', '') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
       since := (tk ->> 'since')::date;
     end if;
+    -- ХУГАЦАА: `until`-ээс хойшхи хариулт тоологдохгүй — хувь зогсоно.
+    if coalesce(tk ->> 'until', '') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
+      upto := (tk ->> 'until')::date;
+    end if;
   else
     tk := null;
   end if;
@@ -700,6 +716,7 @@ begin
   -- болгож `since`-тэй тулгана.
   return jsonb_build_object(
     'status', 'ok',
+    'role', st,
     'name', (select name from public.classes where id = p_class),
     'task', tk,
     'rows', (
@@ -710,11 +727,13 @@ begin
                'task_n', case when tk is null then null else (
                  select count(*) from jsonb_each(m.exam) e
                   where public.jnum(e.value -> 2)::int = any(les)
-                    and ('1970-01-01'::date + public.jnum(e.value -> 0)::int) >= since) end,
+                    and ('1970-01-01'::date + public.jnum(e.value -> 0)::int)
+                        between since and upto) end,
                'task_ok', case when tk is null then null else (
                  select count(*) from jsonb_each(m.exam) e
                   where public.jnum(e.value -> 2)::int = any(les)
-                    and ('1970-01-01'::date + public.jnum(e.value -> 0)::int) >= since
+                    and ('1970-01-01'::date + public.jnum(e.value -> 0)::int)
+                        between since and upto
                     and public.jnum(e.value -> 1) > 0) end)
              order by m.learned desc, m.seen desc, m.name), '[]'::jsonb)
       from public.members m
@@ -722,6 +741,60 @@ begin
     ));
 end;
 $cr$;
+
+-- ── Даалгавар тавих — ЗӨВХӨН багш ──────────────────────────────────────
+-- `p_lessons` хоосон бол даалгаврыг УСТГАНА.
+-- `p_since` нь БАГШИЙН орон нутгийн огноо (сервер UTC тул өөрөө бодохгүй).
+-- `until = since + days`. Хугацаа дуусахад хувь зогсоно.
+create or replace function public.task_set(
+  p_class   text,
+  p_tcode   text,
+  p_lessons jsonb   default null,
+  p_n       int     default 20,
+  p_days    int     default 7,
+  p_since   text    default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $ts$
+declare
+  st  text := public.class_join(p_class, p_tcode);
+  les int[] := '{}';
+  d0  date;
+  nn  int := least(greatest(coalesce(p_n, 20), 1), 100);
+  dd  int := least(greatest(coalesce(p_days, 7), 1), 60);
+  tk  jsonb;
+begin
+  -- Сурагчийн код нь 'ok' буцаадаг — ТҮҮНИЙГ амжилттай гэж ойлгож
+  -- болохгүй тул 'denied' болгож ялгана (тест барив).
+  if st <> 'teacher' then
+    return jsonb_build_object('status', case when st = 'ok' then 'denied' else st end);
+  end if;
+  if jsonb_typeof(p_lessons) = 'array' then
+    select array(select distinct public.jnum(x)::int
+                   from jsonb_array_elements(p_lessons) x
+                  where public.jnum(x) between 1 and 99
+                  order by 1)
+      into les;
+  end if;
+  if coalesce(cardinality(les), 0) = 0 then
+    update public.classes set task = null where id = p_class;
+    return jsonb_build_object('status', 'ok', 'task', null);
+  end if;
+  if coalesce(p_since, '') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
+    d0 := p_since::date;
+  else
+    d0 := current_date;
+  end if;
+  tk := jsonb_build_object(
+    'lessons', to_jsonb(les), 'n', nn, 'days', dd,
+    'since', to_char(d0, 'YYYY-MM-DD'),
+    'until', to_char(d0 + dd, 'YYYY-MM-DD'));
+  update public.classes set task = tk where id = p_class;
+  return jsonb_build_object('status', 'ok', 'task', tk);
+end;
+$ts$;
 
 revoke all on function public.class_join(text, text)  from public;
 revoke all on function public.class_list()            from public;
@@ -731,3 +804,5 @@ grant execute on function public.class_join(text, text)  to anon;
 grant execute on function public.class_list()            to anon;
 grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb) to anon;
 grant execute on function public.class_roster(text, text, text) to anon;
+revoke all on function public.task_set(text, text, jsonb, int, int, text) from public;
+grant execute on function public.task_set(text, text, jsonb, int, int, text) to anon;

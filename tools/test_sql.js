@@ -247,6 +247,70 @@ async function main() {
   await db.exec("delete from public.members");
   await resetFails();
 
+  console.log('\n[10] Багш — тусдаа код, даалгавар тавих, ХУГАЦАА');
+  await db.exec("delete from public.members");
+  await db.exec("update public.classes set tcode = '246802' where id = 'mica'");
+  await db.exec("update public.classes set tcode = null, task = null where id = 'c2'");
+  const tset = (c, code, les, n, days, since) => one(
+    'select public.task_set($1,$2,$3::jsonb,$4,$5,$6) as r',
+    [c, code, les === null ? null : JSON.stringify(les), n, days, since || null]).then(r => r.r);
+
+  ok('багшийн код -> «teacher» (сурагчийнхаас ӨӨР)',
+    await join('mica', '246802') === 'teacher' && await join('mica', '5173') === 'ok');
+  ok('багшийн код НӨГӨӨ ангид хүчингүй', await join('c2', '246802') === 'bad');
+  await resetFails();
+
+  let t = await tset('mica', '5173', [1, 2], 20, 3);
+  ok('СУРАГЧИЙН кодоор даалгавар тавьж ЧАДАХГҮЙ («denied», бичигдэхгүй)',
+    t.status === 'denied' && !t.task, JSON.stringify(t));
+  t = await tset('mica', '0000', [1, 2], 20, 3);
+  ok('буруу кодоор тавьж чадахгүй', t.status === 'bad', JSON.stringify(t));
+  await resetFails();
+
+  t = await tset('mica', '246802', [3, 1, 2, 2, 999, 0], 20, 3, '2026-09-20');
+  ok('багш даалгавар тавина; хичээл цэгцлэгдэж давхардал арилна',
+    t.status === 'ok' && JSON.stringify(t.task.lessons) === '[1,2,3]', JSON.stringify(t));
+  ok('хугацаа: until = since + days', t.task.since === '2026-09-20' &&
+    t.task.until === '2026-09-23' && t.task.days === 3, JSON.stringify(t.task));
+  t = await tset('mica', '246802', [1], 9999, 9999, 'муу огноо');
+  ok('тоо ба хоног хязгаарлагдана, буруу огноо -> өнөөдөр',
+    t.task.n === 100 && t.task.days === 60 && /^\d{4}-\d{2}-\d{2}$/.test(t.task.since),
+    JSON.stringify(t.task));
+
+  // Хугацааны цонх: since..until
+  await db.exec("update public.classes set task = " +
+    "'{\"lessons\":[1],\"n\":20,\"since\":\"2026-09-20\",\"until\":\"2026-09-23\",\"days\":3}' " +
+    "where id = 'mica'");
+  const D = async iso => (await one("select ($1::date - '1970-01-01'::date) as d", [iso])).d;
+  const [dIn, dBefore, dAfter, dLast] =
+    [await D('2026-09-21'), await D('2026-09-19'), await D('2026-09-24'), await D('2026-09-23')];
+  await putEx('memberW00001', 'Цаг', { mica: '5173' }, {
+    'A1': [dIn, 1, 1],        // хугацаанд — тоологдоно
+    'A2': [dLast, 1, 1],      // ЯГ сүүлийн өдөр — тоологдоно
+    'A3': [dBefore, 1, 1],    // эхлэхээс өмнө — үгүй
+    'A4': [dAfter, 1, 1],     // ДУУССАНЫ дараа — үгүй
+  });
+  ro = await roster('mica', '5173', 'memberW00001');
+  ok('хугацаанд багтсан хариулт л тоологдоно (2)',
+    ro.rows[0].task_n === 2, JSON.stringify(ro.rows[0]));
+  ro = await roster('mica', '246802', null);
+  ok('БАГШ жагсаалтыг харна', ro.status === 'ok' && ro.role === 'teacher' && ro.rows.length === 1,
+    JSON.stringify({ s: ro.status, r: ro.role, n: ro.rows.length }));
+  ro = await roster('mica', '5173', 'memberW00001');
+  ok('сурагчийн role = ok', ro.role === 'ok', JSON.stringify(ro.role));
+
+  // Багш ЖАГСААЛТАД ОРОХГҮЙ: багшийн кодоор гишүүн үүсэхгүй
+  let rr = await putEx('memberTEACH01', 'Багш', { mica: '246802' }, {});
+  const trow = await one("select * from public.members where member='memberTEACH01'");
+  ok('багшийн кодоор ГИШҮҮН үүсэхгүй (жагсаалтад гарахгүй)',
+    rr.mica === 'teacher' && !trow, JSON.stringify(rr));
+
+  t = await tset('mica', '246802', [], 20, 3);
+  const tk2 = (await one("select task from public.classes where id='mica'")).task;
+  ok('хоосон хичээл -> даалгавар УСТАНА', t.status === 'ok' && tk2 === null, JSON.stringify(t));
+  await db.exec("delete from public.members");
+  await resetFails();
+
   console.log('\n[8] anon эрх — хүснэгт рүү ШУУД хандах ХААЛТТАЙ');
   await put('memberAAAA01', 'Бат', { mica: '5173' });
   await db.exec('set role anon');

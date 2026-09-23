@@ -2442,7 +2442,7 @@ function renderExamTasks() {
     const need = taskN(x.t), n = taskDoneLocal(x.t);
     return '<li class="ex-task"><div class="ex-task-body">' +
       '<p class="ex-task-label"><b>' + esc(className(x.id)) + '</b> · ' + esc(taskLabel(x.t)) + '</p>' +
-      TASK_STATE(Math.min(n, need), need).replace('Хийгээгүй · ', '') +
+      TASK_STATE(Math.min(n, need), need).replace('Хийгээгүй · ', '') + DUE_HTML(x.t) +
       '</div><button class="ghost sm ex-task-pick" type="button" data-class-id="' + escA(x.id) + '"' +
       ' aria-label="' + escA(className(x.id)) + ': Сонгох">Сонгох</button></li>';
   }).join('');
@@ -3019,7 +3019,20 @@ function cleanMe(v) {
     syncFor: typeof o.syncFor === 'string' ? o.syncFor : '',
     // Серверт СҮҮЛД бичсэн id — солигдвол хуучин мөрийг устгана.
     sent: (typeof o.sent === 'string' && /^[a-z0-9]{8,64}$/.test(o.sent)) ? o.sent : '',
+    // БАГШИЙН код (ангийн id -> код). Багш жагсаалтыг харах ба даалгавар
+    // тавих эрхтэй; гишүүн БОЛОХГҮЙ — нэр нь серверт очихгүй.
+    teach: teachClean(o.teach),
   };
+}
+
+function teachClean(v) {
+  const out = {};
+  if (v && typeof v === 'object' && !Array.isArray(v)) {
+    for (const k in v) {
+      if (/^[a-z0-9_-]{1,20}$/.test(k) && /^\d{4,8}$/.test(String(v[k]))) out[k] = String(v[k]);
+    }
+  }
+  return out;
 }
 
 let me = cleanMe(load(KEY_ME, null));
@@ -3104,10 +3117,44 @@ function lessonRange(ls) {
   return run && a.length > 1 ? 'L' + a[0] + '–L' + a[a.length - 1] : a.map(x => 'L' + x).join(', ');
 }
 const taskLabel = t => lessonRange(t.lessons) + ' · ' + taskN(t) + ' асуулт';
+const teachClasses = () => Object.keys(me.teach);
+const isTeacher = id => !!me.teach[id];
+/** Аль ч ангид харьяалалтай юу (сурагч эсвэл багш). */
+const anyClasses = () => [...new Set(myClasses().concat(teachClasses()))];
+/** Тухайн ангид өгөх код — багш бол багшийнх. */
+const codeFor = id => me.teach[id] || me.codes[id];
+
+/** Орон нутгийн огноо 'YYYY-MM-DD' (сервер UTC тул клиент өөрөө бодно). */
+function isoToday() {
+  const d = new Date();
+  const p = n => (n < 10 ? '0' : '') + n;
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+const isoOf = day => new Date(day * 864e5).toISOString().slice(0, 10);
+
+/** Хугацааны төлөв: нээлттэй · өнөөдөр дуусна · дууссан. */
+function taskDue(t) {
+  if (!t || !t.until) return null;
+  const left = dayOf(t.until) - today();
+  return {
+    iso: t.until,
+    left: left,
+    state: left < 0 ? 'is-expired' : left === 0 ? 'is-today' : '',
+    text: left < 0 ? 'Хугацаа дууссан' : left === 0 ? 'Өнөөдөр дуусна' : left + ' хоног үлдлээ',
+  };
+}
+const DUE_HTML = t => {
+  const d = taskDue(t);
+  return d ? '<small class="task-deadline ' + d.state + '">' + esc(d.text) +
+    ' · <time datetime="' + escA(d.iso) + '">' + esc(d.iso) + '</time></small>' : '';
+};
 /** Энэ төхөөрөмж дээрх явц — СЕРВЕРТЭЙ ИЖИЛ дүрэм (SUPABASE.sql). */
 function taskDoneLocal(t) {
   const since = dayOf(t.since), les = t.lessons.map(x => x | 0);
-  return Object.values(exHist).filter(h => les.includes(h[2]) && h[0] >= since).length;
+  // Хугацаа дуусахад тоолол ЗОГСОНО — сервертэй ижил дүрэм.
+  const upto = t.until ? dayOf(t.until) : Infinity;
+  return Object.values(exHist)
+    .filter(h => les.includes(h[2]) && h[0] >= since && h[0] <= upto).length;
 }
 const className = id => (classList.find(c => c.id === id) || {}).name || id;
 
@@ -3141,12 +3188,17 @@ function refreshMe() {
     const txt = myClasses().length
       ? myClasses().map(className).join(' · ')
       : (me.other ? 'Бусад' : 'Анги сонгоогүй');
-    c.textContent = me.lost.length
-      ? txt + ' · ' + me.lost.map(className).join(', ') + ': код солигдсон'
-      : txt;
+    /* ЭНД `return` бичиж БОЛОХГҮЙ — доорх цэсний мөр шинэчлэгдэхгүй
+       үлдэнэ (тест барив: багш орсон ч «Анги» цэсэнд гарахгүй байв). */
+    c.textContent = teachClasses().length
+      ? (myClasses().length ? txt + ' · ' : '')
+        + teachClasses().map(className).join(', ') + ' (багш)'
+      : me.lost.length
+        ? txt + ' · ' + me.lost.map(className).join(', ') + ': код солигдсон'
+        : txt;
   }
   const nav = $('nav-klass');
-  if (nav) nav.hidden = !myClasses().length;
+  if (nav) nav.hidden = !anyClasses().length;
 }
 
 /* ── Серверт тоо илгээх ──────────────────────────────────────────── */
@@ -3226,9 +3278,9 @@ const SU_ITEM = c =>
       '<span class="su-choice-name">' + esc(c.name) + '</span>' +
     '</button>' +
     '<div class="su-codebox" id="su-codebox-' + escA(c.id) + '">' +
-      '<label class="su-label" for="su-code-' + escA(c.id) + '">4 оронтой код</label>' +
+      '<label class="su-label" for="su-code-' + escA(c.id) + '">Код</label>' +
       '<input class="su-code" id="su-code-' + escA(c.id) + '" data-c="' + escA(c.id) + '"' +
-      ' type="text" inputmode="numeric" minlength="4" maxlength="4" pattern="[0-9]{4}"' +
+      ' type="text" inputmode="numeric" minlength="4" maxlength="8" pattern="[0-9]{4,8}"' +
       ' autocomplete="off" spellcheck="false" aria-describedby="su-err-' + escA(c.id) + '">' +
       '<p class="su-err" id="su-err-' + escA(c.id) + '" data-c="' + escA(c.id) + '" role="alert" hidden></p>' +
     '</div>' +
@@ -3251,18 +3303,18 @@ function renderSetupClasses() {
   const box = $('su-classes');
   box.innerHTML = classList.map(SU_ITEM).join('');
   for (const c of classList) {
-    const on = c.id in me.codes;
+    const on = (c.id in me.codes) || (c.id in me.teach);
     const b = box.querySelector('.su-toggle[data-c="' + c.id + '"]');
     const i = box.querySelector('.su-code[data-c="' + c.id + '"]');
     b.setAttribute('aria-pressed', on);
-    i.value = me.codes[c.id] || '';
+    i.value = me.codes[c.id] || me.teach[c.id] || '';
     b.onclick = () => {
       const now = b.getAttribute('aria-pressed') !== 'true';
       b.setAttribute('aria-pressed', now);
       if (now) { $('su-other').setAttribute('aria-pressed', 'false'); i.focus(); }
       suErr(c.id, ''); suNote('');
     };
-    i.oninput = () => { i.value = i.value.replace(/\D/g, '').slice(0, 4); suErr(c.id, ''); };
+    i.oninput = () => { i.value = i.value.replace(/\D/g, '').slice(0, 8); suErr(c.id, ''); };
   }
 }
 
@@ -3336,7 +3388,7 @@ async function saveSetup() {
   let bad = false;
   for (const id of picked) {
     const code = (document.querySelector('.su-code[data-c="' + id + '"]').value || '').trim();
-    if (!/^\d{4}$/.test(code)) { suErr(id, '4 оронтой код оруулна уу.'); bad = true; continue; }
+    if (!/^\d{4,8}$/.test(code)) { suErr(id, 'Кодоо оруулна уу.'); bad = true; continue; }
     codes[id] = code;
   }
   if (bad) { suNote('Кодоо шалгана уу.', true); return; }
@@ -3345,12 +3397,19 @@ async function saveSetup() {
   btn.disabled = true;
   suNote(picked.length ? 'Шалгаж байна…' : '');
   try {
+    // Багшийн код нь 'teacher' буцаана — тэр ангид ГИШҮҮН болохгүй,
+    // зөвхөн харах ба даалгавар тавих эрхтэй.
+    const teach = {};
     for (const id of picked) {
-      if (me.codes[id] === codes[id]) continue;
+      if (me.codes[id] === codes[id] || me.teach[id] === codes[id]) {
+        if (me.teach[id] === codes[id]) teach[id] = codes[id];
+        continue;
+      }
       let st;
       try { st = await rpc('class_join', { p_class: id, p_code: codes[id] }); }
       catch (e) { suNote('Сүлжээ алга — дахин оролдоно уу.', true); return; }
       if (run !== setupRun) return;
+      if (st === 'teacher') { teach[id] = codes[id]; continue; }
       if (st === 'ok') continue;
       suErr(id, st === 'locked' ? 'Түр түгжигдсэн — 1 цагийн дараа оролдоно уу.'
               : st === 'none' ? 'Анги олдсонгүй.' : 'Код буруу.');
@@ -3359,6 +3418,9 @@ async function saveSetup() {
     if (bad) { suNote('Кодоо шалгана уу.', true); return; }
 
     me.name = name;
+    // Багшийн кодтой ангиуд нь `codes`-д ОРОХГҮЙ (гишүүн биш).
+    me.teach = teach;
+    for (const id in teach) delete codes[id];
     me.codes = codes;
     me.other = !picked.length;
     // Дахин элссэн анги, эсвэл «Бусад» — мэдэгдэх шаардлага дууслаа.
@@ -3436,9 +3498,136 @@ function klassNote(msg, isErr) {
   n.classList.toggle('is-error', !!isErr);
 }
 
+/* Багшийн маягтын ТҮР төлөв (хадгалах хүртэл). */
+const teachDraft = {};
+
+function draftOf(id) {
+  if (!teachDraft[id]) {
+    const t = taskOf(id);
+    teachDraft[id] = t
+      ? { lessons: t.lessons.map(x => x | 0), n: taskN(t), days: Math.max(1, t.days | 0) || 7 }
+      : { lessons: [], n: 20, days: 7 };
+  }
+  return teachDraft[id];
+}
+
+const SEG_BTN = (attr, val, cur) => '<button type="button" data-' + attr + '="' + val +
+  '" aria-pressed="' + (val === cur) + '"><b>' + val + '</b></button>';
+
+/** Багшийн самбар — даалгавар харах ба тавих. */
+function teachPanel(id, name, task) {
+  const d = draftOf(id);
+  const has = !!task;
+  return '<div class="kl-teach su-field">' +
+    '<div class="kl-teach-head"><span class="kl-badge">Багш</span>' +
+    '<button class="ghost sm kl-task-edit" type="button" data-c="' + escA(id) + '"' +
+    ' aria-expanded="false" aria-controls="kl-form-' + escA(id) + '">' +
+    (has ? 'Засах' : 'Даалгавар өгөх') + '</button></div>' +
+    '<p class="kl-task"><span>' + (has ? esc(taskLabel(task)) : 'Даалгавар алга') + '</span>' +
+    (has ? DUE_HTML(task) : '') + '</p>' +
+    '<form class="kl-form" id="kl-form-' + escA(id) + '" data-c="' + escA(id) + '"' +
+    ' aria-label="' + escA(name) + ' · Даалгавар" hidden>' +
+      '<fieldset><legend class="su-label">Хичээл</legend>' +
+      '<div class="lessons kl-les" data-c="' + escA(id) + '"></div></fieldset>' +
+      '<fieldset><legend class="su-label">Асуулт</legend>' +
+      '<div class="seg kl-n" data-c="' + escA(id) + '">' +
+      [10, 15, 20].map(v => SEG_BTN('n', v, d.n)).join('') + '</div></fieldset>' +
+      '<fieldset><legend class="su-label">Хоног</legend>' +
+      '<div class="seg kl-days" data-c="' + escA(id) + '">' +
+      [1, 3, 7, 14].map(v => SEG_BTN('d', v, d.days)).join('') + '</div></fieldset>' +
+      '<p class="kl-due" data-c="' + escA(id) + '" role="status" aria-atomic="true"></p>' +
+      '<div class="su-actions">' +
+      '<button class="primary kl-save" type="button" data-c="' + escA(id) + '">Хадгалах</button>' +
+      '<button class="ghost sm kl-del" type="button" data-c="' + escA(id) + '"' +
+      (has ? '' : ' hidden') + '>Даалгавар устгах</button></div>' +
+      '<p class="su-status kl-msg" data-c="' + escA(id) + '" role="status" aria-atomic="true"></p>' +
+    '</form></div>';
+}
+
+const $c = (sel, id) => document.querySelector(sel + '[data-c="' + id + '"]');
+
+/** Маягтын хичээлийн чип ба товчнуудыг амилуулна. */
+function bindTeach(id) {
+  const d = draftOf(id);
+  const due = () => {
+    const el = $c('.kl-due', id);
+    if (el) {
+      const iso = isoOf(dayOf(isoToday()) + d.days);
+      el.innerHTML = 'Дуусах: <time datetime="' + escA(iso) + '">' + esc(iso) + '</time>';
+    }
+  };
+  const chips = () => {
+    const box = $c('.kl-les', id);
+    if (!box || !EXAM) return;
+    box.innerHTML = '';
+    for (const l of examLessonsAll()) {
+      const n = EXAM.items.filter(q => q.lesson === l).length;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = 'L' + l + '<small>' + n + '</small>';
+      b.setAttribute('aria-pressed', d.lessons.includes(l));
+      b.onclick = () => {
+        const i = d.lessons.indexOf(l);
+        i < 0 ? d.lessons.push(l) : d.lessons.splice(i, 1);
+        b.setAttribute('aria-pressed', i < 0);
+      };
+      box.appendChild(b);
+    }
+  };
+  const seg = (sel, attr, key) => {
+    const box = $c(sel, id);
+    if (!box) return;
+    box.querySelectorAll('button').forEach(b => b.onclick = () => {
+      d[key] = +b.dataset[attr];
+      box.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+      due();
+    });
+  };
+  seg('.kl-n', 'n', 'n');
+  seg('.kl-days', 'd', 'days');
+  due();
+  if (EXAM) chips(); else loadExam().then(chips).catch(() => {});
+
+  const form = $c('.kl-form', id), edit = $c('.kl-task-edit', id);
+  if (edit) edit.onclick = () => {
+    const open = form.hidden;
+    form.hidden = !open;
+    edit.setAttribute('aria-expanded', open);
+  };
+  const msg = (t, err) => {
+    const m = $c('.kl-msg', id);
+    if (m) { m.textContent = t || ''; m.classList.toggle('is-error', !!err); }
+  };
+  const send = (lessons, saving) => {
+    msg(saving ? 'Хадгалж байна…' : 'Устгаж байна…');
+    return rpc('task_set', {
+      p_class: id, p_tcode: me.teach[id], p_lessons: lessons,
+      p_n: d.n, p_days: d.days, p_since: isoToday(),
+    }).then(r => {
+      if (!r || r.status !== 'ok') {
+        msg(r && r.status === 'locked' ? 'Түр түгжигдсэн — 1 цагийн дараа.'
+          : 'Багшийн эрх баталгаажсангүй.', true);
+        return;
+      }
+      const c = classList.find(x => x.id === id);
+      if (c) { c.task = r.task || null; save(KEY_CLS, classList); }
+      teachDraft[id] = null;
+      msg('');
+      refreshKlass();
+    }).catch(() => msg('Сүлжээ алга — дахин оролдоно уу.', true));
+  };
+  const sv = $c('.kl-save', id);
+  if (sv) sv.onclick = () => {
+    if (!d.lessons.length) { msg('Хичээл сонгоно уу.', true); return; }
+    send(d.lessons.slice().sort((a, b) => a - b), true);
+  };
+  const dl = $c('.kl-del', id);
+  if (dl) dl.onclick = () => { if (confirm('Даалгаврыг устгах уу?')) send([], false); };
+}
+
 async function refreshKlass() {
   const run = ++klassRun;
-  const ids = myClasses();
+  const ids = anyClasses();
   const box = $('kl-list');
   if (!ids.length) {
     box.innerHTML = '';
@@ -3452,15 +3641,15 @@ async function refreshKlass() {
   // хуучин тоотой харна.
   await memberSync(true);
   if (run !== klassRun) return;
-  const out = [], msgs = [];
-  for (const id of myClasses()) {
+  const out = [], msgs = [], teach = [];
+  for (const id of anyClasses()) {
     let r;
     try {
-      r = await rpc('class_roster', { p_class: id, p_code: me.codes[id], p_member: memberKey });
+      r = await rpc('class_roster', { p_class: id, p_code: codeFor(id), p_member: memberKey });
     } catch (e) { msgs.push('Сүлжээ алга.'); continue; }
     if (run !== klassRun) return;
     if (!r || r.status === 'bad' || r.status === 'none') {
-      delete me.codes[id];
+      delete me.codes[id]; delete me.teach[id];
       if (!me.lost.includes(id)) me.lost.push(id);
       save(KEY_ME, me); refreshMe();
       continue;
@@ -3481,14 +3670,21 @@ async function refreshKlass() {
     const doneN = task ? rows.filter(x => x.taskN >= need).length : 0;
     // Даалгавартай бол ГҮЙЦЭТГЭЛЭЭР эрэмбэлнэ — хэн хийгээгүй нь доороо.
     if (task) rows.sort((a, b) => b.taskN - a.taskN || a.name.localeCompare(b.name));
+    const asTeacher = r.role === 'teacher';
+    if (asTeacher) teach.push(id);
     out.push('<section class="kl-class" aria-labelledby="kl-class-' + escA(id) + '">' +
       '<h3 id="kl-class-' + escA(id) + '"><span>' + esc(r.name || className(id)) + '</span>' +
       '<small>' + rows.length + ' хүн</small></h3>' +
-      (task ? '<p class="kl-task"><span>Даалгавар · ' + esc(taskLabel(task)) + '</span>' +
-              '<strong>' + doneN + '/' + rows.length + ' хийсэн</strong></p>' : '') +
+      (asTeacher ? teachPanel(id, r.name || className(id), task) : '') +
+      (task && !asTeacher
+        ? '<p class="kl-task"><span>Даалгавар · ' + esc(taskLabel(task)) + '</span>' +
+          '<strong>' + doneN + '/' + rows.length + ' хийсэн</strong>' + DUE_HTML(task) + '</p>'
+        : (task ? '<p class="kl-task"><span>Гүйцэтгэл</span><strong>' + doneN + '/' +
+            rows.length + ' хийсэн</strong></p>' : '')) +
       '<ol class="kl-members">' + rows.map(x => KL_ROW(x, need)).join('') + '</ol></section>');
   }
   box.innerHTML = out.join('');
+  teach.forEach(bindTeach);
   /* `memberSync` дээр ч, roster дээр ч хаягдаж болно — аль алинд нь
      `me.lost`-д бичигддэг тул мэдэгдлийг ЭНДЭЭС нэг удаа гаргана. */
   if (me.lost.length) msgs.unshift(lostMsg());

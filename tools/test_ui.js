@@ -1262,6 +1262,142 @@ async function run(c) {
     return 1;
   `);
 
+  console.log('\n[32] Багш — тусдаа код, даалгавар тавих, хугацаа');
+  /* Багш тусдаа кодтой: жагсаалтыг харах ба даалгавар тавих эрхтэй,
+     гэхдээ жагсаалтад ОРОХГҮЙ, нэр нь серверт очихгүй.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const tc = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const out = {};
+    const keep = { rpc: rpc, dev: isDevHost, me: JSON.parse(JSON.stringify(me)),
+                   cls: classList, hist: exHist };
+    const F = { task: null, calls: [], members: { s1: { name: 'Сараа', classes: ['mica'], exam: {} } } };
+    const chk = (c, k) => c !== 'mica' ? 'none'
+      : (k === '5173' ? 'ok' : (k === '246802' ? 'teacher' : 'bad'));
+    rpc = async (fn, b) => {
+      F.calls.push({ fn: fn, b: JSON.parse(JSON.stringify(b || {})) });
+      if (fn === 'class_list') return [{ id: 'mica', name: 'MICA', task: F.task }];
+      if (fn === 'class_join') return chk(b.p_class, b.p_code);
+      if (fn === 'member_put') {
+        const res = {};
+        for (const k in (b.p_classes || {})) res[k] = chk(k, b.p_classes[k]);
+        return res;
+      }
+      if (fn === 'class_roster') {
+        const st = chk(b.p_class, b.p_code);
+        if (st !== 'ok' && st !== 'teacher') return { status: st };
+        return { status: 'ok', role: st, name: 'MICA', task: F.task,
+                 rows: [{ name: 'Сараа', seen: 1, learned: 1, today: 0, streak: 0, day: today(),
+                          me: false, task_n: F.task ? 5 : null, task_ok: 0 }] };
+      }
+      if (fn === 'task_set') {
+        if (b.p_tcode !== '246802') return { status: 'denied' };
+        if (!b.p_lessons || !b.p_lessons.length) { F.task = null; return { status: 'ok', task: null }; }
+        const until = new Date(Date.parse(b.p_since) + b.p_days * 864e5).toISOString().slice(0, 10);
+        F.task = { lessons: b.p_lessons, n: b.p_n, days: b.p_days, since: b.p_since, until: until };
+        return { status: 'ok', task: F.task };
+      }
+      return null;
+    };
+    isDevHost = () => false;
+    me.codes = {}; me.teach = {}; me.other = false; me.done = true; me.name = 'Багш';
+    me.lost = []; save(KEY_ME, me);
+    classList = [{ id: 'mica', name: 'MICA', task: null }]; save(KEY_CLS, classList);
+
+    // (1) Тохируулах дэлгэцэд БАГШИЙН код
+    openSetup(false); await wait(400);
+    document.getElementById('su-name').value = 'Багш';
+    document.querySelector('#su-classes .su-toggle[data-c="mica"]').click();
+    document.querySelector('.su-code[data-c="mica"]').value = '246802';
+    await saveSetup(); await wait(200);
+    out.teach = JSON.stringify(me.teach);
+    out.codes = JSON.stringify(me.codes);
+    out.navShown = !document.getElementById('nav-klass').hidden;
+    out.card = document.getElementById('me-classes').textContent;
+    const put = F.calls.filter(x => x.fn === 'member_put').pop();
+    out.putClasses = put ? JSON.stringify(put.b.p_classes) : 'none';
+    out.putName = put ? put.b.p_name : 'none';
+
+    // (2) Ангийн дэлгэц — багшийн самбар
+    go('klass'); await wait(700);
+    out.badge = !!document.querySelector('.kl-teach .kl-badge');
+    out.editLabel = (document.querySelector('.kl-task-edit') || {}).textContent;
+    out.formHidden = document.querySelector('.kl-form').hidden;
+    out.meRow = document.querySelectorAll('#kl-list .kl-member').length;   // зөвхөн Сараа
+    document.querySelector('.kl-task-edit').click();
+    await wait(200);
+    out.formOpen = !document.querySelector('.kl-form').hidden;
+    out.chips = document.querySelectorAll('.kl-les button').length;
+
+    // (3) Хичээл, тоо, хоног сонгоно
+    const chips = [...document.querySelectorAll('.kl-les button')];
+    chips[0].click(); chips[1].click();
+    document.querySelector('.kl-n button[data-n="15"]').click();
+    document.querySelector('.kl-days button[data-d="3"]').click();
+    out.due = document.querySelector('.kl-due').textContent.trim();
+    out.dueWant = 'Дуусах: ' + isoOf(today() + 3);
+
+    // (4) Хадгална
+    F.calls = [];
+    document.querySelector('.kl-save').click();
+    await wait(600);
+    const ts = F.calls.filter(x => x.fn === 'task_set').pop();
+    out.sent = ts ? JSON.stringify([ts.b.p_lessons, ts.b.p_n, ts.b.p_days, ts.b.p_since]) : 'none';
+    out.sentCode = ts ? ts.b.p_tcode : 'none';
+    out.taskLine = (document.querySelector('.kl-teach .kl-task span') || {}).textContent;
+    out.editLabel2 = (document.querySelector('.kl-task-edit') || {}).textContent;
+    out.delShown = !document.querySelector('.kl-del').hidden;
+    out.deadline = (document.querySelector('.kl-teach .task-deadline') || {}).textContent;
+
+    // (5) Хугацаа дууссан бол тоолол ЗОГСОНО
+    const past = { lessons: [1], n: 20, since: isoOf(today() - 10), until: isoOf(today() - 1) };
+    exHist = { Q1: [today() - 5, 1, 1], Q2: [today(), 1, 1] };   // нэг нь дотор, нэг нь ДАРАА
+    out.doneInWindow = taskDoneLocal(past);
+    out.dueExpired = taskDue(past).text;
+    out.dueToday = taskDue({ lessons: [1], n: 5, since: isoOf(today()), until: isoOf(today()) }).text;
+
+    // (6) Даалгавар устгана
+    F.calls = [];
+    window.confirm = () => true;
+    document.querySelector('.kl-task-edit').click(); await wait(150);
+    document.querySelector('.kl-del').click();
+    await wait(600);
+    const td = F.calls.filter(x => x.fn === 'task_set').pop();
+    out.delSent = td ? JSON.stringify(td.b.p_lessons) : 'none';
+    out.taskGone = (document.querySelector('.kl-teach .kl-task span') || {}).textContent;
+
+    rpc = keep.rpc; isDevHost = keep.dev; me = cleanMe(keep.me); save(KEY_ME, me);
+    classList = keep.cls; save(KEY_CLS, classList); exHist = keep.hist; save(KEY_EXH, exHist);
+    refreshMe(); go('home');
+    return out;
+  `);
+  ok('багшийн код нь `teach`-д, `codes`-д ОРОХГҮЙ (гишүүн биш)',
+    tc && tc.teach === '{"mica":"246802"}' && tc.codes === '{}', JSON.stringify(tc));
+  /* Багш гишүүн биш тул `memberSync` огт сүлжээ дуудахгүй — нэр нь
+     хоосон ч гэсэн илгээгдэхгүй. Хүлээснээс ч сайн. */
+  ok('багшийн НЭР серверт ОГТ илгээгдэхгүй (member_put дуудагдаагүй)',
+    tc && tc.putClasses === 'none', JSON.stringify(tc));
+  ok('цэсэнд «Анги» гарна, картад «(багш)»',
+    tc && tc.navShown && /багш/.test(tc.card), JSON.stringify(tc));
+  ok('ангийн дэлгэцэд «Багш» самбар, маягт хаалттай',
+    tc && tc.badge && tc.editLabel === 'Даалгавар өгөх' && tc.formHidden === true, JSON.stringify(tc));
+  ok('багш ЖАГСААЛТАД ОРООГҮЙ (зөвхөн Сараа)', tc && tc.meRow === 1, JSON.stringify(tc));
+  ok('маягт нээгдэж 18 хичээлийн чип гарна',
+    tc && tc.formOpen && tc.chips === 18, JSON.stringify(tc));
+  ok('дуусах огноо = өнөөдөр + хоног', tc && tc.due === tc.dueWant, JSON.stringify(tc));
+  ok('хадгалахад task_set зөв утгаар дуудагдана',
+    tc && tc.sent === '[[1,2],15,3,"' + new Date(Date.now() - new Date().getTimezoneOffset() * 6e4)
+      .toISOString().slice(0, 10) + '"]' && tc.sentCode === '246802', JSON.stringify(tc));
+  ok('даалгавар харагдаж, товч «Засах» болно',
+    tc && tc.taskLine === 'L1–L2 · 15 асуулт' && tc.editLabel2 === 'Засах' && tc.delShown,
+    JSON.stringify(tc));
+  ok('хугацаа харагдана («3 хоног үлдлээ»)', tc && /3 хоног үлдлээ/.test(tc.deadline), JSON.stringify(tc));
+  ok('хугацаа дуусахад тоолол ЗОГСОНО (1, 2 биш)', tc && tc.doneInWindow === 1, JSON.stringify(tc));
+  ok('хугацааны бичиг: дууссан / өнөөдөр дуусна',
+    tc && tc.dueExpired === 'Хугацаа дууссан' && tc.dueToday === 'Өнөөдөр дуусна', JSON.stringify(tc));
+  ok('устгахад хоосон хичээл илгээгдэж даалгавар алга болно',
+    tc && tc.delSent === '[]' && tc.taskGone === 'Даалгавар алга', JSON.stringify(tc));
+
   console.log('\n[31] Утас + компьютер = ангид НЭГ нэр');
   /* Урьд нь гишүүний id төхөөрөмж тутамд санамсаргүй байсан тул нэг хүн
      жагсаалтад ХОЁР удаа гардаг байв. Одоо СИНКИЙН КОДООС гаргана —
