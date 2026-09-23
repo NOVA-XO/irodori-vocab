@@ -1262,6 +1262,97 @@ async function run(c) {
     return 1;
   `);
 
+  console.log('\n[31] Утас + компьютер = ангид НЭГ нэр');
+  /* Урьд нь гишүүний id төхөөрөмж тутамд санамсаргүй байсан тул нэг хүн
+     жагсаалтад ХОЁР удаа гардаг байв. Одоо СИНКИЙН КОДООС гаргана —
+     хоёр төхөөрөмж ижил кодтой бол ижил id. */
+  const one = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const out = {}, keep = { rpc: rpc, dev: isDevHost, me: JSON.parse(JSON.stringify(me)), code: syncCode };
+    const F = { rows: {}, calls: [] };
+    rpc = async (fn, b) => {
+      F.calls.push({ fn: fn, m: b.p_member, name: b.p_name });
+      if (fn === 'member_put') {
+        if (!Object.keys(b.p_classes || {}).length || !b.p_name) delete F.rows[b.p_member];
+        else F.rows[b.p_member] = b.p_name;
+        return { mica: 'ok' };
+      }
+      if (fn === 'class_list') return [{ id: 'mica', name: 'MICA', task: null }];
+      if (fn === 'class_roster') return { status: 'ok', name: 'MICA', task: null, rows: [] };
+      return null;
+    };
+    isDevHost = () => false;
+    me.codes = { mica: '1111' }; me.other = false; me.name = 'Бат'; me.done = true;
+    me.sent = ''; me.syncId = ''; me.syncFor = ''; save(KEY_ME, me);
+
+    // (1) Синкгүй -> ТӨХӨӨРӨМЖИЙН id
+    syncCode = null;
+    await deriveMember();
+    out.noSync = memberKey === me.id;
+
+    // (2) Утас: код холбоно
+    syncCode = 'aaaa-bbbb-cccc';
+    me.syncId = ''; me.syncFor = '';
+    await deriveMember();
+    out.k1 = memberKey;
+    out.derived = memberKey !== me.id;
+
+    // (3) Компьютер: ӨӨР төхөөрөмж (өөр me.id), ИЖИЛ код
+    const phoneId = me.id;
+    me.id = 'zzz' + Math.random().toString(36).slice(2, 12);
+    me.syncId = ''; me.syncFor = '';
+    await deriveMember();
+    out.k2 = memberKey;
+    out.same = out.k1 === out.k2;
+    out.notDeviceId = memberKey !== me.id && memberKey !== phoneId;
+    out.codeNotSent = memberKey.indexOf('aaaa') < 0;   // код түүхийгээр ОРООГҮЙ
+
+    // (4) Тогтмол: кэш цэвэрлээд дахин гаргахад ИЖИЛ
+    me.syncId = ''; me.syncFor = '';
+    await deriveMember();
+    out.stable = memberKey === out.k1;
+
+    // (5) id солигдоход ХУУЧИН мөр устана
+    F.rows = { oldmember0001: 'Бат' };
+    me.sent = 'oldmember0001'; save(KEY_ME, me);
+    F.calls = []; lastMemberSync = 0;
+    await memberSync(true);
+    await wait(100);
+    out.oldGone = !('oldmember0001' in F.rows);
+    out.newRow = F.rows[memberKey] === 'Бат';
+    out.rowCount = Object.keys(F.rows).length;
+    out.delCall = F.calls.some(x => x.fn === 'member_put' && x.m === 'oldmember0001' && x.name === '');
+    out.sentSaved = load(KEY_ME, {}).sent === memberKey;
+
+    // (6) Хоёр дахь синк ДАВХАР мөр үүсгэхгүй
+    F.calls = []; lastMemberSync = 0;
+    await memberSync(true);
+    out.rowCount2 = Object.keys(F.rows).length;
+    out.noDelSecond = !F.calls.some(x => x.fn === 'member_put' && x.name === '');
+
+    // (7) Ангийн жагсаалт өөрийг нь таних id-гаар дуудагдана
+    F.calls = []; await refreshKlass(); await wait(200);
+    const rq = F.calls.find(x => x.fn === 'class_roster');
+    out.rosterMember = rq ? rq.m : null;
+
+    rpc = keep.rpc; isDevHost = keep.dev; me = cleanMe(keep.me); save(KEY_ME, me);
+    syncCode = keep.code; await deriveMember(); refreshMe(); go('home');
+    return out;
+  `);
+  ok('синкгүй бол ТӨХӨӨРӨМЖИЙН id', one && one.noSync, JSON.stringify(one));
+  ok('синктэй бол кодоос гаргасан id', one && one.derived, JSON.stringify(one));
+  ok('ИЖИЛ кодтой хоёр төхөөрөмж -> ИЖИЛ id (нэг нэр)',
+    one && one.same && one.notDeviceId, JSON.stringify(one));
+  ok('синкийн код id дотор ТҮҮХИЙГЭЭР орохгүй (хэшлэгдсэн)',
+    one && one.codeNotSent, JSON.stringify(one));
+  ok('дахин гаргахад ИЖИЛ id (тогтмол)', one && one.stable, JSON.stringify(one));
+  ok('id солигдоход ХУУЧИН мөр устана (давхар нэр үлдэхгүй)',
+    one && one.oldGone && one.newRow && one.rowCount === 1 && one.delCall, JSON.stringify(one));
+  ok('дараагийн синк дэмий устгал хийхгүй, мөр нэг хэвээр',
+    one && one.rowCount2 === 1 && one.noDelSecond, JSON.stringify(one));
+  ok('ангийн жагсаалт өөрийг нь ижил id-гаар таниулна',
+    one && one.rosterMember && one.rosterMember === one.k1, JSON.stringify(one));
+
   console.log('\n[30] Ангийн даалгавар — L1–L8-аас 20 өөр асуулт');
   /* Хуурамч сервер SQL-ийн дүрмийг дагана (SQL-ийг test_sql.js §9 шалгадаг):
      task_n = даалгаврын хичээлээс since-ээс хойш хариулсан ӨӨР асуулт.

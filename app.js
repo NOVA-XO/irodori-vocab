@@ -2878,17 +2878,20 @@ $('btn-sync-new').onclick = () => {
   syncCode = newCode(); save(KEY_C, syncCode); refreshSync();
   syncSay('код үүслээ — нөгөө төхөөрөмж дээрээ энэ кодыг оруулна уу');
   syncNow(true);
+  syncIdentityChanged();
 };
 $('btn-sync-link').onclick = () => {
   const c = (prompt('Нөгөө төхөөрөмж дээрх кодоо оруулна уу:') || '').trim().toLowerCase();
   if (!c) return;
   syncCode = c; save(KEY_C, syncCode); refreshSync();
   syncNow().then(() => { refreshStats(); refreshHome(); });
+  syncIdentityChanged();
 };
 $('btn-sync-now').onclick = () => syncNow().then(() => { refreshStats(); refreshHome(); });
 $('btn-sync-off').onclick = () => {
   if (!confirm('Энэ төхөөрөмжийг салгах уу? Явц энд үлдэнэ, зөвхөн нийлүүлэлт зогсоно.')) return;
   syncCode = null; save(KEY_C, null); refreshSync(); syncSay('салгалаа');
+  syncIdentityChanged();
 };
 
 $('btn-import').onclick = () => $('file-import').click();
@@ -3010,6 +3013,12 @@ function cleanMe(v) {
     // Код нь СОЛИГДСОН тул хаягдсан ангиуд. Дахин элсэх эсвэл «Бусад»
     // сонгох хүртэл мэдэгдэнэ — эс тэгвэл анги ЧИМЭЭГҮЙ алга болно.
     lost: Array.isArray(o.lost) ? o.lost.filter(x => typeof x === 'string').slice(0, 10) : [],
+    /* СИНКЭЭС гаргасан гишүүний id ба ямар кодоос гаргасан — утас,
+       компьютер хоёр ижил кодтой бол ангид НЭГ мөр болно. */
+    syncId: (typeof o.syncId === 'string' && /^[a-z0-9]{8,64}$/.test(o.syncId)) ? o.syncId : '',
+    syncFor: typeof o.syncFor === 'string' ? o.syncFor : '',
+    // Серверт СҮҮЛД бичсэн id — солигдвол хуучин мөрийг устгана.
+    sent: (typeof o.sent === 'string' && /^[a-z0-9]{8,64}$/.test(o.sent)) ? o.sent : '',
   };
 }
 
@@ -3017,6 +3026,59 @@ let me = cleanMe(load(KEY_ME, null));
 save(KEY_ME, me);                          // шинэ id-г нэг удаа бэхэлнэ
 let classList = load(KEY_CLS, []);
 if (!Array.isArray(classList)) classList = [];
+
+/* ── Гишүүний id: утас + компьютер = НЭГ хүн ──────────────────────
+   Синкийн код нь хоёр төхөөрөмжид ИЖИЛ байдаг тул түүнээс гаргавал
+   ангид нэг мөр болно. Урьд нь төхөөрөмж тутамд санамсаргүй id
+   байсан тул нэг хүн хоёр удаа жагсаалтад гардаг байв.
+
+   Кодыг ХЭШЛЭНЭ — түүхийгээр нь илгээхгүй: код бол явцын ТҮЛХҮҮР.
+   Хэшийг сервер бусад хүнд буцаадаггүй ч, урвуулан тооцох боломжийг
+   нь ч үлдээхгүй. */
+let memberKey = me.syncId || me.id;
+
+function fnvHex(str) {
+  let out = '';
+  for (let seed = 0; seed < 4; seed++) {
+    let h = (0x811c9dc5 ^ (seed * 0x9e3779b1)) >>> 0;
+    for (let i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    out += ('00000000' + h.toString(16)).slice(-8);
+  }
+  return out;
+}
+
+/** Идэвхтэй гишүүний id. Синктэй бол кодоос, үгүй бол төхөөрөмжийнх. */
+function deriveMember() {
+  if (!(syncOn && syncCode)) { memberKey = me.id; return Promise.resolve(memberKey); }
+  if (me.syncFor === syncCode && me.syncId) { memberKey = me.syncId; return Promise.resolve(memberKey); }
+  const fin = hex => {
+    me.syncId = 'm' + hex.slice(0, 22);
+    me.syncFor = syncCode;
+    save(KEY_ME, me);
+    memberKey = me.syncId;
+    return memberKey;
+  };
+  // `crypto.subtle` нь ЗӨВХӨН аюулгүй контекстэд байдаг (https, localhost).
+  // Байхгүй бол энгийн тархаах хэшээр — зорилго нь нууцлал биш, ТОГТМОЛ
+  // ижил id гаргах явдал.
+  try {
+    const sub = (crypto || window.crypto).subtle;
+    if (!sub) return Promise.resolve(fin(fnvHex(syncCode)));
+    return sub.digest('SHA-256', new TextEncoder().encode('irodori:' + syncCode))
+      .then(b => fin([...new Uint8Array(b)].map(x => ('0' + x.toString(16)).slice(-2)).join('')))
+      .catch(() => fin(fnvHex(syncCode)));
+  } catch (e) {
+    return Promise.resolve(fin(fnvHex(syncCode)));
+  }
+}
+
+/** Синкийн код солигдоход id ч солигдоно — шууд шинэчилнэ. */
+function syncIdentityChanged() {
+  deriveMember().then(() => { lastMemberSync = 0; memberSync(true); });
+}
 
 const myClasses = () => Object.keys(me.codes);
 
@@ -3107,9 +3169,24 @@ function memberSync(force) {
   if (!force && now - lastMemberSync < 120000) return Promise.resolve(null);
   lastMemberSync = now;
 
+  return deriveMember().then(key => memberPut(key, ids));
+}
+
+/** Нэг мөр бичих. `me.sent` нь СҮҮЛД бичсэн id — солигдсон бол (синк
+ *  холбогдсон/салсан) хуучин мөрийг ЭХЛЭЭД устгана, эс тэгвэл нэг хүн
+ *  жагсаалтад хоёр удаа үлдэнэ. */
+function memberPut(key, ids) {
+  const old = me.sent;
+  const stale = old && old !== key
+    ? rpc('member_put', { p_member: old, p_name: '', p_classes: {} }).catch(() => null)
+    : Promise.resolve(null);
+  return stale.then(() => memberWrite(key, ids));
+}
+
+function memberWrite(key, ids) {
   const v = Object.values(progress);
   const body = {
-    p_member: me.id,
+    p_member: key,
     // Ангигүй бол НЭР ИЛГЭЭХГҮЙ — сервер мөрийг устгана.
     p_name: ids.length ? me.name : '',
     p_classes: ids.length ? me.codes : {},
@@ -3123,6 +3200,7 @@ function memberSync(force) {
   };
   return rpc('member_put', body).then(res => {
     if (!res || typeof res !== 'object' || res.error) return res;
+    if (me.sent !== key) { me.sent = key; save(KEY_ME, me); }
     let dropped = false;
     for (const k of ids) {
       if (res[k] === 'bad' || res[k] === 'none') {
@@ -3378,7 +3456,7 @@ async function refreshKlass() {
   for (const id of myClasses()) {
     let r;
     try {
-      r = await rpc('class_roster', { p_class: id, p_code: me.codes[id], p_member: me.id });
+      r = await rpc('class_roster', { p_class: id, p_code: me.codes[id], p_member: memberKey });
     } catch (e) { msgs.push('Сүлжээ алга.'); continue; }
     if (run !== klassRun) return;
     if (!r || r.status === 'bad' || r.status === 'none') {
