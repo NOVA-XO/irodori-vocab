@@ -2406,8 +2406,30 @@ function exInto(el, q, which) {
 let exRun = 0, exTimer = null;
 
 /** Шалгалтын дэлгэц рүү орвол ЭХЛЭЭД тохиргоо гарна (шууд эхлэхгүй). */
+/* Даалгавартай сурагч шалгалт руу орвол БАГШИЙН сонгосон хичээл,
+   асуултын тоогоор ШУУД эхэлнэ — юу ч сонгох шаардлагагүй.
+
+   Аппын нэг ачаалалд НЭГ УДАА. Үргэлж эхлүүлбэл сурагч өөрийн
+   сонголтоор дасгал хийх гарцгүй болно: тохиргооны дэлгэц рүү
+   хэзээ ч хүрэхгүй. Гарахад (эсвэл дуусгахад) дахин орвол тохиргоо
+   гарна. */
+let exAutoDone = false;
+
+function autoStartTask(run) {
+  if (exAutoDone || run !== exRun) return;
+  // ЗӨВХӨН дуусгаагүй, хугацаа нь гараагүй даалгавар.
+  const x = taskItems().find(y => {
+    const d = taskDue(y.t);
+    return taskDoneLocal(y.t) < taskN(y.t) && (!d || d.left >= 0);
+  });
+  if (!x) return;
+  exAutoDone = true;
+  if (pickTask(x.id)) startExam();
+}
+
 function examSetup() {
   exAbort();
+  const run = exRun;                    // §2.36 — ачаалж байхад гарвал эхлүүлэхгүй
   $('ex-setup').hidden = false;
   $('ex-run').hidden = true;
   $('ex-done').hidden = true;
@@ -2416,7 +2438,7 @@ function examSetup() {
   // Кэш хуучирсан байж магадгүй (даалгавар шинээр өгөгдсөн) — шинэчилнэ.
   if (myClasses().length) loadClassList().then(renderExamTasks);
   // Чипэнд хичээл бүрийн асуултын тоо хэрэгтэй тул санг ЭНД татна.
-  loadExam().then(renderExamLessons).catch(() => {
+  loadExam().then(() => { renderExamLessons(); autoStartTask(run); }).catch(() => {
     const n = $('ex-les-note');
     if (n) n.textContent = 'Асуултыг ачаалж чадсангүй. Холболтоо шалгана уу.';
   });
