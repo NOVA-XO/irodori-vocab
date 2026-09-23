@@ -1606,6 +1606,96 @@ async function run(c) {
   ok('ангийн жагсаалт өөрийг нь ижил id-гаар таниулна',
     one && one.rosterMember && one.rosterMember === one.k1, JSON.stringify(one));
 
+  console.log('\n[35] Даалгаврын төрөл — үг ба ханз');
+  /* Шалгалтын хариултын түүх серверт байдаг тул түүнийг СЕРВЕР боддог.
+     Үг/ханзны хувьд бүтэн түүх серверт байхгүй (4210 үг) тул КЛИЕНТ
+     бодож илгээнэ. Тоолох арга: grade() нь p.d = today() + BOXES[p.b]
+     гэж бичдэг тул p.d - BOXES[p.b] нь СҮҮЛД үзсэн өдөр.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const kd = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const keep = { rpc: rpc, dev: isDevHost, me: JSON.parse(JSON.stringify(me)),
+                   cls: classList, prog: progress, raw: localStorage.getItem(KEY_P),
+                   set: JSON.parse(JSON.stringify(settings)) };
+    const out = {}, t = today();
+    const iso = d => new Date(d * 864e5).toISOString().slice(0, 10);
+    const F = { calls: [] };
+    rpc = async (fn, b) => { F.calls.push({ fn: fn, b: b });
+      return fn === 'class_list' ? classList : { mica: 'ok' }; };
+    isDevHost = () => false;
+    me.codes = { mica: '1111' }; me.teach = {}; me.other = false; me.done = true;
+    me.name = 'Бат'; me.sent = ''; save(KEY_ME, me);
+
+    const WTASK = { kind: 'word', src: 'book', lessons: [1, 2], n: 20,
+                    since: iso(t - 2), until: iso(t + 3) };
+    classList = [{ id: 'mica', name: 'MICA', task: WTASK, task_v: 'v1' }];
+    save(KEY_CLS, classList);
+
+    // Хичээл 1-2-оос 3 үг, хугацаанд нь үзсэн; 1 нь хугацаанаас ӨМНӨ;
+    // 1 нь ӨӨР хичээлээс — тоологдох ёсгүй.
+    localStorage.removeItem(KEY_P);
+    progress = {};
+    const pool = (bookCache.starter || ALL);
+    const l12 = pool.filter(i => i.lesson === 1 || i.lesson === 2);
+    const other = pool.filter(i => i.lesson === 5);
+    const put = (item, day) => { progress[item.id] = { n: 1, c: 1, w: 0, b: 1, d: day + BOXES[1] }; };
+    put(l12[0], t); put(l12[1], t - 1); put(l12[2], t - 2);
+    put(l12[3], t - 9);            // хугацаанаас ӨМНӨ
+    put(other[0], t);              // өөр хичээл
+    out.word = taskDoneLocal(WTASK);
+    out.label = taskLabel(WTASK);
+
+    // ХАНЗ — хичээлийн ханз
+    const KTASK = { kind: 'kanji', src: 'les', lessons: [1], n: 5,
+                    since: iso(t - 2), until: iso(t + 3) };
+    const kj = KANJI.filter(k => (k.l || []).includes(1));
+    put(kj[0], t); put(kj[1], t - 1);
+    out.kanji = taskDoneLocal(KTASK);
+    out.kanjiLabel = taskLabel(KTASK);
+    out.jlptLabel = taskLabel({ kind: 'kanji', src: 'jlpt', lessons: [5, 4], n: 30,
+                                since: iso(t - 2) });
+
+    // Серверт КЛИЕНТИЙН тоо явна
+    F.calls = []; lastMemberSync = 0;
+    await memberSync(true); await wait(150);
+    const sent = F.calls.filter(x => x.fn === 'member_put').pop();
+    out.sentTasks = sent ? JSON.stringify(sent.b.p_tasks) : 'none';
+
+    // Нүүрний карт ба товч
+    go('home'); await wait(400);
+    out.card = document.querySelector('#home-tasks .ex-task-label').textContent.replace(/\\s+/g, ' ').trim();
+    document.querySelector('#home-tasks .ex-task-pick').click();
+    await wait(400);
+    out.screen = screen;
+    out.lesSet = JSON.stringify(settings.les.starter);
+
+    // Шалгалтын самбарт ҮГИЙН даалгавар ГАРАХГҮЙ
+    go('exam'); await wait(600);
+    out.examBoxHidden = document.getElementById('ex-tasks').hidden;
+
+    rpc = keep.rpc; isDevHost = keep.dev; me = cleanMe(keep.me); save(KEY_ME, me);
+    classList = keep.cls; save(KEY_CLS, classList);
+    progress = keep.prog; settings = keep.set; save(KEY_S, settings);
+    if (keep.raw === null) localStorage.removeItem(KEY_P);
+    else localStorage.setItem(KEY_P, keep.raw);
+    exAbort(); refreshMe(); go('home');
+    return out;
+  `);
+  ok('ҮГИЙН даалгавар: хугацаанд үзсэн 3 үг (өмнөх ба өөр хичээл ОРОХГҮЙ)',
+    kd && kd.word === 3, JSON.stringify(kd));
+  ok('ХАНЗНЫ даалгавар: хичээлийн ханзаас 2', kd && kd.kanji === 2, JSON.stringify(kd));
+  ok('шошго нэгжээ зөв хэлнэ (үг · ханз · N түвшин)',
+    kd && kd.label === 'L1–L2 · 20 үг' && kd.kanjiLabel === 'L1 · 5 ханз'
+      && kd.jlptLabel === 'N5, N4 · 30 ханз', JSON.stringify(kd));
+  ok('клиентийн тоо серверт хурууны хээтэй хамт явна',
+    kd && kd.sentTasks === '{"mica":{"n":3,"v":"v1"}}', JSON.stringify(kd));
+  ok('нүүрний карт ҮГ гэж бичнэ', kd && /MICA · L1–L2 · 20 үг/.test(kd.card), JSON.stringify(kd));
+  ok('«Эхлүүлэх» нь Irodori дэлгэц рүү аваачиж хичээлийг тохируулна',
+    kd && kd.screen === 'irodori' && kd.lesSet === '[1,2]', JSON.stringify(kd));
+  ok('шалгалтын самбарт ҮГИЙН даалгавар гарахгүй',
+    kd && kd.examBoxHidden === true, JSON.stringify(kd));
+
+
   console.log('\n[34] «Явцыг устгах» — шалгалтын хариулт серверээс ч устана');
   /* Уусгалт нэмсний дараа хоосон түүх юу ч устгахаа больсон (зөв). Гэвч
      устгах товч ч устгаж чадахаа больсон: хэрэглэгч шалгалтын дэлгэцэд

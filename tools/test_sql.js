@@ -298,6 +298,54 @@ async function main() {
   await db.exec("delete from public.members");
   await resetFails();
 
+  console.log('\n[13] Даалгаврын ТӨРӨЛ — асуулт · үг · ханз');
+  await db.exec("delete from public.members");
+  await db.exec("update public.classes set tcode = '246802' where id = 'mica'");
+  const tset2 = (c, code, les, n, days, since, kind, src) => one(
+    'select public.task_set($1,$2,$3::jsonb,$4,$5,$6,$7,$8) as r',
+    [c, code, JSON.stringify(les), n, days, since, kind, src]).then(r => r.r);
+
+  let tk3 = await tset2('mica', '246802', [1, 2], 20, 7, '2026-09-20', 'word', 'n5');
+  ok('төрөл ба эх сурвалж хадгалагдана',
+    tk3.task.kind === 'word' && tk3.task.src === 'n5', JSON.stringify(tk3.task));
+  ok('task_set хурууны хээг буцаана', /^[0-9a-f]{32}$/.test(tk3.task_v || ''), tk3.task_v);
+  const V = tk3.task_v;
+  const cl3 = (await one('select public.class_list() as l')).l;
+  ok('class_list хурууны хээг буцаана',
+    cl3.find(c => c.id === 'mica').task_v === V, JSON.stringify(cl3[0]));
+
+  // Үг/ханзны тоог КЛИЕНТ илгээнэ
+  const putT = (m, tasks) => one(
+    'select public.member_put($1,$2,$3::jsonb,0,0,0,0,null,null,0,false,$4::jsonb) as r',
+    [m, 'Бат', JSON.stringify({ mica: '5173' }), JSON.stringify(tasks)]).then(r => r.r);
+  await putT('memberK00001', { mica: { n: 12, v: V } });
+  let ro3 = await roster('mica', '5173', 'memberK00001');
+  ok('клиентийн илгээсэн тоо жагсаалтад гарна',
+    ro3.rows[0].task_n === 12 && ro3.rows[0].task_ok === null, JSON.stringify(ro3.rows[0]));
+
+  // Багш даалгавраа СОЛИВОЛ хуучин тоо ХҮЧИНГҮЙ
+  const tk4 = await tset2('mica', '246802', [1, 2, 3], 20, 7, '2026-09-20', 'word', 'n5');
+  ro3 = await roster('mica', '5173', 'memberK00001');
+  ok('даалгавар солигдвол хуучин тоо ХҮЧИНГҮЙ (null)',
+    tk4.task_v !== V && ro3.rows[0].task_n === null, JSON.stringify(ro3.rows[0]));
+  await putT('memberK00001', { mica: { n: 3, v: tk4.task_v } });
+  ro3 = await roster('mica', '5173', 'memberK00001');
+  ok('шинэ хээтэй тоо дахин гарна', ro3.rows[0].task_n === 3, JSON.stringify(ro3.rows[0]));
+
+  // ШАЛГАЛТЫН даалгаварт сервер өөрөө боддог
+  await tset2('mica', '246802', [1], 20, 7, '2026-09-20', 'exam', 'book');
+  ro3 = await roster('mica', '5173', 'memberK00001');
+  ok('шалгалтын төрөлд СЕРВЕР боддог (клиентийн тоо хэрэглэгдэхгүй)',
+    ro3.rows[0].task_n === 0, JSON.stringify(ro3.rows[0]));
+
+  const bad3 = await tset2('mica', '246802', [1], 20, 7, '2026-09-20', 'zzz', 'zzz');
+  ok('буруу төрөл/эх сурвалж -> exam/book',
+    bad3.task.kind === 'exam' && bad3.task.src === 'book', JSON.stringify(bad3.task));
+  await db.exec("delete from public.members");
+  await db.exec("update public.classes set task = null");
+  await resetFails();
+
+
   console.log('\n[11] Нэр нийлүүлэх — хамгийн СҮҮЛД ЗАССАН нь ялна');
   await db.exec("delete from public.members");
   const putN = (m, n, at) => one(

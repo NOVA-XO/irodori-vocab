@@ -508,8 +508,11 @@ create index if not exists members_classes_idx on public.members using gin (clas
 
 -- ── ДААЛГАВАР (2026-09-22 нэмэгдэв) ─────────────────────────────────────
 -- Анги бүр НЭГ даалгавартай байж болно:
---   {"lessons":[1..8], "n":20, "since":"2026-09-22", "until":"2026-09-25", "days":3}
--- = L1–L8-ын шалгалтын асуултаас 20 ӨӨР асуулт хариулах. ЗӨВХӨН
+--   {"kind":"exam", "lessons":[1..8], "n":20,
+--    "since":"2026-09-22", "until":"2026-09-25", "days":3}
+-- `kind`: "exam" (шалгалтын асуулт) · "word" (үг) · "kanji" (ханз).
+--   Байхгүй бол "exam" — хуучин даалгавартай нийцнэ.
+-- = L1–L8-аас 20 ӨӨР нэгж. ЗӨВХӨН
 -- `since`..`until` хоорондох хариулт тоологдоно — хугацаа дуусахад хувь
 -- ЗОГСОНО (хэрэглэгчийн шийдвэр). `until` байхгүй бол хугацаагүй.
 -- Багш аппаасаа `task_set`-ээр тавина. Нууц биш — `class_list` буцаана.
@@ -531,6 +534,13 @@ alter table public.members add column if not exists exam jsonb not null default 
 -- хуваалцдаг тул аль нь бичихээс хамаарч нэр ээлжлэн солигддог байв.
 -- Одоо хамгийн СҮҮЛД ЗАССАН нэр ялна — дараалал хамаарахгүй.
 alter table public.members add column if not exists name_at bigint not null default 0;
+-- Үг/ханзны даалгаврын явцыг КЛИЕНТ бодож илгээнэ: {"mica":{"n":12,"v":"<md5>"}}.
+-- Яагаад сервер бодохгүй вэ: аль үгийг хэзээ үзсэн гэсэн бүтэн түүх
+-- серверт байдаггүй (4210 үг — илгээх нь хэтэрхий их). Шалгалтын хувьд
+-- харин түүх нь байдаг тул сервер ӨӨРӨӨ боддог.
+-- `v` нь даалгаврын хурууны хээ (md5). Багш даалгавраа солиход хуучин
+-- тоо ХҮЧИНГҮЙ болж, сурагчийн апп дараагийн синкдээ шинийг илгээнэ.
+alter table public.members add column if not exists tasks jsonb not null default '{}'::jsonb;
 
 -- ── Кодыг шалгах — БҮХ ангийн хандалт энэ ганц газраар дамжина ─────────
 -- Буцаах утга: 'ok' | 'teacher' | 'bad' | 'locked' | 'none'. Клиентэд «түгжигдсэн»
@@ -577,7 +587,9 @@ stable
 security definer
 set search_path = public
 as $cl$
-  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'name', name, 'task', task)
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'id', id, 'name', name, 'task', task,
+           'task_v', case when task is null then null else md5(task::text) end)
                             order by sort, id), '[]'::jsonb)
   from public.classes;
 $cl$;
@@ -595,6 +607,7 @@ $cl$;
 drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int);
 drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int, jsonb);
 drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint);
+drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean);
 
 create or replace function public.member_put(
   p_member  text,
@@ -609,7 +622,9 @@ create or replace function public.member_put(
   p_name_at bigint default 0,
   -- «Явцыг устгах» — уусгахгүй, ДАРЖ бичнэ. Үүнгүй бол хэрэглэгч явцаа
   -- устгасан ч ангид хуучин хувь нь үлдэж, хоёр өөр тоо харагдана.
-  p_wipe    boolean default false)
+  p_wipe    boolean default false,
+  -- Үг/ханзны даалгаврын явц: {"mica":{"n":12,"v":"<md5>"}}
+  p_tasks   jsonb default null)
 returns jsonb
 language plpgsql
 security definer
@@ -625,6 +640,7 @@ declare
   ex  jsonb  := null;                   -- null = хуучин клиент, байгааг хадгална
   cur jsonb;                            -- серверт байгаа хариулт (уусгана)
   nat bigint := least(greatest(coalesce(p_name_at, 0), 0), 4102444800000);
+  tsk jsonb  := null;                   -- цэвэрлэсэн `p_tasks`
   eff text;                             -- эцсийн нэр — клиент үүнийг аваад тавина
 begin
   if p_member is null or length(p_member) not between 8 and 64 then
@@ -657,6 +673,16 @@ begin
   -- Мөрийг түгжинэ: хоёр төхөөрөмж ЗЭРЭГ илгээвэл уншаад бичих хооронд
   -- нөгөөгийнх алга болно.
   select exam into cur from public.members where member = p_member for update;
+
+  -- Үг/ханзны явц. Анги тутамд {n, v} — бусдыг хаяна.
+  if jsonb_typeof(p_tasks) = 'object' then
+    select coalesce(jsonb_object_agg(e.key, jsonb_build_object(
+             'n', least(greatest(public.jnum(e.value -> 'n'), 0), 100000)::int,
+             'v', left(coalesce(e.value ->> 'v', ''), 40))), '{}'::jsonb)
+      into tsk
+      from (select * from jsonb_each(p_tasks) limit 20) e
+     where e.key ~ '^[a-z0-9_-]{1,20}$' and jsonb_typeof(e.value) = 'object';
+  end if;
 
   -- Шалгалтын хариултыг ЦЭВЭРЛЭЖ хадгална: 200 хүртэл түлхүүр, id-ийн
   -- хэлбэр, [өдөр, 0/1, хичээл] — бүгд хязгаарлагдсан бүхэл тоо.
@@ -692,14 +718,14 @@ begin
   end if;
 
   insert into public.members as m
-    (member, name, classes, seen, learned, today, streak, day, exam, name_at)
+    (member, name, classes, seen, learned, today, streak, day, exam, name_at, tasks)
   values
     (p_member, nm, ok,
      least(greatest(coalesce(p_seen,    0), 0), 1000000),
      least(greatest(coalesce(p_learned, 0), 0), 1000000),
      least(greatest(coalesce(p_today,   0), 0), 100000),
      least(greatest(coalesce(p_streak,  0), 0), 100000),
-     p_day, coalesce(ex, '{}'::jsonb), nat)
+     p_day, coalesce(ex, '{}'::jsonb), nat, coalesce(tsk, '{}'::jsonb))
   on conflict (member) do update
     -- Нэрийг зөвхөн ШИНЭ засвар дарна. Хуучин клиент (`name_at` = 0)
     -- хэзээ ч дарж бичихгүй — эс тэгвэл шинэ нэр буцаад алга болно.
@@ -710,7 +736,9 @@ begin
         today = excluded.today, streak = excluded.streak,
         day = excluded.day, updated_at = now(),
         -- `p_exam` илгээгээгүй (хуучин клиент) бол байгааг ДАРЖ БИЧИХГҮЙ.
-        exam = coalesce(ex, m.exam)
+        exam = coalesce(ex, m.exam),
+        -- Илгээгээгүй бол (хуучин клиент) байгааг ДАРЖ БИЧИХГҮЙ.
+        tasks = coalesce(tsk, m.tasks)
   returning m.name into eff;
   -- Хүчинтэй нэрийг буцаана: нөгөө төхөөрөмж дээр шинэ нэр тавьсан бол
   -- энэ клиент түүнийг аваад өөр дээрээ тавина.
@@ -742,6 +770,8 @@ declare
   les   int[] := '{}';
   since date  := '1970-01-01';
   upto  date  := 'infinity';
+  kind  text  := 'exam';
+  tv    text;                           -- даалгаврын хурууны хээ
 begin
   -- Сурагч ба БАГШ хоёулаа жагсаалтыг харна. Багш өөрөө жагсаалтад
   -- ордоггүй тул түүнд зөвхөн харах эрх.
@@ -760,6 +790,8 @@ begin
     if coalesce(tk ->> 'until', '') ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
       upto := (tk ->> 'until')::date;
     end if;
+    kind := coalesce(tk ->> 'kind', 'exam');
+    tv := md5(tk::text);
   else
     tk := null;
   end if;
@@ -772,22 +804,33 @@ begin
     'role', st,
     'name', (select name from public.classes where id = p_class),
     'task', tk,
+    'task_v', tv,
     'rows', (
       select coalesce(jsonb_agg(jsonb_build_object(
                'name', m.name, 'seen', m.seen, 'learned', m.learned,
                'today', m.today, 'streak', m.streak, 'day', m.day,
                'me', m.member = p_member,
-               'task_n', case when tk is null then null else (
-                 select count(*) from jsonb_each(m.exam) e
-                  where public.jnum(e.value -> 2)::int = any(les)
-                    and ('1970-01-01'::date + public.jnum(e.value -> 0)::int)
-                        between since and upto) end,
-               'task_ok', case when tk is null then null else (
-                 select count(*) from jsonb_each(m.exam) e
-                  where public.jnum(e.value -> 2)::int = any(les)
-                    and ('1970-01-01'::date + public.jnum(e.value -> 0)::int)
-                        between since and upto
-                    and public.jnum(e.value -> 1) > 0) end)
+               -- ШАЛГАЛТ: сервер өөрөө боддог (түүх нь энд байгаа).
+               -- ҮГ/ХАНЗ: клиент бодож илгээсэн тоо. Даалгавар солигдсон
+               -- бол хурууны хээ таарахгүй тул `null` — «хүлээгдэж байна».
+               'task_n', case
+                 when tk is null then null
+                 when kind <> 'exam' then (
+                   case when m.tasks -> p_class ->> 'v' = tv
+                        then public.jnum(m.tasks -> p_class -> 'n')::int end)
+                 else (
+                   select count(*) from jsonb_each(m.exam) e
+                    where public.jnum(e.value -> 2)::int = any(les)
+                      and ('1970-01-01'::date + public.jnum(e.value -> 0)::int)
+                          between since and upto) end,
+               'task_ok', case
+                 when tk is null or kind <> 'exam' then null
+                 else (
+                   select count(*) from jsonb_each(m.exam) e
+                    where public.jnum(e.value -> 2)::int = any(les)
+                      and ('1970-01-01'::date + public.jnum(e.value -> 0)::int)
+                          between since and upto
+                      and public.jnum(e.value -> 1) > 0) end)
              order by m.learned desc, m.seen desc, m.name), '[]'::jsonb)
       from public.members m
       where p_class = any(m.classes)
@@ -799,13 +842,18 @@ $cr$;
 -- `p_lessons` хоосон бол даалгаврыг УСТГАНА.
 -- `p_since` нь БАГШИЙН орон нутгийн огноо (сервер UTC тул өөрөө бодохгүй).
 -- `until = since + days`. Хугацаа дуусахад хувь зогсоно.
+drop function if exists public.task_set(text, text, jsonb, int, int, text);
+
 create or replace function public.task_set(
   p_class   text,
   p_tcode   text,
   p_lessons jsonb   default null,
   p_n       int     default 20,
   p_days    int     default 7,
-  p_since   text    default null)
+  p_since   text    default null,
+  -- `kind`: exam | word | kanji · `src`: book | n5 | les | jlpt
+  p_kind    text    default 'exam',
+  p_src     text    default 'book')
 returns jsonb
 language plpgsql
 security definer
@@ -841,21 +889,25 @@ begin
     d0 := current_date;
   end if;
   tk := jsonb_build_object(
+    'kind', case when p_kind in ('exam', 'word', 'kanji') then p_kind else 'exam' end,
+    'src', case when p_src in ('book', 'n5', 'les', 'jlpt') then p_src else 'book' end,
     'lessons', to_jsonb(les), 'n', nn, 'days', dd,
     'since', to_char(d0, 'YYYY-MM-DD'),
     'until', to_char(d0 + dd, 'YYYY-MM-DD'));
   update public.classes set task = tk where id = p_class;
-  return jsonb_build_object('status', 'ok', 'task', tk);
+  -- Хурууны хээг ЭНД ч буцаана — эс тэгвэл багшийн апп хоосон хээтэй
+  -- үлдэж, өөрийн явцаа буруу илгээнэ.
+  return jsonb_build_object('status', 'ok', 'task', tk, 'task_v', md5(tk::text));
 end;
 $ts$;
 
 revoke all on function public.class_join(text, text)  from public;
 revoke all on function public.class_list()            from public;
-revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean) from public;
+revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean, jsonb) from public;
 revoke all on function public.class_roster(text, text, text) from public;
 grant execute on function public.class_join(text, text)  to anon;
 grant execute on function public.class_list()            to anon;
-grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean) to anon;
+grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean, jsonb) to anon;
 grant execute on function public.class_roster(text, text, text) to anon;
-revoke all on function public.task_set(text, text, jsonb, int, int, text) from public;
-grant execute on function public.task_set(text, text, jsonb, int, int, text) to anon;
+revoke all on function public.task_set(text, text, jsonb, int, int, text, text, text) from public;
+grant execute on function public.task_set(text, text, jsonb, int, int, text, text, text) to anon;
