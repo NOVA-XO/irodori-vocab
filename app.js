@@ -2471,10 +2471,36 @@ function aiJudge(heard, q) {
   const timer = ctl ? setTimeout(() => ctl.abort(), 8000) : null;
   return fetch(url, {
     method: 'POST', headers: headers, signal: ctl ? ctl.signal : undefined,
-    body: JSON.stringify({ q: q.q, model: q.model, key: q.key || '', heard: heard }),
+    body: JSON.stringify({ q: q.q, model: q.model, modelKana: q.modelKana || '',
+                           key: q.key || '', heard: heard }),
   }).then(r => (r.ok ? r.json() : null))
     .catch(() => null)
     .then(r => { if (timer) clearTimeout(timer); return r && r.band ? r : null; });
+}
+
+/** Локал ба LLM-ийн дүгнэлтийг НЭГТГЭНЭ.
+ *
+ *  Хоёулаа өөр өөр зүйлд сайн:
+ *    · локал — ХЭЛБЭРТ нарийн (ください дутуу эсэхийг алдаггүй), тогтвортой;
+ *    · LLM  — УТГАД сайн (өөр үгээр зөв хэлсэнийг ойлгоно), гэхдээ
+ *      жижиг загварын дүгнэлт хэлбэлздэг (хэмжихэд 10–12/12).
+ *
+ *  Дүрэм: локал «зөв» гэснийг LLM БУУРУУЛЖ чадахгүй (канаар зөв хэлсэнийг
+ *  «ханз дутуу» гэж буруутгаж байсан), харин локал «өөр хариулт» гэснийг
+ *  LLM ДЭЭШЛҮҮЛЖ чадна — яг тэнд локал алгоритм сул: өөр үгээр зөв
+ *  хэлсэн хариултыг таньдаггүй. Зөвлөгөө (дутуу үг, засвар) нь үргэлж
+ *  LLM-ийнх — тэр нь хамгийн ашигтай хэсэг.
+ */
+function mergeJudge(local, ai) {
+  if (!ai) return { band: local.band, missing: [], better: '', src: 'local' };
+  const rank = { off: 0, near: 1, ok: 2 };
+  // ГАНЦ дүрэм: LLM зөвхөн ДЭЭШЛҮҮЛЖ чадна, хэзээ ч бууруулахгүй.
+  // Локал нь хэлбэрт нарийн (худал магтахгүй), LLM нь утгад сайн (өөр
+  // үгээр зөв хэлсэнийг таньдаг) — тиймээс хамгийн ӨНДӨРийг нь авна.
+  // Эргэлзээтэй дохиогоор сурагчийг шийтгэхгүй гэсэн зарчим ч энэ.
+  const band = (rank[ai.band] || 0) > rank[local.band] ? ai.band : local.band;
+  return { band: band, missing: ai.missing || [], better: ai.better || '',
+           src: ai.src || 'ai' };
 }
 
 /** LLM-ийн бүтэцтэй хариултыг МОНГОЛ өгүүлбэр болгоно. */
@@ -3086,8 +3112,9 @@ $('ex-mic').onclick = () => {
         aiJudge(heard, q).then(r => {
           hint.classList.remove('is-wait');
           if (!r || exQs[exIdx] !== q) return;   // асуулт солигдсон бол үл тоох
-          hint.className = 'mic-hint is-' + r.band;
-          hint.textContent = aiText(r);
+          const m = mergeJudge(j, r);
+          hint.className = 'mic-hint is-' + m.band;
+          hint.textContent = aiText(m);
           if (r.better) {
             fix.textContent = r.better;
             fix.hidden = false;

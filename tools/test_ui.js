@@ -2158,6 +2158,38 @@ async function run(c) {
     ai && ai.r503 === null && ai.rErr === null && ai.rBad === null, JSON.stringify(ai));
   ok('синк тохируулаагүй бол прокси руу ОГТ хандахгүй',
     ai && ai.rNoSync === null && ai.callsAfter === ai.callsBefore, JSON.stringify(ai));
+  const mg = await c.ev(`
+    const L = b => ({ band: b, sim: 0 });
+    const A = (b, miss) => ({ band: b, missing: miss || [], better: 'X', src: 'groq' });
+    return {
+      // Локал «зөв» гэснийг LLM БУУРУУЛЖ чадахгүй (канаар зөв хэлсэнийг
+      // «ханз дутуу» гэж буруутгадаг байв)
+      okDown: mergeJudge(L('ok'), A('near', ['貸'])).band,
+      okOff: mergeJudge(L('ok'), A('off')).band,
+      // Локал «өөр» гэснийг LLM ДЭЭШЛҮҮЛЖ чадна (өөр үгээр зөв хэлсэн)
+      offUp: mergeJudge(L('off'), A('ok')).band,
+      offNear: mergeJudge(L('off'), A('near')).band,
+      // «ойролцоо»-г доошлуулахгүй
+      nearKeep: mergeJudge(L('near'), A('off')).band,
+      nearUp: mergeJudge(L('near'), A('ok')).band,
+      // Зөвлөгөө нь ҮРГЭЛЖ LLM-ийнх
+      miss: mergeJudge(L('ok'), A('near', ['ください'])).missing.join(','),
+      // LLM байхгүй бол локал хэвээр
+      noAi: mergeJudge(L('near'), null).band,
+      noAiSrc: mergeJudge(L('near'), null).src,
+    };
+  `);
+  ok('локал «зөв»-ийг LLM бууруулж ЧАДАХГҮЙ',
+    mg && mg.okDown === 'ok' && mg.okOff === 'ok', JSON.stringify(mg));
+  ok('локал «өөр»-ийг LLM дээшлүүлж ЧАДНА (өөр үгээр зөв хэлсэн)',
+    mg && mg.offUp === 'ok' && mg.offNear === 'near', JSON.stringify(mg));
+  ok('«ойролцоо» нь доошлохгүй, дээшилж болно',
+    mg && mg.nearKeep === 'near' && mg.nearUp === 'ok', JSON.stringify(mg));
+  ok('зөвлөгөө (дутуу үг) нь LLM-ийнх',
+    mg && mg.miss === 'ください', JSON.stringify(mg && mg.miss));
+  ok('LLM байхгүй бол ЛОКАЛ дүгнэлт хэвээр',
+    mg && mg.noAi === 'near' && mg.noAiSrc === 'local', JSON.stringify(mg));
+
   ok('«зөв» ба «өөр хариулт»-ын бичвэр ч монголоор',
     ai && /Зөв байна/.test(ai.okText) && /Өөр хариулт/.test(ai.offText),
     JSON.stringify(ai && [ai.okText, ai.offText]));
