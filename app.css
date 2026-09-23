@@ -1068,8 +1068,11 @@ html{background:var(--bg)}
 .kl-member-head > .task-state{margin-inline-start:auto}
 
 /* Шалгалтын дэлгэцийн даалгаврын самбар */
-#ex-tasks{display:grid; gap:8px; margin:14px 0 0; padding:0; list-style:none}
-#ex-tasks:empty{display:none}
+#ex-tasks,#home-tasks{display:grid; gap:8px; padding:0; list-style:none}
+#ex-tasks{margin:14px 0 0}
+/* Нүүрэнд ХАМГИЙН ДЭЭР — сурагч орж ирмэгц даалгавраа харна. */
+#home-tasks{margin:0 0 12px}
+#ex-tasks:empty,#home-tasks:empty{display:none}
 .ex-task{
   display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center;
   gap:12px; min-width:0; padding:10px 12px;

@@ -1614,6 +1614,21 @@ async function run(c) {
     out.bannerShown = !box.hidden;
     out.bannerItems = [...box.querySelectorAll('.ex-task')].map(li => li.textContent.replace(/\\s+/g, ' ').trim());
 
+    // (1b) НҮҮРНИЙ хамгийн дээр ч гарна — сурагч орж ирмэгц харна
+    go('home'); await wait(400);
+    const hb = document.getElementById('home-tasks');
+    const home = document.getElementById('home');
+    out.homeShown = !hb.hidden;
+    out.homeFirst = home.firstElementChild === hb;   // ХАМГИЙН ДЭЭР
+    out.homeText = hb.textContent.replace(/\\s+/g, ' ').trim();
+    out.homeBtn = (hb.querySelector('.ex-task-pick') || {}).textContent;
+    // «Эхлүүлэх» -> хичээл тохирч, шалгалтын дэлгэц рүү шилжинэ
+    hb.querySelector('.ex-task-pick').click();
+    await wait(500);
+    out.afterClick = screen;
+    out.afterLes = JSON.stringify(examLessonsSel());
+    out.afterN = exN;
+
     // (2) L1-ийн 6 асуултыг хариулна — түүхэнд 6
     exLes = [1]; save(KEY_EXL, exLes); exN = 15; startExam(); await wait(400);
     for (let i = 0; i < exQs.length; i++) { examMark(i % 2 === 0); await wait(220); }
@@ -1687,6 +1702,13 @@ async function run(c) {
   ok('шалгалтын дэлгэцэд даалгавар — ЗӨВХӨН даалгавартай анги (MICA)',
     tk && tk.bannerShown && tk.bannerItems.length === 1 && /MICA · L1–L8 · 20 асуулт/.test(tk.bannerItems[0]),
     JSON.stringify(tk && tk.bannerItems));
+  ok('даалгавар НҮҮРНИЙ ХАМГИЙН ДЭЭР гарна',
+    tk && tk.homeShown && tk.homeFirst && /MICA · L1–L8 · 20 асуулт/.test(tk.homeText),
+    JSON.stringify(tk && { s: tk.homeShown, f: tk.homeFirst, t: tk.homeText }));
+  ok('нүүрний товч «Эхлүүлэх» — шалгалт руу аваачиж хичээлийг тохируулна',
+    tk && tk.homeBtn === 'Эхлүүлэх' && tk.afterClick === 'exam'
+      && tk.afterLes === '[1,2,3,4,5,6,7,8]' && tk.afterN === 20,
+    JSON.stringify(tk && { b: tk.homeBtn, s: tk.afterClick, l: tk.afterLes, n: tk.afterN }));
   ok('шалгалтын хариулт түүхэнд бүртгэгдэнэ [өдөр, 0/1, хичээл]',
     tk && tk.hist1 === 6 && /^\[\d+,[01],1\]$/.test(tk.histShape), JSON.stringify(tk));
   ok('ИЖИЛ асуултыг дахин хариулахад ДАВХАРДАХГҮЙ (6 хэвээр)', tk && tk.hist2 === 6, JSON.stringify(tk));

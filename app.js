@@ -1766,6 +1766,7 @@ function refreshHome() {
     box.appendChild(b);
   }
   $('inc-ref').checked = settings.ref;
+  renderHomeTasks();
   const st = $('streak-n'); if (st) st.textContent = streakN();
   const gd = $('goal-done'); if (gd) gd.textContent = todayN();
   const gn = $('goal-n'); if (gn) gn.textContent = settings.goal;
@@ -2434,29 +2435,49 @@ const examPool = () => {
 };
 
 /** Миний ангиудын даалгавар — шалгалтын дэлгэцийн дээд талд. */
-function renderExamTasks() {
-  const box = $('ex-tasks');
-  if (!box) return;
-  const items = myClasses().map(id => ({ id: id, t: taskOf(id) })).filter(x => x.t);
-  box.innerHTML = items.map(x => {
-    const need = taskN(x.t), n = taskDoneLocal(x.t);
-    return '<li class="ex-task"><div class="ex-task-body">' +
-      '<p class="ex-task-label"><b>' + esc(className(x.id)) + '</b> · ' + esc(taskLabel(x.t)) + '</p>' +
-      TASK_STATE(Math.min(n, need), need).replace('Хийгээгүй · ', '') + DUE_HTML(x.t) +
-      '</div><button class="ghost sm ex-task-pick" type="button" data-class-id="' + escA(x.id) + '"' +
-      ' aria-label="' + escA(className(x.id)) + ': Сонгох">Сонгох</button></li>';
-  }).join('');
-  box.hidden = !items.length;
-  box.querySelectorAll('.ex-task-pick').forEach(b => b.onclick = () => {
-    const t = taskOf(b.dataset.classId);
-    if (!t) return;
-    // Даалгаврын хичээлүүд ба асуултын тоо. 10/15/20-оос өөр бол 20.
-    exN = [10, 15, 20].includes(taskN(t)) ? taskN(t) : 20;
-    save(KEY_EXN, exN);
-    refreshExamSeg();
-    setExamLessons(t.lessons.map(x => x | 0));
-  });
+/** Миний ангиудын даалгавар (багшийнх ОРОХГҮЙ — тэр хийдэггүй). */
+const taskItems = () => myClasses().map(id => ({ id: id, t: taskOf(id) })).filter(x => x.t);
+
+/** Даалгаврын хичээл ба асуултын тоог шалгалтад тохируулна. */
+function pickTask(id) {
+  const t = taskOf(id);
+  if (!t) return false;
+  // 10/15/20-оос өөр тоо бол 20 (сегмент гурван утгатай).
+  exN = [10, 15, 20].includes(taskN(t)) ? taskN(t) : 20;
+  save(KEY_EXN, exN);
+  refreshExamSeg();
+  setExamLessons(t.lessons.map(x => x | 0));
+  return true;
 }
+
+/** Нэг карт — нүүр ба шалгалтын дэлгэцэд ИЖИЛ харагдана. */
+const TASK_CARD = (x, btn) => {
+  const need = taskN(x.t), n = taskDoneLocal(x.t);
+  return '<li class="ex-task"><div class="ex-task-body">' +
+    '<p class="ex-task-label"><b>' + esc(className(x.id)) + '</b> · ' + esc(taskLabel(x.t)) + '</p>' +
+    TASK_STATE(Math.min(n, need), need).replace('Хийгээгүй · ', '') + DUE_HTML(x.t) +
+    '</div><button class="ghost sm ex-task-pick" type="button" data-class-id="' + escA(x.id) + '"' +
+    ' aria-label="' + escA(className(x.id)) + ': ' + escA(btn) + '">' + esc(btn) + '</button></li>';
+};
+
+function renderTaskBox(box, btn, act) {
+  if (!box) return;
+  const items = taskItems();
+  box.innerHTML = items.map(x => TASK_CARD(x, btn)).join('');
+  box.hidden = !items.length;
+  box.querySelectorAll('.ex-task-pick').forEach(b => b.onclick = () => act(b.dataset.classId));
+}
+
+function renderExamTasks() {
+  renderTaskBox($('ex-tasks'), 'Сонгох', id => { if (pickTask(id)) renderExamLessons(); });
+}
+
+/** Нүүрний ХАМГИЙН ДЭЭР — сурагч орж ирмэгц даалгавраа харна. */
+function renderHomeTasks() {
+  renderTaskBox($('home-tasks'), 'Эхлүүлэх', id => { if (pickTask(id)) go('exam'); });
+}
+
+const renderTasks = () => { renderExamTasks(); renderHomeTasks(); };
 
 function setExamLessons(v) {
   // Бүгдийг сонгосон бол `null` болгож хадгална — шинэ хичээл нэмэгдэхэд
@@ -3282,7 +3303,7 @@ function memberWrite(key, ids) {
         const o = exHist[k];
         if (!o || inc[k][0] >= o[0]) { exHist[k] = inc[k]; add = add || !o || String(o) !== String(inc[k]); }
       }
-      if (add) { save(KEY_EXH, exHist); renderExamTasks(); }
+      if (add) { save(KEY_EXH, exHist); renderTasks(); }
     }
     /* Нөгөө төхөөрөмж дээр нэрээ зассан бол сервер ТҮҮНИЙГ буцаана —
        энд аваад тавина. Ингэснээр хоёр төхөөрөмж ижил нэртэй болно. */
