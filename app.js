@@ -2569,7 +2569,14 @@ function judgeSpoken(alts, q) {
      (依頼, 注文) байдаг. Ангиллыг «бүтэц дутуу» гэж хэлбэл төөрөгдүүлнэ —
      тиймээс зөвхөн загвар хариултад БОДИТООР байгаа түлхүүрийг шалгана. */
   const key = normKana((q.key || '').replace(/[〜～]/g, ''));
-  const isStruct = key.length >= 2 && (m1.includes(key) || m2.includes(key));
+  /* Яриа таних нь бараг ҮРГЭЛЖ КАНА буцаана. Тиймээс ХАНЗТАЙ түлхүүрийг
+     («好きです», «家族») сонссон бичвэртэй харьцуулж болохгүй — 100%
+     зөв хариултыг ч «бүтэц дутуу» гэж бууруулж байв (хэмжсэн:
+     「すしがすきです」 ижилсэл 100 атлаа «ойролцоо» гэв).
+     Ханзтай түлхүүр нь бараг үргэлж АНГИЛАЛ, кана нь БҮТЭЦ байдаг тул
+     энэ шалгуур хоёрыг цэвэр салгана. */
+  const isStruct = key.length >= 2 && !RB_KANJI.test(key)
+    && (m1.includes(key) || m2.includes(key));
   const hasKey = isStruct
     ? list.some(a => normKana(a).includes(key)) : null;
 
@@ -2582,8 +2589,56 @@ function judgeSpoken(alts, q) {
      утгаараа ойлгомжтой ч 「ください」 байхгүй тул эелдэг биш — сурагчид
      үүнийг хэлэх нь зөвлөгөөний ГОЛ утга. */
   if (band === 'ok' && hasKey === false) band = 'near';
+  /* БОГИНО ХАРИУЛТ. Dice нь ХОЁР талын уртыг тооцдог тул сурагч зөвхөн
+     гол хэсгийг хэлэхэд ижилсэл унана: 「ろくじです」 vs загвар
+     「ろくじにおきます」 = 0.36 → «өөр хариулт». Багш үүнийг «ойролцоо»
+     гэнэ — хариулт нь БУРУУ биш, ДУТУУ.
+     Тиймээс богино талын хэдэн хувь нь загварт БҮТНЭЭРЭЭ орсныг хэмжинэ
+     (хамгийн урт нийтлэг дэд мөр). Хагасаас дээш нь таарвал «өөр
+     хариулт» гэж хэлэхгүй. Огт өөр сэдэв үүгээр дээшлэхгүй:
+     「すしがすきです」 vs 「ろくじにおきます」 = 0.14. */
+  if (band === 'off') {
+    const c1 = coreOf(m1), c2 = coreOf(m2);
+    let cover = 0;
+    for (const a of list) {
+      const h = coreOf(normKana(a));
+      if (h.length < 2) continue;
+      cover = Math.max(cover, lcsCover(h, c1), lcsCover(h, c2));
+    }
+    if (cover >= 0.5) band = 'near';
+  }
   return { band: band, sim: Math.round(sim * 100), hasKey: hasKey,
            key: isStruct ? (q.key || '') : '' };
+}
+
+/* Эелдэг ТӨГСГӨЛ нь бараг бүх хариултад давтагддаг тул агуулгын нотолгоо
+   болохгүй: 「きょうはあついです」 ба 「たなかです」 хоёр зөвхөн 「です」-ээр
+   таарч «ойролцоо» гэж ХУДАЛ дээшилж байв. Төгсгөлийг нь хасаад харьцуулна. */
+const POLITE_END = /(?:でした|ました|でしょう|です|ます)$/;
+const coreOf = t => (t || '').replace(POLITE_END, '') || (t || '');
+
+/** Хамгийн урт НИЙТЛЭГ ДЭД МӨР нь богино мөрийн хэдэн хувийг эзлэв (0..1).
+ *  Санамсаргүй нэг тэмдэгтийн таарлыг тооцохгүй (дор хаяж 2 тэмдэгт). */
+function lcsCover(a, b) {
+  const n = lcsLen(a, b);
+  return n >= 2 ? n / Math.min(a.length, b.length) : 0;
+}
+
+/** Хамгийн урт нийтлэг дэд мөрийн УРТ. */
+function lcsLen(a, b) {
+  if (!a || !b) return 0;
+  let best = 0, prev = new Array(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = new Array(b.length + 1).fill(0);
+    for (let j = 1; j <= b.length; j++) {
+      if (a[i - 1] === b[j - 1]) {
+        cur[j] = prev[j - 1] + 1;
+        if (cur[j] > best) best = cur[j];
+      }
+    }
+    prev = cur;
+  }
+  return best;
 }
 
 /** Үнэлгээг МОНГОЛООР үг болгоно — бичвэрийг апп өөрөө угсарна. */
@@ -2710,6 +2765,10 @@ function grShow() {
     b.onclick = () => grPick(i);
     box.appendChild(b);
   });
+  /* «Дараах» дарахад тэр товч НУУГДДАГ тул фокус BODY дээр унаж, Tab нь
+     хуудасны эхнээс эхэлдэг байв. Фокусыг шинэ асуулт руу зөөнө.
+     Эхний сонголт руу ЗӨӨХГҮЙ — тэр нь «сонгогдсон» мэт харагдана. */
+  $('gr-q').focus({ preventScroll: true });
   window.scrollTo(0, 0);
 }
 
@@ -2728,6 +2787,8 @@ function grPick(i) {
   }
   $('gr-next').hidden = false;
   $('gr-next').textContent = grIdx + 1 >= grQ.length ? 'Дүгнэлт' : 'Дараах';
+  // Сонголтууд идэвхгүй боллоо — фокусыг дараагийн ҮЙЛДЭЛ рүү зөөнө.
+  $('gr-next').focus({ preventScroll: true });
 }
 
 function grNext() {
@@ -3167,9 +3228,24 @@ document.querySelectorAll('#goal-pick button').forEach(b =>
 /* Компьютер дээр гараас хариулах: 1–4 сонголт, Space хариу харах, Enter дараах.
    Бичих горимд оролт идэвхтэй тул тэнд оролцохгүй. */
 document.addEventListener('keydown', e => {
-  if (screen !== 'study' || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
   if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
   const k = e.key;
+  /* Дүрмийн дасгал. Сонголтууд нь `.choices` ангитай тул 1–4 дугаар нь
+     ХАРАГДДАГ байсан атлаа товчлол ажиллахгүй байв — харагдах амлалт
+     хоосон байсан (хэмжсэн: 4 товчны 0 нь дуудагдав). */
+  if (screen === 'grammar' && !$('gr-run').hidden) {
+    if (!$('gr-next').hidden) {
+      if (k === 'Enter' || k === ' ') { e.preventDefault(); $('gr-next').click(); }
+      return;
+    }
+    if (k >= '1' && k <= '4') {
+      const b = $('gr-opts').children[+k - 1];
+      if (b && !b.disabled) { e.preventDefault(); b.click(); }
+    }
+    return;
+  }
+  if (screen !== 'study') return;
   if (!$('pane-next').hidden) {
     if (k === 'Enter' || k === ' ') { e.preventDefault(); $('btn-next').click(); }
     return;

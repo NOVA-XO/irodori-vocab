@@ -28,7 +28,10 @@
   --accent-2:#61cef2;
   --hl:#f3f8a8; --hl-ink:#0b1540;
   /* Ногоон/улаан нь палитрт байхгүй ч УТГА агуулдаг тул хэвээр. */
-  --ok:#166534; --ng:#b91c1c;
+  /* Хуудасны дэвсгэр дээр суудаг тоолуур (`.hudr .ok/.ng`) нь өмнөх
+     #166534 / #b91c1c өнгөөр 4.45:1 ба 4.04:1 өгч AA-г үл хангаж байв.
+     Нэг зэрэг бараан болгоод 5.68:1 / 5.18:1 болов — картан дээр ч сайжирна. */
+  --ok:#14532d; --ng:#991b1b;
   --ok-bg:#f0fdf4; --ng-bg:#fef2f2;
 
   /* ХЭЛБЭРИЙН токенууд. */
@@ -228,7 +231,7 @@ body{
 /* Гарчиг нь хуудасны дэвсгэр дээр — картны дотор БИШ. */
 h2:has(+ .set){
   margin:26px 4px 8px; padding:0; border:0; background:none;
-  color:var(--ink-3); font:500 12.5px/1.4 var(--ui);
+  color:var(--ink-2); font:500 12.5px/1.4 var(--ui);
 }
 .set > .set-i{
   display:grid; place-items:center; flex:none;
@@ -463,8 +466,12 @@ button:disabled{opacity:.42; cursor:default}
 }
 .seg button[aria-pressed="true"] b{color:var(--ink)}
 
+/* ЯАГААД --ink-2: `.step`, `.by`, `.hudn small`, `.fb-count` ба дээрх h2 нь
+   картны ДОТОР биш, хуудасны дэвсгэр (цайвар сэдэвт #a9d0fb) дээр суудаг.
+   Тэнд --ink-3 нь ялгарал ердөө 3.27:1 өгч WCAG AA (4.5:1) унадаг —
+   хэмжиж илрүүлсэн (docs/STATE.md §2.72). Картан дээр --ink-3 хэвээр. */
 .step{
-  font-family:var(--disp); font-size:11.5px; color:var(--ink-3); margin:26px 0 9px;
+  font-family:var(--disp); font-size:11.5px; color:var(--ink-2); margin:26px 0 9px;
   letter-spacing:.2em; text-transform:uppercase; font-weight:400;
 }
 /* Канагийн бүлэг / JLPT түвшин — жагсаалтын мөр, хайрцаг биш. */
@@ -522,7 +529,7 @@ button:disabled{opacity:.42; cursor:default}
    хамт явдаг тул дээд зай, хүрээ хэрэггүй болов. */
 .src{margin-top:0; padding-top:0; border-top:0;
      font-size:12px; color:var(--ink-2); line-height:1.7}
-.by{margin:22px 0 0; text-align:center; font-size:11px; color:var(--ink-3);
+.by{margin:22px 0 0; text-align:center; font-size:11px; color:var(--ink-2);
     letter-spacing:.22em; text-transform:uppercase}
 .by b{font-weight:400; color:var(--ink-2); letter-spacing:.06em;
       text-transform:none}
@@ -548,7 +555,7 @@ button:disabled{opacity:.42; cursor:default}
              transition:stroke-dashoffset .4s cubic-bezier(.4,0,.2,1)}
 .hudn{font-family:var(--disp); font-size:20px; line-height:1;
       font-variant-numeric:tabular-nums}
-.hudn small{font-size:13px; color:var(--ink-3)}
+.hudn small{font-size:13px; color:var(--ink-2)}
 .hudr{margin-left:auto; display:flex; gap:14px; font-size:14px;
       font-variant-numeric:tabular-nums; font-family:var(--disp)}
 .hudr .ok,.hudr .ng{background:none; border:0; padding:0}
@@ -825,7 +832,7 @@ button:disabled{opacity:.42; cursor:default}
   background:none; color:var(--ink);
 }
 #fb-body:focus,#fb-contact:focus{outline:0; border-bottom-color:var(--accent)}
-.fb-count{text-align:right; font-size:11px; color:var(--ink-3); margin-top:6px}
+.fb-count{text-align:right; font-size:11px; color:var(--ink-2); margin-top:6px}
 a.ghost{display:inline-block; text-decoration:none}
 .synccode{
   font-family:var(--mono); font-size:20px; letter-spacing:.16em;
@@ -1219,6 +1226,16 @@ html{background:var(--bg)}
   word-break:break-word}
 .gr-q .bl,.gr-qmn .bl{white-space:nowrap; letter-spacing:-.04em}
 .gr-qmn{font-size:13.5px; color:var(--ink-2); margin-top:12px}
+/* Асуулт · сонголт · «Дараах» гурав нь тусдаа БҮЛЭГ. Үгийн дасгал дээр
+   энэ зайг `.pane` өгдөг ч дүрмийн дасгал `.pane`-гүй тул зай 0px болж,
+   сонголтууд хоорондоо 14px зайтай атлаа бүлгүүд наалдаж байв. */
+#gr-opts{margin-top:22px}
+#gr-next{margin-top:12px}
+/* Асуулт нь фокусын БАЙРШИЛ (tabindex="-1") — програмаар фокуслахад
+   хүрээ гаргахгүй, гарнаас ирвэл (`:focus-visible`) харуулна. */
+#gr-q:focus{outline:0}
+#gr-q:focus-visible{outline:2px solid var(--accent); outline-offset:6px;
+  border-radius:8px}
 .gr-n{font-family:var(--disp); font-size:14px; color:var(--ink-2);
   font-variant-numeric:tabular-nums}
 #gr-opts button{font-family:var(--jpd); font-size:19px}

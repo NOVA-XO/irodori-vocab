@@ -2194,6 +2194,135 @@ async function run(c) {
     ai && /Зөв байна/.test(ai.okText) && /Өөр хариулт/.test(ai.offText),
     JSON.stringify(ai && [ai.okText, ai.offText]));
 
+  console.log('\n[41] Хүртээмж ба байрлал — ХЭМЖСЭН регресс');
+  /* Энэ хэсэг бүхэлдээ ХЭМЖИЛТЭЭР ажиллана: өнгө, зай, фокусыг нүдээр
+     биш, computed style ба getBoundingClientRect-ээр уншина.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal.
+     Escape (тэмдэгт ангийн \\d г.м.) БИЧИХГҮЙ — template literal идэж
+     орхино; [0-9] мэтээр бич. */
+
+  // (1) БҮХ дэлгэц дээрх бичвэр WCAG AA хангана уу (цайвар БА бараан)
+  const aa = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const rgb = s => (s.match(/[0-9.]+/g) || []).slice(0, 3).map(Number);
+    const lum = a => { const f = v => { v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+      return 0.2126 * f(a[0]) + 0.7152 * f(a[1]) + 0.0722 * f(a[2]); };
+    const cr = (a, b) => { const l1 = lum(rgb(a)), l2 = lum(rgb(b));
+      return Math.round(100 * ((Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05))) / 100; };
+    const opaque = b => b && b.indexOf('rgba') < 0 && b !== 'transparent';
+    const bgOf = el => { let n = el; while (n) { const b = getComputedStyle(n).backgroundColor;
+      if (opaque(b)) return b; n = n.parentElement; } return 'rgb(255, 255, 255)'; };
+    const SCREENS = ['home','study','exam','grammar','kanji','progress','profile','feedback'];
+    const bad = [];
+    const scan = theme => {
+      for (const el of document.querySelectorAll('*')) {
+        if (el.offsetParent === null && el.tagName !== 'BODY') continue;
+        const txt = [].slice.call(el.childNodes).filter(n => n.nodeType === 3)
+          .map(n => n.textContent.trim()).join('');
+        if (!txt) continue;
+        // ЭМОЖИ нь өөрийн өнгөөр буддаг тул CSS-ийн color үйлчлэхгүй —
+        // ялгарал хэмжих утгагүй (🔊 товч 1.34:1 гэж ХУДАЛ дохио өгч байв).
+        if (!/[0-9A-Za-zА-Яа-яЁёぁ-ヿ㐀-鿿]/.test(txt)) continue;
+        const st = getComputedStyle(el);
+        const size = parseFloat(st.fontSize);
+        const bold = (parseInt(st.fontWeight, 10) || 400) >= 700;
+        const need = (size >= 24 || (size >= 18.66 && bold)) ? 3 : 4.5;
+        const ratio = cr(st.color, bgOf(el));
+        if (ratio >= need) continue;
+        const sel = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '');
+        bad.push(theme + ' ' + sel + ' ' + ratio + '<' + need + ' [' + txt.slice(0, 16) + ']');
+      } };
+    const keep = document.documentElement.getAttribute('data-theme');
+    for (const th of ['light', 'dark']) {
+      document.documentElement.setAttribute('data-theme', th);
+      for (const sc of SCREENS) { try { go(sc); } catch (e) { continue; } await wait(260); scan(th); }
+    }
+    if (keep) document.documentElement.setAttribute('data-theme', keep);
+    else document.documentElement.removeAttribute('data-theme');
+    go('home');
+    return bad;
+  `);
+  ok('бүх дэлгэцийн бичвэр WCAG AA давна (цайвар + бараан)',
+    Array.isArray(aa) && aa.length === 0, (aa || []).slice(0, 4).join(' | '));
+
+  // (2)(3)(4) Дүрмийн дасгал: бүлгийн зай · гарын товчлол · фокус
+  const gu = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const o = {};
+    go('grammar'); await wait(900);
+    document.querySelector('#gr-list button').click(); await wait(500);
+    document.getElementById('gr-start').click(); await wait(700);
+    const card = document.querySelector('#gr-run .gr-card');
+    const opts = document.getElementById('gr-opts');
+    const next = document.getElementById('gr-next');
+    const cb = card.getBoundingClientRect(), ob = opts.getBoundingClientRect();
+    o.gapCardOpts = Math.round(ob.top - cb.bottom);
+    o.focusOnShow = document.activeElement ? document.activeElement.id : 'none';
+    // Гараас «1» дарахад эхний сонголт сонгогдоно
+    o.lockedBefore = opts.querySelectorAll('button[disabled]').length;
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
+    await wait(400);
+    o.lockedAfter = opts.querySelectorAll('button[disabled]').length;
+    o.focusAfterPick = document.activeElement ? document.activeElement.id : 'none';
+    o.nextShown = !next.hidden;
+    const bs = [].slice.call(opts.querySelectorAll('button')).map(b => b.getBoundingClientRect());
+    o.gapOptsNext = Math.round(next.getBoundingClientRect().top - bs[bs.length - 1].bottom);
+    // Enter нь «Дараах»-ыг дарна -> шинэ асуулт, фокус асуулт дээр
+    const n0 = document.getElementById('gr-n').textContent;
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await wait(500);
+    o.advanced = document.getElementById('gr-n').textContent !== n0;
+    o.focusAfterNext = document.activeElement ? document.activeElement.id : 'none';
+    // Дугаар ХАРАГДАЖ байгаа эсэх (амлалт нь ажиллаж байгаатай нийцэх ёстой)
+    o.numShown = getComputedStyle(opts.querySelector('button'), '::before').content;
+    grAbort(); go('home');
+    return o;
+  `);
+  ok('дүрмийн дасгал: асуулт -> сонголтын зай >= 16px (бүлэг наалдахгүй)',
+    gu && gu.gapCardOpts >= 16, JSON.stringify(gu && gu.gapCardOpts));
+  ok('дүрмийн дасгал: сонголт -> «Дараах»-ын зай >= 8px',
+    gu && gu.gapOptsNext >= 8, JSON.stringify(gu && gu.gapOptsNext));
+  ok('дүрмийн дасгал: гарын 1-4 АЖИЛЛАНА (дугаар нь харагддаг тул заавал)',
+    gu && gu.lockedBefore === 0 && gu.lockedAfter === 4 && gu.nextShown,
+    JSON.stringify(gu));
+  ok('дүрмийн дасгал: Enter нь дараагийн асуулт руу оруулна',
+    gu && gu.advanced === true, JSON.stringify(gu && gu.advanced));
+  ok('фокус хариултын дараа «Дараах» дээр — BODY дээр унахгүй',
+    gu && gu.focusAfterPick === 'gr-next', JSON.stringify(gu && gu.focusAfterPick));
+  ok('фокус шинэ асуулт дээр зөөгдөнө — BODY дээр унахгүй',
+    gu && gu.focusAfterNext === 'gr-q', JSON.stringify(gu && gu.focusAfterNext));
+
+  // (5) Локал үнэлгээ: БОГИНО зөв хариулт ба ХАНЗТАЙ түлхүүр
+  const sj = await c.ev(`
+    const J = (heard, model, kana, key) =>
+      judgeSpoken([heard], { model: model, modelKana: kana, key: key }).band;
+    return {
+      // Богино хариулт нь «өөр хариулт» БИШ
+      short: J('ろくじです', '六時に起きます。', 'ろくじにおきます。', '時間'),
+      short2: J('すし', 'すしが好きです。', 'すしがすきです。', '好きです'),
+      // ХАНЗТАЙ түлхүүр нь канан хариултыг бууруулахгүй
+      kanjiKey: J('すしがすきです', 'すしが好きです。', 'すしがすきです。', '好きです'),
+      // КАНАН түлхүүр нь бүтэц дутууг барьсаар байна
+      kanaKey: J('ペンをかして', 'ペンを貸してください。', 'ペンをかしてください。', 'てください'),
+      // СӨРӨГ: огт өөр сэдэв нь дээшлэхгүй
+      offA: J('すしがすきです', '六時に起きます。', 'ろくじにおきます。', '時間'),
+      offB: J('こんばんは', 'おはようございます。', 'おはようございます。', 'あいさつ'),
+      offC: J('わかりません', 'さんじです。', 'さんじです。', '時間'),
+      // Зөвхөн ЭЕЛДЭГ ТӨГСГӨЛӨӨР (です) таарсан нь агуулгын нотолгоо БИШ
+      offD: J('きょうはあついです', '田中です。', 'たなかです。', '名前'),
+    };
+  `);
+  ok('богино ч зөв хариулт «өөр хариулт» болохгүй (ろくじです · すし)',
+    sj && sj.short === 'near' && sj.short2 === 'near', JSON.stringify(sj));
+  ok('ХАНЗТАЙ түлхүүр нь канан хариултыг бууруулахгүй',
+    sj && sj.kanjiKey === 'ok', JSON.stringify(sj));
+  ok('КАНАН түлхүүр нь дутуу бүтцийг барьсаар байна',
+    sj && sj.kanaKey === 'near', JSON.stringify(sj));
+  ok('СӨРӨГ: огт өөр сэдэв дээшлэхгүй (дөрвүүлээ «өөр хариулт»)',
+    sj && sj.offA === 'off' && sj.offB === 'off' && sj.offC === 'off'
+      && sj.offD === 'off', JSON.stringify(sj));
+
   console.log('\n[34] «Явцыг устгах» — шалгалтын хариулт серверээс ч устана');
   /* Уусгалт нэмсний дараа хоосон түүх юу ч устгахаа больсон (зөв). Гэвч
      устгах товч ч устгаж чадахаа больсон: хэрэглэгч шалгалтын дэлгэцэд
