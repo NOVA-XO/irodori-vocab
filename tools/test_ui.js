@@ -1262,18 +1262,16 @@ async function run(c) {
     return 1;
   `);
 
-  console.log('\n[33] Шалгалт — даалгавараар АВТОМАТ эхэлнэ');
-  /* Багшийн сонголтоор шууд эхлэх ёстой. Гэхдээ ҮРГЭЛЖ эхэлбэл
-     тохиргооны дэлгэц рүү хэзээ ч хүрэхгүй болно — тиймээс аппын нэг
-     ачаалалд НЭГ УДАА, зөвхөн дуусгаагүй, хугацаа гараагүй даалгавар
-     дээр. Тайлбарт BACKTICK бичихгүй. */
+  console.log('\n[33] Шалгалт хэсэг — АВТОМАТААР ЭХЛЭХГҮЙ');
+  /* Хэрэглэгчийн шийдвэр: «Шалгалт» руу орвол тохиргоо гарна.
+     Даалгаврыг нүүрний картаас нэг дарлагаар эхлүүлнэ.
+     Сүлжээг ХААНА: examSetup нь loadClassList дууддаг тул жинхэнэ
+     серверийн даалгавар тестийн нөхцлийг дардаг (§2.65).
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
   const au = await c.ev(`
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const keep = { cls: classList, hist: exHist, me: JSON.parse(JSON.stringify(me)),
-                   les: exLes, n: exN, auto: exAutoDone, rpc: rpc, dev: isDevHost };
-    /* Сүлжээг ХААНА: examSetup нь loadClassList дууддаг тул жинхэнэ
-       серверийн даалгавар энд орж ирээд тестийн нөхцлийг дардаг байв.
-       (Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal.) */
+                   les: exLes, n: exN, rpc: rpc, dev: isDevHost };
     rpc = async fn => (fn === 'class_list' ? classList : null);
     isDevHost = () => true;
     const out = {}, t = today();
@@ -1284,54 +1282,40 @@ async function run(c) {
     exHist = {}; save(KEY_EXH, exHist);
     exLes = [18]; save(KEY_EXL, exLes); exN = 15;
 
-    // (1) Дуусгаагүй даалгавар -> ШУУД эхэлнэ
-    exAutoDone = false;
+    // (1) Дуусгаагүй даалгавартай ч ТОХИРГОО гарна — шууд эхлэхгүй
     go('exam'); await wait(900);
-    out.running = !document.getElementById('ex-run').hidden;
-    out.setupHidden = document.getElementById('ex-setup').hidden;
+    out.setupShown = !document.getElementById('ex-setup').hidden;
+    out.runHidden = document.getElementById('ex-run').hidden;
+    out.keptLes = JSON.stringify(examLessonsSel());
+    out.keptN = exN;
+
+    // (2) НҮҮРНИЙ картын товч — ШУУД асуулт эхэлнэ
+    go('home'); await wait(400);
+    document.querySelector('#home-tasks .ex-task-pick').click();
+    await wait(900);
+    out.started = !document.getElementById('ex-run').hidden;
+    out.screen = screen;
     out.qs = exQs.length;
     out.onlyTask = exQs.every(q => [1, 2, 3].includes(q.lesson));
     out.n = exN;
-
-    // (2) ХОЁР дахь оролтод эхлэхгүй — тохиргоо гарна (гарц үлдэнэ)
-    exAbort(); go('home'); await wait(200);
-    go('exam'); await wait(900);
-    out.secondSetup = !document.getElementById('ex-setup').hidden
-      && document.getElementById('ex-run').hidden;
-
-    // (3) ДУУССАН даалгавар -> эхлэхгүй
-    exAutoDone = false;
-    for (let i = 0; i < 10; i++) exHist['D' + i] = [t, 1, 1];
-    save(KEY_EXH, exHist);
-    exAbort(); go('home'); await wait(200);
-    go('exam'); await wait(900);
-    out.doneSetup = !document.getElementById('ex-setup').hidden;
-
-    // (4) ХУГАЦАА дууссан -> эхлэхгүй
-    exAutoDone = false; exHist = {}; save(KEY_EXH, exHist);
-    classList[0].task = { lessons: [1, 2, 3], n: 10, since: iso(t - 9), until: iso(t - 1) };
-    save(KEY_CLS, classList);
-    exAbort(); go('home'); await wait(200);
-    go('exam'); await wait(900);
-    out.expiredSetup = !document.getElementById('ex-setup').hidden;
 
     exAbort();
     classList = keep.cls; save(KEY_CLS, classList);
     exHist = keep.hist; save(KEY_EXH, exHist);
     me = cleanMe(keep.me); save(KEY_ME, me);
-    exLes = keep.les; save(KEY_EXL, exLes); exN = keep.n; exAutoDone = keep.auto;
+    exLes = keep.les; save(KEY_EXL, exLes); exN = keep.n;
     rpc = keep.rpc; isDevHost = keep.dev;
     refreshMe(); go('home');
     return out;
   `);
-  ok('даалгавартай бол шалгалт ШУУД эхэлнэ (тохиргоо гарахгүй)',
-    au && au.running && au.setupHidden, JSON.stringify(au));
+  ok('«Шалгалт» руу орвол ТОХИРГОО гарна (автоматаар эхлэхгүй)',
+    au && au.setupShown && au.runHidden, JSON.stringify(au));
+  ok('хэсэг рүү орох нь хичээлийн сонголтыг ХӨНДӨХГҮЙ',
+    au && au.keptLes === '[18]' && au.keptN === 15, JSON.stringify(au));
+  ok('нүүрний картын товч ШУУД асуулт эхлүүлнэ',
+    au && au.started && au.screen === 'exam', JSON.stringify(au));
   ok('багшийн сонгосон хичээл ба тоогоор (L1–L3, 10 асуулт)',
     au && au.qs === 10 && au.onlyTask && au.n === 10, JSON.stringify(au));
-  ok('ХОЁР дахь оролтод тохиргоо гарна — өөрөө сонгох гарц үлдэнэ',
-    au && au.secondSetup, JSON.stringify(au));
-  ok('даалгавар ДУУССАН бол автоматаар эхлэхгүй', au && au.doneSetup, JSON.stringify(au));
-  ok('ХУГАЦАА дууссан бол автоматаар эхлэхгүй', au && au.expiredSetup, JSON.stringify(au));
 
   console.log('\n[32] Багш — тусдаа код, даалгавар тавих, хугацаа');
   /* Багш тусдаа кодтой: жагсаалтыг харах ба даалгавар тавих эрхтэй,
