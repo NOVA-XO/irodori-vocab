@@ -1796,6 +1796,134 @@ async function run(c) {
   ok('түвшин сонгоогүй бол «Эможи» товч огт гарахгүй',
     em && em.btnHiddenEmpty === true, JSON.stringify(em));
 
+  console.log('\n[37] Дизайны аудит — 5 согогийн засвар');
+  /* Эдгээр нь БОДИТООР хэмжигдсэн согогууд (2026-09-23, Astra-гийн аудит):
+     зөв хариулт 42% бүдэг, шалгалтын зураас 0px, зорилтын сонголт
+     мэдэгдэхгүй, дууны товч 26x13px, бараан hover 2.77:1.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const d5 = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const out = {}, _a = window.alert;
+    window.alert = () => {};
+
+    // 1) Хариулсны дараа ЗӨВ (ба буруу) хариулт бүдгэрэхгүй
+    startSession('choice', false, 'book');
+    await wait(300);
+    let btns = [...document.querySelectorAll('#choices button')];
+    const right = btns.find(b => b.textContent === optText(cur));
+    right.click(); await wait(400);
+    const okB = document.querySelector('#choices button.correct');
+    const restB = btns.find(b => !b.className.includes('correct'));
+    out.okOpacity = getComputedStyle(okB).opacity;
+    out.okDisabled = okB.disabled;
+    out.restOpacity = getComputedStyle(restB).opacity;
+
+    // Буруу хариулт ч тод үлдэнэ — алдаагаа харах хэрэгтэй
+    document.getElementById('btn-next').click(); await wait(300);
+    btns = [...document.querySelectorAll('#choices button')];
+    const bad = btns.find(b => b.textContent !== optText(cur));
+    bad.click(); await wait(400);
+    const ngB = document.querySelector('#choices button.wrong');
+    out.ngOpacity = ngB ? getComputedStyle(ngB).opacity : 'none';
+
+    // 2) Шалгалтын явцын зураас ХАРАГДАНА
+    show('home'); go('exam'); await wait(700);
+    const eb = document.getElementById('btn-exam');
+    if (eb && !eb.disabled) eb.click();
+    await wait(800);
+    const tr = document.querySelector('#exam .ex-top .track');
+    const fl = document.getElementById('ex-bar');
+    out.trackH = tr ? parseFloat(getComputedStyle(tr).height) : -1;
+    out.trackBg = tr ? getComputedStyle(tr).backgroundColor : 'none';
+    out.fillBg = fl ? getComputedStyle(fl).backgroundColor : 'none';
+    exAbort(); show('home');
+
+    // 3) Өдрийн зорилтын сонгосон товч ЯЛГАРНА
+    go('profile'); await wait(500);
+    const gb = [...document.querySelectorAll('#goal-pick button')];
+    const sig = e => { const st = getComputedStyle(e);
+      return [st.backgroundColor, st.color, st.borderColor, st.fontWeight].join('|'); };
+    const onB = gb.find(b => b.getAttribute('aria-pressed') === 'true');
+    const offB = gb.find(b => b.getAttribute('aria-pressed') !== 'true');
+    out.goalDiffers = !!(onB && offB) && sig(onB) !== sig(offB);
+
+    // 4) Дууны товчны дарах талбай
+    show('home'); startKanji('k2m', 'jlpt'); await wait(300);
+    // ХҮЛЭЭЛТ: .card.flip нь 0.5s rotateY. Дундуур нь хэмжвэл өргөн нь
+    // шахагдаж 4px гарч ирнэ — бодит алдаа биш, тестийн алдаа болно.
+    reveal(); await wait(800);
+    const rs = [...document.querySelectorAll('.a-kj .rsp')].map(x => x.getBoundingClientRect());
+    out.rspN = rs.length;
+    out.rspW = rs.length ? Math.round(Math.min(...rs.map(r => r.width))) : -1;
+    out.rspH = rs.length ? Math.round(Math.min(...rs.map(r => r.height))) : -1;
+    out.rspOverlap = rs.filter((r, i) => i && r.top < rs[i - 1].bottom - 0.5).length;
+    show('home');
+
+    // 5) Гол товчны hover — контраст ба ӨӨРЧЛӨГДӨХ эсэх (хоёр сэдэвт)
+    const probe = document.createElement('div');
+    document.body.appendChild(probe);
+    const rgbOf = v => { probe.style.color = ''; probe.style.color = v;
+                         return getComputedStyle(probe).color; };
+    const lum = c2 => { const m = c2.match(/[0-9.]+/g).slice(0, 3).map(Number)
+        .map(x => x / 255)
+        .map(x => x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4));
+      return 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]; };
+    const ratio = (a, b) => { const la = lum(rgbOf(a)), lb = lum(rgbOf(b));
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05); };
+    // .primary:hover ДҮРЭМ өөрөө юу хэрэглэж байгааг уншина — токеныг
+    // шалгах нь хангалтгүй: дүрмийг нь буцааж хуучин өнгө рүү сольсон ч
+    // токен байрандаа үлдэж, тест хууртагдана (сөрөг тестээр илрэв).
+    // BACKTICK бичихгүй — энэ бүхэл нь template literal (docs §2.57).
+    let hoverBg = '';
+    for (const sh of document.styleSheets) {
+      let rules = null; try { rules = sh.cssRules; } catch (e) { continue; }
+      for (const r of rules)
+        if (r.selectorText === '.primary:hover')
+          hoverBg = r.style.backgroundColor || r.style.background;
+    }
+    out.hoverRule = hoverBg;
+    const root = document.documentElement;
+    const keepTheme = root.getAttribute('data-theme');
+    const theme = {};
+    for (const t of ['light', 'dark']) {
+      root.setAttribute('data-theme', t);
+      theme[t] = { cr: Math.round(ratio(hoverBg, 'var(--btn-fg)') * 100) / 100,
+                   moves: rgbOf(hoverBg) !== rgbOf('var(--btn-bg)') };
+    }
+    if (keepTheme) root.setAttribute('data-theme', keepTheme);
+    else root.removeAttribute('data-theme');
+    probe.remove();
+    out.theme = theme;
+
+    // Бараан токен ХОЁР блокт давхардана (media + data-theme) — гурвуулаа
+    const css = await fetch('app.css?t=' + Date.now()).then(r => r.text());
+    out.hovDecls = (css.match(/--btn-hov:/g) || []).length;
+
+    window.alert = _a; go('home');
+    return out;
+  `);
+  ok('ЗӨВ хариулт бүдгэрэхгүй (disabled боловч бүрэн тод)',
+    d5 && d5.okOpacity === '1' && d5.okDisabled === true, JSON.stringify(d5));
+  ok('БУРУУ хариулт ч тод — алдаагаа харах ёстой',
+    d5 && d5.ngOpacity === '1', JSON.stringify(d5));
+  ok('сонгоогүй үлдсэн сонголт л бүдгэрнэ',
+    d5 && parseFloat(d5.restOpacity) < 0.6, JSON.stringify(d5));
+  ok('шалгалтын явцын зураас ХАРАГДАНА (өндөр > 0, дэвсгэртэй)',
+    d5 && d5.trackH >= 3 && d5.trackBg !== 'rgba(0, 0, 0, 0)', JSON.stringify(d5));
+  ok('зураасны дүүргэлт өнгөтэй', d5 && d5.fillBg !== 'rgba(0, 0, 0, 0)', JSON.stringify(d5));
+  ok('өдрийн зорилтын СОНГОСОН товч ялгарна', d5 && d5.goalDiffers === true, JSON.stringify(d5));
+  ok('дууны товчны дарах талбай томорсон (>= 36x30)',
+    d5 && d5.rspN >= 2 && d5.rspW >= 36 && d5.rspH >= 30, JSON.stringify(d5));
+  ok('дууны товчнууд ДАВХЦАХГҮЙ — буруу мөрийн дуу гарахгүй',
+    d5 && d5.rspOverlap === 0, JSON.stringify(d5));
+  ok('гол товчны hover нь өнгөө СОЛИНО (хоёр сэдэвт)',
+    d5 && d5.theme && d5.theme.light.moves && d5.theme.dark.moves, JSON.stringify(d5 && d5.theme));
+  ok('hover дээрх бичиг AA давна (>= 4.5:1, хоёр сэдэвт)',
+    d5 && d5.theme && d5.theme.light.cr >= 4.5 && d5.theme.dark.cr >= 4.5,
+    JSON.stringify(d5 && d5.theme));
+  ok('--btn-hov гурван блок бүрд (цайвар + бараан 2) — нэгийг нь мартаагүй',
+    d5 && d5.hovDecls === 3, JSON.stringify(d5 && d5.hovDecls));
+
   console.log('\n[34] «Явцыг устгах» — шалгалтын хариулт серверээс ч устана');
   /* Уусгалт нэмсний дараа хоосон түүх юу ч устгахаа больсон (зөв). Гэвч
      устгах товч ч устгаж чадахаа больсон: хэрэглэгч шалгалтын дэлгэцэд

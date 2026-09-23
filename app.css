@@ -42,6 +42,10 @@
   --list-top:none;
   --elev:none;
   --btn-bg:#2470f0; --btn-fg:#ffffff;
+  /* Hover нь ӨӨР өнгө байх ёстой. Цайвар дээр `--accent` нь `--btn-bg`-тэй
+     ЯГ ижил байсан тул товч хөдөлгөөнгүй харагддаг байв. Цагаан бичигтэй
+     контраст: #1a5fd8 = 5.7:1 (AA 4.5-ыг давна). */
+  --btn-hov:#1a5fd8;
   --sel-bg:#e9f1ff; --sel-fg:#1a52c0;
   --h2-tt:none; --h2-ls:normal; --h2-bd:none;
   --track-h:4px;
@@ -89,6 +93,10 @@
     --ok-bg:#0e2c25; --ng-bg:#331a24;
     /* Гол товч — палитрын хүчтэй хөх; цагаан бичиг дээр нь уншигдана. */
     --btn-bg:#1e28c4;
+    /* Бараан дээр hover-ийг #1e28c4-ээс палитрын #7b95ff зүг рүү
+       цайруулна. Шууд #7b95ff бол цагаан бичигтэй 2.77:1 — уншигдахгүй;
+       #3a46e8 нь 6.5:1. */
+    --btn-hov:#3a46e8;
     --sel-bg:#1b2a6b; --sel-fg:#a9d0fb;
   }
 }
@@ -108,6 +116,8 @@
   --ok-bg:#0e2c25; --ng-bg:#331a24;
   /* Гол товч — палитрын хүчтэй хөх; цагаан бичиг дээр нь уншигдана. */
   --btn-bg:#1e28c4;
+  /* Бараан дээрх hover — дээрхтэй ИЖИЛ (6.5:1). */
+  --btn-hov:#3a46e8;
   --sel-bg:#1b2a6b; --sel-fg:#a9d0fb;
 }
 
@@ -376,7 +386,7 @@ button:active:not(:disabled){transform:scale(.985)}
    тул үндсэн үйлдэлд бэх, тамга/явцад л 朱. */
 .primary{background:var(--btn-bg); color:var(--btn-fg); border:0; padding:14px 20px;
          font-weight:400; letter-spacing:.06em; box-shadow:var(--elev)}
-.primary:hover{background:var(--accent)}
+.primary:hover{background:var(--btn-hov)}
 .ghost{background:transparent; color:var(--ink); border:1px solid var(--line-2);
        padding:9px 14px}
 .ghost:hover{border-color:var(--ink)}
@@ -384,6 +394,14 @@ button:active:not(:disabled){transform:scale(.985)}
    байсан — заагаас доогуур). */
 .ghost.sm{padding:8px 11px; font-size:14px; min-height:44px}
 .ghost.danger{color:var(--ng); border-color:var(--ng)}
+/* Сонгосон `.ghost` (өдрийн зорилт 10/20/30/50). Урьд нь `aria-pressed`
+   зөвхөн JS-д л тавигдаж, ХАРАГДАХ ялгаа байгаагүй — аль нь идэвхтэйг
+   мэдэх арга байсангүй. `.lessons`, `.klist`-ийн сонгосон төлөвтэй ижил
+   хэлээр: `--sel-bg` дүүргэлт, `--sel-fg` бичиг. */
+.ghost[aria-pressed="true"]{
+  background:var(--sel-bg); border-color:var(--sel-fg); color:var(--sel-fg);
+  font-weight:600;
+}
 .big{width:100%; padding:16px; font-size:16px}
 .ok{background:var(--ok-bg); color:var(--ok); border:1px solid currentColor}
 .ng{background:var(--ng-bg); color:var(--ng); border:1px solid currentColor}
@@ -589,12 +607,12 @@ button:disabled{opacity:.42; cursor:default}
 /* Ганц дүрс бол ханзтай ижил ТОМ — картын голыг дүүргэнэ. */
 .prompt.emoji.one{font-size:116px}
 .a-kj{margin-top:14px; font-size:14px; color:var(--ink-2); text-align:left}
-.a-kj > div{margin-top:4px}
+.a-kj > div{margin-top:9px}
 .a-kj b{display:inline-block; min-width:24px; color:var(--ink-3);
         font-family:var(--jp); font-weight:400; font-size:12px}
 .a-kj .jp{color:var(--ink); font-size:16px; font-family:var(--jp)}
 .kws{margin-top:14px; border-top:1px solid var(--line); padding-top:11px}
-.kw{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline; margin-top:6px}
+.kw{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:center; margin-top:9px}
 /* Жишээ үг: толгой үг нь бэх, уншлага нь бүдэг. Урьд нь `.kw > .jp`
    нь толгой үгийг ЧУ улаанаар будаж (b.jp бас шууд хүү), гурван мөр
    улаан гарч «朱 нь ховор» гэсэн зарчмыг эвддэг байв. */
@@ -603,8 +621,15 @@ button:disabled{opacity:.42; cursor:default}
 .kw > span.jp{font-size:13px; color:var(--ink-2)}
 .kw > span:not(:last-child){font-size:13px}
 .kw span{font-size:13px; color:var(--ink-2)}
+/* Дууны товч. Урьд нь 26×13px байв — хүүхдийн хуруунд хэтэрхий жижиг.
+   Мөрийн алхам (~34px) нь 44px-ийн зөвлөмжийг зөвшөөрөхгүй: тийм өндөр
+   товч ДЭЭД доод мөрийн товчтойгоо давхцаж, буруу мөрийн дуу гарна.
+   Тиймээс мөрийн алхмыг өргөсгөөд түүнд БАГТАХ дээд хэмжээг авав. */
 .rsp{background:none; border:0; padding:0 5px; font-size:13px; opacity:.4;
      line-height:1; vertical-align:middle}
+/* `.kw` нь flex мөр тул урт үг орвол товчийг 4px хүртэл ШАХДАГ байв
+   (тест олов). Дуу нь хэзээ ч шахагдах ёсгүй. */
+.a-kj .rsp{font-size:15px; padding:9px 10px; opacity:.55; flex:0 0 auto}
 .rsp:hover{opacity:1}
 
 .exs{margin-top:14px; padding-top:12px; border-top:1px solid var(--line);
@@ -653,6 +678,11 @@ button:disabled{opacity:.42; cursor:default}
 }
 .choices button.wrong::after{content:'誤'; position:absolute; right:8px;
   font-family:var(--jpd); color:var(--ng); opacity:.8}
+/* Хариулсны дараа бүх сонголт `disabled` болдог тул ерөнхий
+   `button:disabled{opacity:.42}` нь ЗӨВ хариултыг ч бүдгэрүүлж байв —
+   сурагчийн яг цээжлэх ёстой зүйл нь тэр. Зөв ба буруу хоёрыг бүрэн тод
+   үлдээнэ; сонгоогүй үлдсэн мөрүүд нь л бүдгэрч, тодруулгыг нь өгнө. */
+.choices button.correct,.choices button.wrong{opacity:1}
 @keyframes shake{
   10%,90%{transform:translateX(-2px)} 30%,70%{transform:translateX(3px)}
   50%{transform:translateX(-3px)}
@@ -850,7 +880,13 @@ html{background:var(--bg)}
 /* ── Шалгалт (харилцааны, өөрөө үнэлэх) ──────────────────────────── */
 .ex-top{display:flex; align-items:center; gap:12px; margin-bottom:18px}
 .ex-pos{font-family:var(--mono); font-size:14px; color:var(--ink-2); white-space:nowrap}
-.ex-top .track{flex:1}
+/* Явцын зураас — `.tgoal`-ийнхтэй ИЖИЛ зарчим. Урьд нь зөвхөн `flex:1`
+   байсан тул өндөр нь 0, дэвсгэр нь тунгалаг: JS өргөнийг нь тааруулсан
+   ч хэрэглэгч юу ч хардаггүй байв. */
+.ex-top .track{flex:1; height:var(--track-h); background:var(--line);
+               border-radius:var(--r); overflow:hidden}
+.ex-top .fill{display:block; height:100%; width:0; background:var(--accent-2);
+              transition:width .25s}
 .ex-topic{font-size:13px; color:var(--ink-3); letter-spacing:.04em; margin-bottom:10px}
 .ex-q{font-family:var(--jps); font-size:26px; line-height:1.55; color:var(--ink)}
 .ex-qmn{font-size:15px; color:var(--ink-2); margin:8px 0 22px}
