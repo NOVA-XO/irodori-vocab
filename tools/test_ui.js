@@ -1492,6 +1492,40 @@ async function run(c) {
   ok('байгаа `sent`-ийг дарж бичихгүй',
     mig && mig.explicit === 'zzzzzzzz99999999', JSON.stringify(mig));
 
+  /* Нэр нь төхөөрөмж тус бүрд хадгалагддаг тул нөгөө дээрээ зассаныг
+     энэ талдаа мэдэхгүй байв. Сервер хүчинтэй нэрийг буцаана — клиент
+     түүнийг аваад тавина. Тайлбарт BACKTICK бичихгүй. */
+  const nm = await c.ev(`
+    const keep = { rpc: rpc, dev: isDevHost, me: JSON.parse(JSON.stringify(me)) };
+    const F = { calls: [] };
+    rpc = async (fn, b) => {
+      F.calls.push({ fn: fn, b: b });
+      if (fn === 'member_put') return { mica: 'ok', name: 'Өлзийбаяр' };
+      return null;
+    };
+    isDevHost = () => false;
+    me.codes = { mica: '1111' }; me.teach = {}; me.other = false; me.done = true;
+    me.name = 'Admin'; me.nameAt = 1234; me.sent = ''; save(KEY_ME, me);
+    lastMemberSync = 0;
+    await memberSync(true);
+    await new Promise(r => setTimeout(r, 100));
+    const sent = F.calls.filter(x => x.fn === 'member_put').pop();
+    const out = {
+      adopted: me.name,
+      saved: load(KEY_ME, {}).name,
+      sentAt: sent ? sent.b.p_name_at : null,
+      srv: JSON.stringify(me.srv),
+      card: document.getElementById('me-classes').textContent,
+    };
+    rpc = keep.rpc; isDevHost = keep.dev; me = cleanMe(keep.me); save(KEY_ME, me);
+    refreshMe();
+    return out;
+  `);
+  ok('нөгөө төхөөрөмж дээр зассан нэрийг АВЧ тавина',
+    nm && nm.adopted === 'Өлзийбаяр' && nm.saved === 'Өлзийбаяр', JSON.stringify(nm));
+  ok('нэр зассан цагийг серверт илгээнэ', nm && nm.sentAt === 1234, JSON.stringify(nm));
+  ok('`name` нь ангийн жагсаалтад ОРОХГҮЙ', nm && nm.srv === '["mica"]', JSON.stringify(nm));
+
   ok('синкгүй бол ТӨХӨӨРӨМЖИЙН id', one && one.noSync, JSON.stringify(one));
   ok('синктэй бол кодоос гаргасан id', one && one.derived, JSON.stringify(one));
   ok('ИЖИЛ кодтой хоёр төхөөрөмж -> ИЖИЛ id (нэг нэр)',

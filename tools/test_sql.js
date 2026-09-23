@@ -247,6 +247,31 @@ async function main() {
   await db.exec("delete from public.members");
   await resetFails();
 
+  console.log('\n[11] Нэр нийлүүлэх — хамгийн СҮҮЛД ЗАССАН нь ялна');
+  await db.exec("delete from public.members");
+  const putN = (m, n, at) => one(
+    'select public.member_put($1,$2,$3::jsonb,0,0,0,0,null,null,$4) as r',
+    [m, n, JSON.stringify({ mica: '5173' }), at]).then(r => r.r);
+
+  let n1 = await putN('memberN00001', 'Өлзийбаяр', 1000);
+  ok('эхний бичилт — нэр хадгалагдаж БУЦААНА',
+    n1.name === 'Өлзийбаяр' && n1.mica === 'ok', JSON.stringify(n1));
+  n1 = await putN('memberN00001', 'Admin', 500);
+  ok('ХУУЧИН засвар (бага `name_at`) дарж бичихгүй; шинэ нэрийг буцаана',
+    n1.name === 'Өлзийбаяр', JSON.stringify(n1));
+  n1 = await putN('memberN00001', 'Admin', 2000);
+  ok('ШИНЭ засвар дарна', n1.name === 'Admin', JSON.stringify(n1));
+  n1 = await putN('memberN00001', 'Хуучин апп', 0);
+  ok('ХУУЧИН клиент (name_at = 0) хэзээ ч дарахгүй', n1.name === 'Admin', JSON.stringify(n1));
+  // Хуучин гарын үсэг (10 биш 9 параметр) УСТСАН — хоёр функц зэрэгцвэл
+  // PostgREST аль нь гэдгийг ялгаж чадахгүй.
+  const fn2 = (await one("select count(*) as n from pg_proc where proname = 'member_put'")).n;
+  ok('member_put ганц хувилбартай хэвээр', Number(fn2) === 1, String(fn2));
+  const nat = (await one("select name_at from public.members where member='memberN00001'")).name_at;
+  ok('`name_at` нь ХАМГИЙН ИХ утгыг барина', Number(nat) === 2000, String(nat));
+  await db.exec("delete from public.members");
+  await resetFails();
+
   console.log('\n[10] Багш — тусдаа код, даалгавар тавих, ХУГАЦАА');
   await db.exec("delete from public.members");
   await db.exec("update public.classes set tcode = '246802' where id = 'mica'");

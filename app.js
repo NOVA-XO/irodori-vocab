@@ -3028,6 +3028,10 @@ function cleanMe(v) {
     // БАГШИЙН код (ангийн id -> код). Багш жагсаалтыг харах ба даалгавар
     // тавих эрхтэй; гишүүн БОЛОХГҮЙ — нэр нь серверт очихгүй.
     teach: teachClean(o.teach),
+    // Нэрийг ХЭЗЭЭ зассан (мс). Хоёр төхөөрөмж нэг мөр хуваалцдаг тул
+    // хамгийн сүүлд зассан нэр ялна — синкийн дараалал хамаарахгүй.
+    nameAt: (typeof o.nameAt === 'number' && isFinite(o.nameAt) && o.nameAt > 0)
+      ? Math.min(o.nameAt, 4102444800000) : 0,
   };
 }
 
@@ -3255,6 +3259,7 @@ function memberWrite(key, ids) {
     p_day: today(),
     // Ангигүй бол илгээхгүй — сервер мөрийг устгана.
     p_exam: ids.length ? exHist : null,
+    p_name_at: me.nameAt || 0,
   };
   return rpc('member_put', body).then(res => {
     if (!res || typeof res !== 'object' || res.error) return res;
@@ -3266,7 +3271,15 @@ function memberWrite(key, ids) {
         if (!me.lost.includes(k)) me.lost.push(k);
       }
     }
-    me.srv = Object.keys(res).filter(k => res[k] === 'ok');
+    // `name` нь ангийн id БИШ — хэрэглэгчийн нэр «ok» байвал андуурахгүй.
+    me.srv = Object.keys(res).filter(k => k !== 'name' && res[k] === 'ok');
+    /* Нөгөө төхөөрөмж дээр нэрээ зассан бол сервер ТҮҮНИЙГ буцаана —
+       энд аваад тавина. Ингэснээр хоёр төхөөрөмж ижил нэртэй болно. */
+    if (typeof res.name === 'string' && res.name && res.name !== me.name) {
+      me.name = res.name;
+      me.nameAt = Date.now();          // одоо энэ нь бидний мэдэх хамгийн шинэ
+      dropped = true;                  // дэлгэцийг шинэчлүүлнэ
+    }
     save(KEY_ME, me);
     if (dropped) refreshMe();
     return res;
@@ -3423,6 +3436,7 @@ async function saveSetup() {
     }
     if (bad) { suNote('Кодоо шалгана уу.', true); return; }
 
+    if (name !== me.name) me.nameAt = Date.now();
     me.name = name;
     // Багшийн кодтой ангиуд нь `codes`-д ОРОХГҮЙ (гишүүн биш).
     me.teach = teach;

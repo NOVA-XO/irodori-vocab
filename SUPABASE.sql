@@ -523,6 +523,10 @@ alter table public.classes add column if not exists tcode text;
 -- ангийнхан бие биеийн аль асуултад юу гэж хариулсныг харахгүй;
 -- `class_roster` зөвхөн ТООГ бодож буцаана.
 alter table public.members add column if not exists exam jsonb not null default '{}'::jsonb;
+-- Нэрийг ХЭЗЭЭ зассаныг (клиентийн цаг, мс). Утас, компьютер нэг мөр
+-- хуваалцдаг тул аль нь бичихээс хамаарч нэр ээлжлэн солигддог байв.
+-- Одоо хамгийн СҮҮЛД ЗАССАН нэр ялна — дараалал хамаарахгүй.
+alter table public.members add column if not exists name_at bigint not null default 0;
 
 -- ── Кодыг шалгах — БҮХ ангийн хандалт энэ ганц газраар дамжина ─────────
 -- Буцаах утга: 'ok' | 'teacher' | 'bad' | 'locked' | 'none'. Клиентэд «түгжигдсэн»
@@ -585,6 +589,7 @@ $cl$;
 -- функц зэрэгцэж, PostgREST аль нь гэдгийг ялгаж чадахгүй (ping-д ч ийм
 -- байсан). `p_exam` нь default-тай тул кэшлэгдсэн ХУУЧИН клиент тасрахгүй.
 drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int);
+drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int, jsonb);
 
 create or replace function public.member_put(
   p_member  text,
@@ -595,7 +600,8 @@ create or replace function public.member_put(
   p_today   int default 0,
   p_streak  int default 0,
   p_day     int default null,
-  p_exam    jsonb default null)
+  p_exam    jsonb default null,
+  p_name_at bigint default 0)
 returns jsonb
 language plpgsql
 security definer
@@ -609,6 +615,8 @@ declare
   nm  text   := left(btrim(coalesce(p_name, '')), 40);
   cap int;
   ex  jsonb  := null;                   -- null = хуучин клиент, байгааг хадгална
+  nat bigint := least(greatest(coalesce(p_name_at, 0), 0), 4102444800000);
+  eff text;                             -- эцсийн нэр — клиент үүнийг аваад тавина
 begin
   if p_member is null or length(p_member) not between 8 and 64 then
     return jsonb_build_object('error', 'bad member');
@@ -652,21 +660,29 @@ begin
   end if;
 
   insert into public.members as m
-    (member, name, classes, seen, learned, today, streak, day, exam)
+    (member, name, classes, seen, learned, today, streak, day, exam, name_at)
   values
     (p_member, nm, ok,
      least(greatest(coalesce(p_seen,    0), 0), 1000000),
      least(greatest(coalesce(p_learned, 0), 0), 1000000),
      least(greatest(coalesce(p_today,   0), 0), 100000),
      least(greatest(coalesce(p_streak,  0), 0), 100000),
-     p_day, coalesce(ex, '{}'::jsonb))
+     p_day, coalesce(ex, '{}'::jsonb), nat)
   on conflict (member) do update
-    set name = excluded.name, classes = excluded.classes,
+    -- Нэрийг зөвхөн ШИНЭ засвар дарна. Хуучин клиент (`name_at` = 0)
+    -- хэзээ ч дарж бичихгүй — эс тэгвэл шинэ нэр буцаад алга болно.
+    set name = case when nat >= m.name_at then excluded.name else m.name end,
+        name_at = greatest(m.name_at, nat),
+        classes = excluded.classes,
         seen = excluded.seen, learned = excluded.learned,
         today = excluded.today, streak = excluded.streak,
         day = excluded.day, updated_at = now(),
         -- `p_exam` илгээгээгүй (хуучин клиент) бол байгааг ДАРЖ БИЧИХГҮЙ.
-        exam = coalesce(ex, m.exam);
+        exam = coalesce(ex, m.exam)
+  returning m.name into eff;
+  -- Хүчинтэй нэрийг буцаана: нөгөө төхөөрөмж дээр шинэ нэр тавьсан бол
+  -- энэ клиент түүнийг аваад өөр дээрээ тавина.
+  res := res || jsonb_build_object('name', eff);
   return res;
 end;
 $mp$;
@@ -798,11 +814,11 @@ $ts$;
 
 revoke all on function public.class_join(text, text)  from public;
 revoke all on function public.class_list()            from public;
-revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb) from public;
+revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint) from public;
 revoke all on function public.class_roster(text, text, text) from public;
 grant execute on function public.class_join(text, text)  to anon;
 grant execute on function public.class_list()            to anon;
-grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb) to anon;
+grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint) to anon;
 grant execute on function public.class_roster(text, text, text) to anon;
 revoke all on function public.task_set(text, text, jsonb, int, int, text) from public;
 grant execute on function public.task_set(text, text, jsonb, int, int, text) to anon;
