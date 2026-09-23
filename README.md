@@ -70,8 +70,8 @@ Japan Foundation-ы **Irodori** сурах бичгийн *Шинэ үгийн �
 | **Уншлага** | Ханзны 音読み-г сонгоно | хоёуланд |
 | `Эможи → 漢字` | 🌳🌳🌳 гэх мэт зураг харж ханзыг нь сонгоно (森) | **зөвхөн JLPT** |
 
-**Эможи горим** нь `data/kanji-emoji.json`-д байгаа **145 ханз** дээр л ажиллана
-(N5 53 · N4 39 · N3 25 · N2 20 · түвшингүй 8). Зөвхөн эможигоор **эргэлзээгүй
+**Эможи горим** нь `data/kanji-emoji.json`-д байгаа **144 ханз** дээр л ажиллана
+(N5 52 · N4 39 · N3 25 · N2 20 · түвшингүй 8). Зөвхөн эможигоор **эргэлзээгүй
 илэрхийлэгдэх** ханз орсон: `森 🌳🌳🌳`, `日 ☀️`, `雨 🌧️`. Эможи нь ханз бүрд
 **цорын ганц** байх ёстой — хоёр ханз ижил дүрстэй бол 4 сонголтын хоёр нь ч зөв
 мэт харагдана. Үүсгэгч нь давхардсаныг **хоёуланг нь хаядаг**, сандруулагч нь ч
@@ -302,7 +302,7 @@ sw.js · manifest.webmanifest       офлайн PWA (утсанд суулга�
 icons/                             аппын дүрс
 data/kana.json                     107 кана — хирагана/катакана/авиа
 data/kanji.json                    1187 ханз — 3 номынх + JLPT N5–N2
-data/kanji-emoji.json              145 ханзны эможи (🌳🌳🌳 = 森)
+data/kanji-emoji.json              144 ханзны эможи (🌳🌳🌳 = 森)
 data/REVIEW.md                     PDF-ээс дутуу задарсан бичлэгүүд
 tools/extract_vocab.py             PDF -> vocab_raw*.json  (PyMuPDF, 3 ном)
 tools/lesson0.json                 L0-ын үгс (гараар, PDF-д байхгүй)
@@ -310,7 +310,7 @@ tools/fixes.json                   дутуу задарсан бичлэгий�
 tools/build_data.py                vocab_raw.json + lesson0 -> data/vocab.json
 tools/build_kana.py                -> data/kana.json (катакан нь кодын шилжилтээр)
 tools/build_kanji.py               KANJIDIC2 + JLPT -> data/kanji.json
-tools/build_emoji.py               kanji.json -> data/kanji-emoji.json (145 ханз)
+tools/build_emoji.py               kanji.json -> data/kanji-emoji.json (144 ханз)
 tools/kanji_mn*.json               ханзны монгол утга (гараар, түвшин тус бүрээр)
 tools/build_audio.py               VOICEVOX -> audio/*.mp3 (өргөлтийг номоор)
 tools/test_answers.js              хариулт шалгагчийн тест (node)
