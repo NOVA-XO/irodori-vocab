@@ -594,6 +594,7 @@ $cl$;
 -- байсан). `p_exam` нь default-тай тул кэшлэгдсэн ХУУЧИН клиент тасрахгүй.
 drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int);
 drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int, jsonb);
+drop function if exists public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint);
 
 create or replace function public.member_put(
   p_member  text,
@@ -605,7 +606,10 @@ create or replace function public.member_put(
   p_streak  int default 0,
   p_day     int default null,
   p_exam    jsonb default null,
-  p_name_at bigint default 0)
+  p_name_at bigint default 0,
+  -- «Явцыг устгах» — уусгахгүй, ДАРЖ бичнэ. Үүнгүй бол хэрэглэгч явцаа
+  -- устгасан ч ангид хуучин хувь нь үлдэж, хоёр өөр тоо харагдана.
+  p_wipe    boolean default false)
 returns jsonb
 language plpgsql
 security definer
@@ -669,6 +673,10 @@ begin
 
     -- УУСГАНА: асуулт тутамд СҮҮЛИЙН өдрийн хариултыг авна. 400 түлхүүр
     -- хүртэл — сан 100 асуулттай тул энэ нь хэтрэхгүй.
+    -- `p_wipe` үед уусгахгүй: ирсэн зүйл нь ЭЦСИЙН утга.
+    if coalesce(p_wipe, false) then
+      cur := '{}'::jsonb;
+    end if;
     -- Багана нь plpgsql-ийн `k` хувьсагчтай мөргөлдөхгүй нэртэй байна.
     select coalesce(jsonb_object_agg(qk, qv), '{}'::jsonb) into ex from (
       select coalesce(o.key, n.key) as qk,
@@ -843,11 +851,11 @@ $ts$;
 
 revoke all on function public.class_join(text, text)  from public;
 revoke all on function public.class_list()            from public;
-revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint) from public;
+revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean) from public;
 revoke all on function public.class_roster(text, text, text) from public;
 grant execute on function public.class_join(text, text)  to anon;
 grant execute on function public.class_list()            to anon;
-grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint) to anon;
+grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean) to anon;
 grant execute on function public.class_roster(text, text, text) to anon;
 revoke all on function public.task_set(text, text, jsonb, int, int, text) from public;
 grant execute on function public.task_set(text, text, jsonb, int, int, text) to anon;

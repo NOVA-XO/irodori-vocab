@@ -1606,6 +1606,44 @@ async function run(c) {
   ok('ангийн жагсаалт өөрийг нь ижил id-гаар таниулна',
     one && one.rosterMember && one.rosterMember === one.k1, JSON.stringify(one));
 
+  console.log('\n[34] «Явцыг устгах» — шалгалтын хариулт серверээс ч устана');
+  /* Уусгалт нэмсний дараа хоосон түүх юу ч устгахаа больсон (зөв). Гэвч
+     устгах товч ч устгаж чадахаа больсон: хэрэглэгч шалгалтын дэлгэцэд
+     «0/20», ангийн жагсаалтад «20/20» гэсэн ХОЁР ӨӨР тоо харах байв.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const wp = await c.ev(`
+    const keep = { rpc: rpc, dev: isDevHost, me: JSON.parse(JSON.stringify(me)),
+                   hist: exHist, prog: progress, days: days, conf: window.confirm,
+                   raw: localStorage.getItem(KEY_P) };
+    const F = { calls: [] };
+    rpc = async (fn, b) => { F.calls.push({ fn: fn, b: b }); return { mica: 'ok' }; };
+    isDevHost = () => false;
+    window.confirm = () => true;
+    me.codes = { mica: '1111' }; me.teach = {}; me.other = false; me.done = true;
+    me.name = 'Бат'; me.sent = ''; save(KEY_ME, me);
+    exHist = { S01: [today(), 1, 1] }; save(KEY_EXH, exHist);
+    lastMemberSync = 0;
+    document.getElementById('btn-reset').click();
+    await new Promise(r => setTimeout(r, 600));
+    const put = F.calls.filter(x => x.fn === 'member_put').pop();
+    const out = {
+      wipe: put ? put.b.p_wipe : null,
+      examSent: put ? JSON.stringify(put.b.p_exam) : null,
+      local: Object.keys(exHist).length,
+    };
+    rpc = keep.rpc; isDevHost = keep.dev; window.confirm = keep.conf;
+    me = cleanMe(keep.me); save(KEY_ME, me);
+    exHist = keep.hist; save(KEY_EXH, exHist);
+    progress = keep.prog; days = keep.days;
+    if (keep.raw === null) localStorage.removeItem(KEY_P);
+    else localStorage.setItem(KEY_P, keep.raw);
+    save(KEY_D, days); refreshHome(); refreshStats();
+    return out;
+  `);
+  ok('устгах товч серверт `p_wipe` илгээнэ (уусгахгүй, дарж бичнэ)',
+    wp && wp.wipe === true && wp.examSent === '{}', JSON.stringify(wp));
+  ok('локал шалгалтын түүх ч цэвэрлэгдэнэ', wp && wp.local === 0, JSON.stringify(wp));
+
   console.log('\n[30] Ангийн даалгавар — L1–L8-аас 20 өөр асуулт');
   /* Хуурамч сервер SQL-ийн дүрмийг дагана (SQL-ийг test_sql.js §9 шалгадаг):
      task_n = даалгаврын хичээлээс since-ээс хойш хариулсан ӨӨР асуулт.

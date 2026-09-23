@@ -278,11 +278,23 @@ async function main() {
   ex = (await one("select exam from public.members where member='memberX00001'")).exam;
   ok('ХУУЧИН өдрийн хариулт шинийг дарахгүй',
     JSON.stringify(ex.A1) === JSON.stringify([D1 + 2, 0, 1]), JSON.stringify(ex.A1));
+  // «Явцыг устгах» (p_wipe) — УУСГАХГҮЙ, дарж бичнэ
+  const wipe = (m, n, cls, exam) => one(
+    'select public.member_put($1,$2,$3::jsonb,0,0,0,0,null,$4::jsonb,0,true) as r',
+    [m, n, JSON.stringify(cls), JSON.stringify(exam)]).then(r => r.r);
+  await wipe('memberX00001', 'Бат', { mica: '5173' }, {});
+  ex = (await one("select exam from public.members where member='memberX00001'")).exam;
+  ok('«Явцыг устгах» -> хариулт СЕРВЕРЭЭС ч устана',
+    Object.keys(ex).length === 0, JSON.stringify(ex));
+  await putEx('memberX00001', 'Бат', { mica: '5173' }, { B1: [D1, 1, 1] });
+  ex = (await one("select exam from public.members where member='memberX00001'")).exam;
+  ok('устгасны дараа дахин хуримтлагдана', Object.keys(ex).join() === 'B1', JSON.stringify(ex));
+
   // Хуучин клиент (p_exam = null) — огт хөндөхгүй
   await one("select public.member_put('memberX00001','Бат','{\"mica\":\"5173\"}'::jsonb,1,1,1,1,1) as r");
   ex = (await one("select exam from public.members where member='memberX00001'")).exam;
   ok('хуучин клиент (p_exam null) хариултыг хөндөхгүй',
-    Object.keys(ex).length === 3, JSON.stringify(ex));
+    Object.keys(ex).join() === 'B1', JSON.stringify(ex));
   await db.exec("delete from public.members");
   await resetFails();
 

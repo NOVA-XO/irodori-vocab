@@ -363,7 +363,7 @@ h2{
   letter-spacing:var(--h2-ls); color:var(--ink-2); font-weight:400;
   margin:38px 0 14px; padding-bottom:8px; border-bottom:var(--h2-bd);
 }
-.screen > h2:first-of-type{margin-top:20px}
+.screen > h2:first-child{margin-top:20px}
 
 /* ---------- товч ---------- */
 button{font:inherit; cursor:pointer; border-radius:var(--r); border:1px solid transparent;
@@ -382,7 +382,7 @@ button:active:not(:disabled){transform:scale(.985)}
 .ghost:hover{border-color:var(--ink)}
 /* Утсан дээр хуруу таарахын тулд 40px доод хязгаар (шалгахад 39px
    байсан — заагаас доогуур). */
-.ghost.sm{padding:8px 11px; font-size:14px; min-height:40px}
+.ghost.sm{padding:8px 11px; font-size:14px; min-height:44px}
 .ghost.danger{color:var(--ng); border-color:var(--ng)}
 .big{width:100%; padding:16px; font-size:16px}
 .ok{background:var(--ok-bg); color:var(--ok); border:1px solid currentColor}
@@ -391,7 +391,9 @@ button:disabled{opacity:.42; cursor:default}
 
 .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:12px}
 .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-.chk{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--ink-2)}
+.chk{display:flex; align-items:center; gap:9px; min-height:44px;
+     font-size:13px; color:var(--ink-2)}
+.chk input{width:18px; height:18px; flex:none}
 
 /* ---------- нүүр ---------- */
 /* Өнөөдөр давтах тоо — хуудасны гол дүр. Хайрцаггүй, зөвхөн том тоо. */
@@ -766,9 +768,6 @@ button:disabled{opacity:.42; cursor:default}
 .statles.wide .l .jpd{font-size:15px}
 /* Явцын таб 6 ширхэг. 6 багана болговол утсан дээр «初級1» шахагдаж
    уншигдахгүй болдог тул 3×2. */
-.lessons.stabs{grid-template-columns:repeat(3,1fr); margin-bottom:14px}
-.lessons.stabs button{font-size:14px; padding:12px 0 10px}
-.lessons.stabs .jpd{font-size:16px}
 .lg{display:inline-flex; align-items:center; gap:5px; margin-left:12px;
     white-space:nowrap}
 .lg i{width:14px; height:2px; border-radius:0; background:var(--accent);
@@ -791,7 +790,6 @@ button:disabled{opacity:.42; cursor:default}
 #fb-body:focus,#fb-contact:focus{outline:0; border-bottom-color:var(--accent)}
 .fb-count{text-align:right; font-size:11px; color:var(--ink-3); margin-top:6px}
 a.ghost{display:inline-block; text-decoration:none}
-.bigcard.quiet .bc-jp{font-size:21px; color:var(--ink-3)}
 .synccode{
   font-family:var(--mono); font-size:20px; letter-spacing:.16em;
   background:none; border:0; border-bottom:1px solid var(--line-2); border-radius:0;

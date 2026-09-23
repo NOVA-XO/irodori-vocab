@@ -2874,7 +2874,8 @@ $('btn-reset').onclick = async () => {
   refreshStats();
   refreshHome();
   // Анги ч ТЭГ тоог харах ёстой — эс тэгвэл жагсаалтад хуучин тоо үлдэнэ.
-  memberSync(true);
+  // `wipe`: шалгалтын хариултыг серверээс ч устгана (уусгахгүй).
+  memberSync(true, true);
 
   /* СИНК нь устгасныг БУЦААЖ ТАТНА: `syncNow()` нь локал ба үүлний
      өгөгдлийг уусгадаг тул хоосон локал + бүтэн үүл = бүгд буцна.
@@ -3253,7 +3254,7 @@ let lastMemberSync = 0;
  *                 таах хязгаарыг (цагт 50) бүх сурагч хамтдаа дуусгана.
  *    locked     — түр. Кодыг ҮЛДЭЭНЭ.
  *  2 минутад нэгээс олонгүй (`force`-оос бусад үед). */
-function memberSync(force) {
+function memberSync(force, wipe) {
   if (!syncOn || isDevHost()) return Promise.resolve(null);
   const ids = myClasses();
   // «Бусад» бөгөөд серверт юу ч үлдээгүй — дуудах шалтгаан алга.
@@ -3262,21 +3263,21 @@ function memberSync(force) {
   if (!force && now - lastMemberSync < 120000) return Promise.resolve(null);
   lastMemberSync = now;
 
-  return deriveMember().then(key => memberPut(key, ids));
+  return deriveMember().then(key => memberPut(key, ids, wipe));
 }
 
 /** Нэг мөр бичих. `me.sent` нь СҮҮЛД бичсэн id — солигдсон бол (синк
  *  холбогдсон/салсан) хуучин мөрийг ЭХЛЭЭД устгана, эс тэгвэл нэг хүн
  *  жагсаалтад хоёр удаа үлдэнэ. */
-function memberPut(key, ids) {
+function memberPut(key, ids, wipe) {
   const old = me.sent;
   const stale = old && old !== key
     ? rpc('member_put', { p_member: old, p_name: '', p_classes: {} }).catch(() => null)
     : Promise.resolve(null);
-  return stale.then(() => memberWrite(key, ids));
+  return stale.then(() => memberWrite(key, ids, wipe));
 }
 
-function memberWrite(key, ids) {
+function memberWrite(key, ids, wipe) {
   const v = Object.values(progress);
   const body = {
     p_member: key,
@@ -3291,6 +3292,9 @@ function memberWrite(key, ids) {
     // Ангигүй бол илгээхгүй — сервер мөрийг устгана.
     p_exam: ids.length ? exHist : null,
     p_name_at: me.nameAt || 0,
+    // Устгах үед сервер ДАРЖ бичнэ — эс тэгвэл уусгалт хуучин хариултыг
+    // эргүүлж авчирч, ангид «20/20», шалгалтад «0/20» гэж зөрнө.
+    p_wipe: !!wipe,
   };
   return rpc('member_put', body).then(res => {
     if (!res || typeof res !== 'object' || res.error) return res;
