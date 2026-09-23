@@ -2816,7 +2816,7 @@
    "kana": "（ダブルバーガー）",
    "accent": "（ダブルバ↓ーガー）",
    "romaji": "(daburu baagaa)",
-   "mn": "/double burger/",
+   "mn": "（давхар бургер）",
    "ref": false
   },
   {
@@ -3234,7 +3234,7 @@
    "kana": "もりあわせ",
    "accent": "もりあわせ○",
    "romaji": "moriawase",
-   "mn": "assortment",
+   "mn": "хольсон багц (янз бүрийн зүйл нэг таваг дээр)",
    "ref": true
   },
   {
@@ -3245,7 +3245,7 @@
    "kana": "～てんもり（ななてんもり）",
    "accent": "～てんもり○（ななてんもり○）",
    "romaji": "～ten­mori (nana­ten­mori)",
-   "mn": "～ set of items (set of seven items)",
+   "mn": "～ төрлийн багц (7 төрлийн багц)",
    "ref": true
   },
   {
@@ -3300,7 +3300,7 @@
    "kana": "とくせいつくね",
    "accent": "とくせいつ↓くね",
    "romaji": "tokusee­tsukune",
-   "mn": "special tsukune (meatballs)",
+   "mn": "онцгой цүкүнэ (татсан махан бөмбөлөг)",
    "ref": true
   },
   {
@@ -4103,7 +4103,7 @@
    "kana": "ワイファイ",
    "accent": "ワイファイ○",
    "romaji": "wai­fai",
-   "mn": "Wi-Fi",
+   "mn": "Wi-Fi (утасгүй интернэт)",
    "ref": false
   },
   {
@@ -6025,9 +6025,9 @@
    "lesson": 10,
    "section": "ちょっと手伝ってください",
    "jp": "手伝って（ください）",
-   "kana": "って（ください）",
-   "accent": "↓って（くださ↓い）",
-   "romaji": "",
+   "kana": "てつだって（ください）",
+   "accent": "てつだ↓って（くださ↓い）",
+   "romaji": "tetsudatte (kudasai)",
    "mn": "Тусална уу.",
    "ref": false
   },
@@ -8456,9 +8456,9 @@
    "lesson": 13,
    "section": "何番線ですか？",
    "jp": "止まる／止まります",
-   "kana": "／とまります",
-   "accent": "○／とまりま↓す",
-   "romaji": "",
+   "kana": "とまる／とまります",
+   "accent": "とまる○／とまりま↓す",
+   "romaji": "tomaru / tomarimasu",
    "mn": "зогсох, зогсоно",
    "ref": false
   },
@@ -9988,7 +9988,7 @@
    "kana": "けいこうとう",
    "accent": "けいこうとう○",
    "romaji": "keekootoo",
-   "mn": "fluorescent light",
+   "mn": "флюресцент чийдэн",
    "ref": false
   },
   {
@@ -9999,7 +9999,7 @@
    "kana": "ダンベル",
    "accent": "ダンベル○",
    "romaji": "danberu",
-   "mn": "dumbbell",
+   "mn": "гантель (жинлүүр)",
    "ref": false
   },
   {
@@ -13219,8 +13219,8 @@
    "lesson": 18,
    "section": "日本で何がしたい？",
    "jp": "登る／登ります",
-   "kana": "／のぼります",
-   "accent": "○／のぼりま↓す",
+   "kana": "のぼる／のぼります",
+   "accent": "のぼる○／のぼりま↓す",
    "romaji": "noboru / noborimasu",
    "mn": "авирах",
    "ref": false

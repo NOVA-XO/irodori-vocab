@@ -1924,6 +1924,102 @@ async function run(c) {
   ok('--btn-hov гурван блок бүрд (цайвар + бараан 2) — нэгийг нь мартаагүй',
     d5 && d5.hovDecls === 3, JSON.stringify(d5 && d5.hovDecls));
 
+  console.log('\n[38] Дүрмийн дасгал — тайлбар + 20 дасгал');
+  /* Шалгалт нь ЧӨЛӨӨТ хариулттай (сурагч өөрөө үнэлнэ), дүрмийн дасгал нь
+     4 СОНГОЛТТОЙ тул апп өөрөө дүгнэнэ. Тиймээс энд дүгнэлт, хадгалалт,
+     алдсаны жагсаалт гурвыг бодитоор ажиллуулж шалгана.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const gr = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const out = {}, keep = localStorage.getItem('irodori.grammar.v1');
+    localStorage.removeItem('irodori.grammar.v1');
+    grStat = {};
+
+    // ── Өгөгдлийн БҮРЭН БАЙДАЛ ──
+    const pts = await loadGrammar();
+    out.n = pts.length;
+    out.drills = pts.reduce((a, p) => a + p.drills.length, 0);
+    out.each20 = pts.every(p => p.drills.length === 20);
+    out.hasText = pts.every(p => p.mn.length > 120 && p.ex.length >= 3);
+    const kanji = /[\u3400-\u9fff]/;
+    out.kanaClean = pts.every(p => p.drills.every(d => !kanji.test(d.kana))
+                                && p.ex.every(e => !kanji.test(e.kana)));
+    out.optsOk = pts.every(p => p.drills.every(d =>
+      d.opts.length === 4 && new Set(d.opts).size === 4
+      && d.a >= 0 && d.a < 4));
+    out.blankOk = pts.every(p => p.drills.every(d => d.jp.indexOf('＿') >= 0));
+
+    // ── Жагсаалт ──
+    go('grammar'); await wait(700);
+    out.screen = screen;
+    out.listN = document.querySelectorAll('#gr-list button').length;
+    out.homeN = document.getElementById('n-gram').textContent;
+
+    // ── Тайлбар ──
+    document.querySelector('#gr-list button').click(); await wait(250);
+    out.readShown = !document.getElementById('gr-read').hidden;
+    out.exN = document.querySelectorAll('#gr-ex > div').length;
+    out.mnLen = document.getElementById('gr-mn').textContent.length;
+
+    // ── 20 дасгал: БҮГДИЙГ ЗӨВ ──
+    document.getElementById('gr-start').click(); await wait(250);
+    out.runShown = !document.getElementById('gr-run').hidden;
+    out.optN = document.getElementById('gr-opts').children.length;
+    out.firstN = document.getElementById('gr-n').textContent;
+    for (let k = 0; k < 40 && !document.getElementById('gr-run').hidden; k++) {
+      [...document.getElementById('gr-opts').children][grQ[grIdx].a].click();
+      await wait(25);
+      document.getElementById('gr-next').click();
+      await wait(25);
+    }
+    out.doneShown = !document.getElementById('gr-done').hidden;
+    out.pct = document.getElementById('gr-pct').textContent;
+    out.saved = JSON.parse(localStorage.getItem('irodori.grammar.v1') || '{}');
+
+    // ── БҮГДИЙГ БУРУУ: алдсаны жагсаалт гарах ёстой ──
+    grAbort();
+    document.querySelector('#gr-list button').click(); await wait(200);
+    document.getElementById('gr-start').click(); await wait(200);
+    for (let k = 0; k < 40 && !document.getElementById('gr-run').hidden; k++) {
+      [...document.getElementById('gr-opts').children][(grQ[grIdx].a + 1) % 4].click();
+      await wait(25);
+      document.getElementById('gr-next').click();
+      await wait(25);
+    }
+    out.badPct = document.getElementById('gr-pct').textContent;
+    out.missN = document.querySelectorAll('#gr-miss > div').length;
+
+    // Дүрэм бүрийн дасгал нь ТУХАЙН хичээлийн хүрээнд байх (id таарна)
+    out.idOk = pts.every(p => p.drills.every(d => d.id.indexOf(p.id) === 0));
+
+    grAbort(); go('home');
+    if (keep === null) localStorage.removeItem('irodori.grammar.v1');
+    else localStorage.setItem('irodori.grammar.v1', keep);
+    grStat = JSON.parse(keep || '{}');
+    return out;
+  `);
+  ok('дүрэм бүр ЯГ 20 дасгалтай', gr && gr.each20 && gr.drills === gr.n * 20,
+    JSON.stringify(gr && { n: gr.n, drills: gr.drills, each20: gr.each20 }));
+  ok('дүрэм бүрд тайлбар ба 3 жишээ бий', gr && gr.hasText, JSON.stringify(gr && gr.hasText));
+  ok('кана талбарт ХАНЗ алга (かな горимд уншигдана)', gr && gr.kanaClean,
+    JSON.stringify(gr && gr.kanaClean));
+  ok('дасгал бүр 4 ДАВХАРДААГҮЙ сонголттой, хариулт нь мужид',
+    gr && gr.optsOk, JSON.stringify(gr && gr.optsOk));
+  ok('дасгал бүрд нөхөх нүд (＿) бий', gr && gr.blankOk, JSON.stringify(gr && gr.blankOk));
+  ok('жагсаалт нь дүрэм болгоныг харуулна, нүүр тоог хэлнэ',
+    gr && gr.screen === 'grammar' && gr.listN === gr.n
+      && gr.homeN === String(gr.drills), JSON.stringify(gr));
+  ok('дүрэм дарахад ТАЙЛБАР ба жишээ гарна',
+    gr && gr.readShown && gr.exN === 3 && gr.mnLen > 120, JSON.stringify(gr));
+  ok('«20 дасгал эхлүүлэх» нь 4 сонголттой дасгал нээнэ',
+    gr && gr.runShown && gr.optN === 4 && gr.firstN === '1 / 20', JSON.stringify(gr));
+  ok('бүгдийг зөв хариулбал 100%, үр дүн ХАДГАЛАГДАНА',
+    gr && gr.doneShown && gr.pct === '100%' && gr.saved.G01
+      && gr.saved.G01.ok === 20, JSON.stringify(gr && gr.saved));
+  ok('бүгдийг буруу хариулбал 0% ба АЛДСАН жагсаалт 20 мөр',
+    gr && gr.badPct === '0%' && gr.missN >= 20, JSON.stringify(gr));
+  ok('дасгалын id нь дүрмийнхээ id-аар эхэлнэ', gr && gr.idOk, JSON.stringify(gr && gr.idOk));
+
   console.log('\n[34] «Явцыг устгах» — шалгалтын хариулт серверээс ч устана');
   /* Уусгалт нэмсний дараа хоосон түүх юу ч устгахаа больсон (зөв). Гэвч
      устгах товч ч устгаж чадахаа больсон: хэрэглэгч шалгалтын дэлгэцэд
@@ -2888,9 +2984,9 @@ async function run(c) {
     dr && dr.opened.scrim === false, JSON.stringify(dr.opened));
   /* JLPT-ийн тугаас хамаарна — хатуу тоо бичвэл тугийг сольмогц унана.
      9 дэх нь «Анги» — зөвхөн ангид элссэн үед харагдана (энэ үед үгүй). */
-  ok('шургуулгад 9 бичлэг, «Анги» нуугдмал, JLPT нь тугийг дагана',
-    dr && dr.opened.items === 9
-      && dr.opened.shown === (jlptOn ? 8 : 7),
+  ok('шургуулгад 10 бичлэг, «Анги» нуугдмал, JLPT нь тугийг дагана',
+    dr && dr.opened.items === 10
+      && dr.opened.shown === (jlptOn ? 9 : 8),
     JSON.stringify(dr.opened) + ' jlptOn=' + jlptOn);
   ok('бичлэг БҮР иконтой',
     dr && dr.opened.icons === dr.opened.items, JSON.stringify(dr.opened));

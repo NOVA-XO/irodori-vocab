@@ -1178,3 +1178,57 @@ html{background:var(--bg)}
   .ex-task{grid-template-columns:minmax(0,1fr); gap:8px}
   .ex-task-pick{justify-self:end}
 }
+
+/* ── ДҮРМИЙН ДАСГАЛ ──────────────────────────────────────────────── */
+.gr-list{display:grid; gap:var(--list-gap)}
+.gr-list button{display:grid; grid-template-columns:auto 1fr auto; gap:4px 12px;
+  align-items:center; text-align:left; background:var(--box-bg);
+  border:var(--box-bd); border-bottom:var(--box-sep); border-radius:var(--box-r);
+  box-shadow:var(--elev); padding:15px var(--box-pad); color:var(--ink);
+  min-height:44px}
+.gr-list button:hover{background:var(--card)}
+.gr-list .gr-l{font-family:var(--disp); font-size:11px; color:var(--ink-3);
+  letter-spacing:.14em}
+.gr-list .gr-t{font-family:var(--jpd); font-size:19px; color:var(--ink)}
+.gr-list .gr-s{grid-column:2/4; font-size:12.5px; color:var(--ink-2)}
+/* Дүүргэсэн дугуй = энэ дүрмийг хэдэн хувь зөв хийсэн бэ */
+.gr-list .gr-p{font-family:var(--disp); font-size:12px; color:var(--ink-3);
+  white-space:nowrap}
+.gr-list button.is-done .gr-p{color:var(--ok)}
+
+.gr-head{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline;
+  margin-bottom:14px}
+.gr-head .gr-l{font-family:var(--disp); font-size:11px; color:var(--ink-3);
+  letter-spacing:.14em}
+.gr-head b{font-size:23px; font-weight:400}
+.gr-head .gr-form{font-size:13px; color:var(--ink-2)}
+/* Тайлбар — уншихад тохиромжтой мөрийн өндөр. Энэ нь аппын цорын ганц
+   УРТ бичвэр тул бусад дэлгэцээс өргөн мөр авна. */
+.gr-mn{font-size:15px; line-height:1.72; color:var(--ink)}
+.gr-mn p{margin:0 0 12px}
+.gr-mn b{font-weight:600; color:var(--accent)}
+.gr-mn .gr-line{font-family:var(--jpd); font-size:17px; color:var(--ink);
+  background:var(--box-bg); border-radius:10px; padding:10px 14px; margin:0 0 12px}
+.gr-ex > div{background:var(--box-bg); border:var(--box-bd);
+  border-radius:var(--box-r); padding:13px var(--box-pad); margin-bottom:10px}
+.gr-ex .jp{font-family:var(--jpd); font-size:18px; color:var(--ink)}
+.gr-ex .mn{font-size:13.5px; color:var(--ink-2); margin-top:5px}
+
+.gr-card{text-align:center; padding:26px var(--box-pad)}
+.gr-q{font-family:var(--jpd); font-size:24px; line-height:1.6; color:var(--ink);
+  word-break:break-word}
+.gr-q .bl,.gr-qmn .bl{white-space:nowrap; letter-spacing:-.04em}
+.gr-qmn{font-size:13.5px; color:var(--ink-2); margin-top:12px}
+.gr-n{font-family:var(--disp); font-size:14px; color:var(--ink-2);
+  font-variant-numeric:tabular-nums}
+#gr-opts button{font-family:var(--jpd); font-size:19px}
+.gr-miss{margin:14px 0 4px}
+.gr-miss > div{background:var(--box-bg); border-radius:12px; padding:10px 14px;
+  margin-bottom:8px; font-size:14px}
+.gr-miss .jp{font-family:var(--jpd); font-size:16px}
+.gr-miss .ok{background:none; border:0; color:var(--ok); padding:0;
+  font-family:var(--jpd)}
+
+@media (max-width:380px){
+  .gr-q{font-size:21px}
+}

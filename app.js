@@ -1644,7 +1644,7 @@ function finish() {
 /* ══════════════════════ 7. Дэлгэц солих ба нүүр ══════════════════════ */
 
 const SCREENS = ['home', 'irodori', 'jlpt', 'kana', 'study', 'done', 'exam',
-                 'feedback', 'stats', 'profile', 'setup', 'klass'];
+                 'feedback', 'stats', 'profile', 'setup', 'klass', 'grammar'];
 let screen = 'home';
 
 /* JLPT хэсгийг ТҮР унтраасан. Буцаахдаа зөвхөн энэ тугийг `true` болгоно —
@@ -1728,6 +1728,7 @@ function go(name) {
   if (name === 'klass') refreshKlass();
   if (name === 'feedback') refreshFb();
   if (name === 'exam') examSetup();
+  if (name === 'grammar') { grPane('gr-pick'); refreshGrammar(); }
   if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
   show(name);
 }
@@ -2017,6 +2018,13 @@ document.querySelectorAll('.mode[data-mode]').forEach(b =>
   b.onclick = () => startSession(b.dataset.mode, false, 'book'));
 document.querySelectorAll('.mode[data-k]').forEach(b =>
   b.onclick = () => startKana(b.dataset.k));
+$('gr-start').onclick = grStart;
+$('gr-again').onclick = grStart;
+$('gr-next').onclick = grNext;
+$('gr-back').onclick = grAbort;
+$('gr-stop').onclick = grAbort;
+$('gr-list-back').onclick = grAbort;
+
 document.querySelectorAll('.mode[data-kj]').forEach(b =>
   b.onclick = () => startKanji(b.dataset.kj, 'les'));
 document.querySelectorAll('.mode[data-kj2]').forEach(b =>
@@ -2442,6 +2450,159 @@ let exRun = 0, exTimer = null;
    шийдвэр. Даалгаврыг нүүрний хамгийн дээрх картаас нэг дарлагаар
    эхлүүлнэ (`renderHomeTasks`), тэр нь хангалттай. Энд эхлүүлбэл
    тохиргооны дэлгэц рүү хүрэх гарц ч үгүй болно. */
+/* ═══════════════════ ДҮРМИЙН ДАСГАЛ ═══════════════════
+ *
+ * Шалгалтаас ЯЛГААТАЙ: энд хариулт нь 4 сонголттой тул апп ӨӨРӨӨ
+ * дүгнэнэ (шалгалт нь чөлөөт хариулттай учир сурагч өөрөө үнэлдэг).
+ * Дүрэм тус бүр = тайлбар + 3 жишээ + 20 дасгал.
+ */
+const KEY_GR = 'irodori.grammar.v1';
+let GRAM = null;                 // data/grammar-starter.json-ий items
+let grStat = load(KEY_GR, {});   // {G01: {n, ok, d}} — сүүлийн үр дүн
+let grPoint = null, grQ = [], grIdx = 0, grOk = 0, grMiss = [], grLock = false;
+
+function loadGrammar() {
+  if (GRAM) return Promise.resolve(GRAM);
+  return fetch('data/grammar-starter.json')
+    .then(r => r.json())
+    .then(d => { GRAM = d.items; return GRAM; })
+    .catch(() => { GRAM = []; return GRAM; });
+}
+
+/** Тайлбарын энгийн тэмдэглэгээ: **тод**, догол мөр, доголтой жишээ. */
+function grText(mn) {
+  return mn.split(/\n\s*\n/).map(par => {
+    const line = par.replace(/\s+$/, '');
+    const body = esc(line.trim()).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+    // 4 зайгаар эхэлсэн догол = жишээ мөр (япон бичвэр)
+    return /^\s{4}/.test(line)
+      ? '<div class="gr-line">' + body + '</div>'
+      : '<p>' + body + '</p>';
+  }).join('');
+}
+
+function grPct(id) {
+  const st = grStat[id];
+  return st && st.n ? Math.round(100 * st.ok / st.n) : null;
+}
+
+function refreshGrammar() {
+  const box = $('gr-list');
+  if (!box) return;
+  loadGrammar().then(pts => {
+    const ng = $('n-gram');
+    if (ng) ng.textContent = pts.reduce((a, p) => a + p.drills.length, 0);
+    box.innerHTML = '';
+    for (const p of pts) {
+      const pc = grPct(p.id);
+      const b = document.createElement('button');
+      b.className = pc !== null && pc >= 80 ? 'is-done' : '';
+      b.innerHTML = '<span class="gr-l">L' + p.lesson + '</span>' +
+        '<span class="gr-t jp">' + esc(p.title) + '</span>' +
+        '<span class="gr-p">' + (pc === null ? p.drills.length + ' дасгал'
+                                             : pc + '%') + '</span>' +
+        '<span class="gr-s">' + esc(p.form) + '</span>';
+      b.onclick = () => grOpen(p.id);
+      box.appendChild(b);
+    }
+  });
+}
+
+function grPane(name) {
+  for (const id of ['gr-pick', 'gr-read', 'gr-run', 'gr-done'])
+    $(id).hidden = (id !== name);
+}
+
+function grOpen(id) {
+  const p = (GRAM || []).find(x => x.id === id);
+  if (!p) return;
+  grPoint = p;
+  $('gr-lesson').textContent = 'ХИЧЭЭЛ ' + p.lesson;
+  $('gr-title').textContent = p.title;
+  $('gr-form').textContent = p.form;
+  $('gr-mn').innerHTML = grText(p.mn);
+  $('gr-ex').innerHTML = p.ex.map(e =>
+    '<div><div class="jp">' + esc(settings.script === 'kana' ? e.kana : e.jp) +
+    '</div><div class="mn">' + esc(e.mn) + '</div></div>').join('');
+  grPane('gr-read');
+  window.scrollTo(0, 0);
+}
+
+function grStart() {
+  if (!grPoint) return;
+  grQ = shuffle(grPoint.drills.slice());
+  grIdx = 0; grOk = 0; grMiss = []; grLock = false;
+  grPane('gr-run');
+  grShow();
+}
+
+function grShow() {
+  const d = grQ[grIdx];
+  grLock = false;
+  $('gr-n').textContent = (grIdx + 1) + ' / ' + grQ.length;
+  $('gr-bar').style.width = Math.round(100 * grIdx / grQ.length) + '%';
+  /* ＿＿ нь хоёр тэмдэгт тул мөрийн төгсгөлд ХУВААГДАЖ, «＿» нэг мөрөнд
+     «＿。» нөгөөд нь очиж байв. Нэг блок болгон боож тасалдлыг хорино. */
+  const blank = t => esc(t).replace(/＿＿/g, '<span class="bl">＿＿</span>');
+  $('gr-q').innerHTML = blank(settings.script === 'kana' ? d.kana : d.jp);
+  // Монгол мөрөнд UI фонтын ＿ нь тасархай харагддаг тул зураасаар
+  $('gr-qmn').innerHTML = esc(d.mn).replace(/＿＿/g, '<span class="bl">____</span>');
+  $('gr-next').hidden = true;
+  const box = $('gr-opts');
+  box.innerHTML = '';
+  d.opts.forEach((o, i) => {
+    const b = document.createElement('button');
+    b.className = 'jpface';
+    b.dataset.k = i + 1;          // гарын түлхүүрийн дугаар (.choices-ийн загвар)
+    b.textContent = o;
+    b.onclick = () => grPick(i);
+    box.appendChild(b);
+  });
+  window.scrollTo(0, 0);
+}
+
+function grPick(i) {
+  if (grLock) return;
+  grLock = true;
+  const d = grQ[grIdx];
+  const btns = [...$('gr-opts').children];
+  btns.forEach(b => { b.disabled = true; });
+  btns[d.a].classList.add('correct');
+  if (i === d.a) { grOk++; sfx(true); }
+  else {
+    btns[i].classList.add('wrong');
+    grMiss.push(d);
+    sfx(false);
+  }
+  $('gr-next').hidden = false;
+  $('gr-next').textContent = grIdx + 1 >= grQ.length ? 'Дүгнэлт' : 'Дараах';
+}
+
+function grNext() {
+  grIdx++;
+  if (grIdx >= grQ.length) { grFinish(); return; }
+  grShow();
+}
+
+function grFinish() {
+  const n = grQ.length, pc = Math.round(100 * grOk / n);
+  grStat[grPoint.id] = { n: n, ok: grOk, d: today() };
+  save(KEY_GR, grStat);
+  $('gr-pct').textContent = pc + '%';
+  $('gr-sum').textContent = grOk + ' / ' + n + ' зөв · ' + grPoint.title;
+  $('gr-miss').innerHTML = grMiss.length
+    ? '<div class="gr-miss-h">Алдсан дасгал</div>' + grMiss.map(d =>
+        '<div><span class="jp">' +
+        esc((settings.script === 'kana' ? d.kana : d.jp)
+              .replace('＿＿', '（' + d.opts[d.a] + '）')) +
+        '</span></div>').join('')
+    : '';
+  grPane('gr-done');
+  window.scrollTo(0, 0);
+}
+
+function grAbort() { grPane('gr-pick'); refreshGrammar(); }
+
 function examSetup() {
   exAbort();
   $('ex-setup').hidden = false;

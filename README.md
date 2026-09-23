@@ -94,6 +94,20 @@ Japan Foundation-ы **Irodori** сурах бичгийн *Шинэ үгийн �
 Явц браузерын `localStorage`-д хадгалагдана (төхөөрөмж бүрд тусдаа), явцаа
 `.json` болгон гаргаж/сэргээж болно.
 
+## Дүрмийн дасгал
+
+Аппын шинэ хэсэг: дүрэм тус бүрт **тайлбар (монголоор) → 3 жишээ →
+20 дасгал**. Дасгал нь 4 сонголттой тул шууд зөв/буруугаа мэднэ; үр дүн
+нь дүрмийн жагсаалт дээр хувиар харагдана.
+
+Одоогоор **6 дүрэм · 120 дасгал** (L1–L6). Дасгалын эх сурвалж хоёр:
+гараар бичсэн (дүрмийн цөм) ба `data/vocab.json`-оос тухайн хичээлийн
+үгээр үүсгэсэн. Тиймээс дасгалд гарах үг **номын хүрээнээс гарахгүй**.
+
+Шинэ дүрэм нэмэх: `tools/build_grammar.py`-ийн `POINTS` жагсаалтад мөр
+нэмээд `python tools/build_grammar.py`. Дасгал 20 болоогүй, кана талбарт
+ханз үлдсэн, сонголт давхардсан бол **build зогсоно**.
+
 ## Төхөөрөмж хооронд нийлүүлэх (заавал биш)
 
 Явц анхдагчаар **зөвхөн тухайн браузерт** хадгалагдана. Утас, компьютер хоёрын
@@ -303,6 +317,7 @@ icons/                             аппын дүрс
 data/kana.json                     107 кана — хирагана/катакана/авиа
 data/kanji.json                    1187 ханз — 3 номынх + JLPT N5–N2
 data/kanji-emoji.json              144 ханзны эможи (🌳🌳🌳 = 森)
+data/grammar-starter.json          6 дүрэм · 120 дасгал (тайлбартай)
 data/REVIEW.md                     PDF-ээс дутуу задарсан бичлэгүүд
 tools/extract_vocab.py             PDF -> vocab_raw*.json  (PyMuPDF, 3 ном)
 tools/lesson0.json                 L0-ын үгс (гараар, PDF-д байхгүй)
@@ -311,6 +326,7 @@ tools/build_data.py                vocab_raw.json + lesson0 -> data/vocab.json
 tools/build_kana.py                -> data/kana.json (катакан нь кодын шилжилтээр)
 tools/build_kanji.py               KANJIDIC2 + JLPT -> data/kanji.json
 tools/build_emoji.py               kanji.json -> data/kanji-emoji.json (144 ханз)
+tools/build_grammar.py             дүрмийн тайлбар + дасгал -> data/grammar-starter.json
 tools/kanji_mn*.json               ханзны монгол утга (гараар, түвшин тус бүрээр)
 tools/build_audio.py               VOICEVOX -> audio/*.mp3 (өргөлтийг номоор)
 tools/test_answers.js              хариулт шалгагчийн тест (node)
