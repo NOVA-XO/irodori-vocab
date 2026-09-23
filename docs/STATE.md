@@ -1,7 +1,7 @@
 # Одоогийн байдал — Мартчихлаа
 
 **Амьд хаяг:** https://nova-xo.github.io/irodori-vocab/
-**Хувилбар:** `2026-09-24a` (`index.html` дахь `?v=` ба `sw.js` дахь `VERSION` хоёр
+**Хувилбар:** `2026-09-24b` (`index.html` дахь `?v=` ба `sw.js` дахь `VERSION` хоёр
 ижил байх ёстой — зөрвөл офлайн кэш хуучин файл өгнө)
 **Хамгийн сүүлд шалгасан:** 2026-09-23 — `test_ui.js` 393/393 · `test_sql.js` 94/94 · `test_audio.py` 23/23 · `test_attack.js` 24/24 · `test_answers.js` цэвэр
 
