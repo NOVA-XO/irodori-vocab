@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-23l">
-<link rel="stylesheet" href="app.css?v=2026-09-23l">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-23m">
+<link rel="stylesheet" href="app.css?v=2026-09-23m">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-23l">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-23l">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-23m">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-23m">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -210,6 +210,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
       <button class="mode" data-kj2="k2m"><b class="jp">漢字 → утга</b><span>Ханзыг харж утгыг нь сонгоно</span></button>
       <button class="mode" data-kj2="m2k"><b>Утга → <span class="jp">漢字</span></b><span>Утгыг харж ханзыг нь сонгоно</span></button>
       <button class="mode" data-kj2="read"><b>Уншлага</b><span>Ханзны 音読み-г сонгоно</span></button>
+      <button class="mode" data-kj2="emoji" id="kj-emoji"><b>Эможи → <span class="jp">漢字</span></b><span>Зураг харж ханзыг нь сонгоно · <i id="n-kjemoji">…</i></span></button>
     </div>
 
     <p class="hint">JLPT нь <b>ханзны ч, үгийн ч албан ёсны жагсаалт нийтэлдэггүй</b> —
@@ -668,7 +669,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   </div>
 </section>
 
-<script src="sync-config.js?v=2026-09-23l"></script>
-<script src="app.js?v=2026-09-23l"></script>
+<script src="sync-config.js?v=2026-09-23m"></script>
+<script src="app.js?v=2026-09-23m"></script>
 </body>
 </html>

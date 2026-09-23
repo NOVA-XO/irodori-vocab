@@ -311,7 +311,7 @@ async function run(c) {
     ['irodori', 'startSession(M, false, "book")', ['flash', 'choice', 'type', 'listen']],
     ['n5', 'startSession(M, false, "n5")', ['flash', 'choice', 'type', 'listen']],
     ['kanji-les', 'startKanji(M, "les")', ['flash', 'k2m', 'm2k', 'read']],
-    ['kanji-jlpt', 'startKanji(M, "jlpt")', ['flash', 'k2m', 'm2k', 'read']],
+    ['kanji-jlpt', 'startKanji(M, "jlpt")', ['flash', 'k2m', 'm2k', 'read', 'emoji']],
     ['kana', 'startKana(M)', ['h2k', 'k2h', 'sound', 'klisten']],
   ];
   for (const [name, call, modes] of SESSIONS) {
@@ -1695,6 +1695,106 @@ async function run(c) {
   ok('шалгалтын самбарт ҮГИЙН даалгавар гарахгүй',
     kd && kd.examBoxHidden === true, JSON.stringify(kd));
 
+
+  console.log('\n[36] Эможи \u2192 \u6f22\u5b57 \u2014 \u0437\u04e9\u0432\u0445\u04e9\u043d JLPT');
+  /* Эможи нь ханз бүрд ЦОРЫН ГАНЦ байх ёстой. Хоёр ханз ижил эможитой
+     бол 4 сонголтын хоёр нь ч зөв мэт харагдаж, асуулт хариултгүй болно.
+     Эможигүй ханз сандруулагчаар ч гарч болохгүй: 🐘 асуухад 象 гарвал
+     сурагч зөвийг нь дараад «буруу» гэж авна.
+     Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
+  const em = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const keep = { kjn: settings.kjn.slice(), prog: progress };
+    const out = {};
+    out.withE = KANJI.filter(k => k.e).length;
+    const seen = {}; let dup = 0;
+    for (const k of KANJI) if (k.e) { if (seen[k.e]) dup++; seen[k.e] = 1; }
+    out.dup = dup;
+
+    settings.kjn = [5]; save(KEY_S, settings);
+    go('jlpt'); await wait(250);
+    out.btnHidden = document.getElementById('kj-emoji').hidden;
+    out.btnN = document.getElementById('n-kjemoji').textContent;
+    out.inIrodori = document.querySelectorAll('#wrap-kanji .mode[data-kj]').length;
+    out.irodoriEmoji = document.querySelectorAll('#wrap-kanji .mode[data-kj="emoji"]').length;
+
+    progress = {};
+    const _a = window.alert; window.alert = m => { out.alerted = m; };
+    document.querySelector('.mode[data-kj2="emoji"]').click();
+    await wait(200);
+    window.alert = _a;
+    out.screen = screen; out.deck = deck; out.kmode = kmode;
+    out.poolLen = pool.length;
+    out.poolAllE = pool.every(k => k.e && k.n === 5);
+    out.prompt = document.getElementById('p-main').textContent;
+    out.cls = document.getElementById('p-main').className;
+    out.promptIsEmoji = cur.e === out.prompt && !/[\u4e00-\u9fff]/.test(out.prompt);
+    out.soundHidden = document.getElementById('btn-speak').hidden;
+
+    const btns = [...document.querySelectorAll('#choices button')];
+    out.nOpt = btns.length;
+    out.optAllEmojiKanji = btns.every(b => KANJI.some(k => k.c === b.textContent && k.e));
+    out.optHasAnswer = btns.some(b => b.textContent === cur.c);
+    out.optUniq = new Set(btns.map(b => b.textContent)).size === btns.length;
+    out.optEmojiUniq = new Set(btns.map(b =>
+      (KANJI.find(k => k.c === b.textContent) || {}).e)).size === btns.length;
+
+    const id = cur.id, want = cur.c, wantMn = cur.mn;
+    btns.find(b => b.textContent === want).click();
+    await wait(150);
+    out.aKana = document.getElementById('a-kana').textContent;
+    out.aMnOk = document.getElementById('a-mn').textContent === wantMn;
+    out.answerShown = want === out.aKana;
+    out.box = progress[id] ? progress[id].b : -1;
+
+    // ХЭМЖЭЭ: ганц дүрс томоор (.one), 🌳🌳🌳 нь жижгээр — 360px-д багтана.
+    // Картыг СОЛИХДОО queue-д түрүүлж тавина: nextCard нь cur-ыг queue-аас авдаг.
+    const one = KANJI.find(k => k.e && !emojiWide(k.e));
+    const wide = KANJI.find(k => k.e && emojiWide(k.e));
+    queue.unshift(one); nextCard();
+    out.clsOne = document.getElementById('p-main').className;
+    queue.unshift(wide); nextCard();
+    out.clsWide = document.getElementById('p-main').className;
+    out.wideE = wide.e;
+    out.zwj = emojiWide('\u{1F468}\u200D\u{1F373}');
+
+    // Түвшин огт сонгоогүй бол товч ОГТ гарахгүй.
+    show('home'); settings.kjn = []; save(KEY_S, settings);
+    go('jlpt'); await wait(250);
+    out.btnHiddenEmpty = document.getElementById('kj-emoji').hidden;
+
+    settings.kjn = keep.kjn; save(KEY_S, settings);
+    progress = keep.prog; go('home'); await wait(120);
+    return out;
+  `);
+  ok('эможи ↔ ханз ачаалагдсан (100-аас олон)', em && em.withE > 100, JSON.stringify(em && em.withE));
+  ok('ДАВХАРДСАН эможи АЛГА — хоёр ханз ижил дүрстэй байж болохгүй',
+    em && em.dup === 0, JSON.stringify(em && em.dup));
+  ok('JLPT дэлгэцэд «Эможи» товч гарна, тоогоо хэлнэ',
+    em && em.btnHidden === false && /^\d+ ханз$/.test(em.btnN), JSON.stringify(em));
+  ok('Irodori талд эможи горим БАЙХГҮЙ (зөвхөн JLPT)',
+    em && em.inIrodori === 4 && em.irodoriEmoji === 0, JSON.stringify(em));
+  ok('дасгал эхэлсэн, багц нь бүхэлдээ эможитой N5 ханз',
+    em && em.screen === 'study' && em.deck === 'kanji' && em.kmode === 'emoji'
+      && em.poolAllE && em.poolLen > 20 && !em.alerted, JSON.stringify(em));
+  ok('асуулт нь ЭМОЖИ — ханз харагдахгүй',
+    em && em.promptIsEmoji && /^prompt emoji( one)?$/.test(em.cls), JSON.stringify(em));
+  ok('ганц дүрс ТОМ, олон дүрс ЖИЖИГ (360px-д багтах ёстой)',
+    em && em.clsOne === 'prompt emoji one' && em.clsWide === 'prompt emoji',
+    JSON.stringify(em));
+  ok('ZWJ-ээр наалдсан 👨‍🍳 нь НЭГ дүрс гэж тоологдоно',
+    em && em.zwj === false, JSON.stringify(em && em.zwj));
+  ok('дуу товч НУУГДСАН — уншлага нь хариултыг задална',
+    em && em.soundHidden === true, JSON.stringify(em));
+  ok('4 сонголт, бүгд эможитой ханз, давхардалгүй',
+    em && em.nOpt === 4 && em.optAllEmojiKanji && em.optUniq && em.optHasAnswer,
+    JSON.stringify(em));
+  ok('сонголтуудын ЭМОЖИ бас давхцахгүй — нэг нь л зөв',
+    em && em.optEmojiUniq === true, JSON.stringify(em));
+  ok('зөв дархад ханз ба утга гарч, явц бичигдэнэ',
+    em && em.answerShown && em.aMnOk && em.box === 1, JSON.stringify(em));
+  ok('түвшин сонгоогүй бол «Эможи» товч огт гарахгүй',
+    em && em.btnHiddenEmpty === true, JSON.stringify(em));
 
   console.log('\n[34] «Явцыг устгах» — шалгалтын хариулт серверээс ч устана');
   /* Уусгалт нэмсний дараа хоосон түүх юу ч устгахаа больсон (зөв). Гэвч

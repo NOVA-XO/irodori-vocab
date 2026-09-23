@@ -1057,9 +1057,14 @@ function startKanji(km, src) {
   kmode = km;
   deck = 'kanji';
   mode = (km === 'flash') ? 'flash' : 'choice';
-  pool = kanjiPool(src);
+  /* «Эможи → ханз»-д ЗӨВХӨН эможитой ханз оролцоно — сандруулагч нь ч.
+     Эс тэгвэл 🐘 асуухад жагсаалтад 象 гарч ирж, сурагч зөвийг нь дараад
+     «буруу» гэж сонсоно. Эможигүй ханз багцад огт орохгүй байх нь
+     хамгийн энгийн бөгөөд найдвартай хамгаалалт. */
+  pool = kanjiPool(src).filter(k => km !== 'emoji' || k.e);
   if (pool.length < 4) {
-    alert(src === 'jlpt' ? 'Дор хаяж нэг түвшин сонгоно уу.'
+    alert(km === 'emoji' ? 'Сонгосон түвшинд эможитой ханз хангалтгүй байна.'
+                         : src === 'jlpt' ? 'Дор хаяж нэг түвшин сонгоно уу.'
                          : 'Сонгосон хичээлүүдэд ханз хангалтгүй байна.');
     deck = 'vocab'; return;
   }
@@ -1095,6 +1100,17 @@ function soundBtnHidden() {
   return false;
 }
 
+/** Эможи нь хэдэн ДҮРС вэ (🌳🌳🌳 = 3, 👨‍🍳 = 1).
+ *
+ *  Тэмдэгтийн урт БОЛОХГҮЙ: 🌳 нь UTF-16-д 2 нэгж, ZWJ-ээр наалдсан
+ *  👨‍🍳 нь 5 нэгж боловч НЭГ дүрс. `Intl.Segmenter` нь графемээр тоолно.
+ *  Байхгүй хөтөч дээр «олон» гэж үзнэ — жижиг үсэг нь багтахгүйгээс
+ *  хамаагүй аюулгүй. */
+function emojiWide(e) {
+  try { return [...new Intl.Segmenter().segment(e)].length > 1; }
+  catch (x) { return true; }
+}
+
 function nextCard() {
   if (!queue.length) { finish(); return; }
   // Шинэ карт гармагц хуучин таниулт ХҮЧИНГҮЙ. Эс тэгвэл өмнөх картын
@@ -1119,13 +1135,16 @@ function nextCard() {
       ' · ' + cur.s + ' зурлага';
     if (kmode === 'm2k') {
       $('p-main').textContent = cur.mn; $('p-main').className = 'prompt mn';
+    } else if (kmode === 'emoji') {
+      $('p-main').textContent = cur.e;
+      $('p-main').className = 'prompt emoji' + (emojiWide(cur.e) ? '' : ' one');
     } else {
       $('p-main').textContent = cur.c; $('p-main').className = 'prompt jp kj';
     }
     if (kmode === 'flash') { $('pane-flash').hidden = false; }
     else { buildChoices(); $('pane-choice').hidden = false; }
-    // Утга→ханз горимд дуу нь хариултыг задална.
-    const hide = kmode === 'm2k';
+    // Утга→ханз ба эможи→ханз горимд дуу нь хариултыг задална.
+    const hide = kmode === 'm2k' || kmode === 'emoji';
     $('btn-speak').hidden = !canHear(cur) || hide;
     if (canHear(cur) && !hide) say(cur);
     updateBar();
@@ -1187,7 +1206,7 @@ function nextCard() {
 /** Сонголтын товчин дээр бичигдэх текст = зөв хариулт. */
 function optText(it) {
   if (deck === 'kanji') {
-    if (kmode === 'm2k') return it.c;
+    if (kmode === 'm2k' || kmode === 'emoji') return it.c;
     if (kmode === 'read') return it.on[0] || fmtKun(it.kun[0] || '');
     return it.mn;                                   // k2m
   }
@@ -1249,7 +1268,9 @@ function buildChoices() {
     && (deck !== 'vocab' || isRev() || !!(x.mn || '').trim());
   let cand = pool.filter(usable);
   if (cand.length < 3) {
-    const all = deck === 'kana' ? KANA : (deck === 'kanji' ? KANJI : ALL);
+    // Эможи горимд өргөтгөл нь ч ЭМОЖИТОЙ ханзаар хязгаарлагдана.
+    const all = deck === 'kana' ? KANA
+      : (deck === 'kanji' ? (kmode === 'emoji' ? KANJI.filter(k => k.e) : KANJI) : ALL);
     cand = all.filter(usable);
   }
 
@@ -1360,7 +1381,7 @@ let shown = false;          // хариулт харагдсан уу (дуу т
 function reveal() {
   shown = true;
   if (deck === 'kanji') {
-    $('a-kana').textContent = kmode === 'm2k' ? cur.c : '';
+    $('a-kana').textContent = (kmode === 'm2k' || kmode === 'emoji') ? cur.c : '';
     $('a-mn').textContent = cur.mn;
     $('a-acc').innerHTML = '';
     // Уншлагын мөр бүрд өөрийн 🔊 — 音 ба 訓 нь тусдаа бичлэгтэй
@@ -1570,7 +1591,8 @@ const MODE_NAME = { flash: 'Флашкарт', choice: 'Олон сонголт'
 const KMODE_NAME = { h2k: 'ひらがな → カタカナ', k2h: 'カタカナ → ひらがな',
                      sound: 'Кана → авиа', klisten: 'Сонсоод таах' };
 const JMODE_NAME = { flash: 'Ханз · флашкарт', k2m: '漢字 → утга',
-                     m2k: 'Утга → 漢字', read: 'Ханзны уншлага' };
+                     m2k: 'Утга → 漢字', read: 'Ханзны уншлага',
+                     emoji: 'Эможи → 漢字' };
 const labelOf = L => (L.deck === 'kana' ? KMODE_NAME[L.k]
   : L.deck === 'kanji' ? JMODE_NAME[L.k] : MODE_NAME[L.m]) || '';
 
@@ -1788,6 +1810,16 @@ function refreshHome() {
   if (nkl) nkl.textContent = kanjiPool('les').length + ' ханз';
   document.querySelectorAll('#jlpt-levels button').forEach(b =>
     b.setAttribute('aria-pressed', settings.kjn.includes(+b.dataset.j)));
+  /* «Эможи → ханз» нь эможитой ханз дээр л ажиллана. Сонгосон түвшинд
+     4-өөс цөөн байвал товчийг ОГТ ХАРУУЛАХГҮЙ — дарчихаад «хангалтгүй»
+     гэсэн анхааруулга авахаас, товч нь байхгүй нь ойлгомжтой. */
+  const ke = $('kj-emoji');
+  if (ke) {
+    const ne = kanjiPool('jlpt').filter(k => k.e).length;
+    ke.hidden = ne < 4;
+    const nei = $('n-kjemoji');
+    if (nei) nei.textContent = ne + ' ханз';
+  }
   const jh = $('jlpt-hint');
   if (jh) {
     const n = kanjiPool('jlpt').length;
@@ -4120,7 +4152,7 @@ function autoStart() {
   if (['home', 'irodori', 'jlpt', 'kana', 'feedback', 'stats', 'profile'].includes(scr)) { go(scr); return; }
   const k = (location.hash.match(/k=(h2k|k2h|sound|klisten)/) || [])[1];
   if (k) { startKana(k); return; }
-  const j = (location.hash.match(/j=(flash|k2m|m2k|read)/) || [])[1];
+  const j = (location.hash.match(/j=(flash|k2m|m2k|read|emoji)/) || [])[1];
   if (j) { startKanji(j, /jlpt/.test(location.hash) ? 'jlpt' : 'les'); return; }
   const m = (location.hash.match(/m=(flash|choice|type|listen)/) || [])[1];
   if (m) {
@@ -4137,9 +4169,12 @@ Promise.all([
   fetch('data/kanji.json').then(r => r.json()),
   // Бичлэгийн жагсаалт. Байхгүй бол апп TTS-ээр хэвийн ажиллана.
   fetch('data/audio.json').then(r => r.ok ? r.json() : null).catch(() => null),
+  // Эможи ↔ ханз. Байхгүй бол зөвхөн «Эможи» горим л гарахгүй — бусад нь хэвийн.
+  fetch('data/kanji-emoji.json').then(r => r.ok ? r.json() : null).catch(() => null),
 ])
-  .then(([v, k, kj, au]) => {
+  .then(([v, k, kj, au, em]) => {
     ALL = v.items; KANA = k.items; KANJI = kj.items; READ_MAP = null;
+    if (em && em.map) for (const it of KANJI) if (em.map[it.c]) it.e = em.map[it.c];
     bookCache[v.book || 'starter'] = v.items;
     // Сонгосон ном татагдаагүй бөгөөд 入門 руу ухарсан бол ТОХИРГООГ
     // нь ч засна — эс тэгвэл дэлгэц «初級1» гэж хэлээд 入門-ий үг асууна.

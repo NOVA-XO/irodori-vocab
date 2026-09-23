@@ -581,6 +581,13 @@ button:disabled{opacity:.42; cursor:default}
         text-transform:uppercase; color:var(--ink-3); margin-bottom:5px}
 
 .prompt.kj{font-size:112px; line-height:1.02}
+/* Эможи асуулт. 森 → 🌳🌳🌳 гэх мэт 3 хүртэл дүрс нэг мөрөнд багтана
+   (88×3 ≈ 264px < 360px дэлгэцийн ажлын өргөн). Өнгөт эможи нь системийн
+   фонтоос гарна — `--jpd` нь тэдгээрийг агуулаагүй тул ил зааж өгнө. */
+.prompt.emoji{font-family:'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',
+              var(--ui); font-size:88px; line-height:1.14; letter-spacing:0}
+/* Ганц дүрс бол ханзтай ижил ТОМ — картын голыг дүүргэнэ. */
+.prompt.emoji.one{font-size:116px}
 .a-kj{margin-top:14px; font-size:14px; color:var(--ink-2); text-align:left}
 .a-kj > div{margin-top:4px}
 .a-kj b{display:inline-block; min-width:24px; color:var(--ink-3);
@@ -800,6 +807,8 @@ a.ghost{display:inline-block; text-decoration:none}
   .lessons{grid-template-columns:repeat(5,1fr)}
   .prompt{font-size:42px}
   .prompt.kj{font-size:92px}
+  .prompt.emoji{font-size:68px}
+  .prompt.emoji.one{font-size:96px}
   .due-n{font-size:64px}
 }
 

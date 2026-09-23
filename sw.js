@@ -13,7 +13,7 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-09-23l';
+const VERSION = '2026-09-23m';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 
@@ -36,6 +36,7 @@ const CORE = [
   './', './index.html', './app.css', './app.js',
   './sync-config.js',
   './data/vocab.json', './data/kana.json', './data/kanji.json',
+  './data/kanji-emoji.json',
   './data/vocab-n5.json',
   './data/vocab-el1.json', './data/vocab-el2.json',
   // Бичлэгийн ЖАГСААЛТ. Үүнгүй бол офлайн үед `AUDIO_IDS` нь null болж,
