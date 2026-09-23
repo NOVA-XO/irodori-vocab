@@ -247,6 +247,45 @@ async function main() {
   await db.exec("delete from public.members");
   await resetFails();
 
+  console.log('\n[12] Шалгалтын хариулт — ДАРЖ БИЧИХГҮЙ, УУСГАНА');
+  /* Утас, компьютер нэг мөр хуваалцдаг ба хариултын түүх нь төхөөрөмж
+     тус бүрд байдаг. Дарж бичвэл нөгөө дээрээ хийсэн ажил АЛГА БОЛНО
+     (бодит тохиолдол: компьютер дээр 20 хийсэн, утас 0-оор дарсан). */
+  await db.exec("delete from public.members");
+  const D1 = (await one("select ('2026-09-22'::date - '1970-01-01'::date) as d")).d;
+  let mx = await putEx('memberX00001', 'Бат', { mica: '5173' },
+    { A1: [D1, 1, 1], A2: [D1, 1, 2] });
+  ok('эхний төхөөрөмжийн хариулт хадгалагдана',
+    Object.keys(mx.exam || {}).length === 2, JSON.stringify(mx.exam));
+  // Хоёр дахь төхөөрөмж ХООСОН түүхтэй — хуучныг устгах ЁСГҮЙ
+  mx = await putEx('memberX00001', 'Бат', { mica: '5173' }, {});
+  let ex = (await one("select exam from public.members where member='memberX00001'")).exam;
+  ok('ХООСОН түүхтэй төхөөрөмж хуучныг УСТГАХГҮЙ',
+    Object.keys(ex).length === 2, JSON.stringify(ex));
+  ok('уусгасан хариултыг клиентэд БУЦААНА',
+    mx.exam && Object.keys(mx.exam).length === 2, JSON.stringify(mx.exam));
+  // Өөр асуулт хийсэн төхөөрөмж — НЭГДЭНЭ
+  await putEx('memberX00001', 'Бат', { mica: '5173' }, { A3: [D1, 1, 3] });
+  ex = (await one("select exam from public.members where member='memberX00001'")).exam;
+  ok('өөр асуулт хийсэн төхөөрөмж НЭМЭГДЭНЭ (3)',
+    Object.keys(ex).sort().join() === 'A1,A2,A3', JSON.stringify(ex));
+  // Ижил асуулт — СҮҮЛИЙН өдрийнх ялна
+  await putEx('memberX00001', 'Бат', { mica: '5173' }, { A1: [D1 + 2, 0, 1] });
+  ex = (await one("select exam from public.members where member='memberX00001'")).exam;
+  ok('ижил асуултад СҮҮЛИЙН өдрийн хариулт ялна',
+    JSON.stringify(ex.A1) === JSON.stringify([D1 + 2, 0, 1]), JSON.stringify(ex.A1));
+  await putEx('memberX00001', 'Бат', { mica: '5173' }, { A1: [D1 - 5, 1, 1] });
+  ex = (await one("select exam from public.members where member='memberX00001'")).exam;
+  ok('ХУУЧИН өдрийн хариулт шинийг дарахгүй',
+    JSON.stringify(ex.A1) === JSON.stringify([D1 + 2, 0, 1]), JSON.stringify(ex.A1));
+  // Хуучин клиент (p_exam = null) — огт хөндөхгүй
+  await one("select public.member_put('memberX00001','Бат','{\"mica\":\"5173\"}'::jsonb,1,1,1,1,1) as r");
+  ex = (await one("select exam from public.members where member='memberX00001'")).exam;
+  ok('хуучин клиент (p_exam null) хариултыг хөндөхгүй',
+    Object.keys(ex).length === 3, JSON.stringify(ex));
+  await db.exec("delete from public.members");
+  await resetFails();
+
   console.log('\n[11] Нэр нийлүүлэх — хамгийн СҮҮЛД ЗАССАН нь ялна');
   await db.exec("delete from public.members");
   const putN = (m, n, at) => one(

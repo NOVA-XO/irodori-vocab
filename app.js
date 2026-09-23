@@ -3271,8 +3271,19 @@ function memberWrite(key, ids) {
         if (!me.lost.includes(k)) me.lost.push(k);
       }
     }
-    // `name` нь ангийн id БИШ — хэрэглэгчийн нэр «ok» байвал андуурахгүй.
-    me.srv = Object.keys(res).filter(k => k !== 'name' && res[k] === 'ok');
+    // `name`, `exam` нь ангийн id БИШ — нэр нь «ok» байвал андуурахгүй.
+    me.srv = Object.keys(res).filter(k => k !== 'name' && k !== 'exam' && res[k] === 'ok');
+    /* Сервер уусгасан шалгалтын хариултыг буцаана — нөгөө төхөөрөмж
+       дээр хийсэн даалгавар энд ч тоологдох ёстой. */
+    if (res.exam && typeof res.exam === 'object' && !Array.isArray(res.exam)) {
+      const inc = cleanExHist(res.exam);
+      let add = false;
+      for (const k in inc) {
+        const o = exHist[k];
+        if (!o || inc[k][0] >= o[0]) { exHist[k] = inc[k]; add = add || !o || String(o) !== String(inc[k]); }
+      }
+      if (add) { save(KEY_EXH, exHist); renderExamTasks(); }
+    }
     /* Нөгөө төхөөрөмж дээр нэрээ зассан бол сервер ТҮҮНИЙГ буцаана —
        энд аваад тавина. Ингэснээр хоёр төхөөрөмж ижил нэртэй болно. */
     if (typeof res.name === 'string' && res.name && res.name !== me.name) {

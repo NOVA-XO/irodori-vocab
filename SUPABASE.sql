@@ -519,6 +519,10 @@ alter table public.classes add column if not exists task jsonb;
 -- `member_put` нь зөвхөн 'ok' (сурагчийн код) үед мөр үүсгэнэ.
 alter table public.classes add column if not exists tcode text;
 -- Гишүүний шалгалтын хариулт: {"S01-01": [өдөр, чадсан 0/1, хичээл], …}.
+-- ДАРЖ БИЧИХГҮЙ, УУСГАНА (`progress`-той ижил зарчим). Утас, компьютер
+-- нэг мөр хуваалцдаг ба хариултын түүх нь төхөөрөмж тус бүрд байдаг тул
+-- дарж бичвэл нөгөө дээрээ хийсэн ажил АЛГА БОЛНО. Түлхүүр тутамд
+-- СҮҮЛИЙН өдрийнхийг авна.
 -- Асуулт тутамд СҮҮЛИЙН хариулт. ТҮҮХИЙГЭЭР нь клиент рүү буцаахгүй —
 -- ангийнхан бие биеийн аль асуултад юу гэж хариулсныг харахгүй;
 -- `class_roster` зөвхөн ТООГ бодож буцаана.
@@ -615,6 +619,7 @@ declare
   nm  text   := left(btrim(coalesce(p_name, '')), 40);
   cap int;
   ex  jsonb  := null;                   -- null = хуучин клиент, байгааг хадгална
+  cur jsonb;                            -- серверт байгаа хариулт (уусгана)
   nat bigint := least(greatest(coalesce(p_name_at, 0), 0), 4102444800000);
   eff text;                             -- эцсийн нэр — клиент үүнийг аваад тавина
 begin
@@ -645,6 +650,10 @@ begin
     return res;
   end if;
 
+  -- Мөрийг түгжинэ: хоёр төхөөрөмж ЗЭРЭГ илгээвэл уншаад бичих хооронд
+  -- нөгөөгийнх алга болно.
+  select exam into cur from public.members where member = p_member for update;
+
   -- Шалгалтын хариултыг ЦЭВЭРЛЭЖ хадгална: 200 хүртэл түлхүүр, id-ийн
   -- хэлбэр, [өдөр, 0/1, хичээл] — бүгд хязгаарлагдсан бүхэл тоо.
   -- Анон түлхүүрээр дуудагддаг тул хорлонтой ачааллыг ЭНД зогсооно;
@@ -657,6 +666,21 @@ begin
       into ex
       from (select * from jsonb_each(p_exam) limit 200) e
      where e.key ~ '^[A-Za-z0-9_-]{1,16}$' and jsonb_typeof(e.value) = 'array';
+
+    -- УУСГАНА: асуулт тутамд СҮҮЛИЙН өдрийн хариултыг авна. 400 түлхүүр
+    -- хүртэл — сан 100 асуулттай тул энэ нь хэтрэхгүй.
+    -- Багана нь plpgsql-ийн `k` хувьсагчтай мөргөлдөхгүй нэртэй байна.
+    select coalesce(jsonb_object_agg(qk, qv), '{}'::jsonb) into ex from (
+      select coalesce(o.key, n.key) as qk,
+             case
+               when o.value is null then n.value
+               when n.value is null then o.value
+               when public.jnum(n.value -> 0) >= public.jnum(o.value -> 0) then n.value
+               else o.value
+             end as qv
+        from jsonb_each(coalesce(cur, '{}'::jsonb)) o
+        full join jsonb_each(ex) n on o.key = n.key
+       limit 400) m2;
   end if;
 
   insert into public.members as m
@@ -683,6 +707,11 @@ begin
   -- Хүчинтэй нэрийг буцаана: нөгөө төхөөрөмж дээр шинэ нэр тавьсан бол
   -- энэ клиент түүнийг аваад өөр дээрээ тавина.
   res := res || jsonb_build_object('name', eff);
+  -- Уусгасан хариултыг БУЦААНА: нөгөө төхөөрөмж дээр хийсэн ажил энэ
+  -- төхөөрөмж дээр ч харагдах ёстой (шалгалтын дэлгэцийн явц).
+  if ex is not null then
+    res := res || jsonb_build_object('exam', ex);
+  end if;
   return res;
 end;
 $mp$;

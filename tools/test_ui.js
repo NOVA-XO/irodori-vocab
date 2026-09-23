@@ -1500,12 +1500,15 @@ async function run(c) {
     const F = { calls: [] };
     rpc = async (fn, b) => {
       F.calls.push({ fn: fn, b: b });
-      if (fn === 'member_put') return { mica: 'ok', name: 'Өлзийбаяр' };
+      if (fn === 'member_put') return { mica: 'ok', name: 'Өлзийбаяр',
+        // Нөгөө төхөөрөмж дээр хийсэн даалгавар — сервер УУСГААД буцаана
+        exam: { S01: [today(), 1, 1], S02: [today(), 0, 2] } };
       return null;
     };
     isDevHost = () => false;
     me.codes = { mica: '1111' }; me.teach = {}; me.other = false; me.done = true;
     me.name = 'Admin'; me.nameAt = 1234; me.sent = ''; save(KEY_ME, me);
+    exHist = {}; save(KEY_EXH, exHist);
     lastMemberSync = 0;
     await memberSync(true);
     await new Promise(r => setTimeout(r, 100));
@@ -1516,7 +1519,10 @@ async function run(c) {
       sentAt: sent ? sent.b.p_name_at : null,
       srv: JSON.stringify(me.srv),
       card: document.getElementById('me-classes').textContent,
+      exam: Object.keys(exHist).sort().join(),
+      examSaved: Object.keys(load(KEY_EXH, {})).sort().join(),
     };
+    exHist = {}; save(KEY_EXH, exHist);
     rpc = keep.rpc; isDevHost = keep.dev; me = cleanMe(keep.me); save(KEY_ME, me);
     refreshMe();
     return out;
@@ -1524,7 +1530,12 @@ async function run(c) {
   ok('нөгөө төхөөрөмж дээр зассан нэрийг АВЧ тавина',
     nm && nm.adopted === 'Өлзийбаяр' && nm.saved === 'Өлзийбаяр', JSON.stringify(nm));
   ok('нэр зассан цагийг серверт илгээнэ', nm && nm.sentAt === 1234, JSON.stringify(nm));
-  ok('`name` нь ангийн жагсаалтад ОРОХГҮЙ', nm && nm.srv === '["mica"]', JSON.stringify(nm));
+  ok('`name`, `exam` нь ангийн жагсаалтад ОРОХГҮЙ', nm && nm.srv === '["mica"]', JSON.stringify(nm));
+  /* Нөгөө төхөөрөмж дээр хийсэн даалгавар энд ч тоологдох ёстой —
+     эс тэгвэл утас «0/20» гэж харуулаад, дараагийн синкдээ серверийн
+     20 хариултыг ДАРЖ УСТГАНА (бодит алдаа). */
+  ok('серверээс ирсэн шалгалтын хариулт нэгдэнэ',
+    nm && nm.exam === 'S01,S02' && nm.examSaved === 'S01,S02', JSON.stringify(nm));
 
   ok('синкгүй бол ТӨХӨӨРӨМЖИЙН id', one && one.noSync, JSON.stringify(one));
   ok('синктэй бол кодоос гаргасан id', one && one.derived, JSON.stringify(one));
