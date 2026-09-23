@@ -2136,12 +2136,12 @@ async function run(c) {
     out.afterLes = JSON.stringify(examLessonsSel());
     out.afterN = exN;
 
-    // (2) L1-ийн 6 асуултыг хариулна — түүхэнд 6
+    // (2) L1-ийн 10 асуултыг хариулна — түүхэнд 10
     exLes = [1]; save(KEY_EXL, exLes); exN = 15; startExam(); await wait(400);
     for (let i = 0; i < exQs.length; i++) { examMark(i % 2 === 0); await wait(220); }
     out.hist1 = Object.keys(exHist).length;
     out.histShape = JSON.stringify(Object.values(exHist)[0]);
-    // (3) ИЖИЛ 6 асуултыг дахин — давхардахгүй
+    // (3) ИЖИЛ 10 асуултыг дахин — давхардахгүй
     examSetup(); await wait(300); startExam(); await wait(400);
     for (let i = 0; i < exQs.length; i++) { examMark(true); await wait(220); }
     out.hist2 = Object.keys(exHist).length;
@@ -2149,7 +2149,7 @@ async function run(c) {
     const put = F.calls.filter(x => x.fn === 'member_put').pop();
     out.sentExam = put ? Object.keys(put.b.p_exam || {}).length : -1;
 
-    // (4) Самбар 6/20 харуулна; «Сонгох» -> L1–L8, 20 асуулт
+    // (4) Самбар 10/20 харуулна; «Сонгох» -> L1–L8, 20 асуулт
     examSetup(); await wait(400);
     const bs = () => box.querySelector('.ex-task .task-state');
     out.bannerAfter = bs() ? bs().textContent : null;
@@ -2217,19 +2217,19 @@ async function run(c) {
       && tk.afterLes === '[1,2,3,4,5,6,7,8]' && tk.afterN === 20,
     JSON.stringify(tk && { b: tk.homeBtn, s: tk.afterClick, l: tk.afterLes, n: tk.afterN }));
   ok('шалгалтын хариулт түүхэнд бүртгэгдэнэ [өдөр, 0/1, хичээл]',
-    tk && tk.hist1 === 6 && /^\[\d+,[01],1\]$/.test(tk.histShape), JSON.stringify(tk));
-  ok('ИЖИЛ асуултыг дахин хариулахад ДАВХАРДАХГҮЙ (6 хэвээр)', tk && tk.hist2 === 6, JSON.stringify(tk));
-  ok('шалгалт дуусахад хариулт серверт илгээгдэнэ', tk && tk.sentExam === 6, JSON.stringify(tk));
-  ok('самбар явцыг харуулна: 6/20', tk && tk.bannerAfter === '6/20', JSON.stringify(tk));
+    tk && tk.hist1 === 10 && /^\[\d+,[01],1\]$/.test(tk.histShape), JSON.stringify(tk));
+  ok('ИЖИЛ асуултыг дахин хариулахад ДАВХАРДАХГҮЙ (10 хэвээр)', tk && tk.hist2 === 10, JSON.stringify(tk));
+  ok('шалгалт дуусахад хариулт серверт илгээгдэнэ', tk && tk.sentExam === 10, JSON.stringify(tk));
+  ok('самбар явцыг харуулна: 10/20', tk && tk.bannerAfter === '10/20', JSON.stringify(tk));
   ok('«Сонгох» -> L1–L8 ба 20 асуулт',
-    tk && tk.pickLes === '[1,2,3,4,5,6,7,8]' && tk.pickN === 20 && tk.pickNote === '8 хичээл · 47 асуулт',
+    tk && tk.pickLes === '[1,2,3,4,5,6,7,8]' && tk.pickN === 20 && tk.pickNote === '8 хичээл · 80 асуулт',
     JSON.stringify(tk));
   ok('ангийн дэлгэц: «Даалгавар · L1–L8 · 20 асуулт · 1/3 хийсэн»',
     tk && tk.taskLine === 'Даалгавар · L1–L8 · 20 асуулт | 1/3 хийсэн', JSON.stringify(tk && tk.taskLine));
   ok('20 хүрсэн гишүүн -> «✓ 100%»', tk && tk.bold === '✓ 100%', JSON.stringify(tk));
   ok('дутуу гишүүн -> «60%», зураас 60%, «12/20 асуулт»',
     tk && tk.saraa === '60%' && tk.saraaBar === '60%' && tk.saraaSmall === '12/20 асуулт', JSON.stringify(tk));
-  ok('өөрийн мөр ч гүйцэтгэлтэй (30%)', tk && tk.me === '30%', JSON.stringify(tk));
+  ok('өөрийн мөр ч гүйцэтгэлтэй (50%)', tk && tk.me === '50%', JSON.stringify(tk));
   ok('даалгавартай ангид ЦЭЭЖИЛСЭН ҮГИЙН тоо ХАРАГДАХГҮЙ', tk && tk.micaMetrics === 0, JSON.stringify(tk));
   ok('даалгаваргүй ангид (Наран) хуучин тоо хэвээр', tk && tk.naranMetrics > 0, JSON.stringify(tk));
   ok('гүйцэтгэлээр эрэмбэлэгдсэн (Болд 100 · Сараа 60 · Бат 30)',
@@ -2265,7 +2265,7 @@ async function run(c) {
     out.noteNone = note();
     out.btnNone = document.getElementById('btn-exam').disabled;
 
-    // Зөвхөн L1 (6 асуулт) — 15 гэж сонгосон ч 6-г л асууна
+    // Зөвхөн L1 (10 асуулт) — 15 гэж сонгосон ч 10-г л асууна
     chips()[0].click();
     out.noteL1 = note();
     out.btnL1 = document.getElementById('btn-exam').disabled;
@@ -2295,16 +2295,16 @@ async function run(c) {
   `);
   ok('18 хичээлийн чип, анхдагчаар БҮГД сонгогдсон',
     ex && ex.chips === 18 && ex.pressedAll, JSON.stringify(ex));
-  ok('чип дээр асуултын тоо (L1 = 6)', ex && ex.l1small === '6', JSON.stringify(ex));
-  ok('бүгд үед «18 хичээл · 100 асуулт»', ex && ex.noteAll === '18 хичээл · 100 асуулт', JSON.stringify(ex));
+  ok('чип дээр асуултын тоо (L1 = 10)', ex && ex.l1small === '10', JSON.stringify(ex));
+  ok('бүгд үед «18 хичээл · 180 асуулт»', ex && ex.noteAll === '18 хичээл · 180 асуулт', JSON.stringify(ex));
   ok('«Цэвэрлэх» -> юу ч сонгоогүй, эхлүүлэх товч ИДЭВХГҮЙ',
     ex && ex.pressedNone === 0 && ex.btnNone && /сонгоно/.test(ex.noteNone), JSON.stringify(ex));
-  ok('зөвхөн L1 -> «1 хичээл · 6 асуулт — бүгдийг нь асууна»',
-    ex && ex.noteL1 === '1 хичээл · 6 асуулт — бүгдийг нь асууна' && !ex.btnL1, JSON.stringify(ex));
+  ok('зөвхөн L1 -> «1 хичээл · 10 асуулт — бүгдийг нь асууна»',
+    ex && ex.noteL1 === '1 хичээл · 10 асуулт — бүгдийг нь асууна' && !ex.btnL1, JSON.stringify(ex));
   ok('L1 шалгалт: 15 гэсэн ч 6 асуулт, бүгд L1',
-    ex && ex.l1len === 6 && ex.l1only, JSON.stringify(ex));
+    ex && ex.l1len === 10 && ex.l1only, JSON.stringify(ex));
   ok('L1–L3, 10 асуулт: зөвхөн тэр гурван хичээлээс',
-    ex && ex.l123len === 10 && ex.l123only && ex.noteL123 === '3 хичээл · 18 асуулт', JSON.stringify(ex));
+    ex && ex.l123len === 10 && ex.l123only && ex.noteL123 === '3 хичээл · 30 асуулт', JSON.stringify(ex));
   ok('асуултын дээр хичээлийн дугаар харагдана', ex && /^L[123] · /.test(ex.topic), JSON.stringify(ex));
   ok('сонголт хадгалагдана [1,2,3]; бүгдийг сонгоход null',
     ex && ex.stored === '[1,2,3]' && ex.storedAll === 'null', JSON.stringify(ex));
@@ -3111,7 +3111,7 @@ async function run(c) {
   ok('JS зэрэгцүүлэгч Python-тойгоо ЯГ таарна (зөрүү 0)',
     cross && cross.diff === 0 && cross.same > 150, JSON.stringify(cross));
   ok('ханзгүй мөрд ふりがな үүсгэхгүй',
-    cross && cross.plain > 20 && cross.same + cross.plain === 200,
+    cross && cross.plain > 20 && cross.same + cross.plain === 360,
     JSON.stringify(cross));
 
   // Үгийн карт: урд тал нь ЦЭВЭР байх ёстой — уншлага нь таах хариулт.
