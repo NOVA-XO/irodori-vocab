@@ -1475,6 +1475,23 @@ async function run(c) {
     syncCode = keep.code; await deriveMember(); refreshMe(); go('home');
     return out;
   `);
+  /* `2026-09-23c`-ээс ӨМНӨ бүртгүүлсэн хүнд `sent` талбар байхгүй.
+     Хоосон орхивол синк холбоход хуучин мөр ангид ҮҮРД үлдэнэ
+     (бодит тохиолдол: «Өлзийбаяр» ба «Admin» хоёр мөр). */
+  const mig = await c.ev(`
+    const old = { id: 'abcdefgh12345678', name: 'Бат', codes: { mica: '1111' }, done: true };
+    const a = cleanMe(old);
+    const b = cleanMe({ id: 'abcdefgh12345678', name: 'Бат', codes: {}, other: true });
+    const c2 = cleanMe(Object.assign({}, old, { sent: 'zzzzzzzz99999999' }));
+    return { withClass: a.sent, noClass: b.sent, explicit: c2.sent };
+  `);
+  ok('хуучин суулгац: ангид элссэн бол `sent` нь `id`-гаар нөхөгдөнө',
+    mig && mig.withClass === 'abcdefgh12345678', JSON.stringify(mig));
+  ok('ангигүй хүнд нөхөхгүй (дэмий устгал явуулахгүй)',
+    mig && mig.noClass === '', JSON.stringify(mig));
+  ok('байгаа `sent`-ийг дарж бичихгүй',
+    mig && mig.explicit === 'zzzzzzzz99999999', JSON.stringify(mig));
+
   ok('синкгүй бол ТӨХӨӨРӨМЖИЙН id', one && one.noSync, JSON.stringify(one));
   ok('синктэй бол кодоос гаргасан id', one && one.derived, JSON.stringify(one));
   ok('ИЖИЛ кодтой хоёр төхөөрөмж -> ИЖИЛ id (нэг нэр)',

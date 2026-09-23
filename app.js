@@ -3018,7 +3018,13 @@ function cleanMe(v) {
     syncId: (typeof o.syncId === 'string' && /^[a-z0-9]{8,64}$/.test(o.syncId)) ? o.syncId : '',
     syncFor: typeof o.syncFor === 'string' ? o.syncFor : '',
     // Серверт СҮҮЛД бичсэн id — солигдвол хуучин мөрийг устгана.
-    sent: (typeof o.sent === 'string' && /^[a-z0-9]{8,64}$/.test(o.sent)) ? o.sent : '',
+    /* Серверт СҮҮЛД бичсэн id. `2026-09-23c`-ээс ӨМНӨ энэ талбар
+       БАЙГААГҮЙ — тэр үед мөр нь `me.id`-гаар бичигдсэн. Хоосон орхивол
+       синк холбоход id солигдож, ХУУЧИН мөр нь ангид үүрд үлдэнэ
+       (хоёр нэр: «Өлзийбаяр» ба «Admin»). Тиймээс ангид элссэн хүнд
+       `me.id`-гаар нөхнө — тэр мөр серверт БАЙХ нь баталгаатай. */
+    sent: (typeof o.sent === 'string' && /^[a-z0-9]{8,64}$/.test(o.sent)) ? o.sent
+      : (Object.keys(codes).length ? (typeof o.id === 'string' ? o.id : '') : ''),
     // БАГШИЙН код (ангийн id -> код). Багш жагсаалтыг харах ба даалгавар
     // тавих эрхтэй; гишүүн БОЛОХГҮЙ — нэр нь серверт очихгүй.
     teach: teachClean(o.teach),
