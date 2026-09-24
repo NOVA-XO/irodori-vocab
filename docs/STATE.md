@@ -1250,6 +1250,11 @@ python tools/build_n5.py
 # ханз (KANJIDIC2 + JLPT + гурван номын хичээлийн тэмдэглэгээ)
 python tools/build_kanji.py
 
+# ярианы үнэлгээний ХЯЗГААР амьдаар ажиллаж байна уу (LLM квот идэхгүй).
+# Хязгаар кодонд бичигдсэн атлаа ажиллахгүй байсан тул ЗААВАЛ хэмжинэ —
+# §2.78-ыг үз.
+node tools/test_quota.js
+
 # дуу — VOICEVOX хөдөлгүүр ЭХЛЭЭД асаана
 tools/_vv/windows-cpu/run.exe --host 127.0.0.1 --port 50021
 python tools/build_audio.py --list-speakers
