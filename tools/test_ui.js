@@ -2117,6 +2117,9 @@ async function run(c) {
     out.sentKey = out.calls[0] && out.calls[0].key;
     out.sentAuth = !!(out.calls[0] && out.calls[0].auth);
     out.bodyHasHeard = !!(out.calls[0] && out.calls[0].body.indexOf('ペンをかして') >= 0);
+    // Квотыг IP-ээр биш ТӨХӨӨРӨМЖӨӨР тоолохын тулд нэргүй дугаар явна
+    out.sentDev = (() => { try { return JSON.parse(out.calls[0].body).dev; }
+                           catch (e) { return null; } })();
     // Түлхүүр ЯВААГҮЙ байх ёстой — зөвхөн anon түлхүүр
     out.bodyNoSecret = !!(out.calls[0]
       && out.calls[0].body.indexOf('gsk_') < 0 && out.calls[0].body.indexOf('AIza') < 0);
@@ -2151,6 +2154,9 @@ async function run(c) {
   ok('зөвхөн ANON түлхүүр явна — LLM-ийн түлхүүр браузерт БАЙХГҮЙ',
     ai && ai.sentKey === 'eyJtest' && ai.sentAuth && ai.bodyNoSecret, JSON.stringify(ai));
   ok('сонссон текст хүсэлтэд орно', ai && ai.bodyHasHeard, JSON.stringify(ai));
+  ok('НЭРГҮЙ төхөөрөмжийн дугаар явна (квотыг IP-ээр биш үүгээр тоолно)',
+    ai && typeof ai.sentDev === 'string' && ai.sentDev.length >= 8,
+    JSON.stringify(ai && ai.sentDev));
   ok('амжилттай хариунаас МОНГОЛ зөвлөгөө угсрагдана',
     ai && ai.band1 === 'near' && /Ойролцоо/.test(ai.text1)
       && /ください/.test(ai.text1), JSON.stringify(ai && ai.text1));

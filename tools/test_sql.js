@@ -461,6 +461,62 @@ async function main() {
   ok('эрх олгоогүй үүрэг функцийг дуудаж чадахгүй (revoke from public)', authCall === 'denied', authCall);
   await db.exec('reset role');
 
+  console.log('\n[9] Ярианы үнэлгээний квот — judge_bump');
+  /* Санах ойн тоолуур АЖИЛЛАХГҮЙ байсан (Deno Deploy олон изолят) тул
+     тоолуур өгөгдлийн санд шилжсэн. Энд логикийг нь шалгана. */
+  const bump = async (k, cap) =>
+    (await one("select public.judge_bump('" + k + "', " + cap + ") as b")).b;
+
+  let over = null;
+  for (let i = 1; i <= 3; i++) over = await bump('d:zz1', 3);
+  ok('хязгаарын ДОТОР -> false', over === false, JSON.stringify(over));
+  ok('хязгаараас ХЭТРЭХЭД -> true', (await bump('d:zz1', 3)) === true, '4 дэх дуудалт');
+  ok('хэтэрсний дараа ч true хэвээр', (await bump('d:zz1', 3)) === true, '5 дахь');
+
+  // Өөр төхөөрөмж НӨЛӨӨЛӨХГҮЙ — нэг ангийн 200 сурагч нэг Wi-Fi дээр
+  ok('ӨӨР түлхүүр тусдаа тоологдоно', (await bump('d:zz2', 3)) === false, 'zz2');
+
+  // Цонх дуусахад ТЭГЛЭГДЭНЭ
+  await db.exec("update public.judge_hits set win = now() - interval '2 hours' where k = 'd:zz1'");
+  ok('1 цагийн дараа тоолуур тэглэгдэнэ', (await bump('d:zz1', 3)) === false, 'цонх шинэчлэв');
+  const jn = (await one("select n from public.judge_hits where k='d:zz1'")).n;
+  ok('тэглэгдсэний дараа тоо = 1', jn === 1, String(jn));
+
+  // Буруу оролт нь ХОРИГЛОХГҮЙ (сурах үйл явц зогсохгүй)
+  ok('cap = 0 -> хориглохгүй (буруу оролт)', (await bump('d:zz3', 0)) === false, 'cap 0');
+  const longK = 'd:' + 'x'.repeat(80);
+  ok('хэт урт түлхүүр -> хориглохгүй', (await bump(longK, 1)) === false, 'урт түлхүүр');
+
+  // judge_gate — хоёр хязгаарыг нэг дуудалтаар
+  const gate = async (dev, ip, cd, ci) =>
+    (await one("select public.judge_gate('" + dev + "','" + ip + "'," + cd + "," + ci + ") as g")).g;
+  ok('чөлөөтэй үед хоосон мөр', (await gate('g1', '1.1.1.1', 5, 9)) === '', 'эхний');
+  for (let i = 0; i < 5; i++) await gate('g1', '1.1.1.1', 5, 99);
+  ok('ТӨХӨӨРӨМЖ хэтрэхэд -> device', (await gate('g1', '1.1.1.1', 5, 99)) === 'device', 'dev cap');
+  ok('ӨӨР төхөөрөмж ижил IP-ээс чөлөөтэй (нэг ангийн Wi-Fi)',
+    (await gate('g2', '1.1.1.1', 5, 99)) === '', 'өөр төхөөрөмж');
+  for (let i = 0; i < 99; i++) await gate('g3', '2.2.2.2', 999, 40);
+  ok('IP-ийн ДЭЭД хаалт ажиллана -> ip', (await gate('g4', '2.2.2.2', 999, 40)) === 'ip', 'ip cap');
+
+  // anon энэ функцийг дуудаж БОЛОХГҮЙ — эс тэгвэл бусдын тоолуурыг
+  // үлээлгэж, тэднийг хааж чадна
+  await db.exec('set role anon');
+  let anonBump = 'ok';
+  try { await one("select public.judge_bump('d:zz9', 5) as b"); }
+  catch (e) { anonBump = 'denied'; }
+  ok('anon: judge_bump дуудаж ЧАДАХГҮЙ', anonBump === 'denied', anonBump);
+  let anonGate = 'ok';
+  try { await one("select public.judge_gate('x','y',5,9) as g"); }
+  catch (e) { anonGate = 'denied'; }
+  ok('anon: judge_gate дуудаж ЧАДАХГҮЙ', anonGate === 'denied', anonGate);
+  let anonRead = 'ok';
+  try {
+    const rows = await q1('select * from public.judge_hits');
+    anonRead = rows.length === 0 ? 'denied' : 'ХАРАВ:' + rows.length;
+  } catch (e) { anonRead = 'denied'; }
+  ok('anon: judge_hits хүснэгтийг уншиж ЧАДАХГҮЙ', anonRead === 'denied', anonRead);
+  await db.exec('reset role');
+
   console.log('\n' + '─'.repeat(50));
   console.log('цэвэр: ' + pass + '   унасан: ' + fail);
   if (fail) { console.log('\nУНАСАН:'); fails.forEach(x => console.log('  · ' + x)); }

@@ -13,7 +13,7 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-09-24g';
+const VERSION = '2026-09-24h';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 

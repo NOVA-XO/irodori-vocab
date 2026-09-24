@@ -2471,8 +2471,13 @@ function aiJudge(heard, q) {
   const timer = ctl ? setTimeout(() => ctl.abort(), 8000) : null;
   return fetch(url, {
     method: 'POST', headers: headers, signal: ctl ? ctl.signal : undefined,
+    /* `dev` нь НЭРГҮЙ төхөөрөмжийн дугаар (синкэд хэдийн хэрэглэгддэг).
+       Хязгаарыг IP-ээр биш ҮҮГЭЭР тоолохын тулд явуулна: нэг ангийн
+       200 сурагч нэг Wi-Fi-гаар холбогдвол IP нь ГАНЦ харагддаг тул
+       IP-ийн хязгаар тэднийг бие биенийх нь өмнөөс тасалдаг байв. */
     body: JSON.stringify({ q: q.q, model: q.model, modelKana: q.modelKana || '',
                            free: q.free ? 1 : 0,
+                           dev: typeof devId === 'string' ? devId : '',
                            key: q.key || '', heard: heard }),
   }).then(r => (r.ok ? r.json() : null))
     .catch(() => null)

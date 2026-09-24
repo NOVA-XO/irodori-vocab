@@ -141,21 +141,53 @@ async function callGemini(body: Record<string, string>, key: string,
   return { out: parse(txt), raw: txt };
 }
 
-/* Урвуулан ашиглалтаас хамгаалах ХЯЗГААР. anon түлхүүр нь публик тул
-   хэн ч энэ хаяг руу хандаж чадна — хязгааргүй бол нэг хүн ангийн
-   өдрийн квотыг шатааж чадна. Санах ойд хадгалдаг тул инстанс дахин
-   эхлэхэд тэглэгдэнэ (тохирсон буулт: жинхэнэ хамгаалалт биш, харин
-   санамсаргүй ба энгийн урвуулалтыг зогсооно). */
-const HITS = new Map<string, { n: number; t: number }>();
-const CAP = 60, WIN = 3600e3;          // цагт 60 хүсэлт / IP
+/* Урвуулан ашиглалтаас хамгаалах ХЯЗГААР.
+ *
+ * 🐞 САНАХ ОЙН ТООЛУУР АЖИЛЛАДАГГҮЙ. Өмнө нь энд `Map` байсан бөгөөд
+ * «цагт 60 хүсэлт / IP» гэж бичигдсэн байв. ХЭМЖСЭН: нэг төхөөрөмжөөс
+ * 150 хүсэлт явуулахад 429 НЭГ Ч гарсангүй — Deno Deploy хүсэлтүүдийг
+ * олон изолят дээр тараадаг тул тоолуур тус бүрдээ шинээр эхэлдэг.
+ * Хамгаалалт бүхэлдээ хуурмаг байжээ. Тиймээс тоолуур нь БОДИТООР
+ * хуваалцсан газар — өгөгдлийн санд (`public.judge_gate`).
+ *
+ * ЯАГААД ТӨХӨӨРӨМЖӨӨР: нэг ангийн 200 сурагч нэг Wi-Fi-гаар холбогдвол
+ * Supabase-т тэд БҮГД НЭГ IP мэт харагдана. IP-ээр тоолвол эхний хэдэн
+ * сурагч квотыг дуусгаад үлдсэн нь зөвлөгөө авахаа болино.
+ *
+ * ТООЦОО (200 хэрэглэгчтэй):
+ *   · Groq үнэгүй: 1000 хүсэлт/өдөр, ~12/минут (8000 токен/мин ÷ ~650).
+ *   · Нэг сурагч 20 асуултын шалгалтад ~3-4 удаа л дуудна: локал
+ *     үнэлгээ «зөв» гэвэл LLM рүү ОГТ явахгүй.
+ *   · Өдөрт 200-гийн ~25% идэвхтэй гэвэл ~50 хүн × 4 = 200 хүсэлт —
+ *     өдрийн квотын 20%.
+ *   → 40/цаг нь хэвийн хэрэглээнээс 10 дахин өндөр тул хэнд ч саад
+ *     болохгүй, гэхдээ нэг хүн өдрийн квотыг шатаахыг хорино.
+ *
+ * IP-ийн хаалт нь дээд тал: төхөөрөмжийн дугаарыг хуурамчаар үүсгэж
+ * болно. 500/цаг нь 200 сурагчийн ангид хүрэлцээтэй. */
+const CAP_DEV = 40;                    // төхөөрөмж тутамд цагт
+const CAP_IP = 500;                    // IP тутамд цагт (нэг анги)
 
-function overCap(ip: string) {
-  const now = Date.now();
-  const r = HITS.get(ip);
-  if (!r || now - r.t > WIN) { HITS.set(ip, { n: 1, t: now }); return false; }
-  r.n++;
-  if (HITS.size > 5000) HITS.clear();   // санах ой хамгаалалт
-  return r.n > CAP;
+/** Буцаах: '' = чөлөөтэй · 'device' · 'ip'. Алдаа гарвал ЧӨЛӨӨТ
+ *  (хичээл зогсохоос квот хэтрэх нь дээр). */
+async function gate(dev: string, ip: string): Promise<string> {
+  const url = Deno.env.get('SUPABASE_URL');
+  const srv = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !srv) return '';
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), 2500);
+  try {
+    const r = await fetch(url + '/rest/v1/rpc/judge_gate', {
+      method: 'POST', signal: ctl.signal,
+      headers: { 'Content-Type': 'application/json',
+                 apikey: srv, Authorization: 'Bearer ' + srv },
+      body: JSON.stringify({ p_dev: dev, p_ip: ip,
+                             p_cap_dev: CAP_DEV, p_cap_ip: CAP_IP }),
+    });
+    if (!r.ok) return '';
+    const v = await r.json();
+    return typeof v === 'string' ? v : '';
+  } catch { return ''; } finally { clearTimeout(t); }
 }
 
 Deno.serve(async (req: Request) => {
@@ -165,12 +197,18 @@ Deno.serve(async (req: Request) => {
       { status, headers: { ...CORS, 'Content-Type': 'application/json' } });
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'x';
-  if (overCap(ip)) return json({ error: 'rate limited' }, 429);
 
   let body: Record<string, string>;
   try { body = await req.json(); } catch { return json({ error: 'bad body' }, 400); }
+  /* Төхөөрөмжийн дугаар нь хэрэглэгчийн өгөгдөл тул ХЭМЖЭЭГ нь барина;
+     байхгүй бол IP-д унана (хуучин хувилбарын апп ингэж ажиллана). */
+  const dev = (typeof body.dev === 'string' ? body.dev : '')
+    .replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+  const over = await gate(dev, ip);
+  if (over) return json({ error: 'rate limited', scope: over }, 429);
   if (!body.heard || !body.model) return json({ error: 'need heard+model' }, 400);
   // Хэмжээний хязгаар: prompt injection ба квот шатаахаас хамгаална.
+  delete body.dev;                     // LLM рүү ХЭЗЭЭ Ч явуулахгүй
   for (const k of ['q', 'model', 'modelKana', 'key', 'heard']) {
     if (typeof body[k] === 'string') body[k] = body[k].slice(0, 200);
   }

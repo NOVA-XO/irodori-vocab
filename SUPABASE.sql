@@ -911,3 +911,85 @@ grant execute on function public.member_put(text, text, jsonb, int, int, int, in
 grant execute on function public.class_roster(text, text, text) to anon;
 revoke all on function public.task_set(text, text, jsonb, int, int, text, text, text) from public;
 grant execute on function public.task_set(text, text, jsonb, int, int, text, text, text) to anon;
+
+-- ═══════════════════════════════════════════════════════════════════
+-- ЯРИАНЫ ҮНЭЛГЭЭНИЙ КВОТ
+--
+-- ЯАГААД ӨГӨГДЛИЙН САНД: Edge Function-ий санах ой дахь тоолуур
+-- АЖИЛЛАХГҮЙ. Хэмжсэн: нэг төхөөрөмжөөс 150 хүсэлт явуулахад 429 нэг ч
+-- гарсангүй — Deno Deploy хүсэлтүүдийг олон изолят дээр тараадаг тул
+-- тоолуур тус бүрдээ шинээр эхэлдэг. Өмнөх «цагт 60 хүсэлт / IP» гэсэн
+-- хамгаалалт БҮХЭЛДЭЭ хуурмаг байжээ.
+--
+-- Репо НЭЭЛТТЭЙ, anon түлхүүр публик тул хэн ч энэ хаяг руу хандана.
+-- Хязгааргүй бол нэг хүн ангийн ӨДРИЙН LLM квотыг (Groq 1000) хэдхэн
+-- минутад шатаана. Тиймээс тоолуур нь БОДИТООР хуваалцсан газар —
+-- өгөгдлийн санд — байх ёстой.
+--
+-- Зөвхөн Edge Function (service role) дуудна. `anon`-д эрх ӨГӨХГҮЙ:
+-- эс тэгвэл хэн ч бусдын тоолуурыг үлээлгэж, түүнийг хаана.
+create table if not exists public.judge_hits (
+  k    text primary key,          -- 'd:<төхөөрөмж>' эсвэл 'i:<ip>'
+  n    int         not null default 0,
+  win  timestamptz not null default now()
+);
+-- RLS: бодлого ОГТ үүсгэхгүй -> anon юу ч харахгүй. Зөвхөн
+-- security definer функц (judge_bump) л хүрнэ.
+alter table public.judge_hits enable row level security;
+
+-- Нэгийг нэмээд «хэтэрсэн үү» гэдгийг буцаана. Цонх нь 1 цаг.
+create or replace function public.judge_bump(p_k text, p_cap int)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $jb$
+declare
+  cur int;
+begin
+  if p_k is null or length(p_k) > 64 or p_cap is null or p_cap < 1 then
+    return false;                 -- буруу оролт -> хориглохгүй
+  end if;
+  insert into public.judge_hits as h (k, n, win)
+       values (p_k, 1, now())
+  on conflict (k) do update
+     set n   = case when now() - h.win > interval '1 hour' then 1 else h.n + 1 end,
+         win = case when now() - h.win > interval '1 hour' then now() else h.win end
+  returning h.n into cur;
+
+  -- Хуучирсан мөрийг үе үе цэвэрлэнэ (тусдаа cron хэрэггүй).
+  -- Бүх дуудалт дээр хийвэл үнэтэй тул ~1%-д нь.
+  if random() < 0.01 then
+    delete from public.judge_hits where now() - win > interval '2 hours';
+  end if;
+
+  return cur > p_cap;
+end;
+$jb$;
+
+revoke all on function public.judge_bump(text, int) from public;
+-- `anon`-д ЗОРИУД өгөхгүй: зөвхөн сервер талын Edge Function дуудна.
+-- Хоёр хязгаарыг НЭГ дуудалтаар: Edge Function -> өгөгдлийн сан руу
+-- нэг л удаа очно (сурагч хариултаа хэлчихээд хүлээж байдаг).
+-- Буцаах утга: '' = чөлөөтэй · 'device' · 'ip'.
+create or replace function public.judge_gate(
+  p_dev text, p_ip text, p_cap_dev int, p_cap_ip int)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $jg$
+begin
+  if coalesce(p_dev, '') <> '' and public.judge_bump('d:' || p_dev, p_cap_dev) then
+    return 'device';
+  end if;
+  if coalesce(p_ip, '') <> '' and public.judge_bump('i:' || p_ip, p_cap_ip) then
+    return 'ip';
+  end if;
+  return '';
+end;
+$jg$;
+
+revoke all on function public.judge_gate(text, text, int, int) from public;
+-- `anon`-д ЗОРИУД өгөхгүй — зөвхөн сервер талын Edge Function дуудна.
+
