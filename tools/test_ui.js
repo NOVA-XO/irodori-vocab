@@ -2323,6 +2323,105 @@ async function run(c) {
     sj && sj.offA === 'off' && sj.offB === 'off' && sj.offC === 'off'
       && sj.offD === 'off', JSON.stringify(sj));
 
+  console.log('\n[42] ХУВИЙН асуулт — сурагчийн үнэн хариултыг буруутгахгүй');
+  /* Шалгалтын 180 асуултын дийлэнх нь сурагчийн ӨӨРИЙНХ нь тухай.
+     Загвар хариулт нь ЖИШЭЭ — 4 настай сурагчид «25 настай» гэж
+     хэлүүлэх нь хамгийн хортой алдаа.
+     Тайлбарт BACKTICK бичихгүй. Escape (\\d г.м.) БИЧИХГҮЙ. */
+  const fr = await c.ev(`
+    const out = {};
+    const ex = await fetch('data/exam-starter.json').then(r => r.json());
+    out.n = ex.items.length;
+    out.withFlag = ex.items.filter(x => x.free === 0 || x.free === 1).length;
+    out.free = ex.items.filter(x => x.free === 1).length;
+    // Хэвшмэл үг («юу гэж хэлэх вэ») нь ТОГТМОЛ байх ёстой
+    const say = ex.items.filter(x => x.q.indexOf('何と言いますか') >= 0);
+    out.sayN = say.length;
+    out.sayFixed = say.filter(x => x.free === 0).length;
+    // ЗОРИУДЫН онцгой тохиолдол: «何になさいますか» гэж асуухад ямар ч
+    // хоол захиалж болно. Ганц л ийм байх ёстой — өсвөл хэв маяг эвдэрсэн.
+    out.sayFreeIds = say.filter(x => x.free === 1).map(x => x.id).join(',');
+    // Хувийн асуултын жишээ — ТУС БҮР чөлөөт байх ёстой
+    const pick = id => (ex.items.find(x => x.id === id) || {}).free;
+    out.age = pick('S04-01'); out.kid = pick('S04-09');
+    out.wake = pick('S09-07'); out.live = pick('S04-08');
+    out.pen = pick('S10-06');          // ТОГТМОЛ байх ёстой
+    return out;
+  `);
+  ok('шалгалтын бүх асуулт free тэмдэгтэй (180)',
+    fr && fr.n === 180 && fr.withFlag === 180, JSON.stringify(fr));
+  ok('чөлөөт асуулт олонх (100..160)',
+    fr && fr.free >= 100 && fr.free <= 160, JSON.stringify(fr && fr.free));
+  ok('«юу гэж хэлэх вэ» асуултууд ТОГТМОЛ — ганц мэдэгдэж буй онцгойлолтой',
+    fr && fr.sayN > 20 && fr.sayFixed === fr.sayN - 1
+      && fr.sayFreeIds === 'S06-01', JSON.stringify(fr));
+  ok('нас · хүүхдийн нас · босох цаг · оршин суух газар = ЧӨЛӨӨТ',
+    fr && fr.age === 1 && fr.kid === 1 && fr.wake === 1 && fr.live === 1,
+    JSON.stringify(fr));
+  ok('«ペンを貸してください» = ТОГТМОЛ (нөхцөл нь өгөгдсөн)',
+    fr && fr.pen === 0, JSON.stringify(fr && fr.pen));
+
+  const fj = await c.ev(`
+    const J = (heard, model, kana, key, free) =>
+      judgeSpoken([heard], { model: model, modelKana: kana, key: key, free: free }).band;
+    return {
+      // Сурагчийн ҮНЭН хариулт загвараас зөрсөн ч ЗӨВ
+      age:  J('よんさいです', '25歳です。', 'にじゅうごさいです。', '〜歳です', 1),
+      wake: J('しちじにおきます', '六時に起きます。', 'ろくじにおきます。', '時間', 1),
+      fam:  J('ごにんです', 'よにんです。', 'よにんです。', '家族', 1),
+      live: J('うらんばーとるにすんでいます', '東京に住んでいます。',
+              'とうきょうにすんでいます。', '住んで', 1),
+      food: J('ぶうずがすきです', 'すしが好きです。', 'すしがすきです。', '好きです', 1),
+      hob:  J('しゅみはすぽーつです', '趣味は音楽です。', 'しゅみはおんがくです。', '趣味', 1),
+      // ХЭЛБЭР эвдэрсэн бол чөлөөт асуултад ч анхааруулна
+      broken: J('よんさい', '25歳です。', 'にじゅうごさいです。', '〜歳です', 1),
+      // Чөлөөт асуултад «Өөр хариулт» гэж ХЭЗЭЭ Ч хэлэхгүй
+      nonsense: J('わかりません', '25歳です。', 'にじゅうごさいです。', '〜歳です', 1),
+      // ТОГТМОЛ асуулт — зан төлөв ӨӨРЧЛӨГДӨӨГҮЙ байх ёстой
+      fixOk:   J('ペンをかしてください', 'ペンを貸してください。', 'ペンをかしてください。', 'てください', 0),
+      fixNear: J('ペンをかして', 'ペンを貸してください。', 'ペンをかしてください。', 'てください', 0),
+      fixOff:  J('こんばんは', 'おはようございます。', 'おはようございます。', 'あいさつ', 0),
+    };
+  `);
+  ok('хувийн ҮНЭН хариулт «зөв» гэж үнэлэгдэнэ (6 тохиолдол)',
+    fj && fj.age === 'ok' && fj.wake === 'ok' && fj.fam === 'ok'
+      && fj.live === 'ok' && fj.food === 'ok' && fj.hob === 'ok', JSON.stringify(fj));
+  ok('чөлөөт асуултад ч ХЭЛБЭРийн алдааг барина (です алга)',
+    fj && fj.broken === 'near', JSON.stringify(fj && fj.broken));
+  ok('чөлөөт асуултад «Өөр хариулт» гэж ХЭЗЭЭ Ч хэлэхгүй',
+    fj && fj.nonsense !== 'off', JSON.stringify(fj && fj.nonsense));
+  ok('ТОГТМОЛ асуултын зан төлөв хэвээр (ok/near/off)',
+    fj && fj.fixOk === 'ok' && fj.fixNear === 'near' && fj.fixOff === 'off',
+    JSON.stringify(fj));
+
+  const fm = await c.ev(`
+    const L = (b, free) => ({ band: b, free: free });
+    const A = (b, miss, better) => ({ band: b, missing: miss || [],
+                                      better: better || '', src: 'groq' });
+    return {
+      // Хувийн асуулт: LLM «off» гэвэл АГУУЛГЫГ дүгнэсэн -> үл тоомсорлоно
+      offBand: mergeJudge(L('ok', true), A('off', [], 'ろくじにおきます。')).band,
+      offAdv: mergeJudge(L('ok', true), A('off', ['ろくじ'], 'ろくじにおきます。')).better,
+      offMiss: mergeJudge(L('ok', true), A('off', ['ろくじ'], '')).missing.length,
+      // Хувийн асуулт: LLM «near» гэвэл ХЭЛБЭРийн алдаа -> хүлээж авна
+      nearBand: mergeJudge(L('ok', true), A('near', ['です'], 'よんさいです。')).band,
+      nearAdv: mergeJudge(L('ok', true), A('near', ['です'], 'よんさいです。')).better,
+      // ТОГТМОЛ асуулт: хуучин дүрэм хэвээр — LLM зөвхөн ДЭЭШЛҮҮЛНЭ
+      fixDown: mergeJudge(L('ok', false), A('off')).band,
+      fixUp: mergeJudge(L('off', false), A('ok')).band,
+      fixAdv: mergeJudge(L('ok', false), A('near', ['ください'], 'X')).missing.join(','),
+    };
+  `);
+  ok('хувийн: LLM-ийн «off» нь зэрэгт нөлөөлөхгүй',
+    fm && fm.offBand === 'ok', JSON.stringify(fm && fm.offBand));
+  ok('хувийн: LLM-ийн «off» үеийн ЗӨВЛӨГӨӨ хаягдана (загварын баримт)',
+    fm && fm.offAdv === '' && fm.offMiss === 0, JSON.stringify(fm));
+  ok('хувийн: LLM-ийн «near» (хэлбэрийн алдаа) хүлээн авагдана',
+    fm && fm.nearBand === 'near' && /です/.test(fm.nearAdv), JSON.stringify(fm));
+  ok('ТОГТМОЛ асуултад нэгтгэх хуучин дүрэм хэвээр',
+    fm && fm.fixDown === 'ok' && fm.fixUp === 'ok' && fm.fixAdv === 'ください',
+    JSON.stringify(fm));
+
   console.log('\n[34] «Явцыг устгах» — шалгалтын хариулт серверээс ч устана');
   /* Уусгалт нэмсний дараа хоосон түүх юу ч устгахаа больсон (зөв). Гэвч
      устгах товч ч устгаж чадахаа больсон: хэрэглэгч шалгалтын дэлгэцэд

@@ -32,6 +32,27 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Кана хэлбэр нь ханз уншиж чаддаггүй сурагчид —
 # шалгалтын тохиргооноос 漢字 / かな сонгоно.
 # Кана талбарт ХАНЗ БАЙХ ЁСГҮЙ (доор шалгана).
+# ── ЧӨЛӨӨТ vs ТОГТМОЛ хариулт ───────────────────────────────────────
+#
+# Энэ шалгалтын 180 асуултын дийлэнх нь сурагчийн ӨӨРИЙНХ нь тухай:
+# «хэдэн настай вэ», «хаана амьдардаг вэ», «ямар хоолонд дуртай вэ».
+# Тэдгээрт загвар хариулт нь ЖИШЭЭ болохоос «зөв хариулт» БИШ —
+# 4 настай сурагч «25 настай» гэж хэлэх ёсгүй.
+#
+# Апп үүнийг мэдэхгүй бол үнэн хариултыг «буруу» гэж заана. Тиймээс
+# асуулт бүрд `free` тэмдэг тавина:
+#   free = 1  ->  агуулга нь сурагчаас хамаарна. Зөвхөн ХЭЛБЭР шалгана.
+#   free = 0  ->  хэвшмэл үг эсвэл асуултад агуулга нь ӨГӨГДСӨН.
+#
+# ТОГТМОЛ гэж үзэх шалгуур: асуулт нь нөхцөлийг бүрэн зааж өгөөд «юу
+# гэж хэлэх вэ» гэж асуусан байх («窓を閉めてほしいです。何と言いますか。»
+# -> хариулт нь заавал «窓を閉めてください»). Мөн хэвшмэл мэндчилгээ.
+FIXED_MARK = re.compile(u"何と言いますか|と聞かれました|あいさつしてください|ことわります")
+
+# Дээрх шалгуурт багтсан ч агуулга нь чөлөөт үлдэх онцгой тохиолдол:
+# «何になさいますか» гэж асуухад ямар ч хоол захиалж болно.
+FREE_ANYWAY = {u"店で「何になさいますか。」と聞かれました。何と言いますか。"}
+
 Q = [
  # ── L1 ──
  (1, "Мэндчилгээ", "朝、先生に会いました。何と言いますか。",
@@ -1115,16 +1136,24 @@ def main():
                 errs.append("%s: %s канан хэлбэр сэргэхгүй" % (qid, fld))
             rub[fld] = p
 
+        free = 0 if (FIXED_MARK.search(qq) and qq not in FREE_ANYWAY) else 1
         item = {
             "id": qid, "lesson": lesson, "topic": topic,
             "q": qq, "qKana": qkana, "qMn": qmn,
             "model": model, "modelKana": mkana, "modelMn": modelmn, "key": key,
+            "free": free,
         }
         item.update(rub)
         out.append(item)
 
     if len(Q) != 180:
         errs.append("Нийт асуулт %d (180 байх ёстой)" % len(Q))
+    nfree = sum(it["free"] for it in out)
+    # Хэв маяг эвдэрвэл (ж: асуултын найруулга өөрчлөгдвөл) чимээгүй
+    # өнгөрөхгүй — бүх асуулт нэг тийшээ бөөгнөрвөл барина.
+    if not (100 <= nfree <= 160):
+        errs.append("ЧӨЛӨӨТ асуулт %d — 100..160-ийн гадна, шалгуур эвдэрсэн байж магадгүй"
+                    % nfree)
 
     if errs:
         sys.stderr.write("\n".join(errs).encode("utf-8", "replace")
@@ -1138,7 +1167,7 @@ def main():
         "note": "Сурагч асуултад хариулаад, загвар хариултыг харж өөрөө "
                 "«чадсан/чадаагүй» гэж тэмдэглэнэ. Ханз/кана сонголттой. "
                 "Багш tools/build_exam.py-д асуулт нэмж/заснаа дахин ажиллуулна.",
-        "version": 4,
+        "version": 5,
         "count": len(out),
         "items": out,
     }
@@ -1147,7 +1176,9 @@ def main():
         f.write(json.dumps(doc, ensure_ascii=False, indent=1) + "\n")
 
     nr = sum(1 for it in out if it.get("qRuby"))
-    print("OK  exam-starter.json  questions=%d  ruby=%d  kind=self" % (len(out), nr))
+    nf = sum(it["free"] for it in out)
+    print("OK  exam-starter.json  questions=%d  ruby=%d  free=%d  fixed=%d  kind=self"
+          % (len(out), nr, nf, len(out) - nf))
     print("per lesson:", " ".join("L%d=%d" % (l, per_lesson[l])
                                   for l in sorted(per_lesson)))
 

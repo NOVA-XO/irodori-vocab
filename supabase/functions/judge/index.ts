@@ -35,6 +35,22 @@ const SYS = [
   '  "off"  = a different topic or meaning.',
   'Extra polite fillers (はい、ええ、そうですね) never make it worse.',
   '',
+  'PERSONAL ANSWERS. When "Personal question: yes", the model answer is only',
+  'a SAMPLE of one person. The learner answers about THEIR OWN life, so any',
+  'age, time, name, place, date, number, food or hobby may differ and is',
+  'still fully correct. Judge ONLY the grammar and the sentence pattern.',
+  'NEVER put the sample answer\'s facts into "missing" or "better".',
+  'model 「25さいです。」 heard 「よんさいです」',
+  '  -> {"band":"ok","missing":[],"better":""}          (NOT "say 25")',
+  'model 「ろくじにおきます。」 heard 「しちじにおきます」',
+  '  -> {"band":"ok","missing":[],"better":""}',
+  'model 「すしがすきです。」 heard 「ぶうずがすきです」',
+  '  -> {"band":"ok","missing":[],"better":""}',
+  'Only a BROKEN pattern is a problem: 「よんさい」 (no です) -> near.',
+  '',
+  'WRITE "better" IN KANA ONLY. The learner is a beginner and cannot read',
+  'kanji yet. 「ペンをかしてください。」 is right; 「ペンを貸してください。」 is not.',
+  '',
   'Examples:',
   'model 「ペンを貸してください。」 heard 「ペンをかして」',
   '  -> {"band":"near","missing":["ください"],"better":"ペンをかしてください。"}',
@@ -52,6 +68,7 @@ function userMsg(b: Record<string, string>) {
     'Model answer: ' + (b.model || ''),
     'Model answer in kana: ' + (b.modelKana || b.model || ''),
     'Target structure: ' + (b.key || '(none)'),
+    'Personal question: ' + (String(b.free) === '1' ? 'yes' : 'no'),
     'Learner said: ' + (b.heard || ''),
   ].join('\n');
 }
@@ -66,8 +83,13 @@ function parse(text: string) {
   if (band !== 'ok' && band !== 'near' && band !== 'off') return null;
   const miss = Array.isArray(j.missing)
     ? j.missing.filter((x: unknown) => typeof x === 'string').slice(0, 2) : [];
-  const better = typeof j.better === 'string' ? j.better.slice(0, 80) : '';
-  return { band, missing: miss, better };
+  let better = typeof j.better === 'string' ? j.better.slice(0, 80) : '';
+  /* Загвар заримдаа ХАНЗААР бичдэг. Эхлэгч сурагч ханз уншиж чадахгүй
+     тул ханзтай санал болголтыг ҮЗҮҮЛЭХГҮЙ — буруу зөвлөгөө өгөхөөс
+     юу ч өгөхгүй нь дээр. Мөн «дутуу үг»-д ханз орохыг ч хориглоно. */
+  if (/[\u3005\u4e00-\u9fff]/.test(better)) better = '';
+  const missKana = miss.filter((x: string) => !/[\u3005\u4e00-\u9fff]/.test(x));
+  return { band, missing: missKana, better };
 }
 
 async function callGroq(body: Record<string, string>, key: string) {
@@ -152,6 +174,8 @@ Deno.serve(async (req: Request) => {
   for (const k of ['q', 'model', 'modelKana', 'key', 'heard']) {
     if (typeof body[k] === 'string') body[k] = body[k].slice(0, 200);
   }
+  // `free` нь зөвхөн 0/1 — өөр юу ч ирвэл 0 гэж үзнэ.
+  body.free = String(body.free) === '1' ? '1' : '0';
 
   const dbg = new URL(req.url).searchParams.get('debug') === '1';
   const groq = Deno.env.get('GROQ_API_KEY');

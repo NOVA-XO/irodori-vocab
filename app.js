@@ -2472,6 +2472,7 @@ function aiJudge(heard, q) {
   return fetch(url, {
     method: 'POST', headers: headers, signal: ctl ? ctl.signal : undefined,
     body: JSON.stringify({ q: q.q, model: q.model, modelKana: q.modelKana || '',
+                           free: q.free ? 1 : 0,
                            key: q.key || '', heard: heard }),
   }).then(r => (r.ok ? r.json() : null))
     .catch(() => null)
@@ -2498,9 +2499,21 @@ function mergeJudge(local, ai) {
   // Локал нь хэлбэрт нарийн (худал магтахгүй), LLM нь утгад сайн (өөр
   // үгээр зөв хэлсэнийг таньдаг) — тиймээс хамгийн ӨНДӨРийг нь авна.
   // Эргэлзээтэй дохиогоор сурагчийг шийтгэхгүй гэсэн зарчим ч энэ.
-  const band = (rank[ai.band] || 0) > rank[local.band] ? ai.band : local.band;
-  return { band: band, missing: ai.missing || [], better: ai.better || '',
-           src: ai.src || 'ai' };
+  let band = (rank[ai.band] || 0) > rank[local.band] ? ai.band : local.band;
+  let missing = ai.missing || [], better = ai.better || '';
+  /* ХУВИЙН асуулт — тусгай заалт. LLM-д «баримт нь зөрж болно» гэж
+     заасан ч заримдаа мартаад загварынхыг шаарддаг: сурагч «しちじに
+     おきます» гэхэд «ろくじにおきます гэж хэл» гэнэ. Сурагчийн ҮНЭН
+     хариултыг ингэж «засах» нь хамгийн хортой алдаа.
+       · LLM «off» гэвэл -> АГУУЛГЫГ дүгнэсэн гэсэн үг. Бүхэлд нь
+         үл тоомсорлоно (зэрэг ч, зөвлөгөө ч).
+       · LLM «near» гэвэл -> ХЭЛБЭРийн алдаа олсон («です» алга) —
+         энэ нь үнэ цэнэтэй тул зэргийг нь бууруулж, зөвлөгөөг үзүүлнэ. */
+  if (local.free) {
+    if (ai.band === 'off') { band = local.band; missing = []; better = ''; }
+    else if (ai.band === 'near') band = 'near';
+  }
+  return { band: band, missing: missing, better: better, src: ai.src || 'ai' };
 }
 
 /** LLM-ийн бүтэцтэй хариултыг МОНГОЛ өгүүлбэр болгоно. */
@@ -2580,6 +2593,42 @@ function judgeSpoken(alts, q) {
   const hasKey = isStruct
     ? list.some(a => normKana(a).includes(key)) : null;
 
+  /* ЧӨЛӨӨТ (хувийн) асуулт — 180 асуултын 141 нь ийм. Сурагчийн нас,
+     хаяг, дуртай хоолыг апп МЭДЭХГҮЙ тул агуулгыг шалгах боломжгүй:
+     4 настай хүүхэд «よんさいです» гэхэд загвар нь «にじゅうごさいです»
+     байлаа гээд БУРУУ биш. Тиймээс зөвхөн ХЭЛБЭРийг шалгана.
+
+     Хэлбэр таарсан эсэхийг загвартай хуваалцсан ЭХ эсвэл ТӨГСГӨЛӨӨР
+     хэмжинэ (эелдэг төгсгөлийг хасаад — «です» дангаараа нотолгоо биш):
+       よんさい ／ にじゅうごさい     -> төгсгөл «さい»  таарав
+       しゅみはすぽーつ ／ しゅみはおんがく -> эх «しゅみは» таарав
+     Ийм асуултад «Өөр хариулт» гэж ХЭЗЭЭ Ч хэлэхгүй — апп үнэнийг
+     мэдэхгүй байж сурагчийг буруутгах эрхгүй. */
+  if (q.free) {
+    let band0;
+    if (hasKey === true) band0 = 'ok';
+    else if (hasKey === false) band0 = 'near';   // бүтэц дутуу — ХЭЛБЭРийн алдаа
+    else {
+      let frame = 0;
+      const c1 = coreOf(m1), c2 = coreOf(m2);
+      for (const a of list) {
+        const h = coreOf(normKana(a));
+        frame = Math.max(frame, affixLen(h, c1), affixLen(h, c2));
+      }
+      band0 = frame >= 2 ? 'ok' : 'near';
+    }
+    /* Хүрээ таарсан ч ЭЕЛДЭГ ТӨГСГӨЛ дутуу бол хэлбэр бүрэн биш:
+       「よんさい」 гэхэд 「よんさいです」 болгох нь ЖИНХЭНЭ зөвлөгөө
+       (баримтыг нь биш, хэлбэрийг нь засаж байна). */
+    if (band0 === 'ok') {
+      const modelPolite = POLITE_END.test(m1) || POLITE_END.test(m2);
+      const heardPolite = list.some(a => POLITE_END.test(normKana(a)));
+      if (modelPolite && !heardPolite) band0 = 'near';
+    }
+    return { band: band0, sim: Math.round(sim * 100), hasKey: hasKey,
+             key: isStruct ? (q.key || '') : '', free: true };
+  }
+
   let band = sim >= 0.70 ? 'ok' : sim >= 0.40 ? 'near' : 'off';
   // Бүтэц нь бүтнээрээ сонсогдсон атал ижилсэл бага бол «ойролцоо»
   // хүртэл өргөнө: сурагч зөв бүтцээр ӨӨР агуулга хэлсэн байж болно.
@@ -2622,6 +2671,16 @@ const coreOf = t => (t || '').replace(POLITE_END, '') || (t || '');
 function lcsCover(a, b) {
   const n = lcsLen(a, b);
   return n >= 2 ? n / Math.min(a.length, b.length) : 0;
+}
+
+/** Хуваалцсан ЭХ эсвэл ТӨГСГӨЛИЙН хамгийн урт нь (хэлбэрийн хүрээ). */
+function affixLen(a, b) {
+  if (!a || !b) return 0;
+  const n = Math.min(a.length, b.length);
+  let pre = 0, suf = 0;
+  while (pre < n && a[pre] === b[pre]) pre++;
+  while (suf < n && a[a.length - 1 - suf] === b[b.length - 1 - suf]) suf++;
+  return Math.max(pre, suf);
 }
 
 /** Хамгийн урт нийтлэг дэд мөрийн УРТ. */
