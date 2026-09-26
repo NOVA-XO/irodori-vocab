@@ -391,6 +391,7 @@ node tools/test_attack.js           #  24 — халдлагын хувилба�
 node tools/test_answers.js          # хариулт шалгагч
 node tools/test_judge.js --local    # ярианы үнэлгээний чанар (сүлжээгүй)
 node tools/test_quota.js            # хязгаар АМЬДААР ажиллаж байна уу
+node tools/test_live.js             # ТАРСАН сайт эрүүл үү (26 шалгуур)
 python tools/test_audio.py          #  23 — VOICEVOX АСААЛТТАЙ байх ёстой
 ```
 
