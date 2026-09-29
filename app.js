@@ -3973,8 +3973,7 @@ function refreshMe() {
   }
   const nav = $('nav-klass');
   if (nav) nav.hidden = !anyClasses().length;
-  const ns = $('nav-songs');
-  if (ns) ns.hidden = !inSongClass();
+  for (const el of [$('nav-songs'), $('home-songs')]) if (el) el.hidden = !inSongClass();
 }
 
 /* ── Серверт тоо илгээх ──────────────────────────────────────────── */
