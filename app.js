@@ -1644,7 +1644,8 @@ function finish() {
 /* ══════════════════════ 7. Дэлгэц солих ба нүүр ══════════════════════ */
 
 const SCREENS = ['home', 'irodori', 'jlpt', 'kana', 'study', 'done', 'exam',
-                 'feedback', 'stats', 'profile', 'setup', 'klass', 'grammar'];
+                 'feedback', 'stats', 'profile', 'setup', 'klass', 'grammar',
+                 'songs'];
 let screen = 'home';
 
 /* JLPT хэсгийг ТҮР унтраасан. Буцаахдаа зөвхөн энэ тугийг `true` болгоно —
@@ -1721,6 +1722,9 @@ function go(name) {
   // JLPT түр унтраалттай үед тэр дэлгэц рүү орохыг хаана (гүн холбоос,
   // хуучин кэштэй хуудаснаас ирсэн дарлага ч байж болно).
   if (name === 'jlpt' && !JLPT_ON) name = 'home';
+  // «Дуу» нь ЗӨВХӨН Наран ангийнханд — ангиас гарсан хүний түүхэн дэх
+  // бичлэг ч (буцах товч) энд орох ёсгүй.
+  if (name === 'songs' && !inSongClass()) name = 'home';
   // Явц нь БҮХ санг харуулдаг тул нээхэд бусад номыг татна. Эхлээд
   // байгаагаараа зурж, ирсэн хойно нь дахин зурна — хоосон дэлгэц харагдахгүй.
   if (name === 'stats') { refreshStats(); loadAllBooks().then(refreshStats); }
@@ -1729,6 +1733,7 @@ function go(name) {
   if (name === 'feedback') refreshFb();
   if (name === 'exam') examSetup();
   if (name === 'grammar') { grPane('gr-pick'); refreshGrammar(); }
+  if (name === 'songs') { soPane('so-pick'); refreshSongs(); }
   if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
   show(name);
 }
@@ -2022,6 +2027,7 @@ $('gr-start').onclick = grStart;
 $('gr-again').onclick = grStart;
 $('gr-next').onclick = grNext;
 $('gr-back').onclick = grAbort;
+$('so-back').onclick = () => { soPane('so-pick'); window.scrollTo(0, 0); };
 $('gr-stop').onclick = grAbort;
 $('gr-list-back').onclick = grAbort;
 
@@ -2777,6 +2783,65 @@ function refreshGrammar() {
       box.appendChild(b);
     }
   });
+}
+
+/* ── Дуу (ЗӨВХӨН Наран анги) ───────────────────────────────────────
+ * Япон дуу: нэр, холбоос (YouTube г.м.), үг нь япон/かな/монгол.
+ * Дууны mp3 репод БАЙХГҮЙ — зохиогчийн эрх, репо нийтэд нээлттэй.
+ * Анги сонголтыг серверээс биш `me`-ээс шалгана: нууц зүйл биш,
+ * зөвхөн цэсийг цэгцтэй байлгах зорилготой. */
+const SONG_CLASS = 'c2';                 // Наран
+const inSongClass = () => anyClasses().includes(SONG_CLASS);
+let SONGS = null;                        // data/songs.json-ий items
+
+function loadSongs() {
+  if (SONGS) return Promise.resolve(SONGS);
+  return fetch('data/songs.json')
+    .then(r => r.json())
+    .then(d => { SONGS = Array.isArray(d.items) ? d.items : []; return SONGS; })
+    .catch(() => []);                    // SONGS-ийг null үлдээнэ — дараа дахин оролдоно
+}
+
+function soPane(name) {
+  for (const id of ['so-pick', 'so-read']) $(id).hidden = (id !== name);
+}
+
+function refreshSongs() {
+  const box = $('so-list');
+  if (!box) return;
+  loadSongs().then(list => {
+    box.innerHTML = '';
+    $('so-empty').hidden = list.length > 0;
+    for (const sg of list) {
+      const b = document.createElement('button');
+      b.innerHTML = '<span class="gr-l">♪</span>' +
+        '<span class="gr-t jp">' + esc(sg.title || '') + '</span>' +
+        '<span class="gr-p">' + ((sg.lines || []).length || '') + '</span>' +
+        '<span class="gr-s">' + esc(sg.artist || '') + '</span>';
+      b.onclick = () => soOpen(sg.id);
+      box.appendChild(b);
+    }
+  });
+}
+
+/** Зөвхөн http(s) холбоос — `javascript:` г.м.-ийг хаана. */
+const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? String(u) : '';
+
+function soOpen(id) {
+  const sg = (SONGS || []).find(x => x.id === id);
+  if (!sg) return;
+  $('so-name').textContent = sg.title || '';
+  $('so-artist').textContent = sg.artist || '';
+  const a = $('so-link'), url = safeUrl(sg.url);
+  a.hidden = !url;
+  if (url) a.href = url; else a.removeAttribute('href');
+  const kana = settings.script === 'kana';
+  $('so-lines').innerHTML = (sg.lines || []).map(l =>
+    '<div><div class="jp">' + esc(kana && l.kana ? l.kana : (l.jp || '')) + '</div>' +
+    (!kana && l.kana && l.kana !== l.jp ? '<div class="so-kana jp">' + esc(l.kana) + '</div>' : '') +
+    '<div class="mn">' + esc(l.mn || '') + '</div></div>').join('');
+  soPane('so-read');
+  window.scrollTo(0, 0);
 }
 
 function grPane(name) {
@@ -3817,6 +3882,8 @@ function refreshMe() {
   }
   const nav = $('nav-klass');
   if (nav) nav.hidden = !anyClasses().length;
+  const ns = $('nav-songs');
+  if (ns) ns.hidden = !inSongClass();
 }
 
 /* ── Серверт тоо илгээх ──────────────────────────────────────────── */

@@ -3391,9 +3391,10 @@ async function run(c) {
   ok('бүдгэрүүлэгч гарч ирнэ',
     dr && dr.opened.scrim === false, JSON.stringify(dr.opened));
   /* JLPT-ийн тугаас хамаарна — хатуу тоо бичвэл тугийг сольмогц унана.
-     9 дэх нь «Анги» — зөвхөн ангид элссэн үед харагдана (энэ үед үгүй). */
-  ok('шургуулгад 10 бичлэг, «Анги» нуугдмал, JLPT нь тугийг дагана',
-    dr && dr.opened.items === 10
+     9 дэх нь «Анги», 10 дахь нь «Дуу» (Наран) — зөвхөн ангид элссэн үед
+     харагдана (энэ үед үгүй). */
+  ok('шургуулгад 11 бичлэг, «Анги»/«Дуу» нуугдмал, JLPT нь тугийг дагана',
+    dr && dr.opened.items === 11
       && dr.opened.shown === (jlptOn ? 9 : 8),
     JSON.stringify(dr.opened) + ' jlptOn=' + jlptOn);
   ok('бичлэг БҮР иконтой',
@@ -3561,6 +3562,79 @@ async function run(c) {
     wk && wk.rt === 0 && String(wk.cls).indexOf('ruby') < 0, JSON.stringify(wk));
 
   await c.ev('settings.script = "kana"; exAbort(); show("home"); go("home"); return 1;');
+
+  console.log('\n[30] Дуу — ЗӨВХӨН Наран ангид');
+  /* Цэсний «Дуу» мөр ба дэлгэц нь зөвхөн `c2`-д (сурагч эсвэл багш)
+     харагдана. Хуваалцсан профайл тул төгсгөлд `me`, `SONGS`-ийг буцаана. */
+  const so = await c.ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const keep = { me: JSON.parse(JSON.stringify(me)), songs: SONGS, script: settings.script };
+    const out = {};
+    const nav = () => document.getElementById('nav-songs').hidden;
+    me.codes = { mica: '1111' }; me.teach = {}; me.other = false; refreshMe();
+    out.micaHidden = nav();
+    go('songs'); out.micaScreen = screen;
+    me.codes = {}; me.other = true; refreshMe();
+    out.otherHidden = nav();
+    me.other = false; me.teach = { c2: '123456' }; refreshMe();
+    out.teachShown = !nav();
+    me.teach = {}; me.codes = { c2: '8264' }; refreshMe();
+    out.naranShown = !nav();
+
+    SONGS = [];
+    go('songs'); await wait(200);
+    out.naranScreen = screen;
+    out.emptyShown = !document.getElementById('so-empty').hidden;
+
+    SONGS = [
+      { id: 'S1', title: '<b>テスト</b>の歌', artist: 'A', url: 'https://www.youtube.com/watch?v=x',
+        lines: [{ jp: '空を見る', kana: 'そらをみる', mn: 'тэнгэр харах' }] },
+      { id: 'S2', title: 'B', artist: 'B', url: 'javascript:alert(1)', lines: [] }
+    ];
+    refreshSongs(); await wait(100);
+    const items = [...document.querySelectorAll('#so-list button')];
+    out.n = items.length;
+    out.escaped = !document.querySelector('#so-list b') && items[0].textContent.includes('<b>');
+    out.emptyHidden = document.getElementById('so-empty').hidden;
+    settings.script = 'kanji';
+    items[0].click(); await wait(50);
+    out.readShown = !document.getElementById('so-read').hidden;
+    const a = document.getElementById('so-link');
+    out.link = !a.hidden && a.getAttribute('href') === 'https://www.youtube.com/watch?v=x'
+      && a.target === '_blank' && /noopener/.test(a.rel);
+    out.line = document.querySelector('#so-lines .jp').textContent;
+    out.kanaSub = (document.querySelector('#so-lines .so-kana') || {}).textContent;
+    out.mn = document.querySelector('#so-lines .mn').textContent;
+    settings.script = 'kana'; soOpen('S1');
+    out.kanaLine = document.querySelector('#so-lines .jp').textContent;
+    soOpen('S2');
+    out.badHidden = a.hidden && !a.hasAttribute('href');
+    document.getElementById('so-back').click();
+    out.backPick = !document.getElementById('so-pick').hidden;
+
+    // Ангиас гарвал «Дуу» дэлгэцээс ч гарна (буцах товчоор ч орохгүй).
+    me.codes = {}; refreshMe(); go('songs'); out.afterLeave = screen;
+
+    me = cleanMe(keep.me); save(KEY_ME, me); SONGS = keep.songs;
+    settings.script = keep.script; refreshMe(); go('home');
+    return out;
+  `);
+  ok('MICA-д «Дуу» цэс ХАРАГДАХГҮЙ, дэлгэц рүү орох боломжгүй',
+    so && so.micaHidden && so.micaScreen === 'home', JSON.stringify(so));
+  ok('«Бусад»-д «Дуу» харагдахгүй', so && so.otherHidden, JSON.stringify(so));
+  ok('Наран-ы багшид «Дуу» харагдана', so && so.teachShown, JSON.stringify(so));
+  ok('Наран-ы сурагчид «Дуу» харагдаж, дэлгэц нээгдэнэ',
+    so && so.naranShown && so.naranScreen === 'songs', JSON.stringify(so));
+  ok('дуу байхгүй үед «нэмэгдээгүй» гэж бичнэ', so && so.emptyShown, JSON.stringify(so));
+  ok('жагсаалт 2 дуу, нэр нь HTML-ээр задрахгүй',
+    so && so.n === 2 && so.escaped && so.emptyHidden, JSON.stringify(so));
+  ok('дууны үг: ханз + かな + монгол, холбоос шинэ цонхонд',
+    so && so.readShown && so.link && so.line === '空を見る' && so.kanaSub === 'そらをみる'
+      && so.mn === 'тэнгэр харах', JSON.stringify(so));
+  ok('かな горимд үг かなаар', so && so.kanaLine === 'そらをみる', JSON.stringify(so));
+  ok('javascript: холбоос ХААГДАНА', so && so.badHidden, JSON.stringify(so));
+  ok('«← Дууны жагсаалт» буцаана', so && so.backPick, JSON.stringify(so));
+  ok('ангиас гарсны дараа «Дуу» рүү орохгүй', so && so.afterLeave === 'home', JSON.stringify(so));
 
 }
 

@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-24h">
-<link rel="stylesheet" href="app.css?v=2026-09-24h">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-09-29a">
+<link rel="stylesheet" href="app.css?v=2026-09-29a">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-24h">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-24h">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-09-29a">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-09-29a">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -53,6 +53,8 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   <button data-go="kana"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5 10.5 4.5 17 19.5"/><path d="M6.8 14.5h7.4"/><path d="M19.5 19.5V12"/><path d="M19.5 12a2.6 2.6 0 1 0-2.6 2.6"/></svg><span>Кана үсэг</span></button>
   <button data-go="stats"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></svg><span>Явц</span></button>
   <button data-go="klass" id="nav-klass" hidden><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M16 5a3 3 0 0 1 0 6M21 20v-2a6 6 0 0 0-4-5.65"/></svg><span>Анги</span></button>
+  <!-- ЗӨВХӨН Наран ангийнханд (`SONG_CLASS`) — `refreshMe()` нээнэ. -->
+  <button data-go="songs" id="nav-songs" hidden><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg><span>Дуу</span></button>
   <button data-go="feedback"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 15.5a2.5 2.5 0 0 1-2.5 2.5H8l-4 3V6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5z"/></svg><span>Санал хүсэлт</span></button>
   <button data-go="profile"><svg class="di" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.2"/><path d="M4.8 20c0-3.5 3.2-5.8 7.2-5.8s7.2 2.3 7.2 5.8"/></svg><span>Тохиргоо</span></button>
 </nav>
@@ -410,6 +412,31 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
 
 </section>
 
+<!-- ═══════════════════ ДУУ (Наран анги) ═══════════════════ -->
+<section id="songs" class="screen" aria-labelledby="so-title" hidden>
+
+  <div id="so-pick">
+    <h2 id="so-title">Дуу</h2>
+    <p class="hint">Япон дуу сонсоод <b>үгийг нь</b> орчуулгатай нь уншина.
+       Дуу нь гадны сайтад (YouTube г.м.) нээгдэнэ.</p>
+    <div id="so-list" class="gr-list"></div>
+    <p id="so-empty" class="hint" hidden>Одоогоор дуу нэмэгдээгүй байна.</p>
+  </div>
+
+  <div id="so-read" hidden>
+    <div class="gr-head">
+      <b class="jp" id="so-name"></b>
+      <span class="gr-form" id="so-artist"></span>
+    </div>
+    <a id="so-link" class="primary big wide so-link" target="_blank"
+       rel="noopener noreferrer" hidden>Дууг сонсох ↗</a>
+    <div class="step">歌詞 · Дууны үг</div>
+    <div class="gr-ex" id="so-lines"></div>
+    <button class="ghost" id="so-back">← Дууны жагсаалт</button>
+  </div>
+
+</section>
+
 <!-- ═══════════════════ ШАЛГАЛТ ═══════════════════ -->
 <section id="exam" class="screen" hidden>
   <!-- Тохиргоо: шалгалтын дэлгэц рүү орвол эхлээд энэ гарна. -->
@@ -727,7 +754,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   </div>
 </section>
 
-<script src="sync-config.js?v=2026-09-24h"></script>
-<script src="app.js?v=2026-09-24h"></script>
+<script src="sync-config.js?v=2026-09-29a"></script>
+<script src="app.js?v=2026-09-29a"></script>
 </body>
 </html>

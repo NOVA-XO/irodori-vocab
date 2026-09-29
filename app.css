@@ -1203,6 +1203,11 @@ html{background:var(--bg)}
   white-space:nowrap}
 .gr-list button.is-done .gr-p{color:var(--ok)}
 
+/* ── ДУУ (Наран анги) — дүрмийн жагсаалт/жишээний хэв маягийг дахин ашиглана */
+a.so-link{display:block; box-sizing:border-box; text-align:center;
+  text-decoration:none; border-radius:var(--r); margin:14px 0 6px}
+.gr-ex .so-kana{font-size:13px; color:var(--ink-3); margin-top:3px}
+
 .gr-head{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline;
   margin-bottom:14px}
 .gr-head .gr-l{font-family:var(--disp); font-size:11px; color:var(--ink-3);
