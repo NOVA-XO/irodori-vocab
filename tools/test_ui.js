@@ -3570,7 +3570,9 @@ async function run(c) {
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const keep = { me: JSON.parse(JSON.stringify(me)), songs: SONGS, script: settings.script };
     const out = {};
-    const nav = () => document.getElementById('nav-songs').hidden;
+    const nav = () => { const a = document.getElementById('nav-songs').hidden,
+                              b = document.getElementById('home-songs').hidden;
+                        return a === b ? a : 'mismatch'; };
     me.codes = { mica: '1111' }; me.teach = {}; me.other = false; refreshMe();
     out.micaHidden = nav();
     go('songs'); out.micaScreen = screen;
@@ -3580,6 +3582,8 @@ async function run(c) {
     out.teachShown = !nav();
     me.teach = {}; me.codes = { c2: '8264' }; refreshMe();
     out.naranShown = !nav();
+    go('home'); document.getElementById('home-songs').click(); await wait(100);
+    out.cardGo = screen;
 
     SONGS = [];
     go('songs'); await wait(200);
@@ -3636,6 +3640,8 @@ async function run(c) {
   ok('Наран-ы багшид «Дуу» харагдана', so && so.teachShown, JSON.stringify(so));
   ok('Наран-ы сурагчид «Дуу» харагдаж, дэлгэц нээгдэнэ',
     so && so.naranShown && so.naranScreen === 'songs', JSON.stringify(so));
+  ok('нүүрний «Дуу» карт цэстэй ХАМТ гарч, дарахад «Дуу» нээгдэнэ',
+    so && so.naranShown === true && so.cardGo === 'songs', JSON.stringify(so));
   ok('дуу байхгүй үед «нэмэгдээгүй» гэж бичнэ', so && so.emptyShown, JSON.stringify(so));
   ok('жагсаалт 2 дуу, нэр нь HTML-ээр задрахгүй',
     so && so.n === 2 && so.escaped && so.emptyHidden, JSON.stringify(so));
