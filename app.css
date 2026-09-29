@@ -1212,6 +1212,12 @@ a.so-link{display:block; box-sizing:border-box; text-align:center;
 .gr-ex .so-line.is-on{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset}
 .so-ch{transition:color .12s ease}
 .so-line.is-on .so-ch.on{color:var(--accent)}
+/* Эмодзи үгийн ДЭЭР; япон ба эмодзи ердийнхөөс 1.5 дахин том (18 -> 27px) */
+.gr-ex .so-emo .jp{font-size:27px; line-height:1.3; display:flex; flex-wrap:wrap;
+  gap:4px 18px; align-items:flex-end}
+.so-w{display:inline-flex; flex-direction:column; align-items:center}
+.so-e{font-size:27px; line-height:1.2; font-family:"Apple Color Emoji","Segoe UI Emoji",
+  "Noto Color Emoji",sans-serif}
 
 .gr-head{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline;
   margin-bottom:14px}

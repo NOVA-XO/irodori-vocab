@@ -2841,11 +2841,26 @@ let soSong = null, soAudio = null, soRaf = 0;
 const soTimed = l => Array.isArray(l.t) && l.t.length &&
   l.t.length === [...String(l.kana || '')].filter(c => !/\s/.test(c)).length;
 
-/** Тэмдэгт бүрийг <span>-д; зай нь span-гүй. */
-function soChars(txt) {
-  let k = 0;
+/** Тэмдэгт бүрийг <span>-д; зай нь span-гүй. `k0` = эхлэх дугаар. */
+function soChars(txt, k0) {
+  let k = k0 || 0;
   return [...txt].map(c => /\s/.test(c) ? esc(c)
     : '<span class="so-ch" data-k="' + (k++) + '">' + esc(c) + '</span>').join('');
+}
+
+/** Үг бүрийн ДЭЭР эмодзи (ruby шиг). `emo` нь зайгаар тусгаарласан үгтэй
+    тоогоор таарахгүй бол null — дуудагч нь энгийн мөр зурна. Караокегийн
+    дугаар үгээс үгэнд үргэлжилнэ. */
+function soEmoRow(txt, emo, timed) {
+  const words = String(txt).split(/\s+/).filter(Boolean);
+  if (!Array.isArray(emo) || emo.length !== words.length) return null;
+  let k = 0;
+  return words.map((w, i) => {
+    const body = timed ? soChars(w, k) : esc(w);
+    k += [...w].length;
+    return '<span class="so-w"><span class="so-e" aria-hidden="true">' + esc(emo[i]) +
+      '</span><span class="so-wt">' + body + '</span></span>';
+  }).join('');
 }
 
 function soStop() {
@@ -2921,10 +2936,13 @@ function soOpen(id) {
     const sub = !kana && l.kana && l.kana !== l.jp;
     // Караоке нь КАНА дээр — ханзан мөрд доорх かな-г тодруулна.
     const kOnMain = timed && main === l.kana;
-    return '<div' + (timed ? ' class="so-line" tabindex="0" role="button" data-i="' + i + '"' : '') + '>' +
-      '<div class="jp">' + (kOnMain ? soChars(main) : esc(main)) + '</div>' +
+    // Эмодзи байвал үг бүрийн дээр гарч, монгол орчуулгыг ОРЛОНО.
+    const emoRow = soEmoRow(main, l.emo, kOnMain);
+    return '<div class="' + (timed ? 'so-line' : '') + (emoRow ? ' so-emo' : '') + '"' +
+      (timed ? ' tabindex="0" role="button" data-i="' + i + '"' : '') + '>' +
+      '<div class="jp">' + (emoRow || (kOnMain ? soChars(main) : esc(main))) + '</div>' +
       (sub ? '<div class="so-kana jp">' + (timed ? soChars(l.kana) : esc(l.kana)) + '</div>' : '') +
-      '<div class="mn">' + esc(l.mn || '') + '</div></div>';
+      (emoRow ? '' : '<div class="mn">' + esc(l.mn || '') + '</div>') + '</div>';
   }).join('');
   $('so-lines').querySelectorAll('.so-line').forEach(row => {
     const go1 = () => soPlay(sg.lines[+row.dataset.i].t[0] - 0.3);
