@@ -1207,6 +1207,11 @@ html{background:var(--bg)}
 a.so-link{display:block; box-sizing:border-box; text-align:center;
   text-decoration:none; border-radius:var(--r); margin:14px 0 6px}
 .gr-ex .so-kana{font-size:13px; color:var(--ink-3); margin-top:3px}
+/* Караоке: дуулагдаж буй мөр хүрээтэй, дуулагдсан үе нь 朱 өнгөтэй */
+.gr-ex .so-line{cursor:pointer; transition:border-color .18s ease, box-shadow .18s ease}
+.gr-ex .so-line.is-on{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent) inset}
+.so-ch{transition:color .12s ease}
+.so-line.is-on .so-ch.on{color:var(--accent)}
 
 .gr-head{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline;
   margin-bottom:14px}

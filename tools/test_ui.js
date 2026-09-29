@@ -3612,6 +3612,17 @@ async function run(c) {
     document.getElementById('so-back').click();
     out.backPick = !document.getElementById('so-pick').hidden;
 
+    // Жинхэнэ data/songs.json: S01 нь аппын дотор тоглуулагч ба караокетэй.
+    SONGS = null; await loadSongs(); settings.script = 'kanji'; soOpen('S01');
+    out.play = !document.getElementById('so-play').hidden;
+    out.linkGhost = /ghost/.test(document.getElementById('so-link').className);
+    out.spans = document.querySelectorAll('#so-lines .so-line:first-child .so-ch').length;
+    const marks = t => { soMark(t); const r = [...document.querySelectorAll('#so-lines > div')];
+      return r.map(x => x.classList.contains('is-on') ? x.querySelectorAll('.so-ch.on').length : '-').join(','); };
+    const S = SONGS.find(x => x.id === 'S01');
+    out.m1 = marks(5.3); out.m2 = marks(5.3 + S.loop); out.m3 = marks(13.05); out.m0 = marks(-1);
+    out.audioOk = await fetch(S.audio).then(r => r.ok && /audio|mpeg|octet/.test(r.headers.get('content-type') || ''));
+
     // Ангиас гарвал «Дуу» дэлгэцээс ч гарна (буцах товчоор ч орохгүй).
     me.codes = {}; refreshMe(); go('songs'); out.afterLeave = screen;
 
@@ -3635,6 +3646,14 @@ async function run(c) {
   ok('javascript: холбоос ХААГДАНА', so && so.badHidden, JSON.stringify(so));
   ok('«← Дууны жагсаалт» буцаана', so && so.backPick, JSON.stringify(so));
   ok('ангиас гарсны дараа «Дуу» рүү орохгүй', so && so.afterLeave === 'home', JSON.stringify(so));
+  ok('S01: ▶ товч гарч, YouTube холбоос хоёрдогч болно',
+    so && so.play && so.linkGhost, JSON.stringify(so));
+  ok('S01: эхний мөр 8 үе (span)', so && so.spans === 8, JSON.stringify(so));
+  ok('караоке: 5.3с -> 1-р мөр, 5 үе тодорсон; давталтад ч адил',
+    so && so.m1 === '5,-,-' && so.m2 === '5,-,-', JSON.stringify(so));
+  ok('караоке: 13.05с -> 3-р мөрийн 1-р үе; -1 -> бүгд арилна',
+    so && so.m3 === '-,-,1' && so.m0 === '-,-,-', JSON.stringify(so));
+  ok('S01-ийн mp3 серверээс татагдана', so && so.audioOk === true, JSON.stringify(so));
 
 }
 

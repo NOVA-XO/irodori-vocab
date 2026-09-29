@@ -1665,6 +1665,7 @@ function show(name) {
   if (screen === 'study' && name !== 'study') { statsPing(); memberSync(); stopRecog(); }
   // Шалгалтаас гарвал хойшлуулсан таймер ШИНЭ гүйлтэд нөлөөлөхгүй байх ёстой.
   if (screen === 'exam' && name !== 'exam') exAbort();
+  if (screen === 'songs' && name !== 'songs') soStop();
   const wasScreen = screen;          // `navTo`-д хэрэгтэй — доор `screen` дарагдана
   screen = name;
   // Энэ нь `show()` дотор байх ЁСТОЙ — дасгал `go()`-гүйгээр шууд
@@ -2027,7 +2028,8 @@ $('gr-start').onclick = grStart;
 $('gr-again').onclick = grStart;
 $('gr-next').onclick = grNext;
 $('gr-back').onclick = grAbort;
-$('so-back').onclick = () => { soPane('so-pick'); window.scrollTo(0, 0); };
+$('so-back').onclick = () => { soStop(); soPane('so-pick'); window.scrollTo(0, 0); };
+$('so-play').onclick = () => (soAudio && !soAudio.paused ? soStop() : soPlay());
 $('gr-stop').onclick = grAbort;
 $('gr-list-back').onclick = grAbort;
 
@@ -2827,19 +2829,108 @@ function refreshSongs() {
 /** Зөвхөн http(s) холбоос — `javascript:` г.м.-ийг хаана. */
 const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? String(u) : '';
 
+/* ── Тоглуулагч ба караоке ─────────────────────────────────────────
+ * `audio` ба `lines[].t` (мөрийн хоосон биш тэмдэгт бүрийн эхлэх
+ * секунд) байвал аппын дотор тоглуулж, дуулагдаж буй мөрийг ба
+ * үеийг тодруулна. `loop` = нэг давталтын урт: бичлэг дууг хэд
+ * давтсан ч цаг нь эхний давталтынх. Цаг ба аялгуу хоёулаа
+ * `tools/build_song.py`-оос гардаг тул ЯГ таарна. */
+let soSong = null, soAudio = null, soRaf = 0;
+
+/** Караокед хэрэглэх цаг нь мөрийн тэмдэгттэй таарч байгаа эсэх. */
+const soTimed = l => Array.isArray(l.t) && l.t.length &&
+  l.t.length === [...String(l.kana || '')].filter(c => !/\s/.test(c)).length;
+
+/** Тэмдэгт бүрийг <span>-д; зай нь span-гүй. */
+function soChars(txt) {
+  let k = 0;
+  return [...txt].map(c => /\s/.test(c) ? esc(c)
+    : '<span class="so-ch" data-k="' + (k++) + '">' + esc(c) + '</span>').join('');
+}
+
+function soStop() {
+  if (soRaf) cancelAnimationFrame(soRaf);
+  soRaf = 0;
+  if (soAudio) { try { soAudio.pause(); } catch (e) { /* */ } }
+  soMark(-1);
+  const b = $('so-play');
+  if (b) b.textContent = '▶ Аяыг тоглуулах';
+}
+
+/** Одоогийн байрлалыг (сек) тодруулга болгоно. -1 = бүгдийг арилгах. */
+function soMark(pos) {
+  const rows = document.querySelectorAll('#so-lines > div');
+  const ls = soSong ? soSong.lines || [] : [];
+  if (pos >= 0 && soSong && soSong.loop > 0 && ls.length && ls[0].t) {
+    const t0 = ls[0].t[0];
+    if (pos >= t0 + soSong.loop) pos -= soSong.loop * Math.floor((pos - t0) / soSong.loop);
+  }
+  rows.forEach((row, i) => {
+    const l = ls[i], t = l && soTimed(l) ? l.t : null;
+    const next = ls[i + 1] && soTimed(ls[i + 1]) ? ls[i + 1].t[0] : Infinity;
+    const on = pos >= 0 && t && pos >= t[0] - 0.05 && pos < Math.min(next, t[t.length - 1] + 1.6);
+    row.classList.toggle('is-on', !!on);
+    row.querySelectorAll('.so-ch').forEach(sp => {
+      sp.classList.toggle('on', !!(on && pos >= t[+sp.dataset.k] - 0.05));
+    });
+  });
+}
+
+function soTick() {
+  if (!soAudio || soAudio.paused) { soRaf = 0; return; }
+  soMark(soAudio.currentTime);
+  soRaf = requestAnimationFrame(soTick);
+}
+
+function soPlay(at) {
+  if (!soSong || !soSong.audio) return;
+  if (!soAudio) {
+    soAudio = new Audio();
+    soAudio.preload = 'auto';
+    soAudio.addEventListener('ended', soStop);
+  }
+  const src = new URL(soSong.audio, location.href).href;
+  if (soAudio.src !== src) soAudio.src = src;
+  if (typeof at === 'number') { try { soAudio.currentTime = at; } catch (e) { /* */ } }
+  const r = soAudio.play();
+  if (r && r.catch) r.catch(() => soStop());
+  $('so-play').textContent = '■ Зогсоох';
+  if (!soRaf) soRaf = requestAnimationFrame(soTick);
+}
+
 function soOpen(id) {
   const sg = (SONGS || []).find(x => x.id === id);
   if (!sg) return;
+  soStop();
+  soSong = sg;
   $('so-name').textContent = sg.title || '';
   $('so-artist').textContent = sg.artist || '';
+  const hasAudio = !!sg.audio;
   const a = $('so-link'), url = safeUrl(sg.url);
   a.hidden = !url;
   if (url) a.href = url; else a.removeAttribute('href');
+  // Аппын дотор тоглуулах бол гол товч нь ▶, холбоос нь хоёрдогч.
+  a.className = (hasAudio ? 'ghost wide' : 'primary big wide') + ' so-link';
+  a.textContent = hasAudio ? 'YouTube-ээс үзэх ↗' : 'Дууг сонсох ↗';
+  $('so-play').hidden = !hasAudio;
+  $('so-tap').hidden = !hasAudio;
   const kana = settings.script === 'kana';
-  $('so-lines').innerHTML = (sg.lines || []).map(l =>
-    '<div><div class="jp">' + esc(kana && l.kana ? l.kana : (l.jp || '')) + '</div>' +
-    (!kana && l.kana && l.kana !== l.jp ? '<div class="so-kana jp">' + esc(l.kana) + '</div>' : '') +
-    '<div class="mn">' + esc(l.mn || '') + '</div></div>').join('');
+  $('so-lines').innerHTML = (sg.lines || []).map((l, i) => {
+    const timed = hasAudio && soTimed(l);
+    const main = kana && l.kana ? l.kana : (l.jp || '');
+    const sub = !kana && l.kana && l.kana !== l.jp;
+    // Караоке нь КАНА дээр — ханзан мөрд доорх かな-г тодруулна.
+    const kOnMain = timed && main === l.kana;
+    return '<div' + (timed ? ' class="so-line" tabindex="0" role="button" data-i="' + i + '"' : '') + '>' +
+      '<div class="jp">' + (kOnMain ? soChars(main) : esc(main)) + '</div>' +
+      (sub ? '<div class="so-kana jp">' + (timed ? soChars(l.kana) : esc(l.kana)) + '</div>' : '') +
+      '<div class="mn">' + esc(l.mn || '') + '</div></div>';
+  }).join('');
+  $('so-lines').querySelectorAll('.so-line').forEach(row => {
+    const go1 = () => soPlay(sg.lines[+row.dataset.i].t[0] - 0.3);
+    row.onclick = go1;
+    row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go1(); } };
+  });
   soPane('so-read');
   window.scrollTo(0, 0);
 }
