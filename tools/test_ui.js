@@ -3684,6 +3684,25 @@ async function run(c) {
   ok('javascript: холбоос ХААГДАНА', so && so.badHidden, JSON.stringify(so));
   ok('«← Дууны жагсаалт» буцаана', so && so.backPick, JSON.stringify(so));
   ok('ангиас гарсны дараа «Дуу» рүү орохгүй', so && so.afterLeave === 'home', JSON.stringify(so));
+
+  // Япон хоолой: эмэгтэйг илүүд үзнэ (Windows-ийн эхний хоолой нь эрэгтэй Ichiro).
+  const jv = await c.ev(`
+    const V = (name, lang) => ({ name, lang });
+    const pick = vs => { const v = pickJaVoice(vs); return v ? v.name : null; };
+    return {
+      win: pick([V('Microsoft Ichiro - Japanese (Japan)', 'ja-JP'), V('Microsoft David', 'en-US'),
+                 V('Microsoft Haruka - Japanese (Japan)', 'ja-JP'), V('Microsoft Ayumi - Japanese (Japan)', 'ja-JP')]),
+      edge: pick([V('Microsoft Keita Online (Natural) - Japanese (Japan)', 'ja-JP'),
+                  V('Microsoft Nanami Online (Natural) - Japanese (Japan)', 'ja-JP')]),
+      onlyMale: pick([V('Microsoft Ichiro - Japanese (Japan)', 'ja-JP')]),
+      none: pick([V('Samantha', 'en-US')])
+    };
+  `);
+  ok('Windows: Ichiro биш эмэгтэй хоолой (Haruka/Ayumi)',
+    jv && /Haruka|Ayumi/.test(jv.win), JSON.stringify(jv));
+  ok('Edge: Keita биш Nanami', jv && /Nanami/.test(jv.edge), JSON.stringify(jv));
+  ok('ганц эрэгтэй хоолой байвал түүнийг л; япон байхгүй бол null',
+    jv && /Ichiro/.test(jv.onlyMale) && jv.none === null, JSON.stringify(jv));
   ok('S01: ▶ товч гарч, YouTube холбоос хоёрдогч болно',
     so && so.play && so.linkGhost, JSON.stringify(so));
   ok('S01: эхний мөр 8 үе (span)', so && so.spans === 8, JSON.stringify(so));

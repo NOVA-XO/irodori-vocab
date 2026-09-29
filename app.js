@@ -876,9 +876,22 @@ function stopRecog() {
    товчийг нуувал хэзээ ч гарч ирэхгүй. Мөн яг таарсан «ja» хоолой олдоогүй ч
    lang="ja-JP" гэж өгвөл систем өөрөө япон хоолой сонгодог. Тиймээс товчийг
    speechSynthesis байгаа бүх үед харуулна. */
+/* Япон хоолойнуудаас ЭМЭГТЭЙг илүүд үзнэ. Урьд нь эхнийхийг авдаг байсан тул
+   Windows дээр эрэгтэй «Microsoft Ichiro» уншдаг байв (хэрэглэгч мэдэгдэв).
+   Бичлэгүүд (VOICEVOX:四国めたん) эмэгтэй хоолой тул TTS ч тийм байх нь
+   жигд. Нэрээр л таних боломжтой — Web Speech API хүйс өгдөггүй. */
+const JA_FEMALE = /haruka|ayumi|nanami|sayaka|mayu|aoi|shiori|kyoko|o-?ren|mizuki|google/i;
+const JA_MALE = /ichiro|keita|otoya|hattori|daichi|naoki|takumi/i;
+function pickJaVoice(vs) {
+  const ja = vs.filter(v => /^ja\b|^ja[-_]/i.test(v.lang));
+  const score = v => (JA_FEMALE.test(v.name) ? 2 : 0) - (JA_MALE.test(v.name) ? 3 : 0) +
+    (/natural|online|neural/i.test(v.name) ? 1 : 0);
+  return ja.reduce((best, v) => (!best || score(v) > score(best) ? v : best), null);
+}
+
 function pickVoice() {
   const vs = canSpeak ? speechSynthesis.getVoices() : [];
-  jaVoice = vs.find(v => /^ja\b|^ja[-_]/i.test(v.lang)) || null;
+  jaVoice = pickJaVoice(vs);
 
   const warn = document.getElementById('voice-warn');
   if (AUDIO_IDS && AUDIO_IDS.size) { warn.hidden = true; }  // бичлэг бий — TTS хэрэггүй
