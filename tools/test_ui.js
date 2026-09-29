@@ -3621,6 +3621,12 @@ async function run(c) {
     out.play = !document.getElementById('so-play').hidden;
     out.linkGhost = /ghost/.test(document.getElementById('so-link').className);
     out.spans = document.querySelectorAll('#so-lines .so-line:first-child .so-ch').length;
+    const L1 = document.querySelector('#so-lines .so-line');
+    out.emo = [...L1.querySelectorAll('.so-e')].map(e => e.textContent).join('');
+    out.emoAbove = (() => { const w = L1.querySelector('.so-w');
+      return w.querySelector('.so-e').getBoundingClientRect().bottom <= w.querySelector('.so-wt').getBoundingClientRect().top + 1; })();
+    out.noMn = document.querySelectorAll('#so-lines .mn').length === 0;
+    out.sizes = [getComputedStyle(L1.querySelector('.so-wt')).fontSize, getComputedStyle(L1.querySelector('.so-e')).fontSize].join();
     const marks = t => { soMark(t); const r = [...document.querySelectorAll('#so-lines > div')];
       return r.map(x => x.classList.contains('is-on') ? x.querySelectorAll('.so-ch.on').length : '-').join(','); };
     const S = SONGS.find(x => x.id === 'S01');
@@ -3655,6 +3661,9 @@ async function run(c) {
   ok('S01: ▶ товч гарч, YouTube холбоос хоёрдогч болно',
     so && so.play && so.linkGhost, JSON.stringify(so));
   ok('S01: эхний мөр 8 үе (span)', so && so.spans === 8, JSON.stringify(so));
+  ok('S01: үг бүрийн ДЭЭР эмодзи (🌧️🌧️👋), монгол орчуулга харагдахгүй',
+    so && so.emo === '🌧️🌧️👋' && so.emoAbove && so.noMn, JSON.stringify(so));
+  ok('S01: япон ба эмодзи 1.5 дахин том (27px)', so && so.sizes === '27px,27px', JSON.stringify(so));
   ok('караоке: 5.3с -> 1-р мөр, 5 үе тодорсон; давталтад ч адил',
     so && so.m1 === '5,-,-' && so.m2 === '5,-,-', JSON.stringify(so));
   ok('караоке: 13.05с -> 3-р мөрийн 1-р үе; -1 -> бүгд арилна',
