@@ -3627,10 +3627,36 @@ async function run(c) {
       return w.querySelector('.so-e').getBoundingClientRect().bottom <= w.querySelector('.so-wt').getBoundingClientRect().top + 1; })();
     out.noMn = document.querySelectorAll('#so-lines .mn').length === 0;
     out.sizes = [getComputedStyle(L1.querySelector('.so-wt')).fontSize, getComputedStyle(L1.querySelector('.so-e')).fontSize].join();
+    const marks2 = (t, m) => { soMark(t, m); const r = [...document.querySelectorAll('#so-lines > div')];
+      return r.map(x => x.classList.contains('is-on') ? x.querySelectorAll('.so-ch.on').length : '-').join(','); };
     const marks = t => { soMark(t); const r = [...document.querySelectorAll('#so-lines > div')];
       return r.map(x => x.classList.contains('is-on') ? x.querySelectorAll('.so-ch.on').length : '-').join(','); };
     const S = SONGS.find(x => x.id === 'S01');
     out.m1 = marks(5.3); out.m2 = marks(5.3 + S.loop); out.m3 = marks(13.05); out.m0 = marks(-1);
+    // «🗣 Уншуулах»: бичлэггүй бол утасны хоолой — мөр мөрөөр, мөрийг тодруулна.
+    out.sayShown = !document.getElementById('so-say').hidden;
+    const said = [], keepSpeak = speechSynthesis.speak;
+    speechSynthesis.speak = u => said.push(u);
+    const keepRead = S.read; S.read = null;
+    document.getElementById('so-say').click();
+    out.ttsMode = soMode; out.ttsBtn = document.getElementById('so-say').textContent;
+    out.ttsText = said[0] && said[0].text; out.ttsLang = said[0] && said[0].lang;
+    const onRow = () => [...document.querySelectorAll('#so-lines > div')].findIndex(r => r.classList.contains('is-on'));
+    out.tts0 = onRow();
+    said[0].onend(); await wait(700);
+    out.tts1 = onRow(); out.ttsN = said.length;
+    document.getElementById('so-say').click();
+    out.ttsStop = soMode === null && onRow() === -1 && document.getElementById('so-say').textContent === '🗣 Уншуулах';
+    // Мөр дээр дарвал СҮҮЛД хэрэглэсэн горимоор (энд уншуулах) тэр мөрөөс.
+    document.querySelectorAll('#so-lines .so-line')[2].click();
+    out.ttsLine = said[said.length - 1].text; soStop();
+    speechSynthesis.speak = keepSpeak;
+    // VOICEVOX-ийн бичлэгтэй бол read горимын цагаар үе бүр тодорно (давталтгүй).
+    S.read = { audio: 'x.mp3', lines: [[1, 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4], [4, 4.2, 4.4, 4.6, 4.8, 5, 5.2, 5.4, 5.6],
+                                        [7, 7.2, 7.4, 7.6, 7.8, 8, 8.2, 8.4, 8.6, 8.8, 9, 9.2, 9.4]] };
+    soOpen('S01');
+    out.r1 = marks2(1.5, 'read'); out.r2 = marks2(4.1, 'read');
+    S.read = keepRead; soOpen('S01');
     out.audioOk = await fetch(S.audio).then(r => r.ok && /audio|mpeg|octet/.test(r.headers.get('content-type') || ''));
 
     // Ангиас гарвал «Дуу» дэлгэцээс ч гарна (буцах товчоор ч орохгүй).
@@ -3668,6 +3694,16 @@ async function run(c) {
     so && so.m1 === '5,-,-' && so.m2 === '5,-,-', JSON.stringify(so));
   ok('караоке: 13.05с -> 3-р мөрийн 1-р үе; -1 -> бүгд арилна',
     so && so.m3 === '-,-,1' && so.m0 === '-,-,-', JSON.stringify(so));
+  ok('«🗣 Уншуулах» товч харагдана', so && so.sayShown, JSON.stringify(so));
+  ok('бичлэггүй үед утасны япон хоолойгоор 1-р мөрөөс уншиж, мөрийг тодруулна',
+    so && so.ttsMode === 'read' && so.ttsBtn === '■ Зогсоох' && so.ttsText === 'あめ あめ ばいばい'
+      && so.ttsLang === 'ja-JP' && so.tts0 === 0, JSON.stringify(so));
+  ok('мөр дуусахад дараагийн мөр рүү шилжинэ', so && so.tts1 === 1 && so.ttsN === 2, JSON.stringify(so));
+  ok('дахин дарвал зогсоод тодруулга арилна', so && so.ttsStop, JSON.stringify(so));
+  ok('мөр дээр дарвал сүүлийн горимоор (уншуулах) тэр мөрөөс',
+    so && so.ttsLine === 'おそらの くまさん さようなら', JSON.stringify(so));
+  ok('VOICEVOX бичлэгтэй бол уншлагын цагаар үе бүр тодорно',
+    so && so.r1 === '3,-,-' && so.r2 === '-,1,-', JSON.stringify(so));
   ok('S01-ийн mp3 серверээс татагдана', so && so.audioOk === true, JSON.stringify(so));
 
 }

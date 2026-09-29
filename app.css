@@ -1204,6 +1204,9 @@ html{background:var(--bg)}
 .gr-list button.is-done .gr-p{color:var(--ok)}
 
 /* ── ДУУ (Наран анги) — дүрмийн жагсаалт/жишээний хэв маягийг дахин ашиглана */
+/* ♪ Аяар · 🗣 Уншуулах — зэрэгцээ; нэг нь нуугдвал нөгөө нь бүтэн өргөн */
+.so-btns{display:flex; gap:10px; margin:14px 0 0}
+.so-btns > button{flex:1 1 0; min-width:0; width:auto}
 a.so-link{display:block; box-sizing:border-box; text-align:center;
   text-decoration:none; border-radius:var(--r); margin:14px 0 6px}
 .gr-ex .so-kana{font-size:13px; color:var(--ink-3); margin-top:3px}
