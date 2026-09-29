@@ -2798,7 +2798,11 @@ let SONGS = null;                        // data/songs.json-ий items
 
 function loadSongs() {
   if (SONGS) return Promise.resolve(SONGS);
-  return fetch('data/songs.json')
+  // `no-cache`: GitHub Pages нь `max-age=600` өгдөг ба энэ файлд `?v=` байхгүй
+  // тул дуу нэмсний дараа 10 минут ХУУЧИН жагсаалт гарч байв (эмодзигүй,
+  // монгол орчуулгатай). Одоо ETag-аар шалгаж, өөрчлөгдсөн бол шинийг авна;
+  // офлайн үед SW кэшнээс өгнө.
+  return fetch('data/songs.json', { cache: 'no-cache' })
     .then(r => r.json())
     .then(d => { SONGS = Array.isArray(d.items) ? d.items : []; return SONGS; })
     .catch(() => []);                    // SONGS-ийг null үлдээнэ — дараа дахин оролдоно
