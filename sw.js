@@ -46,6 +46,8 @@ const CORE = [
   './data/exam-starter.json',
   './data/exam-el1.json',
   './data/grammar-starter.json',
+  // Наран ангийн дуу (зөвхөн нэр, холбоос, үг — mp3 биш).
+  './data/songs.json',
 ];
 
 /* Байвал сайн, байхгүй ч апп ажиллана. */

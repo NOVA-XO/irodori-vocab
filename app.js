@@ -876,9 +876,22 @@ function stopRecog() {
    товчийг нуувал хэзээ ч гарч ирэхгүй. Мөн яг таарсан «ja» хоолой олдоогүй ч
    lang="ja-JP" гэж өгвөл систем өөрөө япон хоолой сонгодог. Тиймээс товчийг
    speechSynthesis байгаа бүх үед харуулна. */
+/* Япон хоолойнуудаас ЭМЭГТЭЙг илүүд үзнэ. Урьд нь эхнийхийг авдаг байсан тул
+   Windows дээр эрэгтэй «Microsoft Ichiro» уншдаг байв (хэрэглэгч мэдэгдэв).
+   Бичлэгүүд (VOICEVOX:四国めたん) эмэгтэй хоолой тул TTS ч тийм байх нь
+   жигд. Нэрээр л таних боломжтой — Web Speech API хүйс өгдөггүй. */
+const JA_FEMALE = /haruka|ayumi|nanami|sayaka|mayu|aoi|shiori|kyoko|o-?ren|mizuki|google/i;
+const JA_MALE = /ichiro|keita|otoya|hattori|daichi|naoki|takumi/i;
+function pickJaVoice(vs) {
+  const ja = vs.filter(v => /^ja\b|^ja[-_]/i.test(v.lang));
+  const score = v => (JA_FEMALE.test(v.name) ? 2 : 0) - (JA_MALE.test(v.name) ? 3 : 0) +
+    (/natural|online|neural/i.test(v.name) ? 1 : 0);
+  return ja.reduce((best, v) => (!best || score(v) > score(best) ? v : best), null);
+}
+
 function pickVoice() {
   const vs = canSpeak ? speechSynthesis.getVoices() : [];
-  jaVoice = vs.find(v => /^ja\b|^ja[-_]/i.test(v.lang)) || null;
+  jaVoice = pickJaVoice(vs);
 
   const warn = document.getElementById('voice-warn');
   if (AUDIO_IDS && AUDIO_IDS.size) { warn.hidden = true; }  // бичлэг бий — TTS хэрэггүй
@@ -1644,7 +1657,8 @@ function finish() {
 /* ══════════════════════ 7. Дэлгэц солих ба нүүр ══════════════════════ */
 
 const SCREENS = ['home', 'irodori', 'jlpt', 'kana', 'study', 'done', 'exam',
-                 'feedback', 'stats', 'profile', 'setup', 'klass', 'grammar'];
+                 'feedback', 'stats', 'profile', 'setup', 'klass', 'grammar',
+                 'songs'];
 let screen = 'home';
 
 /* JLPT хэсгийг ТҮР унтраасан. Буцаахдаа зөвхөн энэ тугийг `true` болгоно —
@@ -1664,6 +1678,7 @@ function show(name) {
   if (screen === 'study' && name !== 'study') { statsPing(); memberSync(); stopRecog(); }
   // Шалгалтаас гарвал хойшлуулсан таймер ШИНЭ гүйлтэд нөлөөлөхгүй байх ёстой.
   if (screen === 'exam' && name !== 'exam') exAbort();
+  if (screen === 'songs' && name !== 'songs') soStop();
   const wasScreen = screen;          // `navTo`-д хэрэгтэй — доор `screen` дарагдана
   screen = name;
   // Энэ нь `show()` дотор байх ЁСТОЙ — дасгал `go()`-гүйгээр шууд
@@ -1721,6 +1736,9 @@ function go(name) {
   // JLPT түр унтраалттай үед тэр дэлгэц рүү орохыг хаана (гүн холбоос,
   // хуучин кэштэй хуудаснаас ирсэн дарлага ч байж болно).
   if (name === 'jlpt' && !JLPT_ON) name = 'home';
+  // «Дуу» нь ЗӨВХӨН Наран ангийнханд — ангиас гарсан хүний түүхэн дэх
+  // бичлэг ч (буцах товч) энд орох ёсгүй.
+  if (name === 'songs' && !inSongClass()) name = 'home';
   // Явц нь БҮХ санг харуулдаг тул нээхэд бусад номыг татна. Эхлээд
   // байгаагаараа зурж, ирсэн хойно нь дахин зурна — хоосон дэлгэц харагдахгүй.
   if (name === 'stats') { refreshStats(); loadAllBooks().then(refreshStats); }
@@ -1729,6 +1747,7 @@ function go(name) {
   if (name === 'feedback') refreshFb();
   if (name === 'exam') examSetup();
   if (name === 'grammar') { grPane('gr-pick'); refreshGrammar(); }
+  if (name === 'songs') { soPane('so-pick'); refreshSongs(); }
   if (['home', 'irodori', 'jlpt', 'kana'].includes(name)) refreshHome();
   show(name);
 }
@@ -2022,6 +2041,9 @@ $('gr-start').onclick = grStart;
 $('gr-again').onclick = grStart;
 $('gr-next').onclick = grNext;
 $('gr-back').onclick = grAbort;
+$('so-back').onclick = () => { soStop(); soPane('so-pick'); window.scrollTo(0, 0); };
+$('so-play').onclick = () => soToggle('song');
+$('so-say').onclick = () => soToggle('read');
 $('gr-stop').onclick = grAbort;
 $('gr-list-back').onclick = grAbort;
 
@@ -2782,6 +2804,247 @@ function refreshGrammar() {
       box.appendChild(b);
     }
   });
+}
+
+/* ── Дуу (ЗӨВХӨН Наран анги) ───────────────────────────────────────
+ * Япон дуу: нэр, холбоос (YouTube г.м.), үг нь япон/かな/монгол.
+ * Дууны mp3 репод БАЙХГҮЙ — зохиогчийн эрх, репо нийтэд нээлттэй.
+ * Анги сонголтыг серверээс биш `me`-ээс шалгана: нууц зүйл биш,
+ * зөвхөн цэсийг цэгцтэй байлгах зорилготой. */
+const SONG_CLASS = 'c2';                 // Наран
+const inSongClass = () => anyClasses().includes(SONG_CLASS);
+let SONGS = null;                        // data/songs.json-ий items
+
+function loadSongs() {
+  if (SONGS) return Promise.resolve(SONGS);
+  // `no-cache`: GitHub Pages нь `max-age=600` өгдөг ба энэ файлд `?v=` байхгүй
+  // тул дуу нэмсний дараа 10 минут ХУУЧИН жагсаалт гарч байв (эмодзигүй,
+  // монгол орчуулгатай). Одоо ETag-аар шалгаж, өөрчлөгдсөн бол шинийг авна;
+  // офлайн үед SW кэшнээс өгнө.
+  return fetch('data/songs.json', { cache: 'no-cache' })
+    .then(r => r.json())
+    .then(d => { SONGS = Array.isArray(d.items) ? d.items : []; return SONGS; })
+    .catch(() => []);                    // SONGS-ийг null үлдээнэ — дараа дахин оролдоно
+}
+
+function soPane(name) {
+  for (const id of ['so-pick', 'so-read']) $(id).hidden = (id !== name);
+}
+
+function refreshSongs() {
+  const box = $('so-list');
+  if (!box) return;
+  loadSongs().then(list => {
+    box.innerHTML = '';
+    $('so-empty').hidden = list.length > 0;
+    for (const sg of list) {
+      const b = document.createElement('button');
+      b.innerHTML = '<span class="gr-l">♪</span>' +
+        '<span class="gr-t jp">' + esc(sg.title || '') + '</span>' +
+        '<span class="gr-p">' + ((sg.lines || []).length || '') + '</span>' +
+        '<span class="gr-s">' + esc(sg.artist || '') + '</span>';
+      b.onclick = () => soOpen(sg.id);
+      box.appendChild(b);
+    }
+  });
+}
+
+/** Зөвхөн http(s) холбоос — `javascript:` г.м.-ийг хаана. */
+const safeUrl = u => /^https?:\/\//i.test(String(u || '')) ? String(u) : '';
+
+/* ── Тоглуулагч ба караоке ─────────────────────────────────────────
+ * Хоёр горим:
+ *   song («♪ Аяар»)      — `audio` + `lines[].t` (мөрийн хоосон биш
+ *                          тэмдэгт бүрийн эхлэх секунд). `loop` = нэг
+ *                          давталтын урт. Цаг ба аялгуу хоёулаа
+ *                          `tools/build_song.py`-оос гардаг тул ЯГ таарна.
+ *   read («🗣 Уншуулах») — `read.audio` + `read.lines[i]` (VOICEVOX-оор
+ *                          мөр бүрийг уншсан, `tools/build_song_voice.py`)
+ *                          байвал бичлэг + үе бүрийн тодруулга. Байхгүй бол
+ *                          утасны япон хоолой (speechSynthesis) мөр мөрөөр
+ *                          уншиж, МӨРИЙГ л тодруулна (үеийн цаг мэдэгдэхгүй). */
+let soSong = null, soAudio = null, soRaf = 0;
+let soMode = null;               // 'song' | 'read' | null — одоо тоглож буй
+let soLast = 'song';             // мөр дээр дарахад аль горимоор эхлэх
+let soTts = 0;                   // TTS-ийн гүйлтийн дугаар — зогсоосон бол хуучин onend юу ч хийхгүй
+
+const soNchars = l => [...String(l.kana || '')].filter(c => !/\s/.test(c)).length;
+/** Тухайн горимын i-р мөрийн цаг; тэмдэгттэй тоогоор таарахгүй бол null. */
+function soTimes(i, mode) {
+  const l = soSong && soSong.lines && soSong.lines[i];
+  if (!l) return null;
+  const t = mode === 'read'
+    ? (soSong.read && Array.isArray(soSong.read.lines) ? soSong.read.lines[i] : null)
+    : l.t;
+  return Array.isArray(t) && t.length && t.length === soNchars(l) ? t : null;
+}
+const soReadAudio = () => !!(soSong && soSong.read && soSong.read.audio);
+
+/** Тэмдэгт бүрийг <span>-д; зай нь span-гүй. `k0` = эхлэх дугаар. */
+function soChars(txt, k0) {
+  let k = k0 || 0;
+  return [...txt].map(c => /\s/.test(c) ? esc(c)
+    : '<span class="so-ch" data-k="' + (k++) + '">' + esc(c) + '</span>').join('');
+}
+
+/** Үг бүрийн ДЭЭР эмодзи (ruby шиг). `emo` нь зайгаар тусгаарласан үгтэй
+    тоогоор таарахгүй бол null — дуудагч нь энгийн мөр зурна. Караокегийн
+    дугаар үгээс үгэнд үргэлжилнэ. */
+function soEmoRow(txt, emo, timed) {
+  const words = String(txt).split(/\s+/).filter(Boolean);
+  if (!Array.isArray(emo) || emo.length !== words.length) return null;
+  let k = 0;
+  return words.map((w, i) => {
+    const body = timed ? soChars(w, k) : esc(w);
+    k += [...w].length;
+    return '<span class="so-w"><span class="so-e" aria-hidden="true">' + esc(emo[i]) +
+      '</span><span class="so-wt">' + body + '</span></span>';
+  }).join('');
+}
+
+function soLabels() {
+  const p = $('so-play'), r = $('so-say');
+  if (p) p.textContent = soMode === 'song' ? '■ Зогсоох' : '♪ Аяар';
+  if (r) r.textContent = soMode === 'read' ? '■ Зогсоох' : '🗣 Уншуулах';
+}
+
+function soStop() {
+  if (soRaf) cancelAnimationFrame(soRaf);
+  soRaf = 0;
+  if (soAudio) { try { soAudio.pause(); } catch (e) { /* */ } }
+  if (soTts) {
+    soTts = 0;
+    try { if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel(); }
+    catch (e) { /* */ }
+  }
+  soMode = null;
+  soMark(-1);
+  soLabels();
+}
+
+/** Одоогийн байрлалыг (сек) тодруулга болгоно. -1 = бүгдийг арилгах.
+    `mode` өгөөгүй бол одоо тоглож буй горим (эсвэл 'song'). */
+function soMark(pos, mode) {
+  mode = mode || soMode || 'song';
+  const rows = document.querySelectorAll('#so-lines > div');
+  const n = soSong ? (soSong.lines || []).length : 0;
+  const t0s = soTimes(0, mode);
+  if (pos >= 0 && mode === 'song' && soSong && soSong.loop > 0 && t0s) {
+    const t0 = t0s[0];
+    if (pos >= t0 + soSong.loop) pos -= soSong.loop * Math.floor((pos - t0) / soSong.loop);
+  }
+  rows.forEach((row, i) => {
+    const t = i < n ? soTimes(i, mode) : null, nx = soTimes(i + 1, mode);
+    const on = pos >= 0 && t && pos >= t[0] - 0.05 &&
+      pos < Math.min(nx ? nx[0] : Infinity, t[t.length - 1] + 1.6);
+    row.classList.toggle('is-on', !!on);
+    row.querySelectorAll('.so-ch').forEach(sp => {
+      sp.classList.toggle('on', !!(on && pos >= t[+sp.dataset.k] - 0.05));
+    });
+  });
+}
+
+/** TTS үед: зөвхөн i-р мөрийг тодруулна (-1 = арилгах). */
+function soMarkLine(idx) {
+  document.querySelectorAll('#so-lines > div').forEach((row, i) => {
+    row.classList.toggle('is-on', i === idx);
+    row.querySelectorAll('.so-ch.on').forEach(sp => sp.classList.remove('on'));
+  });
+}
+
+function soTick() {
+  if (!soAudio || soAudio.paused) { soRaf = 0; return; }
+  soMark(soAudio.currentTime);
+  soRaf = requestAnimationFrame(soTick);
+}
+
+/** Утасны хоолойгоор i-р мөрөөс эхлэн дараалан уншина. */
+function soSay(i, run) {
+  const ls = soSong ? soSong.lines || [] : [];
+  if (run !== soTts) return;                  // зогсоосон / өөр гүйлт эхэлсэн
+  if (i >= ls.length) { soStop(); return; }
+  soMarkLine(i);
+  const u = new SpeechSynthesisUtterance(String(ls[i].kana || ls[i].jp || '').replace(/\s+/g, ' '));
+  if (jaVoice) u.voice = jaVoice;
+  u.lang = 'ja-JP';
+  u.rate = 0.8;
+  u.onend = () => setTimeout(() => soSay(i + 1, run), 600);
+  u.onerror = () => { if (run === soTts) soStop(); };
+  speechSynthesis.speak(u);
+}
+
+/** `mode` горимоор `line`-р мөрөөс (өгөөгүй бол эхнээс) тоглуулна. */
+function soStart(mode, line) {
+  if (!soSong) return;
+  soStop();
+  soLast = mode;
+  const src = mode === 'song' ? soSong.audio : (soReadAudio() ? soSong.read.audio : null);
+  if (!src) {
+    if (mode !== 'read' || typeof speechSynthesis === 'undefined') return;
+    soMode = 'read'; soLabels();
+    soTts = Date.now();
+    soSay(line || 0, soTts);
+    return;
+  }
+  if (!soAudio) {
+    soAudio = new Audio();
+    soAudio.preload = 'auto';
+    soAudio.addEventListener('ended', soStop);
+  }
+  const abs = new URL(src, location.href).href;
+  if (soAudio.src !== abs) soAudio.src = abs;
+  const t = typeof line === 'number' ? soTimes(line, mode) : null;
+  try { soAudio.currentTime = t ? Math.max(0, t[0] - 0.3) : 0; } catch (e) { /* */ }
+  soMode = mode; soLabels();
+  const r = soAudio.play();
+  if (r && r.catch) r.catch(() => soStop());
+  if (!soRaf) soRaf = requestAnimationFrame(soTick);
+}
+const soToggle = mode => (soMode === mode ? soStop() : soStart(mode));
+
+function soOpen(id) {
+  const sg = (SONGS || []).find(x => x.id === id);
+  if (!sg) return;
+  soStop();
+  soSong = sg;
+  $('so-name').textContent = sg.title || '';
+  $('so-artist').textContent = sg.artist || '';
+  const hasSong = !!sg.audio;
+  const canRead = soReadAudio() || typeof speechSynthesis !== 'undefined';
+  soLast = hasSong ? 'song' : 'read';
+  const a = $('so-link'), url = safeUrl(sg.url);
+  a.hidden = !url;
+  if (url) a.href = url; else a.removeAttribute('href');
+  // Аппын дотор тоглуулах бол гол товч нь ♪/🗣, холбоос нь хоёрдогч.
+  a.className = (hasSong ? 'ghost wide' : 'primary big wide') + ' so-link';
+  a.textContent = hasSong ? 'YouTube-ээс үзэх ↗' : 'Дууг сонсох ↗';
+  $('so-play').hidden = !hasSong;
+  $('so-say').hidden = !canRead;
+  $('so-btns').hidden = !hasSong && !canRead;
+  $('so-tap').hidden = !hasSong && !canRead;
+  const kana = settings.script === 'kana';
+  $('so-lines').innerHTML = (sg.lines || []).map((l, i) => {
+    const timed = soTimes(i, 'song') || soTimes(i, 'read');
+    const main = kana && l.kana ? l.kana : (l.jp || '');
+    const sub = !kana && l.kana && l.kana !== l.jp;
+    // Караоке нь КАНА дээр — ханзан мөрд доорх かな-г тодруулна.
+    const kOnMain = timed && main === l.kana;
+    // Эмодзи байвал үг бүрийн дээр гарч, монгол орчуулгыг ОРЛОНО.
+    const emoRow = soEmoRow(main, l.emo, kOnMain);
+    const click = hasSong || canRead;
+    return '<div class="' + (click ? 'so-line' : '') + (emoRow ? ' so-emo' : '') + '"' +
+      (click ? ' tabindex="0" role="button" data-i="' + i + '"' : '') + '>' +
+      '<div class="jp">' + (emoRow || (kOnMain ? soChars(main) : esc(main))) + '</div>' +
+      (sub ? '<div class="so-kana jp">' + (timed ? soChars(l.kana) : esc(l.kana)) + '</div>' : '') +
+      (emoRow ? '' : '<div class="mn">' + esc(l.mn || '') + '</div>') + '</div>';
+  }).join('');
+  $('so-lines').querySelectorAll('.so-line').forEach(row => {
+    const go1 = () => soStart(soMode || soLast, +row.dataset.i);
+    row.onclick = go1;
+    row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go1(); } };
+  });
+  soPane('so-read');
+  window.scrollTo(0, 0);
 }
 
 function grPane(name) {
@@ -3846,6 +4109,7 @@ function refreshMe() {
   }
   const nav = $('nav-klass');
   if (nav) nav.hidden = !anyClasses().length;
+  for (const el of [$('nav-songs'), $('home-songs')]) if (el) el.hidden = !inSongClass();
 }
 
 /* ── Серверт тоо илгээх ──────────────────────────────────────────── */
