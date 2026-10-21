@@ -593,9 +593,13 @@ async function run(c) {
 
     /* Бичгийн хэлбэр — апп даяарх НЭГ тохиргоо (`settings.script`).
        Асуулт нь САНАМСАРГҮЙ сонгогддог тул ханзтайг нь ТУЛГАЖ өгнө:
-       `ATMはどこですか。` гэх мэт ханзгүй асуулт таарвал «漢字 горимд
-       ханз гарна» гэсэн шалгуур зүй ёсоор унадаг байв. */
-    await c.ev('exQs[exIdx] = EXAM.items.find(x => x.id === "S01-01");'
+       ханзгүй асуулт таарвал «漢字 горимд ханз гарна» гэсэн шалгуур
+       зүй ёсоор унадаг байв.
+
+       A1/N5-ийн санд ханз нь ЗӨВХӨН ярих сэдвийн нэрэнд байдаг
+       (`「食べ物」について…` / кана нь `「たべもの」について…`) — бусад
+       бүх асуулт зориуд кандзигүй. Тиймээс L4-ийн асуултыг авна. */
+    await c.ev('exQs[exIdx] = EXAM.items.find(x => x.id === "A04-01");'
       + 'renderExam(); return 1;');
     const kanaOn = await c.ev('settings.script = "kana"; renderExam();'
       + 'await new Promise(r=>setTimeout(r,150));'
@@ -610,12 +614,22 @@ async function run(c) {
     // Асуултыг дуугаар уншуулах товч (TTS).
     ok('асуултын дуу товч байна',
       await c.ev('return !!document.getElementById("ex-say-q")'));
-    // Шалгалтын дуу нь VOICEVOX-ийн бэлэн бичлэгээс гарах ёстой (TTS биш):
-    // бичлэг нь төхөөрөмж бүрд ИЖИЛ, өргөлт нь зөв.
-    ok('асуулт бүрд VOICEVOX бичлэг бий',
-      await c.ev('return exQs.every(q => hasAudio("EXQ-" + q.id))'));
-    ok('загвар хариулт бүрд бичлэг бий',
-      await c.ev('return exQs.every(q => hasAudio("EXA-" + q.id))'));
+    /* Шалгалтын дуу нь VOICEVOX-ийн бэлэн бичлэгээс гарвал дээр (бичлэг
+       нь төхөөрөмж бүрд ИЖИЛ, өргөлт нь зөв), гэхдээ A1/N5-ийн шинэ
+       санд (`A…` id) бичлэг ХАРААХАН ҮҮСЭЭГҮЙ — апп `speechSynthesis`-
+       ээр ажиллана.
+
+       Тиймээс «бүгдэд бий» гэж шаардахгүй: дуу нь БҮРЭН эсвэл БҮРЭН
+       БАЙХГҮЙ байхыг шалгана. Хагас байвал л эвдрэл — тэр нь асуултын
+       нэг хэсэг чимээгүй үлдэж байгааг хэлнэ. */
+    const au2 = await c.ev('const q = exQs.filter(x => hasAudio("EXQ-" + x.id)).length;'
+      + 'const a = exQs.filter(x => hasAudio("EXA-" + x.id)).length;'
+      + 'return { q: q, a: a, n: exQs.length };');
+    ok('дуу БҮРЭН эсвэл БҮРЭН БАЙХГҮЙ (хагас байвал эвдрэл)',
+      au2 && (au2.q === 0 || au2.q === au2.n) && (au2.a === 0 || au2.a === au2.n),
+      JSON.stringify(au2));
+    ok('дуугүй үед ч TTS нөөц бий (хэрэглэгч чимээгүй үлдэхгүй)',
+      au2 && (au2.q === au2.n || await c.ev('return canSpeak === true')));
     ok('дуу товч бичлэг тоглуулна (TTS биш)',
       await c.ev('let used=""; const op=playFile;'
         + 'window.playFile=(id,f)=>{used=id; return true;};'
@@ -1280,7 +1294,7 @@ async function run(c) {
     me.codes = { mica: '1111' }; me.teach = {}; me.other = false; me.done = true; save(KEY_ME, me);
     classList = [{ id: 'mica', name: 'MICA', task: TASK }]; save(KEY_CLS, classList);
     exHist = {}; save(KEY_EXH, exHist);
-    exLes = [18]; save(KEY_EXL, exLes); exN = 15;
+    exLes = [4]; save(KEY_EXL, exLes); exN = 15;
 
     // (1) Дуусгаагүй даалгавартай ч ТОХИРГОО гарна — шууд эхлэхгүй
     go('exam'); await wait(900);
@@ -1311,7 +1325,7 @@ async function run(c) {
   ok('«Шалгалт» руу орвол ТОХИРГОО гарна (автоматаар эхлэхгүй)',
     au && au.setupShown && au.runHidden, JSON.stringify(au));
   ok('хэсэг рүү орох нь хичээлийн сонголтыг ХӨНДӨХГҮЙ',
-    au && au.keptLes === '[18]' && au.keptN === 15, JSON.stringify(au));
+    au && au.keptLes === '[4]' && au.keptN === 15, JSON.stringify(au));
   ok('нүүрний картын товч ШУУД асуулт эхлүүлнэ',
     au && au.started && au.screen === 'exam', JSON.stringify(au));
   ok('багшийн сонгосон хичээл ба тоогоор (L1–L3, 10 асуулт)',
@@ -1437,8 +1451,8 @@ async function run(c) {
   ok('ангийн дэлгэцэд «Багш» самбар, маягт хаалттай',
     tc && tc.badge && tc.editLabel === 'Даалгавар өгөх' && tc.formHidden === true, JSON.stringify(tc));
   ok('багш ЖАГСААЛТАД ОРООГҮЙ (зөвхөн Сараа)', tc && tc.meRow === 1, JSON.stringify(tc));
-  ok('маягт нээгдэж 18 хичээлийн чип гарна',
-    tc && tc.formOpen && tc.chips === 18, JSON.stringify(tc));
+  ok('маягт нээгдэж 4 хэсгийн чип гарна',
+    tc && tc.formOpen && tc.chips === 4, JSON.stringify(tc));
   ok('дуусах огноо = өнөөдөр + хоног', tc && tc.due === tc.dueWant, JSON.stringify(tc));
   ok('хадгалахад task_set зөв утгаар дуудагдана',
     tc && tc.sent === '[[1,2],15,3,"' + new Date(Date.now() - new Date().getTimezoneOffset() * 6e4)
@@ -2330,9 +2344,15 @@ async function run(c) {
       && sj.offD === 'off', JSON.stringify(sj));
 
   console.log('\n[42] ХУВИЙН асуулт — сурагчийн үнэн хариултыг буруутгахгүй');
-  /* Шалгалтын 180 асуултын дийлэнх нь сурагчийн ӨӨРИЙНХ нь тухай.
-     Загвар хариулт нь ЖИШЭЭ — 4 настай сурагчид «25 настай» гэж
-     хэлүүлэх нь хамгийн хортой алдаа.
+  /* A1/N5-ийн сан дөрвөн хэсэгтэй. `free` нь хэсгээс хамаарна:
+
+       L1 Гол үгс (95)        free=0  «Өглөөний мэнд» -> おはようございます
+       L2 Гол өгүүлбэр (45)   free=0  нэг зөв хариулт бий
+       L3 Гол асуулт (60)     free=1  нас, нэр, гэр бүл — сурагчийн ӨӨРИЙНХ
+       L4 Ярих сэдэв (9)      free=1  3-5 өгүүлбэр, чөлөөт
+
+     Хамгийн хортой алдаа нь L3-ыг тогтмол болгох: 4 настай сурагчид
+     «25 настай» гэж хэлүүлнэ (загвар хариулт нь ЖИШЭЭ).
      Тайлбарт BACKTICK бичихгүй. Escape (\\d г.м.) БИЧИХГҮЙ. */
   const fr = await c.ev(`
     const out = {};
@@ -2340,32 +2360,32 @@ async function run(c) {
     out.n = ex.items.length;
     out.withFlag = ex.items.filter(x => x.free === 0 || x.free === 1).length;
     out.free = ex.items.filter(x => x.free === 1).length;
-    // Хэвшмэл үг («юу гэж хэлэх вэ») нь ТОГТМОЛ байх ёстой
-    const say = ex.items.filter(x => x.q.indexOf('何と言いますか') >= 0);
-    out.sayN = say.length;
-    out.sayFixed = say.filter(x => x.free === 0).length;
-    // ЗОРИУДЫН онцгой тохиолдол: «何になさいますか» гэж асуухад ямар ч
-    // хоол захиалж болно. Ганц л ийм байх ёстой — өсвөл хэв маяг эвдэрсэн.
-    out.sayFreeIds = say.filter(x => x.free === 1).map(x => x.id).join(',');
+    // Хэсэг тус бүр ЦЭВЭР байх ёстой — холилдвол хэв маяг эвдэрсэн.
+    const byL = L => ex.items.filter(x => x.lesson === L);
+    out.l1fixed = byL(1).every(x => x.free === 0);
+    out.l2fixed = byL(2).every(x => x.free === 0);
+    out.l3free  = byL(3).every(x => x.free === 1);
+    out.l4free  = byL(4).every(x => x.free === 1);
     // Хувийн асуултын жишээ — ТУС БҮР чөлөөт байх ёстой
-    const pick = id => (ex.items.find(x => x.id === id) || {}).free;
-    out.age = pick('S04-01'); out.kid = pick('S04-09');
-    out.wake = pick('S09-07'); out.live = pick('S04-08');
-    out.pen = pick('S10-06');          // ТОГТМОЛ байх ёстой
+    const byQ = s => (ex.items.find(x => x.q.indexOf(s) >= 0) || {}).free;
+    out.age  = byQ('なんさいですか');        // нас
+    out.name = byQ('おなまえは');            // нэр
+    out.fam  = byQ('ごかぞくは');            // гэр бүл
+    out.wake = byQ('なんじに おきますか');    // босох цаг
+    // Үгийн хариулт нь ТОГТМОЛ — «Өглөөний мэнд» гэхэд ганц хувилбар.
+    out.greet = (ex.items.find(x => x.id === 'A01-01') || {}).free;
     return out;
   `);
-  ok('шалгалтын бүх асуулт free тэмдэгтэй (180)',
-    fr && fr.n === 180 && fr.withFlag === 180, JSON.stringify(fr));
-  ok('чөлөөт асуулт олонх (100..160)',
-    fr && fr.free >= 100 && fr.free <= 160, JSON.stringify(fr && fr.free));
-  ok('«юу гэж хэлэх вэ» асуултууд ТОГТМОЛ — ганц мэдэгдэж буй онцгойлолтой',
-    fr && fr.sayN > 20 && fr.sayFixed === fr.sayN - 1
-      && fr.sayFreeIds === 'S06-01', JSON.stringify(fr));
-  ok('нас · хүүхдийн нас · босох цаг · оршин суух газар = ЧӨЛӨӨТ',
-    fr && fr.age === 1 && fr.kid === 1 && fr.wake === 1 && fr.live === 1,
+  ok('шалгалтын бүх асуулт free тэмдэгтэй (209)',
+    fr && fr.n === 209 && fr.withFlag === 209, JSON.stringify(fr));
+  ok('чөлөөт нь L3+L4 = 69', fr && fr.free === 69, JSON.stringify(fr && fr.free));
+  ok('L1·L2 = ТОГТМОЛ, L3·L4 = ЧӨЛӨӨТ (хэсэг холилдоогүй)',
+    fr && fr.l1fixed && fr.l2fixed && fr.l3free && fr.l4free, JSON.stringify(fr));
+  ok('нас · нэр · гэр бүл · босох цаг = ЧӨЛӨӨТ',
+    fr && fr.age === 1 && fr.name === 1 && fr.fam === 1 && fr.wake === 1,
     JSON.stringify(fr));
-  ok('«ペンを貸してください» = ТОГТМОЛ (нөхцөл нь өгөгдсөн)',
-    fr && fr.pen === 0, JSON.stringify(fr && fr.pen));
+  ok('«Өглөөний мэнд» = ТОГТМОЛ (ганц зөв хариулт)',
+    fr && fr.greet === 0, JSON.stringify(fr && fr.greet));
 
   const fj = await c.ev(`
     const J = (heard, model, kana, key, free) =>
@@ -2466,7 +2486,7 @@ async function run(c) {
     wp && wp.wipe === true && wp.examSent === '{}', JSON.stringify(wp));
   ok('локал шалгалтын түүх ч цэвэрлэгдэнэ', wp && wp.local === 0, JSON.stringify(wp));
 
-  console.log('\n[30] Ангийн даалгавар — L1–L8-аас 20 өөр асуулт');
+  console.log('\n[30] Ангийн даалгавар — L1–L4-ээс 20 өөр асуулт');
   /* Хуурамч сервер SQL-ийн дүрмийг дагана (SQL-ийг test_sql.js §9 шалгадаг):
      task_n = даалгаврын хичээлээс since-ээс хойш хариулсан ӨӨР асуулт.
      Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal. */
@@ -2475,7 +2495,7 @@ async function run(c) {
     const out = {};
     const keep = { rpc: rpc, dev: isDevHost, me: JSON.parse(JSON.stringify(me)),
                    hist: exHist, les: exLes, n: exN, cls: classList };
-    const TASK = { lessons: [1, 2, 3, 4, 5, 6, 7, 8], n: 20, since: '2026-01-01' };
+    const TASK = { lessons: [1, 2, 3, 4], n: 20, since: '2026-01-01' };
     const F = { classes: { mica: { name: 'MICA', code: '5173', task: TASK },
                            c2: { name: 'Наран', code: '8264', task: null } },
                 members: {}, calls: [] };
@@ -2519,7 +2539,7 @@ async function run(c) {
     await loadClassList();
 
     // Анги нэгт хоёр хүн: нэг нь ХИЙСЭН (20), нөгөө нь дутуу (12)
-    const mk = n => { const o = {}; for (let i = 0; i < n; i++) o['Z' + i] = [today(), 1, 1 + (i % 8)]; return o; };
+    const mk = n => { const o = {}; for (let i = 0; i < n; i++) o['Z' + i] = [today(), 1, 1 + (i % 4)]; return o; };
     F.members.memberDONE01 = { name: 'Болд', classes: ['mica'], seen: 1, learned: 1, today: 0, streak: 0, day: today(), exam: mk(20) };
     F.members.memberHALF01 = { name: 'Сараа', classes: ['mica', 'c2'], seen: 1, learned: 1, today: 0, streak: 0, day: today(), exam: mk(12) };
 
@@ -2544,12 +2564,14 @@ async function run(c) {
     out.afterLes = JSON.stringify(examLessonsSel());
     out.afterN = exN;
 
-    // (2) L1-ийн 10 асуултыг хариулна — түүхэнд 10
-    exLes = [1]; save(KEY_EXL, exLes); exN = 15; startExam(); await wait(400);
+    // (2) L4-ийн 9 асуултыг хариулна — сан нь exN-ээс БАГА тул
+    //     бүгд гарна; дахин хүсэхэд ЯГ ижил 9 ирнэ (давхардахгүйг
+    //     шалгах нөхцөл). L1 нь 95 асуулттай тул тохирохгүй.
+    exLes = [4]; save(KEY_EXL, exLes); exN = 15; startExam(); await wait(400);
     for (let i = 0; i < exQs.length; i++) { examMark(i % 2 === 0); await wait(220); }
     out.hist1 = Object.keys(exHist).length;
     out.histShape = JSON.stringify(Object.values(exHist)[0]);
-    // (3) ИЖИЛ 10 асуултыг дахин — давхардахгүй
+    // (3) ИЖИЛ 9 асуултыг дахин — давхардахгүй
     examSetup(); await wait(300); startExam(); await wait(400);
     for (let i = 0; i < exQs.length; i++) { examMark(true); await wait(220); }
     out.hist2 = Object.keys(exHist).length;
@@ -2557,7 +2579,7 @@ async function run(c) {
     const put = F.calls.filter(x => x.fn === 'member_put').pop();
     out.sentExam = put ? Object.keys(put.b.p_exam || {}).length : -1;
 
-    // (4) Самбар 10/20 харуулна; «Сонгох» -> L1–L8, 20 асуулт
+    // (4) Самбар 9/20 харуулна; «Сонгох» -> L1–L4, 20 асуулт
     examSetup(); await wait(400);
     const bs = () => box.querySelector('.ex-task .task-state');
     out.bannerAfter = bs() ? bs().textContent : null;
@@ -2615,32 +2637,32 @@ async function run(c) {
     return out;
   `);
   ok('шалгалтын дэлгэцэд даалгавар — ЗӨВХӨН даалгавартай анги (MICA)',
-    tk && tk.bannerShown && tk.bannerItems.length === 1 && /MICA · L1–L8 · 20 асуулт/.test(tk.bannerItems[0]),
+    tk && tk.bannerShown && tk.bannerItems.length === 1 && /MICA · L1–L4 · 20 асуулт/.test(tk.bannerItems[0]),
     JSON.stringify(tk && tk.bannerItems));
   ok('даалгавар НҮҮРНИЙ ХАМГИЙН ДЭЭР гарна',
-    tk && tk.homeShown && tk.homeFirst && /MICA · L1–L8 · 20 асуулт/.test(tk.homeText),
+    tk && tk.homeShown && tk.homeFirst && /MICA · L1–L4 · 20 асуулт/.test(tk.homeText),
     JSON.stringify(tk && { s: tk.homeShown, f: tk.homeFirst, t: tk.homeText }));
   ok('нүүрний товч «Эхлүүлэх» — шалгалт руу аваачиж хичээлийг тохируулна',
     tk && tk.homeBtn === 'Эхлүүлэх' && tk.afterClick === 'exam'
-      && tk.afterLes === '[1,2,3,4,5,6,7,8]' && tk.afterN === 20,
+      && tk.afterLes === '[1,2,3,4]' && tk.afterN === 20,
     JSON.stringify(tk && { b: tk.homeBtn, s: tk.afterClick, l: tk.afterLes, n: tk.afterN }));
   ok('шалгалтын хариулт түүхэнд бүртгэгдэнэ [өдөр, 0/1, хичээл]',
-    tk && tk.hist1 === 10 && /^\[\d+,[01],1\]$/.test(tk.histShape), JSON.stringify(tk));
-  ok('ИЖИЛ асуултыг дахин хариулахад ДАВХАРДАХГҮЙ (10 хэвээр)', tk && tk.hist2 === 10, JSON.stringify(tk));
-  ok('шалгалт дуусахад хариулт серверт илгээгдэнэ', tk && tk.sentExam === 10, JSON.stringify(tk));
-  ok('самбар явцыг харуулна: 10/20', tk && tk.bannerAfter === '10/20', JSON.stringify(tk));
-  ok('«Сонгох» -> L1–L8 ба 20 асуулт',
-    tk && tk.pickLes === '[1,2,3,4,5,6,7,8]' && tk.pickN === 20 && tk.pickNote === '8 хичээл · 80 асуулт',
+    tk && tk.hist1 === 9 && /^\[\d+,[01],4\]$/.test(tk.histShape), JSON.stringify(tk));
+  ok('ИЖИЛ асуултыг дахин хариулахад ДАВХАРДАХГҮЙ (9 хэвээр)', tk && tk.hist2 === 9, JSON.stringify(tk));
+  ok('шалгалт дуусахад хариулт серверт илгээгдэнэ', tk && tk.sentExam === 9, JSON.stringify(tk));
+  ok('самбар явцыг харуулна: 9/20', tk && tk.bannerAfter === '9/20', JSON.stringify(tk));
+  ok('«Сонгох» -> L1–L4 ба 20 асуулт',
+    tk && tk.pickLes === '[1,2,3,4]' && tk.pickN === 20 && tk.pickNote === '4 хичээл · 209 асуулт',
     JSON.stringify(tk));
-  ok('ангийн дэлгэц: «Даалгавар · L1–L8 · 20 асуулт · 1/3 хийсэн»',
-    tk && tk.taskLine === 'Даалгавар · L1–L8 · 20 асуулт | 1/3 хийсэн', JSON.stringify(tk && tk.taskLine));
+  ok('ангийн дэлгэц: «Даалгавар · L1–L4 · 20 асуулт · 1/3 хийсэн»',
+    tk && tk.taskLine === 'Даалгавар · L1–L4 · 20 асуулт | 1/3 хийсэн', JSON.stringify(tk && tk.taskLine));
   ok('20 хүрсэн гишүүн -> «✓ 100%»', tk && tk.bold === '✓ 100%', JSON.stringify(tk));
   ok('дутуу гишүүн -> «60%», зураас 60%, «12/20 асуулт»',
     tk && tk.saraa === '60%' && tk.saraaBar === '60%' && tk.saraaSmall === '12/20 асуулт', JSON.stringify(tk));
-  ok('өөрийн мөр ч гүйцэтгэлтэй (50%)', tk && tk.me === '50%', JSON.stringify(tk));
+  ok('өөрийн мөр ч гүйцэтгэлтэй (9/20 = 45%)', tk && tk.me === '45%', JSON.stringify(tk));
   ok('даалгавартай ангид ЦЭЭЖИЛСЭН ҮГИЙН тоо ХАРАГДАХГҮЙ', tk && tk.micaMetrics === 0, JSON.stringify(tk));
   ok('даалгаваргүй ангид (Наран) хуучин тоо хэвээр', tk && tk.naranMetrics > 0, JSON.stringify(tk));
-  ok('гүйцэтгэлээр эрэмбэлэгдсэн (Болд 100 · Сараа 60 · Бат 30)',
+  ok('гүйцэтгэлээр эрэмбэлэгдсэн (Болд 100 · Сараа 60 · Бат 45)',
     tk && tk.order.join() === 'Болд,Сараа,Бат', JSON.stringify(tk && tk.order));
   ok('даалгаваргүй анги (Наран) -> даалгаврын мөр, төлөв БАЙХГҮЙ',
     tk && tk.naranTask === false && tk.naranStates === 0, JSON.stringify(tk));
@@ -2701,18 +2723,23 @@ async function run(c) {
     exAbort(); go('home');
     return out;
   `);
-  ok('18 хичээлийн чип, анхдагчаар БҮГД сонгогдсон',
-    ex && ex.chips === 18 && ex.pressedAll, JSON.stringify(ex));
-  ok('чип дээр асуултын тоо (L1 = 10)', ex && ex.l1small === '10', JSON.stringify(ex));
-  ok('бүгд үед «18 хичээл · 180 асуулт»', ex && ex.noteAll === '18 хичээл · 180 асуулт', JSON.stringify(ex));
+  /* A1/N5-ийн сан нь ДӨРВӨН хэсэгтэй (18 хичээл БИШ): L1 Гол үгс 95 ·
+     L2 Гол өгүүлбэр 45 · L3 Гол асуулт 60 · L4 Ярих сэдэв 9. Хичээлийн
+     чип тэр бүтцийг дагана. */
+  ok('4 хэсгийн чип, анхдагчаар БҮГД сонгогдсон',
+    ex && ex.chips === 4 && ex.pressedAll, JSON.stringify(ex));
+  ok('чип дээр асуултын тоо (L1 = 95)', ex && ex.l1small === '95', JSON.stringify(ex));
+  ok('бүгд үед «4 хичээл · 209 асуулт»', ex && ex.noteAll === '4 хичээл · 209 асуулт', JSON.stringify(ex));
   ok('«Цэвэрлэх» -> юу ч сонгоогүй, эхлүүлэх товч ИДЭВХГҮЙ',
     ex && ex.pressedNone === 0 && ex.btnNone && /сонгоно/.test(ex.noteNone), JSON.stringify(ex));
-  ok('зөвхөн L1 -> «1 хичээл · 10 асуулт — бүгдийг нь асууна»',
-    ex && ex.noteL1 === '1 хичээл · 10 асуулт — бүгдийг нь асууна' && !ex.btnL1, JSON.stringify(ex));
-  ok('L1 шалгалт: 15 гэсэн ч 6 асуулт, бүгд L1',
-    ex && ex.l1len === 10 && ex.l1only, JSON.stringify(ex));
-  ok('L1–L3, 10 асуулт: зөвхөн тэр гурван хичээлээс',
-    ex && ex.l123len === 10 && ex.l123only && ex.noteL123 === '3 хичээл · 30 асуулт', JSON.stringify(ex));
+  /* L1 нь 95 асуулттай тул `exN`=15 гэхэд «бүгдийг нь асууна» гэсэн
+     тайлбар ГАРАХГҮЙ — сан нь хүссэнээс их. */
+  ok('зөвхөн L1 -> «1 хичээл · 95 асуулт»',
+    ex && ex.noteL1 === '1 хичээл · 95 асуулт' && !ex.btnL1, JSON.stringify(ex));
+  ok('L1 шалгалт: хүссэн 15 асуулт, бүгд L1',
+    ex && ex.l1len === 15 && ex.l1only, JSON.stringify(ex));
+  ok('L1–L3, 10 асуулт: зөвхөн тэр гурван хэсгээс',
+    ex && ex.l123len === 10 && ex.l123only && ex.noteL123 === '3 хичээл · 200 асуулт', JSON.stringify(ex));
   ok('асуултын дээр хичээлийн дугаар харагдана', ex && /^L[123] · /.test(ex.topic), JSON.stringify(ex));
   ok('сонголт хадгалагдана [1,2,3]; бүгдийг сонгоход null',
     ex && ex.stored === '[1,2,3]' && ex.storedAll === 'null', JSON.stringify(ex));
@@ -3431,7 +3458,7 @@ async function run(c) {
 
   const ru = await c.ev(`
     await loadExam();
-    const q = EXAM.items.find(x => x.id === "S01-01");
+    const q = EXAM.items.find(x => x.id === "A04-01");
     settings.script = "ruby"; exN = 10; exMode = "think";
     startExam();
     await new Promise(r => setTimeout(r, 800));
@@ -3455,7 +3482,7 @@ async function run(c) {
   ok('rt тоо нь ruby тоотой тэнцүү', ru && ru.rts === ru.rubies, JSON.stringify(ru));
   ok('суурь бичиг нь ханзан хэлбэртэй ЯГ тэнцүү',
     ru && ru.base === ru.want, JSON.stringify(ru));
-  ok('эхний уншлага «あさ»', ru && ru.firstRt === 'あさ', JSON.stringify(ru));
+  ok('эхний уншлага «た» (食べ物)', ru && ru.firstRt === 'た', JSON.stringify(ru));
   ok('.ruby анги зүүгдсэн',
     ru && String(ru.cls).indexOf('ruby') >= 0, JSON.stringify(ru));
   // Мөрийн өндөр өсөөгүй бол дээд мөрийн кана дайрна.
@@ -3514,12 +3541,16 @@ async function run(c) {
         else { diff++; if (bad.length < 4) bad.push(it.id + ' ' + JSON.stringify(got)); }
       }
     }
-    return { same: same, diff: diff, plain: plain, bad: bad };
+    return { same: same, diff: diff, plain: plain, bad: bad, n: EXAM.items.length };
   `);
+  /* Ханзтай мөрийн тоо нь САНААС хамаарна: хуучин 入門-д 150+ байсан
+     бол A1/N5-ийн санд зөвхөн ярих сэдвийн 9 асуулт ханзтай (бусад нь
+     зориуд кандзигүй). Тиймээс тоог хатуу бичихгүй — зөрүү тэг байх
+     ба ханзтай мөр дор хаяж нэг байхыг шалгана. */
   ok('JS зэрэгцүүлэгч Python-тойгоо ЯГ таарна (зөрүү 0)',
-    cross && cross.diff === 0 && cross.same > 150, JSON.stringify(cross));
-  ok('ханзгүй мөрд ふりがな үүсгэхгүй',
-    cross && cross.plain > 20 && cross.same + cross.plain === 360,
+    cross && cross.diff === 0 && cross.same > 0, JSON.stringify(cross));
+  ok('ханзгүй мөрд ふりがな үүсгэхгүй (бүх хос хамрагдсан)',
+    cross && cross.plain > 20 && cross.same + cross.plain === cross.n * 2,
     JSON.stringify(cross));
 
   // Үгийн карт: урд тал нь ЦЭВЭР байх ёстой — уншлага нь таах хариулт.
@@ -3561,6 +3592,85 @@ async function run(c) {
     wk && wk.rt === 0 && String(wk.cls).indexOf('ruby') < 0, JSON.stringify(wk));
 
   await c.ev('settings.script = "kana"; exAbort(); show("home"); go("home"); return 1;');
+
+  /* ── Шалгалтын сан нь СОНГОСОН НОМЫГ дагана ──────────────────────
+     Ном солиход шалгалт нь өмнөх номынхоо асуултыг үзүүлж байвал
+     хэрэглэгч анзаарахгүй: асуулт нь япон хэл дээр, хичээлийн дугаар
+     нь хоёр номонд адилхан 1–18. Тиймээс id-ийн УГТВАРААР шалгана. */
+  console.log('\n[43] Шалгалт — ном солиход сан нь дагана');
+  {
+    await c.ev('settings.book = "starter"; EXAM = null; return 1;');
+    const st = await c.ev('const d = await loadExam(); return { book: d.book, n: d.items.length, id: d.items[0].id };');
+    /* A1/N5-ийн сан: id нь `A01-01` (угтвар `A`). `S…` БИШ — хуучин
+       180 асуултад 360 MP3 холбогдсон тул шинэ асуулт тэр id-г авбал
+       хуучин дуу тоглоно. */
+    ok('A1/N5: exam-starter.json ачаалагдана',
+      st && st.book === 'starter' && st.id.indexOf('A') === 0, JSON.stringify(st));
+    ok('A1/N5: 209 асуулт (95+45+60+9)', st && st.n === 209, JSON.stringify(st));
+    ok('A1/N5: дөрвөн хэсэг',
+      await c.ev('const s = {}; EXAM.items.forEach(q => s[q.lesson] = (s[q.lesson]||0)+1);'
+        + 'return JSON.stringify([s[1], s[2], s[3], s[4]]);') === '[95,45,60,9]');
+    /* «Гол үгс»/«Гол өгүүлбэрүүд»-ийн асуулт МОНГОЛООР — япон TTS-ээр
+       уншуулбал кирилл үсгийг ярвайна. `examQSpeakable` түүнийг барина. */
+    ok('монгол асуултыг япон хоолойгоор УНШУУЛАХГҮЙ',
+      await c.ev('const mn = EXAM.items.find(q => q.lesson === 1);'
+        + 'const ja = EXAM.items.find(q => q.lesson === 3);'
+        + 'return examQSpeakable(mn) === false && examQSpeakable(ja) === true;'));
+
+    await c.ev('settings.book = "el1"; EXAM = null; return 1;');
+    const e1 = await c.ev('const d = await loadExam(); return { book: d.book, n: d.items.length, id: d.items[0].id };');
+    ok('初級1: exam-el1.json ачаалагдана',
+      e1 && e1.book === 'el1' && e1.id.indexOf('E1S') === 0, JSON.stringify(e1));
+    ok('初級1: 180 асуулт', e1 && e1.n === 180, JSON.stringify(e1));
+    ok('初級1: 18 хичээл × 10',
+      await c.ev('const s = {}; EXAM.items.forEach(q => s[q.lesson] = (s[q.lesson]||0)+1);'
+        + 'return Object.keys(s).length === 18 && Object.values(s).every(v => v === 10);'));
+    ok('初級1: асуулт бүрд ふりがな бүтэц бий',
+      await c.ev('return EXAM.items.every(q => Array.isArray(q.qRuby) && Array.isArray(q.modelRuby));'));
+    ok('初級1: кана талбарт ханз үлдээгүй',
+      await c.ev('const k = /[\\u3400-\\u9fff]/;'
+        + 'return EXAM.items.every(q => !k.test(q.qKana) && !k.test(q.modelKana));'));
+    ok('初級1: id давхардаагүй',
+      await c.ev('return new Set(EXAM.items.map(q => q.id)).size === 180;'));
+    /* Дууны id нь `EXQ-`/`EXA-` + асуултын id. Хоёр номын id зөрж
+       байж л нэг номын бичлэг нөгөөд очихгүй. */
+    ok('初級1 ба 入門-ий id ОГТЛОЛЦОХГҮЙ (дуу хольцолдохгүй)',
+      await c.ev('const a = new Set(examCache.starter.items.map(q => q.id));'
+        + 'return EXAM.items.every(q => !a.has(q.id));'));
+
+    // Шалгалтгүй номд (n5) 入門-ий сан үйлчилнэ — хоосон дэлгэц гарахгүй.
+    await c.ev('settings.book = "n5"; EXAM = null; return 1;');
+    const n5 = await c.ev('const d = await loadExam(); return d.book;');
+    ok('n5: шалгалтгүй тул 入門-д унана', n5 === 'starter', String(n5));
+
+    /* Дээрх шалгуурууд `settings.book`-ыг ГАРААР оноодог. Хэрэглэгчийн
+       жинхэнэ зам нь нүүрний товч — `EXAM = null` тэнд хийгддэг тул
+       түүнийг мартсан байвал зөвхөн ЭНЭ шалгуур барина. */
+    await c.ev('settings.book = "starter"; EXAM = null; await loadExam();'
+      + 'show("home"); go("home"); return 1;');
+    const clk = await c.ev('const b = document.querySelector(\'#seg-book button[data-b="el1"]\');'
+      + 'if (!b) return { e: "товч алга" }; b.click();'
+      + 'for (let i = 0; i < 40 && settings.book !== "el1"; i++)'
+      + '  await new Promise(r => setTimeout(r, 150));'
+      + 'const d = await loadExam(); return { set: settings.book, book: d.book, id: d.items[0].id };');
+    ok('нүүрний ТОВЧООР ном солиход сан дагана',
+      clk && clk.set === 'el1' && clk.book === 'el1' && clk.id.indexOf('E1S') === 0,
+      JSON.stringify(clk));
+
+    /* Сан зөв ачаалагдсан ч сонгогдсон асуултууд өмнөх номынх байж
+       болно (`exQs` нь тусдаа). Тиймээс шалгалтыг ЖИНХЭНЭЭР эхлүүлнэ. */
+    const run = await c.ev('go("exam"); await new Promise(r => setTimeout(r, 400));'
+      + 'const n = [...document.querySelectorAll("#seg-exam-n button")].find(x => x.dataset.n === "10");'
+      + 'if (n) n.click();'
+      + 'const g = document.getElementById("btn-exam"); if (g) g.click();'
+      + 'await new Promise(r => setTimeout(r, 500));'
+      + 'return { n: exQs.length, allE1: exQs.every(q => /^E1S/.test(q.id)) };');
+    ok('初級1 дээр эхлүүлсэн шалгалтын асуулт БҮГД el1-ийнх',
+      run && run.n === 10 && run.allE1 === true, JSON.stringify(run));
+
+    await c.ev('exAbort(); settings.book = "starter"; EXAM = null; await loadExam();'
+      + 'show("home"); go("home"); return 1;');
+  }
 
 }
 

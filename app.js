@@ -2066,6 +2066,9 @@ document.querySelectorAll('#seg-book button').forEach(b =>
       if (req !== bookReq) return;                // хуучирсан хариу
       if (!items) { alert('Энэ номын үгсийг ачаалж чадсангүй.'); return; }
       ALL = items; READ_MAP = null; settings.book = nb; wordSrc = 'book';
+      // Шалгалтын сан номыг дагадаг тул хуучныг СУЛЛАНА — эс тэгвэл
+      // шалгалт руу орох хүртэл өмнөх номын асуулт үлдэнэ.
+      EXAM = null;
       save(KEY_S, settings); refreshHome();
     });
   });
@@ -2408,7 +2411,9 @@ const KEY_EXH = 'irodori.examhist.v1';
 function cleanExHist(v) {
   const out = {};
   if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
-  for (const k of Object.keys(v).slice(0, 200)) {
+  // 600 хүртэл: 入門 180 + 初級1 180 + 初級2 180 = 540, дээр нь зай.
+  // Хэт бага бол хоёр номын шалгалт өгсөн хүний ЭХНИЙ явц хаягдана.
+  for (const k of Object.keys(v).slice(0, 600)) {
     const x = v[k];
     if (/^[A-Za-z0-9_-]{1,16}$/.test(k) && Array.isArray(x) && x.length === 3
         && x.every(Number.isInteger)) out[k] = [x[0], x[1] ? 1 : 0, x[2]];
@@ -3032,12 +3037,23 @@ function withTimeout(p, ms) {
   });
 }
 
+/* Шалгалтын сан нь СОНГОСОН НОМЫГ дагана — тусдаа сонголт хийлгэвэл
+   «үг нь 初級1, шалгалт нь 入門» гэсэн зөрүү үүсэх бөгөөд хэрэглэгч
+   үүнийг анзаарахгүй. Шалгалтгүй номд (`n5`) 入門-ий сан үйлчилнэ. */
+const EXAM_FILE = { starter: 'data/exam-starter.json',
+                    el1: 'data/exam-el1.json' };
+const examCache = {};
+const examBook = () => EXAM_FILE[settings.book] ? settings.book : 'starter';
+
 function loadExam() {
-  if (EXAM) return Promise.resolve(EXAM);
-  return fetch('data/exam-starter.json').then(r => {
+  const b = examBook();
+  // `EXAM.book`-оор шалгана: ном солигдсон бол хуучин сан таарахгүй.
+  if (EXAM && EXAM.book === b) return Promise.resolve(EXAM);
+  if (examCache[b]) { EXAM = examCache[b]; return Promise.resolve(EXAM); }
+  return fetch(EXAM_FILE[b]).then(r => {
     if (!r.ok) throw new Error('HTTP ' + r.status);
     return r.json();
-  }).then(d => { EXAM = d; return d; });
+  }).then(d => { examCache[b] = d; EXAM = d; return d; });
 }
 
 /** «Амаар» төрөл боломжтой юу: браузер дэмжих БА интернэт байх. */
@@ -3097,11 +3113,12 @@ function renderExam() {
   // Дуудлагыг ҮРГЭЛЖ ханзтай хэлбэрээс уншуулна — кана горимд байсан ч.
   // TTS нь ханзтай өгүүлбэрийг илүү зөв уншдаг: кана дан бол үгийн зааг
   // алдагдаж «なんといいますか» гэхийг буруу өргөлтөөр уншиж магадгүй.
-  $('ex-say-q').hidden = !(canSpeak || hasAudio('EXQ-' + q.id));
+  const sayQ = examQSpeakable(q);
+  $('ex-say-q').hidden = !sayQ || !(canSpeak || hasAudio('EXQ-' + q.id));
   // ЯРИХ горимд асуултыг автоматаар уншина — багш асууж байгаа мэт.
   // «Бодож» горимд уншихгүй: тэнд хэрэглэгч нүдээрээ уншиж байгаа.
   // renderExam нь дарлагын гинжнээс дуудагддаг тул iOS ч зөвшөөрнө.
-  if (exMode === 'speak') examSay(q, 'q');
+  if (exMode === 'speak' && sayQ) examSay(q, 'q');
   $('ex-model').hidden = true;
   $('ex-reveal').hidden = false;
   // Амаар төрөл
@@ -3268,6 +3285,18 @@ $('btn-exam').onclick = startExam;
 /** Шалгалтын дуу: VOICEVOX-ийн УРЬДЧИЛАН бэлдсэн бичлэгийг тоглуулна.
  *  Браузерын TTS нь төхөөрөмж бүрд өөр хоолой, өөр өргөлттэй тул жигд
  *  бус сонсогддог. Бичлэг олдохгүй бол л TTS рүү ухарна. */
+/* Асуултыг ЯПОН хоолойгоор уншиж болох уу.
+ *
+ * A1/N5-ийн санд «Гол үгс» ба «Гол өгүүлбэрүүд» хэсгийн асуулт нь
+ * МОНГОЛООР бичигдсэн («Өглөөний мэнд» — японоор юу гэж хэлэх вэ?):
+ * сурагч монголоос япон руу хөрвүүлнэ. Түүнийг япон TTS-ээр уншуулбал
+ * кирилл үсгийг тэмдэгт тус бүрээр ярвайгаад утгагүй болно.
+ *
+ * Талбар нэмэхгүйгээр кирилл байгаа эсэхээр шийднэ — өгөгдөл өөрөө
+ * хэлээ хэлж байна. Загвар ХАРИУЛТ нь үргэлж япон тул түүнд
+ * хамаарахгүй. */
+const examQSpeakable = q => !/[Ѐ-ӿ]/.test(exQ(q) || '');
+
 function examSay(q, which) {
   if (!q) return;
   const id = (which === 'a' ? 'EXA-' : 'EXQ-') + q.id;

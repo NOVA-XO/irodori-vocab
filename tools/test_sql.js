@@ -230,12 +230,13 @@ async function main() {
   ok('хуучин клиентын дуудлага (8 параметр) хариултыг УСТГАХГҮЙ',
     ro.rows.find(x => x.name === 'Бат').task_n === 3, JSON.stringify(ro.rows));
 
-  // 200-аас олон түлхүүр -> 200 л
+  // 600-аас олон түлхүүр -> 600 л. Хязгаар нь SUPABASE.sql-ийн `limit 600`
+  // (入門 180 + 初級1 180 + 初級2 180 = 540 + зай). Тэр тоог сольвол ЭНД ч зас.
   const many = {};
-  for (let i = 0; i < 260; i++) many['Q' + i] = [D0, 1, 1];
+  for (let i = 0; i < 700; i++) many['Q' + i] = [D0, 1, 1];
   await putEx('memberT00003', 'Их', { mica: '5173' }, many);
   const cnt = (await one("select (select count(*) from jsonb_object_keys(exam)) as n from public.members where member='memberT00003'")).n;
-  ok('хариулт 200 хүртэл хязгаарлагдана', Number(cnt) === 200, String(cnt));
+  ok('хариулт 600 хүртэл хязгаарлагдана', Number(cnt) === 600, String(cnt));
   // Хэт их өдөр/хичээл -> хязгаарлагдана, алдаа өгөхгүй
   await putEx('memberT00004', 'Хэт', { mica: '5173' }, { S01: [9e15, 5, 9e15] });
   const hx = (await one("select exam from public.members where member='memberT00004'")).exam;

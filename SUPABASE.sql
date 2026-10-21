@@ -694,11 +694,12 @@ begin
              case when public.jnum(e.value -> 1) > 0 then 1 else 0 end,
              least(greatest(public.jnum(e.value -> 2), 0), 100)::int)), '{}'::jsonb)
       into ex
-      from (select * from jsonb_each(p_exam) limit 200) e
+      from (select * from jsonb_each(p_exam) limit 600) e
      where e.key ~ '^[A-Za-z0-9_-]{1,16}$' and jsonb_typeof(e.value) = 'array';
 
-    -- УУСГАНА: асуулт тутамд СҮҮЛИЙН өдрийн хариултыг авна. 400 түлхүүр
-    -- хүртэл — сан 100 асуулттай тул энэ нь хэтрэхгүй.
+    -- УУСГАНА: асуулт тутамд СҮҮЛИЙН өдрийн хариултыг авна. 600 түлхүүр
+    -- хүртэл — 入門 180 + 初級1 180 + 初級2 180 = 540 тул зайтай багтана.
+    -- ЭНЭ ТООГ номын сан нэмэгдэх бүрд дээрх `limit`-тэй ХАМТ шалга.
     -- `p_wipe` үед уусгахгүй: ирсэн зүйл нь ЭЦСИЙН утга.
     if coalesce(p_wipe, false) then
       cur := '{}'::jsonb;
@@ -714,7 +715,7 @@ begin
              end as qv
         from jsonb_each(coalesce(cur, '{}'::jsonb)) o
         full join jsonb_each(ex) n on o.key = n.key
-       limit 400) m2;
+       limit 600) m2;
   end if;
 
   insert into public.members as m

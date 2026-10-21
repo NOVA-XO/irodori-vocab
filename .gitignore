@@ -18,3 +18,5 @@ tools/n5_raw.json
 tools/report_n5.txt
 tools/_jp*.txt
 tools/_jp*.css
+tools/_exam_*_errors.txt
+tools/_a1_extract_errors.txt

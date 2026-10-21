@@ -13,7 +13,7 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-09-24h';
+const VERSION = '2026-10-21a';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 
@@ -44,6 +44,7 @@ const CORE = [
   './data/audio.json',
   // Шалгалтын асуултын сан — офлайн ч шалгалт өгөх боломжтой байх ёстой.
   './data/exam-starter.json',
+  './data/exam-el1.json',
   './data/grammar-starter.json',
 ];
 
