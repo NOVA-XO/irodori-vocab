@@ -626,14 +626,19 @@ async function run(c) {
        Тиймээс «бүгдэд бий» гэж шаардахгүй: дуу нь БҮРЭН эсвэл БҮРЭН
        БАЙХГҮЙ байхыг шалгана. Хагас байвал л эвдрэл — тэр нь асуултын
        нэг хэсэг чимээгүй үлдэж байгааг хэлнэ. */
-    const au2 = await c.ev('const q = exQs.filter(x => hasAudio("EXQ-" + x.id)).length;'
-      + 'const a = exQs.filter(x => hasAudio("EXA-" + x.id)).length;'
-      + 'return { q: q, a: a, n: exQs.length };');
-    ok('дуу БҮРЭН эсвэл БҮРЭН БАЙХГҮЙ (хагас байвал эвдрэл)',
-      au2 && (au2.q === 0 || au2.q === au2.n) && (au2.a === 0 || au2.a === au2.n),
-      JSON.stringify(au2));
+    const au2 = await c.ev('const say = exQs.filter(examQSpeakable);'
+      + 'return { sayN: say.length, sayAudio: say.filter(x => hasAudio("EXQ-" + x.id)).length,'
+      + ' a: exQs.filter(x => hasAudio("EXA-" + x.id)).length, n: exQs.length };');
+    /* Асуултын бичлэг нь ЗӨВХӨН япон талд байх ёстой: монгол/англи
+       асуултад (`examQSpeakable === false`) бичлэг үүсгэх нь хог —
+       `build_audio.py` кирилл агуулсан мөрийг хасдаг. Тиймээс «бүгдэд
+       бий» гэж шалгахгүй, УНШИЖ БОЛОХ бүгдэд бий гэж шалгана. */
+    ok('уншиж болох асуулт БҮГД бичлэгтэй (эсвэл сан бүхэлдээ дуугүй)',
+      au2 && (au2.sayAudio === au2.sayN || au2.sayAudio === 0), JSON.stringify(au2));
+    ok('загвар хариулт БҮГД бичлэгтэй (үргэлж япон)',
+      au2 && (au2.a === au2.n || au2.a === 0), JSON.stringify(au2));
     ok('дуугүй үед ч TTS нөөц бий (хэрэглэгч чимээгүй үлдэхгүй)',
-      au2 && (au2.q === au2.n || await c.ev('return canSpeak === true')));
+      au2 && (au2.a === au2.n || await c.ev('return canSpeak === true')));
     ok('дуу товч бичлэг тоглуулна (TTS биш)',
       await c.ev('let used=""; const op=playFile;'
         + 'window.playFile=(id,f)=>{used=id; return true;};'

@@ -489,7 +489,7 @@ python tools/build_audio.py --speaker 2
 
 ```
 python -m http.server 8765          # ЭХЛЭЭД — үүнгүй бол test_ui унана
-node tools/test_ui.js               # 488 шалгуур, бодит Chrome дотор
+node tools/test_ui.js               # 489 шалгуур, бодит Chrome дотор
 node tools/test_sql.js              # 109 — SUPABASE.sql, PGlite дээр
 node tools/test_attack.js           #  24 — халдлагын хувилбарууд
 node tools/test_answers.js          # хариулт шалгагч
