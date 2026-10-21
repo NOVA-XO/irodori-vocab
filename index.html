@@ -17,11 +17,11 @@
      бол системийн сонголт (`prefers-color-scheme`) үйлчилнэ. -->
 <script>try{var v=JSON.parse(localStorage.getItem("irodori.scheme.v1")||'""');
 if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v);}catch(e){}</script>
-<link rel="stylesheet" href="fonts/fonts.css?v=2026-10-21a">
-<link rel="stylesheet" href="app.css?v=2026-10-21a">
+<link rel="stylesheet" href="fonts/fonts.css?v=2026-10-21b">
+<link rel="stylesheet" href="app.css?v=2026-10-21b">
 <!-- Табны дүрс. SVG нь хэмжээ бүрд хурц гарна; PNG нь хуучин браузерын нөөц. -->
-<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-10-21a">
-<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-10-21a">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg?v=2026-10-21b">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2026-10-21b">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -472,10 +472,26 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
 
     <div class="step">Хариулах арга</div>
     <div class="seg" id="seg-exam-mode">
-      <button data-m="think"><b>Бодож хариулах</b><span>Хариултаа бодоод загвартай тулгана</span></button>
+      <button data-m="think"><b>Флашкарт</b><span>Хариултаа бодоод загвартай тулгана</span></button>
+      <button data-m="choice"><b>Олон сонголт</b><span>4 хариултаас сонгоно · үг ба өгүүлбэрт</span></button>
       <button data-m="speak"><b>Амаар хариулах</b><span>Микрофоноор хэлнэ · Chrome/Edge, интернэт</span></button>
     </div>
     <p class="hint" id="ex-mode-note"></p>
+
+    <!-- Чиглэл нь ЗӨВХӨН «Гол үгс»/«Гол өгүүлбэрүүд» хэсэгт утгатай:
+         тэнд асуулт ба хариулт хоёулаа ТОГТМОЛ тул эргүүлж болно.
+         «Гол асуултууд»/«Ярих сэдэв» нь чөлөөт хариулттай — тэдэнд
+         чиглэл үл хамаарна, JS нь сонгогчийг нууна. -->
+    <div id="ex-dir-box" hidden>
+      <div class="step">Чиглэл</div>
+      <div class="seg" id="seg-exam-dir">
+        <button data-d="mn-ja"><b>Монгол → Япон</b><span>утгыг хараад японоор</span></button>
+        <button data-d="ja-mn"><b>Япон → Монгол</b><span>япон хараад утгыг</span></button>
+        <button data-d="ja-en"><b>Япон → Англи</b><span>япон хараад англиар</span></button>
+        <button data-d="en-ja"><b>Англи → Япон</b><span>англи хараад японоор</span></button>
+      </div>
+      <p class="hint" id="ex-dir-note"></p>
+    </div>
 
     <div class="step">Хэдэн асуулт вэ</div>
     <div class="seg" id="seg-exam-n">
@@ -508,6 +524,10 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
       <div class="mic-fix jp" id="ex-mic-fix" hidden></div>
       <p class="mic-note">Хариултын <b>текст</b> ба төхөөрөмжийн <b>нэргүй дугаар</b> (хэт олон дуудлагаас хамгаалахад) үнэлгээнд илгээгдэнэ. Нэр, дуу хоёр илгээгдэхгүй; офлайн үед төхөөрөмж дээрээ л шалгана.</p>
     </div>
+
+    <!-- Олон сонголт — 4 товч. JS дүүргэнэ. Зөв/буруу нь ШУУД
+         мэдэгдэнэ (өөрөө дүгнэхгүй) тул `ex-reveal` нуугдана. -->
+    <div id="ex-choice" class="choices" hidden></div>
 
     <button id="ex-reveal" class="primary big wide">Загвар хариултыг харах</button>
 
@@ -765,7 +785,7 @@ if(v==="light"||v==="dark")document.documentElement.setAttribute("data-theme",v)
   </div>
 </section>
 
-<script src="sync-config.js?v=2026-10-21a"></script>
-<script src="app.js?v=2026-10-21a"></script>
+<script src="sync-config.js?v=2026-10-21b"></script>
+<script src="app.js?v=2026-10-21b"></script>
 </body>
 </html>

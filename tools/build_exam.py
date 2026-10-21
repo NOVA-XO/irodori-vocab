@@ -291,13 +291,17 @@ def _ruby(surface, reading):
     return sols[0]
 
 
-def _item(qid, lesson, topic, q, qkana, qmn, model, mkana, mmn, key, free):
+def _item(qid, lesson, topic, q, qkana, qmn, model, mkana, mmn, key, free, en=None):
     it = {
         "id": qid, "lesson": lesson, "topic": topic,
         "q": q, "qKana": qkana, "qMn": qmn,
         "model": model, "modelKana": mkana, "modelMn": mmn,
         "key": key, "free": free,
     }
+    # `en` нь ЗӨВХӨН L1/L2-д (үг ба өгүүлбэр) — «япон -> англи» чиглэлд.
+    # L3/L4 нь чөлөөт асуулт тул англи загвар хариулт утгагүй.
+    if en:
+        it["modelEn"] = en
     for fld, surf, read in (("qRuby", q, qkana), ("modelRuby", model, mkana)):
         p = _ruby(surf, read)
         if p is None:
@@ -312,6 +316,14 @@ def main():
         raise SystemExit("a1_raw.json алга — эхлээд extract_a1.py ажиллуулна")
     raw = json.load(io.open(src, encoding="utf-8"))
 
+    # Англи орчуулга — ГАРААР нэмсэн, эх .docx-д байхгүй. Тусдаа файлд
+    # байгаа нь зориуд: эх задлалт (`a1_raw.json`) ба гар нэмэлтийг
+    # хольж болохгүй, эх бичиг өөрчлөгдвөл задлалт дахин бичигдэнэ.
+    enp = os.path.join(HERE, "a1_en.json")
+    EN = json.load(io.open(enp, encoding="utf-8")) if os.path.exists(enp) else {}
+    EN_W = EN.get("words", {})
+    EN_S = EN.get("sentences", {})
+
     errs = []
     out = []
 
@@ -320,19 +332,29 @@ def main():
     # «гараар бичих» дасгал ч ийм чиглэлтэй (монгол -> кана).
     for i, w in enumerate(raw["words"], 1):
         qmn = u"«%s» — японоор юу гэж хэлэх вэ?" % w["mn"]
+        en = EN_W.get(w["jp"])
+        if not en:
+            errs.append(u"A01-%02d: «%s»-ийн англи орчуулга a1_en.json-д алга"
+                        % (i, w["jp"]))
+            continue
         it, e = _item("A01-%02d" % i, 1, u"Гол үгс",
                       qmn, qmn, qmn,
                       w["jp"], w["jp"], w["mn"],
-                      u"үг", 0)
+                      u"үг", 0, en)
         (out.append(it) if it else errs.append(e))
 
     # ── L2 · Гол өгүүлбэрүүд ─────────────────────────────────────────
     for i, s in enumerate(raw["sentences"], 1):
         qmn = u"«%s» — японоор юу гэж хэлэх вэ?" % s["mn"]
+        en = EN_S.get(s["jp"])
+        if not en:
+            errs.append(u"A02-%02d: «%s»-ийн англи орчуулга a1_en.json-д алга"
+                        % (i, s["jp"]))
+            continue
         it, e = _item("A02-%02d" % i, 2, u"Гол өгүүлбэрүүд",
                       qmn, qmn, qmn,
                       s["jp"], s["jp"], s["mn"],
-                      u"өгүүлбэр", 0)
+                      u"өгүүлбэр", 0, en)
         (out.append(it) if it else errs.append(e))
 
     # ── L3 · Гол асуултууд ───────────────────────────────────────────

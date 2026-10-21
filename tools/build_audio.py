@@ -376,16 +376,29 @@ def main():
     # өөрийн морфологийн задлалаар уншина (жишээ өгүүлбэртэй ижил зарчим).
     # Браузерын TTS нь хоолой, өргөлт нь төхөөрөмж бүрд өөр байдаг тул
     # урьдчилан бэлдсэн бичлэг хавьгүй жигд.
-    exam_p = os.path.join(ROOT, 'data', 'exam-starter.json')
-    if os.path.exists(exam_p):
+    # ХОЁР сан: 入門 (A1/N5) ба 初級1. Хоёрын id угтвар зөрдөг (`A…`/`E1S…`)
+    # тул бичлэг хольцолдохгүй.
+    #
+    # ЯПОН БИШ АСУУЛТЫГ ХАСНА: A1/N5-ийн «Гол үгс»/«Гол өгүүлбэрүүд»-ийн
+    # асуулт нь МОНГОЛООР («Өглөөний мэнд» — японоор юу гэж хэлэх вэ?) —
+    # сурагч монголоос япон руу хөрвүүлнэ. Түүнийг VOICEVOX-д өгвөл
+    # кирилл үсгийг гажуутай уншиж 140 хог бичлэг үүсэх байв. Апп ч
+    # `examQSpeakable()`-ээр тэдгээрт дуу товчийг нуудаг.
+    #
+    # Загвар ХАРИУЛТ нь үргэлж япон тул бүгдэд бичлэг үүснэ.
+    CYR = re.compile(u'[Ѐ-ӿ]')
+    for name in ('exam-starter.json', 'exam-el1.json'):
+        exam_p = os.path.join(ROOT, 'data', name)
+        if not os.path.exists(exam_p):
+            continue
         exam = json.load(io.open(exam_p, encoding='utf-8'))
         for it in exam.get('items', []):
             # 「」 хашилтыг хасна — хөдөлгүүр заримдаа гажуутай уншдаг.
             q = re.sub('[「」『』]', '', (it.get('q') or '')).strip()
             m = re.sub('[「」『』]', '', (it.get('model') or '')).strip()
-            if q:
+            if q and not CYR.search(q):
                 jobs.append(('EXQ-' + it['id'], q, '', q))
-            if m:
+            if m and not CYR.search(m):
                 jobs.append(('EXA-' + it['id'], m, '', m))
 
     for it in kanji['items']:

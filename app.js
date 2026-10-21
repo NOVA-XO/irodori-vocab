@@ -2446,11 +2446,47 @@ let exHist = cleanExHist(load(KEY_EXH, {}));
 let exLes = load(KEY_EXL, null);
 if (exLes !== null && !(Array.isArray(exLes) && exLes.every(Number.isInteger))) exLes = null;
 let exMode = load(KEY_EXM, 'think');
-if (!['think', 'speak'].includes(exMode)) exMode = 'think';
+if (!['think', 'choice', 'speak'].includes(exMode)) exMode = 'think';
 /* Шалгалт нь өөрийн гэсэн бичгийн тохиргоогүй — апп даяарх
    `settings.script`-ийг дагана (профайл дэлгэцээс сонгоно). */
-const exQ = q => (settings.script === 'kana' ? q.qKana : q.q) || q.q;
-const exA = q => (settings.script === 'kana' ? q.modelKana : q.model) || q.model;
+/* ЧИГЛЭЛ — асуулт ба хариултыг эргүүлэх.
+ *
+ * Зөвхөн ТОГТМОЛ хариулттай бичлэгт (`free === 0`, A1/N5-ийн «Гол үгс»
+ * ба «Гол өгүүлбэрүүд») утгатай: тэнд асуулт, хариулт хоёулаа гурван
+ * хэлээр бий тул ямар ч тийш эргүүлж болно. Чөлөөт асуултад (`free === 1`)
+ * эргүүлэх нь утгагүй — загвар хариулт нь зөвхөн ЖИШЭЭ, сурагчийн
+ * хариулт өөр байх ёстой.
+ *
+ * `modelEn` нь зөвхөн L1/L2-д байдаг тул түүнийг ч шалгана: англигүй
+ * бичлэг `ja-en`/`en-ja` чиглэлд орвол хоосон талбар гарах байв. */
+const EX_DIRS = ['mn-ja', 'ja-mn', 'ja-en', 'en-ja'];
+const KEY_EXD = 'irodori.examdir.v1';
+let exDir = load(KEY_EXD, 'mn-ja');
+if (!EX_DIRS.includes(exDir)) exDir = 'mn-ja';
+
+const exFlip = q => !!(q && q.free === 0 && q.modelEn);
+
+/** Чиглэлийн дагуу (текст, ふりがな хос) — `which` нь 'q' | 'a'.
+ *  ふりがな нь ЗӨВХӨН япон талд: монгол/англи текстэд уншлага байхгүй. */
+function exSide(q, which) {
+  if (!q) return { t: '', r: null };
+  const ja = { t: (settings.script === 'kana' ? q.modelKana : q.model) || q.model,
+               r: q.modelRuby || null };
+  if (!exFlip(q)) {
+    return which === 'q'
+      ? { t: (settings.script === 'kana' ? q.qKana : q.q) || q.q, r: q.qRuby || null }
+      : ja;
+  }
+  const side = exDir.split('-')[which === 'q' ? 0 : 1];
+  if (side === 'ja') return ja;
+  if (side === 'en') return { t: q.modelEn || '', r: null };
+  // Монгол: асуулт бол БҮТЭН асуулт («X» — японоор юу гэж хэлэх вэ?),
+  // хариулт бол зөвхөн утга.
+  return { t: (which === 'q' ? q.qMn : q.modelMn) || '', r: null };
+}
+
+const exQ = q => exSide(q, 'q').t;
+const exA = q => exSide(q, 'a').t;
 
 /** Асуулт/хариултыг элемент рүү бичнэ. `ruby` горимд <ruby><rt> босгоно.
  *
@@ -2459,14 +2495,15 @@ const exA = q => (settings.script === 'kana' ? q.modelKana : q.model) || q.model
  *  үлдэнэ (docs/STATE.md §2.29). Уншлагын хос нь `build_exam.py`-д
  *  үүсч, тэндээ шалгагдсан. */
 function exInto(el, q, which) {
-  const pairs = q && (which === 'a' ? q.modelRuby : q.qRuby);
-  const plain = which === 'a' ? exA(q) : exQ(q);
-  if (settings.script !== 'ruby' || !pairs) {
+  // Чиглэл эргүүлэгдсэн байж болно — текст ба уншлагыг ХАМТ авна,
+  // эс тэгвэл монгол текст дээр японы ふりがな тавих байв.
+  const side = exSide(q, which);
+  if (settings.script !== 'ruby' || !side.r) {
     el.classList.remove('ruby');
-    el.textContent = plain;
+    el.textContent = side.t;
     return;
   }
-  rubyDom(el, pairs);
+  rubyDom(el, side.r);
 }
 
 /* ГҮЙЛТИЙН ТЭМДЭГ — docs/STATE.md §2.36. */
@@ -3173,7 +3210,13 @@ const examLessonsSel = () => {
 };
 const examPool = () => {
   const sel = examLessonsSel();
-  return ((EXAM && EXAM.items) || []).filter(q => sel.includes(q.lesson));
+  const all = ((EXAM && EXAM.items) || []).filter(q => sel.includes(q.lesson));
+  /* «Олон сонголт» нь ТОГТМОЛ хариулттай бичлэгт л утгатай: чөлөөт
+     асуултын (нас, нэр, гэр бүл) хариулт сурагчаас хамаарах тул
+     4 хувилбараас «зөв»-ийг сонгуулах нь утгагүй. Тиймээс пулыг
+     шүүнэ — хэрэглэгч хичээлээ сонгосон хэвээр, зүгээр л чөлөөт
+     асуулт энэ горимд орохгүй. */
+  return exMode === 'choice' ? all.filter(exFlip) : all;
 };
 
 /** Миний ангиудын даалгавар — шалгалтын дэлгэцийн дээд талд. */
@@ -3283,6 +3326,8 @@ function renderExamLessons() {
     : sel.length + ' хичээл · ' + pool + ' асуулт'
       + (pool < exN ? ' — бүгдийг нь асууна' : '');
   $('btn-exam').disabled = !pool;
+  // Хичээл солигдвол эргүүлж болох бичлэгийн тоо ч өөрчлөгдөнө.
+  refreshExamDir();
 }
 
 /** Шалгалтын гүйлтийг хүчингүй болгоно (гарах, дахин эхлэх). */
@@ -3338,7 +3383,41 @@ function refreshExamSeg() {
       ? 'Амаар хариулахад интернэт шаардана (таниулт үүлэн дээр).'
       : exMode === 'speak'
       ? 'Асуулт бүрд микрофоноор хариулна. Дүгнэлтийг өөрөө өгнө.'
+      : exMode === 'choice'
+      ? 'Зөвхөн «Гол үгс» ба «Гол өгүүлбэрүүд» орно — чөлөөт асуултын '
+        + 'хариулт сурагчаас хамаарах тул 4 хувилбараас сонгуулах нь утгагүй.'
       : 'Хариултаа бодоод (эсвэл дуугаар хэлээд) загвартай тулгана.';
+  }
+  refreshExamDir();
+}
+
+/** Чиглэлийн сонгогч — зөвхөн ТОГТМОЛ хариулттай хэсэг сонгогдсон үед.
+ *
+ *  «Гол асуултууд»/«Ярих сэдэв» нь чөлөөт хариулттай тул эргүүлэх юм
+ *  алга: тэднийг л сонгосон бол сонгогчийг нууна, эс тэгвэл хэрэглэгч
+ *  чиглэл сонгоод юу ч өөрчлөгдөхгүйд гайхна. */
+function refreshExamDir() {
+  const box = $('ex-dir-box');
+  if (!box) return;
+  const pool = examPool();
+  const n = pool.filter(exFlip).length;
+  box.hidden = !n;
+  if (!n) return;
+  document.querySelectorAll('#seg-exam-dir button').forEach(b =>
+    b.setAttribute('aria-pressed', b.dataset.d === exDir));
+  const note = $('ex-dir-note');
+  if (note) {
+    note.textContent = exDir === 'mn-ja'
+      ? 'Монгол утгыг хараад японоор хэлнэ.'
+      : exDir === 'ja-mn'
+      ? 'Япон үгийг хараад монгол утгыг хэлнэ.'
+      : exDir === 'ja-en'
+      ? 'Япон үгийг хараад англиар хэлнэ.'
+      : 'Англи утгыг хараад японоор хэлнэ.';
+    if (n < pool.length) {
+      note.textContent += ' Чиглэл нь ' + n + ' үг/өгүүлбэрт хамаарна — '
+        + 'чөлөөт асуулт үргэлж япон хэл дээр үлдэнэ.';
+    }
   }
 }
 
@@ -3385,6 +3464,13 @@ function renderExam() {
   $('ex-model').hidden = true;
   $('ex-reveal').hidden = false;
   // Амаар төрөл
+  /* ОЛОН СОНГОЛТ — 4 товч. Загвар хариултыг урьдчилж харуулахгүй тул
+     `ex-reveal` нуугдана: зөв хариултыг товчнууд дотор ХАРУУЛНА. */
+  const ch = exMode === 'choice';
+  $('ex-choice').hidden = !ch;
+  $('ex-reveal').hidden = ch;
+  if (ch) examChoices(q);
+
   const sp = exMode === 'speak';
   $('ex-speak').hidden = !sp;
   if (sp) {
@@ -3395,6 +3481,49 @@ function renderExam() {
     $('ex-mic-hint').textContent = 'Товчийг дараад япон хэлээр хариулаарай.';
   }
   window.scrollTo(0, 0);
+}
+
+/* ОЛОН СОНГОЛТ ─────────────────────────────────────────────────────
+ *
+ * Сандруулагч нь ИЖИЛ ХЭСГЭЭС (`lesson`) гарна: «Гол үгс»-ийн асуултад
+ * бүтэн өгүүлбэр сандруулагч болбол хариулт нь нүдээр илэрхий болно.
+ *
+ * Мөн ИЖИЛ ТЕКСТИЙГ хоёр удаа үзүүлэхгүй: сан дотор `たべます / のみます`
+ * мэт slash-тай бичлэг бий тул өөр id хэдий ч ижил текст таарч мэднэ.
+ */
+function examChoices(q) {
+  const box = $('ex-choice');
+  box.textContent = '';
+  const right = exA(q);
+  const seen = new Set([right]);
+  const bad = [];
+  for (const x of shuffle(examPool().filter(
+      y => y.lesson === q.lesson && y.id !== q.id))) {
+    const t = exA(x);
+    if (t && !seen.has(t)) { seen.add(t); bad.push(t); }
+    if (bad.length === 3) break;
+  }
+  // Японы тал нь өөр фонт шаардана (`jpface`) — чиглэлээс хамаарна.
+  const ja = exDir.split('-')[1] === 'ja' || !exFlip(q);
+  for (const t of shuffle(bad.concat([right]))) {
+    const b = document.createElement('button');
+    b.textContent = t;                      // textContent — тарилтаас хамгаална
+    if (ja) b.className = 'jpface';
+    b.onclick = () => examPickChoice(b, t === right, right);
+    box.appendChild(b);
+  }
+}
+
+/** Сонголт дарагдав: товчуудыг хааж, зөвийг тодруулаад дараагийнх руу. */
+function examPickChoice(btn, ok, right) {
+  const box = $('ex-choice');
+  [...box.children].forEach(b => {
+    b.disabled = true;
+    if (b.textContent === right) b.classList.add('correct');
+  });
+  if (!ok) btn.classList.add('wrong');
+  // Зөв эсэхийг УНШИХ зав өгнө — шууд шилжвэл сурагч зөвийг харахгүй.
+  setTimeout(() => examMark(ok), ok ? 650 : 1400);
 }
 
 /** Загвар хариултыг харуулна. Амаар төрөлд таниулт зогсоно. */
@@ -3544,6 +3673,8 @@ $('ex-all').onclick = () => setExamLessons(examLessonsAll());
 $('ex-none').onclick = () => setExamLessons([]);
 document.querySelectorAll('#seg-exam-mode button').forEach(b =>
   b.onclick = () => { exMode = b.dataset.m; save(KEY_EXM, exMode); refreshExamSeg(); });
+document.querySelectorAll('#seg-exam-dir button').forEach(b =>
+  b.onclick = () => { exDir = b.dataset.d; save(KEY_EXD, exDir); refreshExamDir(); });
 $('btn-exam').onclick = startExam;
 /** Шалгалтын дуу: VOICEVOX-ийн УРЬДЧИЛАН бэлдсэн бичлэгийг тоглуулна.
  *  Браузерын TTS нь төхөөрөмж бүрд өөр хоолой, өөр өргөлттэй тул жигд
@@ -3558,7 +3689,14 @@ $('btn-exam').onclick = startExam;
  * Талбар нэмэхгүйгээр кирилл байгаа эсэхээр шийднэ — өгөгдөл өөрөө
  * хэлээ хэлж байна. Загвар ХАРИУЛТ нь үргэлж япон тул түүнд
  * хамаарахгүй. */
-const examQSpeakable = q => !/[Ѐ-ӿ]/.test(exQ(q) || '');
+const examQSpeakable = q => {
+  if (!q) return false;
+  // Эргүүлж болох бичлэгт чиглэл нь шийднэ — англи тал нь ЛАТИН тул
+  // кирилл шалгуурыг өнгөрөх байв («Good morning»-ийг япон хоолойгоор
+  // уншвал мөн адил утгагүй).
+  if (exFlip(q)) return exDir.split('-')[0] === 'ja';
+  return !/[Ѐ-ӿ]/.test(exQ(q) || '');
+};
 
 function examSay(q, which) {
   if (!q) return;

@@ -573,8 +573,12 @@ async function run(c) {
     ok('орвол эхлээд ТОХИРГОО гарна',
       await c.ev('return screen === "exam" && !document.getElementById("ex-setup").hidden'
         + ' && document.getElementById("ex-run").hidden'));
-    ok('хариулах 2 төрөл байна',
-      Number(await c.ev('return document.querySelectorAll("#seg-exam-mode button").length')) === 2);
+    ok('хариулах 3 төрөл байна (флашкарт · олон сонголт · амаар)',
+      Number(await c.ev('return document.querySelectorAll("#seg-exam-mode button").length')) === 3);
+    ok('чиглэлийн 4 сонголт байна (mn-ja · ja-mn · ja-en · en-ja)',
+      await c.ev('const d = [...document.querySelectorAll("#seg-exam-dir button")]'
+        + '.map(b => b.dataset.d).join();'
+        + 'return d === "mn-ja,ja-mn,ja-en,en-ja";'));
 
     await c.ev('const m=document.querySelector(\'#seg-exam-mode button[data-m="think"]\'); if(m) m.click();'
       + 'const b=[...document.querySelectorAll("#seg-exam-n button")].find(x=>x.dataset.n==="10");'
@@ -3614,9 +3618,71 @@ async function run(c) {
     /* «Гол үгс»/«Гол өгүүлбэрүүд»-ийн асуулт МОНГОЛООР — япон TTS-ээр
        уншуулбал кирилл үсгийг ярвайна. `examQSpeakable` түүнийг барина. */
     ok('монгол асуултыг япон хоолойгоор УНШУУЛАХГҮЙ',
-      await c.ev('const mn = EXAM.items.find(q => q.lesson === 1);'
+      await c.ev('exDir = "mn-ja";'
+        + 'const mn = EXAM.items.find(q => q.lesson === 1);'
         + 'const ja = EXAM.items.find(q => q.lesson === 3);'
         + 'return examQSpeakable(mn) === false && examQSpeakable(ja) === true;'));
+
+    /* ЧИГЛЭЛ — L1/L2-ийн асуулт, хариултыг эргүүлнэ. L3/L4 нь чөлөөт
+       хариулттай тул эргэхгүй: загвар нь ЖИШЭЭ, сурагчийнх өөр байна. */
+    const dir = await c.ev(`
+      const w = EXAM.items.find(q => q.lesson === 1);   // үг
+      const f = EXAM.items.find(q => q.lesson === 3);   // чөлөөт асуулт
+      const out = { flipW: exFlip(w), flipF: exFlip(f), en: !!w.modelEn };
+      const snap = d => { exDir = d; return { q: exQ(w), a: exA(w), say: examQSpeakable(w) }; };
+      out.mnja = snap("mn-ja");
+      out.jamn = snap("ja-mn");
+      out.jaen = snap("ja-en");
+      out.enja = snap("en-ja");
+      out.free = (exDir = "ja-en", { q: exQ(f), a: exA(f) });
+      exDir = "mn-ja";
+      return out;
+    `);
+    ok('L1 эргүүлж болно, L3 болохгүй (чөлөөт хариулт)',
+      dir && dir.flipW === true && dir.flipF === false && dir.en === true,
+      JSON.stringify(dir));
+    ok('mn→ja: асуулт МОНГОЛ, хариулт ЯПОН, уншуулахгүй',
+      dir && /[Ѐ-ӿ]/.test(dir.mnja.q) && /[぀-ヿ]/.test(dir.mnja.a)
+        && dir.mnja.say === false, JSON.stringify(dir && dir.mnja));
+    ok('ja→mn: асуулт ЯПОН, хариулт МОНГОЛ, уншуулна',
+      dir && /[぀-ヿ]/.test(dir.jamn.q) && /[Ѐ-ӿ]/.test(dir.jamn.a)
+        && dir.jamn.say === true, JSON.stringify(dir && dir.jamn));
+    ok('ja→en: хариулт АНГЛИ (латин, кирилл ба кана алга)',
+      dir && /^[\x20-\x7E…]+$/.test(dir.jaen.a) && dir.jaen.say === true,
+      JSON.stringify(dir && dir.jaen));
+    ok('en→ja: асуулт АНГЛИ тул уншуулахгүй, хариулт ЯПОН',
+      dir && /^[\x20-\x7E…]+$/.test(dir.enja.q) && /[぀-ヿ]/.test(dir.enja.a)
+        && dir.enja.say === false, JSON.stringify(dir && dir.enja));
+    ok('чөлөөт асуулт чиглэлээс ҮЛ ХАМААРНА (япон хэвээр)',
+      dir && /[぀-ヿ]/.test(dir.free.q) && /[぀-ヿ]/.test(dir.free.a),
+      JSON.stringify(dir && dir.free));
+
+    /* ОЛОН СОНГОЛТ — пул нь ТОГТМОЛ хариулттай бичлэгээр шүүгдэнэ. */
+    const ch = await c.ev(`
+      const keep = { m: exMode, les: exLes };
+      exLes = null; exMode = "choice";
+      const pool = examPool();
+      const out = { n: pool.length, allFlip: pool.every(exFlip),
+                    les: [...new Set(pool.map(q => q.lesson))].sort().join() };
+      exMode = "think";
+      out.nThink = examPool().length;
+      // 4 товч: зөв нь дотор байх ба текст ДАВХАРДАХГҮЙ
+      exMode = "choice"; exQs = pool.slice(0, 1); exIdx = 0;
+      examChoices(exQs[0]);
+      const b = [...document.getElementById("ex-choice").children];
+      out.btns = b.length;
+      out.texts = b.map(x => x.textContent);
+      out.uniq = new Set(out.texts).size;
+      out.hasRight = out.texts.includes(exA(exQs[0]));
+      exMode = keep.m; exLes = keep.les;
+      return out;
+    `);
+    ok('«олон сонголт» пул = зөвхөн үг ба өгүүлбэр (L1,L2 — 140)',
+      ch && ch.n === 140 && ch.allFlip === true && ch.les === '1,2', JSON.stringify(ch));
+    ok('«флашкарт» пул нь БҮГД (209) — шүүлт зөвхөн choice-д',
+      ch && ch.nThink === 209, JSON.stringify(ch && ch.nThink));
+    ok('4 товч, текст давхардаагүй, зөв нь дотор',
+      ch && ch.btns === 4 && ch.uniq === 4 && ch.hasRight === true, JSON.stringify(ch));
 
     await c.ev('settings.book = "el1"; EXAM = null; return 1;');
     const e1 = await c.ev('const d = await loadExam(); return { book: d.book, n: d.items.length, id: d.items[0].id };');
