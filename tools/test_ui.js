@@ -540,11 +540,17 @@ async function run(c) {
         audioJson: t.indexOf("'./data/audio.json'") > 0,
         ownCachesOnly: /k\\.indexOf\\('shell-'\\) *=== *0/.test(t),
         exactFirst: /caches\\.match\\(req\\)\\s*\\n?\\s*\\.then/.test(t),
+        // v2 нь тусдаа апп: SW оролцвол офлайн үед fromCache() нь
+        // ./index.html (v1) буцааж, /v2/ рүү орсон хүн v1-ийг харна.
+        // Тайлбарт BACKTICK бичихгүй — энэ бүхэл нь template literal.
+        skipsV2: /pathname\\.indexOf\\('\\/v2\\/'\\)/.test(t),
       };
     `);
     ok('№5 sw: CORE-ыг addAll (алдаа залгихгүй)', r.addAll, JSON.stringify(r));
     ok('№10 sw: audio.json урьдчилан кэшлэнэ', r.audioJson, JSON.stringify(r));
     ok('№12 sw: зөвхөн ӨӨРИЙН кэшийг устгана', r.ownCachesOnly, JSON.stringify(r));
+    ok('sw: /v2/ замд ОРОЛЦОХГҮЙ (офлайн үед v1 харуулахгүй)',
+      r.skipsV2, JSON.stringify(r));
   }
 
   // №20 / №21 — үхсэн код

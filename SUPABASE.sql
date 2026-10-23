@@ -994,3 +994,178 @@ $jg$;
 revoke all on function public.judge_gate(text, text, int, int) from public;
 -- `anon`-д ЗОРИУД өгөхгүй — зөвхөн сервер талын Edge Function дуудна.
 
+
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  KOTO (v2) — ахицын синк
+-- ═══════════════════════════════════════════════════════════════════════
+--
+-- ЯАГААД ТУСДАА ХҮСНЭГТ БОЛОН ФУНКЦ ВЭ: `put_progress` нь v1-ийн картын
+-- бүтэцтэй (`n` давталтын тоо, `b` хайрцаг) уясан уусгалт хийдэг.
+-- KOTO-ийн төлөв өөр хэлбэртэй (`xp`, `completed`, `words`, `days`) тул
+-- тэр уусгалт түүнийг зөв зохицуулахгүй — илүү олон удаа давтсан нь
+-- ялах дүрэм энд утгагүй.
+--
+-- КОД нь v1-тэй ИЖИЛ байж болно: хоёр апп нэг кодоор, өөр хүснэгтэд
+-- бичнэ. Ингэснээр хэрэглэгч нэг л код санана.
+--
+-- Хязгаарууд нь `put_progress`-ийнхтэй ижил зарчим: анон түлхүүр нь
+-- публик тул эдгээр нь цорын ганц хаалт.
+
+create table if not exists public.koto (
+  code       text primary key,
+  data       jsonb       not null,
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+create index if not exists koto_created_idx on public.koto (created_at);
+
+-- RLS-ийг асаагаад ямар ч policy бичихгүй  =>  шууд хандалт бүрэн хаагдана.
+-- Зөвхөн доорх `security definer` функцуудаар л хандана.
+alter table public.koto enable row level security;
+
+-- ── Татах: код таарвал л буцаана ───────────────────────────────────────
+create or replace function public.koto_get(p_code text)
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $kg$
+  select data from public.koto where code = p_code;
+$kg$;
+
+-- ── Хадгалах: СЕРВЕР дээр уусгаад эцсийн үр дүнг буцаана ───────────────
+--
+-- Уусгалтын дүрэм (клиентийн `kotoMerge()`-тэй ИЖИЛ байх ёстой):
+--   xp            -> ИХ нь
+--   completed     -> нэгдэл (хичээл дуусгасан нь буцаж «дуусаагүй» болохгүй)
+--   words[id]     -> `step` ИХ нь ялна; тэнцвэл `due` ХОЛ нь (дараагийн
+--                    давталт нь хожим бол илүү сайн тогтсон гэсэн үг)
+--   days[date]    -> нэгдэл (өдрийн ахиц хоёр төхөөрөмж дээр хуваагдсан
+--                    байж болно)
+--   selectedTopic -> ИРСЭН нь (UI-ийн сүүлийн сонголт)
+--
+-- `for update` мөрийн түгжээ нь зэрэг дуудалтыг дараалалд оруулна:
+-- үгүй бол хоёр төхөөрөмж ИЖИЛ хуучин хуулбарыг уншиж, сүүлийнх нь
+-- эхнийхийн ахицыг бүрэн дарж бичих байв.
+create or replace function public.koto_put(p_code text, p_data jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $kp$
+declare
+  v_old jsonb;
+  res   jsonb;
+begin
+  if p_code is null or length(p_code) not between 8 and 64 then
+    raise exception 'bad code';
+  end if;
+  if p_data is null or jsonb_typeof(p_data) <> 'object' then
+    raise exception 'bad data';
+  end if;
+  -- KOTO-ийн төлөв жижиг: 312 үг + өдрийн бүртгэл. 256 КБ нь жил гаруйд
+  -- хүрэлцэнэ; хэтэрвэл хорлонтой ачаалал гэж үзнэ.
+  if pg_column_size(p_data) > 262144 then
+    raise exception 'too big';
+  end if;
+
+  select data into v_old from public.koto where code = p_code for update;
+
+  if v_old is null then
+    v_old := '{}'::jsonb;
+  end if;
+
+  res := jsonb_build_object(
+    'version', 1,
+    'xp', greatest(public.jnum(v_old -> 'xp'), public.jnum(p_data -> 'xp')),
+    -- Хоёр массивын нэгдэл, давхардалгүй. 400 хүртэл — 67 хичээлд зайтай.
+    'completed', coalesce((
+      select jsonb_agg(distinct x)
+        from (
+          select jsonb_array_elements_text(
+                   case when jsonb_typeof(v_old -> 'completed') = 'array'
+                        then v_old -> 'completed' else '[]'::jsonb end) as x
+          union
+          select jsonb_array_elements_text(
+                   case when jsonb_typeof(p_data -> 'completed') = 'array'
+                        then p_data -> 'completed' else '[]'::jsonb end)
+          limit 400
+        ) u
+    ), '[]'::jsonb),
+    'words', public.koto_merge_words(v_old -> 'words', p_data -> 'words'),
+    'days',  public.koto_merge_days(v_old -> 'days',  p_data -> 'days'),
+    'selectedTopic',
+      least(greatest(public.jnum(p_data -> 'selectedTopic'), 0), 99)::int
+  );
+
+  insert into public.koto as k (code, data)
+       values (p_code, res)
+  on conflict (code) do update
+     set data = res, updated_at = now();
+
+  return res;
+end;
+$kp$;
+
+-- ── Үгийн давталтын хуваарийг уусгана ──────────────────────────────────
+-- `step` ИХ нь ялна (илүү дэвшсэн); тэнцвэл `due` ХОЛ нь. `weak` нь
+-- ялсан талынхыг дагана — «алдсан» тэмдэг нь тухайн хуваарьтай хамт
+-- явах ёстой, тусад нь OR хийвэл аль хэдийн тогтсон үг «алдсан»
+-- хэвээр үлдэнэ.
+create or replace function public.koto_merge_words(a jsonb, b jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = public
+as $mw$
+  with src as (
+    select key, value from jsonb_each(case when jsonb_typeof(a) = 'object' then a else '{}'::jsonb end)
+    union all
+    select key, value from jsonb_each(case when jsonb_typeof(b) = 'object' then b else '{}'::jsonb end)
+  ), ranked as (
+    select key, value,
+           row_number() over (
+             partition by key
+             order by public.jnum(value -> 'step') desc,
+                      coalesce(value ->> 'due', '') desc
+           ) as rn
+      from src
+     where jsonb_typeof(value) = 'object'
+  )
+  select coalesce(jsonb_object_agg(key, value), '{}'::jsonb)
+    from (select key, value from ranked where rn = 1 limit 400) m;
+$mw$;
+
+-- ── Өдрийн ахицыг уусгана: өдөр тутмын үгийн id-ийн НЭГДЭЛ ─────────────
+-- Хоёр төхөөрөмж дээр нэг өдөр өөр өөр үг давтсан байж болно.
+create or replace function public.koto_merge_days(a jsonb, b jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = public
+as $md$
+  with src as (
+    select key, value from jsonb_each(case when jsonb_typeof(a) = 'object' then a else '{}'::jsonb end)
+    union all
+    select key, value from jsonb_each(case when jsonb_typeof(b) = 'object' then b else '{}'::jsonb end)
+  ), ids as (
+    select key, jsonb_array_elements_text(value) as id
+      from src
+     where jsonb_typeof(value) = 'array'
+  )
+  select coalesce(jsonb_object_agg(key, arr), '{}'::jsonb)
+    from (
+      select key, jsonb_agg(distinct id) as arr
+        from ids
+       group by key
+       limit 400
+    ) g;
+$md$;
+
+revoke all on function public.koto_get(text) from public;
+revoke all on function public.koto_put(text, jsonb) from public;
+revoke all on function public.koto_merge_words(jsonb, jsonb) from public;
+revoke all on function public.koto_merge_days(jsonb, jsonb) from public;
+grant execute on function public.koto_get(text) to anon;
+grant execute on function public.koto_put(text, jsonb) to anon;

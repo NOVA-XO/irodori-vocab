@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#b8ef58">
+  <meta name="description" content="IRODORI A1 материалын үгсийг монгол тайлбартай богино хичээл, дасгалаар тогтоогоорой.">
+  <title>KOTO — Япон үгээ тогтооё</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' fill='%23b8ef58'/%3E%3Ctext x='12' y='47' font-size='44' fill='%231b3024'%3Eこ%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Синкийн тохиргоо нь v1-тэй ЖИШИЛ: нэг Supabase project.
+       Хоёр апп ӨӨР хүснэгтэд бичдэг (progress ба koto) тул
+       хольцолдохгүй, хэрэглэгч нэг л нууц код санана. -->
+  <script src="../sync-config.js" defer></script>
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Үндсэн хэсэгт очих</a>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Үндсэн цэс">
+      <a class="brand" href="#learn" aria-label="KOTO нүүр хуудас"><span class="brand-mark" lang="ja">こ</span><span>koto<span class="brand-dot">.</span></span></a>
+      <div class="sidebar-caption">ӨДӨР БҮР НЭГ АЛХАМ</div>
+      <nav class="nav-list">
+        <button class="nav-item active" data-view="learn"><span data-icon="path"></span><span>Сурах зам</span></button>
+        <button class="nav-item" data-view="words"><span data-icon="book"></span><span>Үгийн сан</span><span class="nav-count">312</span></button>
+        <button class="nav-item" data-view="review"><span data-icon="repeat"></span><span>Давтлага</span><span id="review-dot" class="notification-dot" hidden></span></button>
+      </nav>
+      <button class="sidebar-footer" id="open-sync" aria-label="Ахицын синк тохируулах"><span class="level-dot"></span><div><strong>IRODORI A1</strong><small>Ахицыг нийлүүлэх</small></div></button>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="breadcrumb"><span class="japan-flag" aria-hidden="true"></span><span>Япон хэл</span><span class="slash">/</span><strong id="page-name">Миний сурах зам</strong></div>
+        <div class="top-stats"><span class="stat-pill" title="Дараалж хичээллэсэн өдөр"><span data-icon="flame"></span><strong id="streak">0</strong><span class="stat-name">өдөр</span></span><span class="stat-pill" title="Хуримтлуулсан оноо"><span data-icon="spark"></span><strong id="xp">0</strong><span class="stat-name">XP</span></span><span class="avatar" aria-label="Миний ахиц" lang="ja">わ</span></div>
+      </header>
+      <main id="main" class="main-content">
+        <div id="view-learn" class="view"></div>
+        <div id="view-words" class="view" hidden></div>
+        <div id="view-review" class="view" hidden></div>
+      </main>
+      <footer class="page-footer">KOTO <span>·</span> Өөрийн хурдаар сураарай. <span>·</span> Ахиц энэ хөтөч дээр хадгалагдана.</footer>
+    </div>
+  </div>
+  <dialog id="lesson-dialog" class="lesson-dialog" aria-label="Япон хэлний хичээл">
+    <div id="lesson-content"></div>
+  </dialog>
+  <dialog id="sync-dialog" class="lesson-dialog" aria-label="Ахицын синк">
+    <div id="sync-content"></div>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

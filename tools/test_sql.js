@@ -518,6 +518,79 @@ async function main() {
   ok('anon: judge_hits хүснэгтийг уншиж ЧАДАХГҮЙ', anonRead === 'denied', anonRead);
   await db.exec('reset role');
 
+  console.log('\n[KOTO] v2-ийн ахицын синк — уусгалт');
+  /* Уусгалт нь ХОЁР ТӨХӨӨРӨМЖ дээрх ахицыг алдалгүй нийлүүлэх ёстой.
+     Хамгийн хортой алдаа нь дарж бичих: сурагчийн XP, дуусгасан
+     хичээл, давталтын хуваарь арилна. */
+  const C = 'kototest1234';
+  const A = {
+    version: 1, xp: 120, completed: ['t0-l0', 't0-l1'],
+    words: { w1: { step: 2, due: '2026-11-01', weak: false },
+             w2: { step: 0, due: '2026-10-24', weak: true } },
+    days: { '2026-10-23': ['w1', 'w2'] }, selectedTopic: 3,
+  };
+  const B = {
+    version: 1, xp: 80, completed: ['t0-l1', 't0-l2'],
+    words: { w1: { step: 0, due: '2026-10-24', weak: true },
+             w3: { step: 1, due: '2026-10-30', weak: false } },
+    days: { '2026-10-23': ['w3'], '2026-10-24': ['w1'] }, selectedTopic: 7,
+  };
+  const putK = (c, d) => one('select public.koto_put($1,$2::jsonb) as d', [c, JSON.stringify(d)]);
+  const getK = c => one('select public.koto_get($1) as d', [c]);
+
+  const k1 = await putK(C, A);
+  ok('KOTO: шинэ код бичигдэв', k1 && k1.d && k1.d.xp === 120, JSON.stringify(k1 && k1.d));
+  const k2 = await putK(C, B);
+  const m = k2 && k2.d;
+  ok('XP — ИХ нь ялна (120 vs 80)', m && m.xp === 120, JSON.stringify(m && m.xp));
+  ok('дуусгасан хичээл — НЭГДЭЛ (3 ширхэг)',
+    m && Array.isArray(m.completed) && m.completed.length === 3
+      && ['t0-l0', 't0-l1', 't0-l2'].every(x => m.completed.includes(x)),
+    JSON.stringify(m && m.completed));
+  /* w1: A-д step=2, B-д step=0 -> A ялна. Эс тэгвэл аль хэдийн
+     тогтсон үг «алдсан» болж буцаад эхнээс давтагдана. */
+  ok('үгийн хуваарь — step ИХ нь ялна (w1: step 2 үлдэнэ)',
+    m && m.words && m.words.w1 && Number(m.words.w1.step) === 2
+      && m.words.w1.weak === false, JSON.stringify(m && m.words && m.words.w1));
+  ok('нөгөө төхөөрөмжийн ШИНЭ үг хадгалагдана (w2, w3)',
+    m && m.words && m.words.w2 && m.words.w3, JSON.stringify(m && Object.keys(m.words)));
+  ok('өдрийн ахиц — НЭГДЭЛ (10-23-д w1,w2,w3)',
+    m && m.days && Array.isArray(m.days['2026-10-23'])
+      && m.days['2026-10-23'].length === 3
+      && Array.isArray(m.days['2026-10-24']),
+    JSON.stringify(m && m.days));
+  ok('selectedTopic — ИРСЭН нь (UI-ийн сүүлийн сонголт)',
+    m && m.selectedTopic === 7, JSON.stringify(m && m.selectedTopic));
+  const k3 = await getK(C);
+  ok('koto_get нь уусгасан үр дүнг буцаана',
+    k3 && JSON.stringify(k3.d) === JSON.stringify(m), 'get≠put');
+
+  // Хязгаарууд — анон түлхүүр публик тул эдгээр нь цорын ганц хаалт.
+  const bad = async (d, c) => {
+    try { await putK(c || C, d); return 'ОРЛОО'; } catch (e) { return 'хаав'; }
+  };
+  ok('богино код (8-аас бага) няцаагдана', await bad(A, 'short') === 'хаав');
+  ok('урт код (64-өөс их) няцаагдана',
+    await bad(A, 'x'.repeat(65)) === 'хаав');
+  let badType = 'ОРЛОО';
+  try { await one("select public.koto_put($1,'[]'::jsonb) as d", [C]); }
+  catch (e) { badType = 'хаав'; }
+  ok('объект БИШ өгөгдөл няцаагдана', badType === 'хаав');
+  // Хорлонтой төрөл: {"xp":"abc"} нь `::numeric` хөрвүүлэлтийг унагаж
+  // БҮХ гүйлгээг тасалдаг байв — `jnum` түүнийг 0 болгоно.
+  const k4 = await putK(C, Object.assign({}, A, { xp: 'abc' }));
+  ok('хорлонтой төрөл (xp:"abc") гүйлгээг унагахгүй',
+    k4 && k4.d && Number(k4.d.xp) === 120, JSON.stringify(k4 && k4.d && k4.d.xp));
+
+  await db.exec("set role anon");
+  let kRead = 'ОРЛОО';
+  try {
+    const rows = await q1('select * from public.koto');
+    kRead = rows.length === 0 ? 'denied' : 'ХАРАВ:' + rows.length;
+  } catch (e) { kRead = 'denied'; }
+  ok('anon: koto хүснэгтийг ШУУД уншиж ЧАДАХГҮЙ (RLS)', kRead === 'denied', kRead);
+  await db.exec('reset role');
+
   console.log('\n' + '─'.repeat(50));
   console.log('цэвэр: ' + pass + '   унасан: ' + fail);
   if (fail) { console.log('\nУНАСАН:'); fails.forEach(x => console.log('  · ' + x)); }

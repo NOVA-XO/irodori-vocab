@@ -13,7 +13,7 @@
  * ажиллуулбал шинэ хувилбар гармагц шууд ирнэ — service worker нь
  * шинэчлэлтийг гацаадаг гэсэн түгээмэл асуудал үүсэхгүй.
  */
-const VERSION = '2026-10-22a';
+const VERSION = '2026-10-23a';
 const SHELL = 'shell-' + VERSION;
 const MEDIA = 'media-v1';
 
@@ -102,6 +102,13 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;   // Supabase синк — SW оролцохгүй
+
+  /* v2 (`/v2/`) нь ТУСДАА апп: өөрийн өгөгдөл, өөрийн хадгалалттай,
+     service worker-гүй. Энд оролцвол доорх `fromCache()` нь кэшэд
+     олдоогүй хүсэлтэд `./index.html`-ийг буцаадаг тул ОФЛАЙН үед
+     хэрэглэгч `/v2/` рүү орохдоо v1-ийг харах байв. Тиймээс бүрэн
+     гаргана — v2 нь браузерын хэвийн кэшээр ажиллана. */
+  if (url.pathname.indexOf('/v2/') >= 0) return;
 
   if (url.pathname.indexOf('/audio/') >= 0) {
     e.respondWith(caches.open(MEDIA).then(c =>
