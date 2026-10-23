@@ -1,9 +1,9 @@
 # Одоогийн байдал — Мартчихлаа
 
 **Амьд хаяг:** https://nova-xo.github.io/irodori-vocab/
-**Хувилбар:** `2026-10-21b` (`index.html` дахь `?v=` ба `sw.js` дахь `VERSION` хоёр
+**Хувилбар:** `2026-10-22a` (`index.html` дахь `?v=` ба `sw.js` дахь `VERSION` хоёр
 ижил байх ёстой — зөрвөл офлайн кэш хуучин файл өгнө)
-**Хамгийн сүүлд шалгасан:** 2026-10-21 — `test_ui.js` **489/489** · `test_sql.js` **109/109** · `test_attack.js` 24/24 · `test_answers.js` цэвэр · `test_audio.py` **23/23**. `test_judge.js --local` 13/14 (93%) · амьд `test_judge.js` **14/14 (100%)** — 09-24-нд, зааварт хувийн асуултын дүрэм нэмсний дараа.
+**Хамгийн сүүлд шалгасан:** 2026-10-22 — `test_ui.js` **493/493** · `test_sql.js` **109/109** · `test_attack.js` 24/24 · `test_answers.js` цэвэр · `test_audio.py` **23/23**. `test_judge.js --local` 13/14 (93%) · амьд `test_judge.js` **14/14 (100%)** — 09-24-нд, зааварт хувийн асуултын дүрэм нэмсний дараа.
 **`test_ui.js` нь ГАДНЫ сервер шаардана** — `http://127.0.0.1:8765/`. Асаагаагүй
 бол эхний шалгуур дээр `ReferenceError: ALL is not defined` гэж унана (апп
 ачаалагдаагүйн шинж, кодын алдаа БИШ). Эхлээд
@@ -1375,7 +1375,7 @@ defined` гэж унана (§2-ын тайлбарыг үз).
 
 ```bash
 python -m http.server 8765 --bind 127.0.0.1 &
-node tools/test_ui.js        # 489 шалгуур
+node tools/test_ui.js        # 493 шалгуур
 node tools/test_sql.js       # 109 — pglite, сервер хэрэггүй
 node tools/test_attack.js    # 24
 node tools/test_answers.js

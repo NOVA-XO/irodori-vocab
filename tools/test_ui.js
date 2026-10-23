@@ -3662,6 +3662,38 @@ async function run(c) {
       dir && /[぀-ヿ]/.test(dir.free.q) && /[぀-ヿ]/.test(dir.free.a),
       JSON.stringify(dir && dir.free));
 
+    /* ЧИГЛЭЛ сольсон үед БЭЛЭН БИЧЛЭГ ашиглагдах ёстой.
+       L1/L2-ийн япон тал нь `model` тул бичлэг нь `EXA-` — `ja-mn`
+       горимд тэр текст АСУУЛТ болж харагдана. Апп `EXQ-` хайвал
+       (байхгүй) бэлэн бичлэгийг алдаж TTS рүү ухарна. */
+    const aud = await c.ev(`
+      const w = EXAM.items.find(q => q.lesson === 1);
+      const f = EXAM.items.find(q => q.lesson === 3);
+      const grab = (q, which) => { let used = null; const op = playFile;
+        window.playFile = (id) => { used = id; return true; };
+        examSay(q, which); window.playFile = op; return used; };
+      const out = {};
+      exDir = "ja-mn";
+      out.jamnQ = grab(w, "q");     // япон асуулт -> EXA- (бичлэг тэнд)
+      out.jamnA = grab(w, "a");     // монгол хариулт -> дуу БАЙХГҮЙ
+      exDir = "mn-ja";
+      out.mnjaQ = grab(w, "q");     // монгол асуулт -> дуу БАЙХГҮЙ
+      out.mnjaA = grab(w, "a");     // япон хариулт -> EXA-
+      out.freeQ = grab(f, "q");     // чөлөөт асуулт -> EXQ-
+      out.hasEXA = hasAudio("EXA-" + w.id);
+      out.hasEXQ = hasAudio("EXQ-" + w.id);
+      return out;
+    `);
+    ok('L1-д EXA бичлэг бий, EXQ БАЙХГҮЙ (асуулт монголоор)',
+      aud && aud.hasEXA === true && aud.hasEXQ === false, JSON.stringify(aud));
+    ok('ja→mn: япон АСУУЛТ нь EXA бичлэгийг ашиглана (TTS рүү ухрахгүй)',
+      aud && aud.jamnQ && aud.jamnQ.indexOf('EXA-') === 0, JSON.stringify(aud));
+    ok('монгол тал дуу ОГТ дуудахгүй (хоёр чиглэлд)',
+      aud && aud.jamnA === null && aud.mnjaQ === null, JSON.stringify(aud));
+    ok('mn→ja: япон хариулт EXA, чөлөөт асуулт EXQ',
+      aud && aud.mnjaA && aud.mnjaA.indexOf('EXA-') === 0
+        && aud.freeQ && aud.freeQ.indexOf('EXQ-') === 0, JSON.stringify(aud));
+
     /* ОЛОН СОНГОЛТ — пул нь ТОГТМОЛ хариулттай бичлэгээр шүүгдэнэ. */
     const ch = await c.ev(`
       const keep = { m: exMode, les: exLes };

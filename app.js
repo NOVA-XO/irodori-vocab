@@ -2469,20 +2469,28 @@ const exFlip = q => !!(q && q.free === 0 && q.modelEn);
 /** Чиглэлийн дагуу (текст, ふりがな хос) — `which` нь 'q' | 'a'.
  *  ふりがな нь ЗӨВХӨН япон талд: монгол/англи текстэд уншлага байхгүй. */
 function exSide(q, which) {
-  if (!q) return { t: '', r: null };
+  if (!q) return { t: '', r: null, au: null };
+  /* `au` нь БИЧЛЭГИЙН угтвар: дуу нь ТЕКСТЭД хамаарна, асуулт/хариулт
+     гэдэг ҮҮРЭГТ биш. Чиглэл эргүүлэгдвэл япон тал нь `model` хэвээр
+     тул бичлэг нь `EXA-` — асуулт болж харагдаж байсан ч. Үүнийг
+     тооцоогүй бол `ja-mn` горимд апп `EXQ-A01-01` хайж (байхгүй)
+     бэлэн бичлэгийг ашиглахгүй, TTS рүү ухарна. */
   const ja = { t: (settings.script === 'kana' ? q.modelKana : q.model) || q.model,
-               r: q.modelRuby || null };
+               r: q.modelRuby || null, au: 'a' };
   if (!exFlip(q)) {
     return which === 'q'
-      ? { t: (settings.script === 'kana' ? q.qKana : q.q) || q.q, r: q.qRuby || null }
+      ? { t: (settings.script === 'kana' ? q.qKana : q.q) || q.q,
+          r: q.qRuby || null, au: 'q' }
       : ja;
   }
   const side = exDir.split('-')[which === 'q' ? 0 : 1];
   if (side === 'ja') return ja;
-  if (side === 'en') return { t: q.modelEn || '', r: null };
+  // Монгол/англи талд бичлэг БАЙХГҮЙ (`au: null`) — япон хоолойгоор
+  // уншуулах нь утгагүй тул `build_audio.py` ч үүсгэдэггүй.
+  if (side === 'en') return { t: q.modelEn || '', r: null, au: null };
   // Монгол: асуулт бол БҮТЭН асуулт («X» — японоор юу гэж хэлэх вэ?),
   // хариулт бол зөвхөн утга.
-  return { t: (which === 'q' ? q.qMn : q.modelMn) || '', r: null };
+  return { t: (which === 'q' ? q.qMn : q.modelMn) || '', r: null, au: null };
 }
 
 const exQ = q => exSide(q, 'q').t;
@@ -3532,7 +3540,10 @@ function examReveal() {
   stopRecog();
   $('ex-mic') && $('ex-mic').classList.remove('rec');
   exInto($('ex-model-jp'), q, 'a');
-  $('ex-say-a').hidden = !(canSpeak || hasAudio('EXA-' + q.id));
+  // Хариулт нь монгол/англи байж болно (чиглэл эргүүлэгдсэн үед) —
+  // тэнд дуу байхгүй тул товчийг нууна.
+  const sayA = examSpeakableSide(q, 'a');
+  $('ex-say-a').hidden = !sayA || !(canSpeak || hasAudio('EXA-' + q.id));
   $('ex-model-mn').textContent = q.modelMn;
   $('ex-key').textContent = q.key ? 'Түлхүүр бүтэц: ' + q.key : '';
   $('ex-reveal').hidden = true;
@@ -3689,19 +3700,25 @@ $('btn-exam').onclick = startExam;
  * Талбар нэмэхгүйгээр кирилл байгаа эсэхээр шийднэ — өгөгдөл өөрөө
  * хэлээ хэлж байна. Загвар ХАРИУЛТ нь үргэлж япон тул түүнд
  * хамаарахгүй. */
-const examQSpeakable = q => {
-  if (!q) return false;
-  // Эргүүлж болох бичлэгт чиглэл нь шийднэ — англи тал нь ЛАТИН тул
-  // кирилл шалгуурыг өнгөрөх байв («Good morning»-ийг япон хоолойгоор
-  // уншвал мөн адил утгагүй).
-  if (exFlip(q)) return exDir.split('-')[0] === 'ja';
-  return !/[Ѐ-ӿ]/.test(exQ(q) || '');
-};
+/* Уншиж болох уу — `exSide().au` нь НЭГ эх сурвалж: монгол/англи талд
+   `null`, япон талд бичлэгийн угтвар. Кирилл/латин мужийг тус тусад
+   нь шалгахаас зайлсхийнэ (англи тал нь латин тул кирилл шалгуурыг
+   өнгөрч «Good morning»-ийг япон хоолойгоор уншуулах байв). */
+const examSpeakableSide = (q, which) => !!(q && exSide(q, which).au);
+const examQSpeakable = q => examSpeakableSide(q, 'q');
 
 function examSay(q, which) {
   if (!q) return;
-  const id = (which === 'a' ? 'EXA-' : 'EXQ-') + q.id;
-  const text = which === 'a' ? q.model : q.q;
+  const side = exSide(q, which);
+  // Монгол/англи тал — дуу байхгүй, япон хоолойгоор уншуулах нь утгагүй.
+  if (!side.au) return;
+  /* Бичлэгийн id нь ТЕКСТЭЭС гарна (`side.au`), «асуулт/хариулт» гэсэн
+     үүрэгтэй холбоогүй: `ja-mn` горимд япон текст асуулт болж харагдах
+     ч бичлэг нь `EXA-` дор хэвтэнэ. */
+  const id = (side.au === 'a' ? 'EXA-' : 'EXQ-') + q.id;
+  // ХАНЗТАЙ хэлбэрээс уншуулна (кана горимд байсан ч) — TTS нь ханзтай
+  // өгүүлбэрийг илүү зөв өргөлтөөр уншдаг.
+  const text = side.au === 'a' ? q.model : q.q;
   if (playFile(id, () => speak(text))) return;
   speak(text);
 }
