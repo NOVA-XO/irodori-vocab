@@ -7,13 +7,14 @@
   <meta name="description" content="IRODORI A1 материалын үгсийг монгол тайлбартай богино хичээл, дасгалаар тогтоогоорой.">
   <title>KOTO — Япон үгээ тогтооё</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' fill='%23b8ef58'/%3E%3Ctext x='12' y='47' font-size='44' fill='%231b3024'%3Eこ%3C/text%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css">
+  <!-- ?v= — GitHub Pages max-age=600: шинэ сэдэв 10 минут хоцрохгүй -->
+  <link rel="stylesheet" href="styles.css?v=2026-10-24a">
   <!-- Синкийн тохиргоо нь v1-тэй ЖИШИЛ: нэг Supabase project.
        Хоёр апп ӨӨР хүснэгтэд бичдэг (progress ба koto) тул
        хольцолдохгүй, хэрэглэгч нэг л нууц код санана. -->
   <script src="../sync-config.js" defer></script>
-  <script src="data.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="data.js?v=2026-10-24a" defer></script>
+  <script src="app.js?v=2026-10-24a" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">Үндсэн хэсэгт очих</a>
@@ -23,7 +24,7 @@
       <div class="sidebar-caption">ӨДӨР БҮР НЭГ АЛХАМ</div>
       <nav class="nav-list">
         <button class="nav-item active" data-view="learn"><span data-icon="path"></span><span>Сурах зам</span></button>
-        <button class="nav-item" data-view="words"><span data-icon="book"></span><span>Үгийн сан</span><span class="nav-count">312</span></button>
+        <button class="nav-item" data-view="words"><span data-icon="book"></span><span>Үгийн сан</span><span class="nav-count">392</span></button>
         <button class="nav-item" data-view="review"><span data-icon="repeat"></span><span>Давтлага</span><span id="review-dot" class="notification-dot" hidden></span></button>
       </nav>
       <button class="sidebar-footer" id="open-sync" aria-label="Ахицын синк тохируулах"><span class="level-dot"></span><div><strong>IRODORI A1</strong><small>Ахицыг нийлүүлэх</small></div></button>

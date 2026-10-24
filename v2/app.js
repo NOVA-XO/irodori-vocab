@@ -10,7 +10,8 @@
     ['Хобби ба сэтгэгдэл','す','Юунд дуртайгаа ярья'],['Унаа ба аялал','い','Хаашаа, яаж явахаа хэлээрэй'],
     ['Худалдан авалт','か','Дэлгүүрт ярьж суръя'],['Улирал ба цаг агаар','ゆ','Цаг агаарын тухай ярья'],
     ['Сургууль ба ажил','が','Хичээл, ажлаа танилцуулъя'],['Мэндчилгээ','こ','Эелдэг харилцаж суръя'],
-    ['Өгүүлбэрийн хэлбэр','は','Үгсээ өгүүлбэр болгоё'],['Тоо ба тоон хариулт','に','Нас, цаг, үнээ хэлээрэй']
+    ['Өгүүлбэрийн хэлбэр','は','Үгсээ өгүүлбэр болгоё'],['Тоо ба тоон хариулт','に','Нас, цаг, үнээ хэлээрэй'],
+    ['Тоо, цаг, хуанли','ひ','Өдөр, долоо хоног, огноогоо хэлээрэй']
   ];
   // Topic symbols are decorative. All study content is written in kana.
   const SENTENCES = [
@@ -29,7 +30,8 @@
     {mn:'Ресторанд ажилладаг.',tokens:['レストラン','で','はたらきます']},
     {mn:'Танилцахдаа хэлэх эелдэг мэндчилгээг эвлүүлээрэй.',tokens:['どうぞ','よろしく','おねがいします']},
     {mn:'Япон хэл сурмаар байна.',tokens:['にほんご','を','べんきょう','したい','です']},
-    {mn:'Гуч орчим минут зарцуулдаг.',tokens:['さんじゅっぷん','ぐらい','かかります']}
+    {mn:'Гуч орчим минут зарцуулдаг.',tokens:['さんじゅっぷん','ぐらい','かかります']},
+    {mn:'Миний төрсөн өдөр 4-р сарын 8-нд.',tokens:['わたし','の','たんじょうび','は','しがつ','ようか','です']}
   ];
   const ICONS={
     path:'<path d="M7 19h9a4 4 0 0 0 0-8H8a4 4 0 0 1 0-8h9"/><circle cx="6" cy="19" r="2"/><path d="m15 1 3 2-3 2"/>',
@@ -57,6 +59,8 @@
   const wordById=Object.fromEntries(allWords.map(w=>[w.id,w]));
   const lessons=DATA.flatMap((topic,t)=>Array.from({length:Math.ceil(topic.words.length/5)},(_,chunk)=>({id:`${t}-${chunk}`,topic:t,chunk,words:allWords.filter(w=>w.topic===t).slice(chunk*5,chunk*5+5)})));
   const lessonById=Object.fromEntries(lessons.map(l=>[l.id,l]));
+  // Үгийн тоо сэдэв нэмэгдэхэд HTML-д хатуу бичсэнээс зөрөхгүй.
+  document.querySelectorAll('.nav-count').forEach(el=>{el.textContent=allWords.length;});
   const STORAGE_KEY='koto-irodori-v1';
   function emptyState(){return {version:1,xp:0,completed:[],words:{},days:{},selectedTopic:0};}
   let storageWorks=true;
@@ -298,7 +302,7 @@
     const t=state.selectedTopic,group=topicLessons(t),completed=group.filter(l=>state.completed.includes(l.id)).length,current=group.find(l=>!state.completed.includes(l.id))||group[0];
     const count=dayWords().length;
     $('view-learn').innerHTML=`<div class="eyebrow">ТАНЫ СУРАХ ЗАМ</div><h1 class="page-title">Өнөөдөр юу сурах вэ?</h1><p class="page-subtitle">Канагаа мэднэ. Одоо үгсээ утгатай нь холбож, яриандаа ашиглая.</p>
-    <div class="home-layout"><div class="primary-column"><section class="hero" aria-label="Өнөөдрийн хичээл"><div><span class="tag"><span class="tag-dot"></span>IRODORI A1 · МОНГОЛ ТАЙЛБАРТАЙ</span><h2>Өдөр бүр<br>10 үгээ тогтооё.</h2><p>Богино хичээл. Жаахан дасгал.<br>Өөрийн хурдаар ахих сурах зам.</p><button class="primary-btn" data-action="start" data-lesson="${nextLesson().id}">${state.completed.length?'Үргэлжлүүлэн сурах':'Эхний хичээлээ эхэлье'}${icon('arrow')}</button><div class="hero-mini"><span><strong>${allWords.length}</strong> үг, хэллэг</span><span><strong>16</strong> сэдэв</span><span><strong>5 үг</strong> / хичээл</span></div></div><div class="hero-art">${mascot()}<span class="kana-sticker" lang="ja">いっしょに！</span></div></section>
+    <div class="home-layout"><div class="primary-column"><section class="hero" aria-label="Өнөөдрийн хичээл"><div><span class="tag"><span class="tag-dot"></span>IRODORI A1 · МОНГОЛ ТАЙЛБАРТАЙ</span><h2>Өдөр бүр<br>10 үгээ тогтооё.</h2><p>Богино хичээл. Жаахан дасгал.<br>Өөрийн хурдаар ахих сурах зам.</p><button class="primary-btn" data-action="start" data-lesson="${nextLesson().id}">${state.completed.length?'Үргэлжлүүлэн сурах':'Эхний хичээлээ эхэлье'}${icon('arrow')}</button><div class="hero-mini"><span><strong>${allWords.length}</strong> үг, хэллэг</span><span><strong>${DATA.length}</strong> сэдэв</span><span><strong>5 үг</strong> / хичээл</span></div></div><div class="hero-art">${mascot()}<span class="kana-sticker" lang="ja">いっしょに！</span></div></section>
     <div class="section-heading"><h2>Таны дараагийн алхам</h2><span class="meta">Жижиг хичээл, өдөр бүр</span></div><section class="unit-card" id="current-unit"><div class="unit-header"><div class="unit-number">${String(t+1).padStart(2,'0')}</div><div><h3 class="unit-title">${TOPICS[t][0]}</h3><p class="unit-subtitle">${TOPICS[t][2]} · ${DATA[t].words.length} үг, хэллэг</p></div><span class="unit-progress">${completed} / ${group.length}</span></div><div class="lesson-path">${group.map((l,i)=>{const done=state.completed.includes(l.id),isCurrent=l.id===current.id;return `<div class="lesson-node">${isCurrent&&!done?'<span class="start-label">ЭНДЭЭС ЭХЭЛ</span>':''}<button class="node-button ${done?'completed':isCurrent?'available current':'available'}" data-action="start" data-lesson="${l.id}" aria-label="${i+1}-р хичээл, ${l.words.length} үг${done?', дууссан':''}">${icon(done?'check':i===group.length-1?'flag':isCurrent?'play':'star')}</button><span class="node-label"><strong>${i+1}-р хичээл</strong>${l.words.length} үг · 3–5 мин</span></div>`;}).join('')}</div></section>
     <div class="section-heading"><h2>Сурах сэдвүүд</h2><span class="meta">${state.completed.length} / ${lessons.length} хичээл дууссан</span></div><div class="topic-grid">${DATA.map((topic,i)=>`<button class="topic-card ${i===t?'selected':''}" data-action="topic" data-topic="${i}" aria-pressed="${i===t}"><span class="topic-icon" aria-hidden="true">${TOPICS[i][1]}</span><span class="topic-info"><span class="topic-name">${TOPICS[i][0]}</span><span class="topic-meta" style="display:block">${topicLearned(i)} / ${topic.words.length} үг · ${topicLessons(i).length} хичээл</span></span>${icon('arrow')}</button>`).join('')}</div></div>
     <aside class="right-column" aria-label="Сурах ахиц"><section class="side-card"><h2 class="side-card-title">Өнөөдрийн зорилго${icon('target')}</h2><div class="goal"><div class="goal-ring" style="--progress:${Math.min(count*10,100)}" aria-label="Өнөөдөр ${count}, зорилго 10 үг"><div>${count}<small> / 10</small></div></div><div class="goal-label"><strong>${count>=10?'Зорилгодоо хүрлээ!':'10 үг бататгая'}</strong><span>${count>=10?'Сайхан ажиллалаа.':'Хоёр богино хичээлээс<br>эхлээрэй.'}</span></div></div><div class="week-days">${weekMarkup()}</div></section>

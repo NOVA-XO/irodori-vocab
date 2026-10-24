@@ -84,8 +84,41 @@ function getJSON(path, method) {
     if (!up) await sleep(250);
   }
   ok('v2 ачаалагдав, тестийн гарц бий', up);
-  ok('312 үг / 16 сэдэв',
-    await ev('const d=window.KOTO_DATA; return d.length===16 && d.reduce((s,t)=>s+t.words.length,0)===312;'));
+  ok('392 үг / 17 сэдэв',
+    await ev('const d=window.KOTO_DATA; return d.length===17 && d.reduce((s,t)=>s+t.words.length,0)===392;'));
+  /* 17-р сэдэв ТӨГСГӨЛД нэмэгдсэн: үгийн id нь `сэдэв:дугаар` тул дунд нь
+     оруулбал сурагчдын хадгалсан ахиц өөр үг рүү шилжинэ. */
+  const t17 = await ev(`
+    const d = window.KOTO_DATA, t = d[16];
+    const jp = t.words.map(w => w.jp);
+    return { title: t.title, n: t.words.length, uniq: new Set(jp).size,
+             first15: d[15].title, has: ['きょう','あした','らいしゅう','カレンダー','ついたち','はつか','しがつ','よじ'].every(x => jp.includes(x)),
+             lessons: document.querySelectorAll('.topic-card').length,
+             navCount: document.querySelector('.nav-count').textContent,
+             heroTopics: [...document.querySelectorAll('.hero-mini strong')].map(x => x.textContent)[1] };
+  `);
+  ok('17-р сэдэв «Тоо, цаг, хуанли» — 80 давхардалгүй үг, гол үгс бүгд',
+    t17 && /Тоо, цаг, хуанли/.test(t17.title) && t17.n === 80 && t17.uniq === 80 && t17.has, JSON.stringify(t17));
+  ok('өмнөх 16 сэдвийн дараалал хэвээр (16-р нь «Тоо болон материалд…»)',
+    t17 && /^16 /.test(t17.first15), JSON.stringify(t17 && t17.first15));
+  const l17 = await ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    document.querySelector('.topic-card[data-topic="16"]').click(); await wait(100);
+    const unit = document.querySelector('#current-unit');
+    const out = { unit: unit.querySelector('.unit-title').textContent,
+                  nodes: unit.querySelectorAll('.node-button').length };
+    unit.querySelector('.node-button[data-lesson="16-0"]').click(); await wait(150);
+    out.first = (document.querySelector('#lesson-content .learn-kana') || {}).textContent;
+    out.open = document.getElementById('lesson-dialog').open;
+    document.getElementById('lesson-dialog').close();
+    document.querySelector('.topic-card[data-topic="0"]').click(); await wait(100);
+    return out;
+  `);
+  ok('17-р сэдэв сонгоход 16 хичээл, эхний хичээл «ゼロ／れい»-гээр эхэлнэ',
+    l17 && /Тоо, цаг, хуанли/.test(l17.unit) && l17.nodes === 16 && l17.open && l17.first === 'ゼロ／れい',
+    JSON.stringify(l17));
+  ok('нүүрэнд 17 сэдвийн карт, цэсний тоо 392, «17 сэдэв»',
+    t17 && t17.lessons === 17 && t17.navCount === '392' && t17.heroTopics === '17', JSON.stringify(t17));
   ok('синкийн тохиргоо v1-ээс ачаалагдав (../sync-config.js)',
     await ev('return !!(window.SYNC_CONFIG && window.SYNC_CONFIG.url) && window.KOTO.on() === true;'));
 
