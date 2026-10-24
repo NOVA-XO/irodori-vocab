@@ -30,3 +30,5 @@ body:has(.lesson-dialog[open]){overflow:hidden}
 .sync-hint{font-size:11px;color:var(--muted);line-height:1.8;margin-top:12px}
 .sync-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
 .sync-actions .primary-btn,.sync-actions .secondary-btn{min-height:45px}
+/* Тооны шалгалт — сэдвийн картын доод хэсэг */
+.test-cta{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:6px 22px 22px;padding:16px 18px;border-radius:18px;background:#f3fae6;border:1px solid #d9ebbd}.test-cta strong{display:block;font-size:15px}.test-cta span{font-size:12px;color:#5d6d55}.test-cta .primary-btn{margin:0}
