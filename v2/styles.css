@@ -417,25 +417,6 @@ select:focus-visible, summary:focus-visible {
 }
 .audio-button.playing .audio-bars i:nth-child(2) { animation-delay: -.16s; }
 .audio-button.playing .audio-bars i:nth-child(3) { animation-delay: -.32s; }
-.learn-card .speak-button.audio-button-wide {
-  display: flex;
-  gap: 10px;
-  width: fit-content;
-  max-width: 100%;
-  margin: 24px auto 0;
-  padding: 0 16px;
-}
-.audio-button-wide .audio-bars { position: absolute; left: 16px; }
-.audio-copy {
-  display: grid;
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.4;
-}
-.audio-copy > span { grid-area: 1 / 1; }
-.audio-active { visibility: hidden; }
-.playing .audio-active { visibility: visible; }
-.playing .audio-idle { visibility: hidden; }
 @keyframes koto-audio-bars {
   from { transform: scaleY(.35); }
   to { transform: scaleY(1); }
@@ -824,6 +805,496 @@ button, a, input, select {
   .test-cta span { color: var(--muted); }
   /* Google товч цагаан хэвээр; логоны өнгийг өөрчлөхгүй. */
   .google-signin { color-scheme: light; background: #fff; color: #1f1f1f; border-color: #747775; }
+}
+
+/* ── Хурдан засварын харагдац (Astra, 2026-11-01) ─────────────
+   Хариултын самбар, давталтын тэмдэг, дууны товч, хадгалалтын
+   тайлбар, гарчгийн фокус, утасны нягт хичээл. Холболтын класс нь
+   app.js-ийнх (is-correct/is-incorrect, retry-chip, is-retry-phase,
+   sound-toggle, save-status/save-note). */
+/* 1. Бүтэн өргөнтэй хариултын самбар */
+.lesson-bottom {
+  isolation: isolate;
+  flex-shrink: 0;
+  gap: 20px;
+  padding: 20px 0;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  background: var(--bg);
+  backdrop-filter: none;
+}
+
+/* Зөвхөн дэвсгэрийг сунгана: товчны focus хүрээг тайрахгүй. */
+.lesson-bottom::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: inherit;
+  box-shadow: 0 0 0 100vmax var(--bg);
+  clip-path: inset(0 -100vmax);
+}
+
+.lesson-bottom.is-correct {
+  background: var(--success-surface);
+  border-top: 0;
+  color: var(--success-ink);
+}
+
+.lesson-bottom.is-incorrect {
+  background: var(--error-surface);
+  border-top: 0;
+  color: var(--error-ink);
+}
+
+.lesson-bottom.is-correct::before {
+  box-shadow: 0 0 0 100vmax var(--success-surface);
+}
+
+.lesson-bottom.is-incorrect::before {
+  box-shadow: 0 0 0 100vmax var(--error-surface);
+}
+
+.lesson-bottom .feedback {
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.lesson-bottom .feedback-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--paper);
+  color: inherit;
+}
+
+.lesson-bottom .feedback-icon .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.lesson-bottom .feedback strong {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.3;
+  color: inherit;
+}
+
+.lesson-bottom .feedback small {
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: inherit;
+}
+
+.lesson-bottom .primary-btn {
+  min-height: 48px;
+  flex-shrink: 0;
+}
+
+.lesson-bottom.is-correct .primary-btn {
+  background: var(--success-ink);
+  border-color: var(--success-ink);
+  color: var(--success-surface);
+}
+
+.lesson-bottom.is-incorrect .primary-btn {
+  background: var(--error-ink);
+  border-color: var(--error-ink);
+  color: var(--error-surface);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .lesson-bottom:is(.is-correct, .is-incorrect) .primary-btn:hover {
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes lesson-feedback-enter {
+  from { opacity: .5; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.lesson-bottom:is(.is-correct, .is-incorrect) {
+  animation: lesson-feedback-enter 180ms ease-out both;
+}
+
+/* Өнгөний токенууд одоогийн dark блокоос утгаа авна. */
+@media (prefers-color-scheme: dark) {
+  .lesson-bottom .feedback-icon {
+    background: var(--bg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-bottom:is(.is-correct, .is-incorrect) {
+    animation: none;
+    transform: none;
+  }
+}
+
+/* 2. Давталтын тэмдэг ба үе */
+.lesson-meta {
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.lesson-meta > span:first-child {
+  flex: 1 1 160px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lesson-meta > span:last-child {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  min-width: 0;
+  max-width: 100%;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.retry-chip {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--orange);
+  border-radius: 999px;
+  background: var(--warm-surface);
+  color: var(--warm-ink);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.5;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.retry-chip .icon {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+}
+
+.lesson-frame.is-retry-phase .progress-track {
+  background: var(--warm-surface);
+}
+
+.lesson-frame.is-retry-phase .progress-fill {
+  background: var(--orange);
+}
+
+.lesson-frame.is-retry-phase .lesson-meta > span:last-child {
+  color: var(--warm-ink);
+  font-weight: 650;
+}
+
+/* 3. Хариултын дууны тохиргоо */
+.lesson-top .progress-track {
+  min-width: 0;
+}
+
+.sound-toggle {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--muted);
+}
+
+.sound-toggle[aria-pressed="true"] {
+  background: var(--accent-surface);
+  border-color: var(--lime-dark);
+  color: var(--accent-ink);
+}
+
+.sound-toggle[aria-pressed="false"] {
+  background: var(--paper);
+  color: var(--muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sound-toggle:hover {
+    background: var(--soft);
+    border-color: var(--muted);
+  }
+}
+
+/* 4. Хадгалалтын тайлбар */
+.page-footer {
+  padding: 24px 20px;
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.page-footer > span {
+  color: inherit;
+}
+
+.page-footer #save-status {
+  padding: 0;
+  font-size: inherit;
+}
+
+.completion > .save-note {
+  max-width: 46ch;
+  margin: 14px auto 24px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* 5. Асуултын гарчгийн программын фокус */
+#exercise-title[tabindex="-1"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* 6. Утасны нягт боловч уншигдах хичээл */
+@media (max-width: 480px) {
+  #lesson-dialog .lesson-frame {
+    padding: 12px 16px 0;
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  #lesson-dialog .lesson-top {
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  #lesson-dialog .session-xp {
+    font-size: 12px;
+  }
+
+  #lesson-dialog .lesson-meta {
+    padding: 0;
+    gap: 6px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  #lesson-dialog .exercise {
+    padding: 16px 0 20px;
+  }
+
+  #lesson-dialog .exercise-type {
+    margin-bottom: 8px;
+    font-size: 11px;
+    line-height: 1.4;
+    letter-spacing: .04em;
+  }
+
+  #lesson-dialog .exercise h1 {
+    font-size: 22px;
+    line-height: 1.35;
+  }
+
+  #lesson-dialog .quiz-prompt-card {
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 16px;
+  }
+
+  #lesson-dialog .quiz-prompt-card .exercise-prompt {
+    font-size: 24px;
+    line-height: 1.5;
+  }
+
+  #lesson-dialog .quiz-prompt-card .mn-prompt {
+    font-size: 18px;
+    line-height: 1.5;
+  }
+
+  #lesson-dialog .choices {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  #lesson-dialog .choice {
+    min-height: 56px;
+    height: auto;
+    padding: 10px 12px;
+    gap: 10px;
+    border-radius: 12px;
+    border-bottom-width: 3px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  #lesson-dialog .choice.jp-choice {
+    font-size: 17px;
+    line-height: 1.5;
+  }
+
+  #lesson-dialog .choice .choice-index {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+
+  #lesson-dialog .choice > span:last-child {
+    flex: 1;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  #lesson-dialog .lesson-bottom {
+    position: relative;
+    bottom: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    min-height: 0;
+    padding: 12px 0;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  #lesson-dialog .lesson-bottom > .bottom-note,
+  #lesson-dialog .lesson-bottom > .feedback {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+
+  #lesson-dialog .lesson-bottom .bottom-note {
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  #lesson-dialog .lesson-bottom .feedback {
+    gap: 10px;
+  }
+
+  #lesson-dialog .lesson-bottom .feedback-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  #lesson-dialog .lesson-bottom .feedback-icon .icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  #lesson-dialog .lesson-bottom .feedback strong {
+    font-size: 20px;
+    line-height: 1.3;
+  }
+
+  #lesson-dialog .lesson-bottom .feedback small {
+    margin-top: 3px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  #lesson-dialog .lesson-bottom .primary-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+}
+
+/* Утсан дээр шалгасны дараа л sticky: шалгахаас өмнө 4 сонголт
+   халхлагдахгүй, шалгасны дараа «Үргэлжлүүлэх» үргэлж харагдана
+   (320×640-д товч 31px дэлгэцээс гарч байсан). */
+@media (max-width: 480px) {
+  #lesson-dialog .lesson-bottom:is(.is-correct, .is-incorrect) {
+    position: sticky;
+    bottom: 0;
+  }
+}
+
+/* ── Сонсох карт (Astra, 2026-11-01) ─────────────────────────────
+   Карт бүхэлдээ дарахад дуудна (`.say-card`, app.js-ийн cardAttrs).
+   Булангийн товч нь гарын товчлуур ба дэлгэц уншигчийн зам. */
+/* Картын бүх хэсгээс дуудлага сонсох */
+.say-card {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: text;
+  user-select: text;
+  transition:
+    background-color .16s ease,
+    border-color .16s ease,
+    box-shadow .16s ease,
+    transform .12s ease;
+}
+
+/* Кана нь булангийн товчны доороос эхэлнэ. */
+.learn-card.say-card {
+  position: relative;
+  padding-top: 72px;
+}
+
+/* Одоогийн .learn-card .speak-button.audio-button-ийг дарна. */
+.learn-card .speak-button.audio-button.card-audio {
+  position: absolute;
+  inset: 12px 12px auto auto;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  margin: 0;
+}
+
+/* Hover нь зөвхөн хулгана зэрэг нарийн заагчид үйлчилнэ. */
+@media (hover: hover) and (pointer: fine) {
+  .say-card:hover {
+    background-color: var(--soft);
+    border-color: var(--lime-dark);
+  }
+
+  .say-card .audio-button:hover {
+    background: var(--accent-surface);
+    border-color: var(--lime-dark);
+  }
+}
+
+/* Утас болон хулганад даралтын өнгөн хариу өгнө. */
+.say-card:active {
+  background-color: var(--soft);
+  border-color: var(--lime-dark);
+}
+
+/* Хөдөлгөөн зөвшөөрсөн үед л карт бага зэрэг доошилно. */
+@media (prefers-reduced-motion: no-preference) {
+  .say-card:active {
+    transform: translateY(1px);
+  }
+}
+
+/* Hover/active-аас хойно: тоглож буй өнгийг хадгална. */
+.say-card.playing {
+  background-color: var(--accent-surface);
+  border-color: var(--lime-dark);
+  box-shadow:
+    var(--shadow),
+    inset 0 0 0 1px var(--lime-dark);
+}
+
+/* Learn товчны суурь дүрэм playing өнгийг дарахаас хамгаална. */
+.say-card .audio-button.playing {
+  background: var(--lime);
+  color: var(--button-ink);
+  border-color: var(--lime-dark);
+}
+
+/* Тоглож байх үед ч гарын товчлуурын фокус ялгарна. */
+.say-card .audio-button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
 }
 
 /* Бүх шинэ хөдөлгөөний дараа байрлуулна.

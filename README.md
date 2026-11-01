@@ -3,7 +3,7 @@
 *Irodori 入門-ийн шинэ үгийг тогтоох хүртэл суллахгүй.*
 
 **PRJ код:** `JPN` · **Төрөл:** статик вэб апп (GitHub Pages) · **Эхэлсэн:** 2026-09-09
-**Хувилбар:** `2026-10-23a` · **Тест:** 494 + 141 + 24 + 27 + 37 (цэвэр) · Дэлгэрэнгүй байдал: [`docs/STATE.md`](docs/STATE.md)
+**Хувилбар:** `2026-10-23a` · **Тест:** 494 + 147 + 24 + 39 + 37 (цэвэр) · Дэлгэрэнгүй байдал: [`docs/STATE.md`](docs/STATE.md)
 
 > **Хоёр хувилбар зэрэг ажиллаж байна.** Энэ файл нь **v1** (үндсэн
 > хаяг). **v2** нь шинэ UI-тай, `/v2/` замд — [`v2/README.md`](v2/README.md).
@@ -495,9 +495,9 @@ python tools/build_audio.py --speaker 2
 ```
 python -m http.server 8765          # ЭХЛЭЭД — үүнгүй бол test_ui унана
 node tools/test_ui.js               # 494 шалгуур, бодит Chrome дотор
-node tools/test_sql.js              # 141 — SUPABASE.sql, PGlite дээр
-node tools/test_v2.js               #  27 — v2 (KOTO): UI, синк, тооны шалгалт
-node tools/test_v2_ui.js            #  37 — v2 UI: дуудлага, Google, бараан сэдэв, 44px
+node tools/test_sql.js              # 147 — SUPABASE.sql, PGlite дээр
+node tools/test_v2.js               #  39 — v2 (KOTO): UI, синк, тооны шалгалт, хариултын мэдрэмж
+node tools/test_v2_ui.js            #  52 — v2 UI: сонсох карт, Google, бараан сэдэв, 44px, утасны хариултын самбар
 node tools/test_attack.js           #  24 — халдлагын хувилбарууд
 node tools/test_answers.js          # хариулт шалгагч
 node tools/test_judge.js --local    # ярианы үнэлгээний чанар (сүлжээгүй)

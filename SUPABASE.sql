@@ -1105,33 +1105,69 @@ begin
 end;
 $kp$;
 
--- ── Үгийн давталтын хуваарийг уусгана ──────────────────────────────────
--- `step` ИХ нь ялна (илүү дэвшсэн); тэнцвэл `due` ХОЛ нь. `weak` нь
--- ялсан талынхыг дагана — «алдсан» тэмдэг нь тухайн хуваарьтай хамт
--- явах ёстой, тусад нь OR хийвэл аль хэдийн тогтсон үг «алдсан»
--- хэвээр үлдэнэ.
+-- ── Нэг үгийн давталтын хуваарийг уусгана ─────────────────────────────
+-- Клиентийн `kotoMerge()` доторх `mergeWord`-тэй ИЖИЛ (test_sql.js
+-- санамсаргүй өгөгдлөөр тулгадаг). Апп `passes` бичдэг (зөв бүрд +1,
+-- алдахад 0); 2026-11-01 хүртэл энд байхгүй `step`-ийг харьцуулж, илүү
+-- ахисан бичлэгийг хаядаг байв (STATE §4 №33). Хоёр шат:
+--   1) СҮҮЛД үзсэн нь (`last`, тэнцвэл `due`) `weak` бол тэр ялна.
+--   2) үгүй бол `passes` ИХ нь; `due`, `last` нь хоёроос ХОЖУУ нь.
+-- `collate "C"`: YYYY-MM-DD-ийг байтаар харьцуулна (JS-ийн `>`-тэй ижил).
+create or replace function public.koto_merge_word(x jsonb, y jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = public
+as $mw1$
+  with v as (
+    select case when jsonb_typeof(x) = 'object' then x else '{}'::jsonb end as x,
+           case when jsonb_typeof(y) = 'object' then y else '{}'::jsonb end as y
+  ), k as (
+    select x, y,
+           coalesce(x ->> 'last', '') collate "C" as lx, coalesce(y ->> 'last', '') collate "C" as ly,
+           coalesce(x ->> 'due',  '') collate "C" as dx, coalesce(y ->> 'due',  '') collate "C" as dy
+      from v
+  ), r as (
+    select *, case when lx > ly or (lx = ly and dx > dy) then x else y end as rec
+      from k
+  )
+  select case
+           when x = '{}'::jsonb then y
+           when y = '{}'::jsonb then x
+           when rec -> 'weak' = 'true'::jsonb then rec
+           else (case when public.jnum(x -> 'passes') > public.jnum(y -> 'passes') then x
+                      when public.jnum(y -> 'passes') > public.jnum(x -> 'passes') then y
+                      else rec end)
+                || jsonb_strip_nulls(jsonb_build_object(
+                     'due',  nullif(greatest(dx, dy), ''),
+                     'last', nullif(greatest(lx, ly), '')))
+         end
+    from r;
+$mw1$;
+
+-- ── Үгийн хуваарийн уусгалт: түлхүүр бүрд `koto_merge_word` ─────────────
+-- 2000 хүртэл: 2026-11-01-нд 432 үг болж өмнөх `limit 400`-аас ХЭТЭРСЭН —
+-- 400-аас олон үг үзсэн сурагчийн илүүдэл нь санамсаргүй хаягдах байв.
+-- Хэмжээний жинхэнэ хамгаалалт нь `koto_put`-ийн 256 КБ.
 create or replace function public.koto_merge_words(a jsonb, b jsonb)
 returns jsonb
 language sql
 immutable
 set search_path = public
 as $mw$
-  with src as (
+  with ea as (
     select key, value from jsonb_each(case when jsonb_typeof(a) = 'object' then a else '{}'::jsonb end)
-    union all
+  ), eb as (
     select key, value from jsonb_each(case when jsonb_typeof(b) = 'object' then b else '{}'::jsonb end)
-  ), ranked as (
-    select key, value,
-           row_number() over (
-             partition by key
-             order by public.jnum(value -> 'step') desc,
-                      coalesce(value ->> 'due', '') desc
-           ) as rn
-      from src
-     where jsonb_typeof(value) = 'object'
+  ), j as (
+    select coalesce(ea.key, eb.key) as key,
+           public.koto_merge_word(ea.value, eb.value) as value
+      from ea full join eb on ea.key = eb.key
   )
   select coalesce(jsonb_object_agg(key, value), '{}'::jsonb)
-    from (select key, value from ranked where rn = 1 limit 400) m;
+    from (select key, value from j
+           where jsonb_typeof(value) = 'object' and value <> '{}'::jsonb
+           order by key limit 2000) m;
 $mw$;
 
 -- ── Өдрийн ахицыг уусгана: өдөр тутмын үгийн id-ийн НЭГДЭЛ ─────────────
@@ -1278,6 +1314,7 @@ $kup$;
 revoke all on function public.koto_get(text) from public, anon, authenticated;
 revoke all on function public.koto_put(text, jsonb) from public, anon, authenticated;
 revoke all on function public.koto_merge(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.koto_merge_word(jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.koto_merge_words(jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.koto_merge_days(jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.koto_user_get() from public, anon, authenticated;

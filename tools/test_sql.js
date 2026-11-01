@@ -553,14 +553,21 @@ async function main() {
   const C = 'kototest1234';
   const A = {
     version: 1, xp: 120, completed: ['t0-l0', 't0-l1'],
-    words: { w1: { step: 2, due: '2026-11-01', weak: false },
-             w2: { step: 0, due: '2026-10-24', weak: true } },
+    // Хэлбэр нь аппын `finishLesson()`-ийнх: passes/weak/due/last.
+    // 2026-11-01 хүртэл энд `step` байсан — апп хэзээ ч бичдэггүй талбар
+    // тул тест уусгалтын алдааг (STATE №33) хуурамчаар тэнцүүлж байв.
+    words: { w1: { passes: 2, weak: false, due: '2026-11-01', last: '2026-10-29' },
+             w2: { passes: 0, weak: true,  due: '2026-10-24', last: '2026-10-23' },
+             w4: { passes: 3, weak: false, due: '2026-10-29', last: '2026-10-22' },
+             w5: { passes: 3, weak: false, due: '2026-11-05', last: '2026-10-29' } },
     days: { '2026-10-23': ['w1', 'w2'] }, selectedTopic: 3,
   };
   const B = {
     version: 1, xp: 80, completed: ['t0-l1', 't0-l2'],
-    words: { w1: { step: 0, due: '2026-10-24', weak: true },
-             w3: { step: 1, due: '2026-10-30', weak: false } },
+    words: { w1: { passes: 0, weak: true,  due: '2026-10-24', last: '2026-10-23' },
+             w3: { passes: 1, weak: false, due: '2026-10-30', last: '2026-10-29' },
+             w4: { passes: 1, weak: false, due: '2026-11-02', last: '2026-11-01' },
+             w5: { passes: 0, weak: true,  due: '2026-11-02', last: '2026-11-01' } },
     days: { '2026-10-23': ['w3'], '2026-10-24': ['w1'] }, selectedTopic: 7,
   };
   const putK = (c, d) => one('select public.koto_put($1,$2::jsonb) as d', [c, JSON.stringify(d)]);
@@ -575,13 +582,21 @@ async function main() {
     m && Array.isArray(m.completed) && m.completed.length === 3
       && ['t0-l0', 't0-l1', 't0-l2'].every(x => m.completed.includes(x)),
     JSON.stringify(m && m.completed));
-  /* w1: A-д step=2, B-д step=0 -> A ялна. Эс тэгвэл аль хэдийн
-     тогтсон үг «алдсан» болж буцаад эхнээс давтагдана. */
-  ok('үгийн хуваарь — step ИХ нь ялна (w1: step 2 үлдэнэ)',
-    m && m.words && m.words.w1 && Number(m.words.w1.step) === 2
-      && m.words.w1.weak === false, JSON.stringify(m && m.words && m.words.w1));
+  const W = (m && m.words) || {};
+  /* w1: B-ийн алдалт ХУУЧИН (10-23), A сүүлд зөв (10-29) -> A-ийн passes 2. */
+  ok('үгийн хуваарь — хуучин алдалт шинэ ахицыг ДАРАХГҮЙ (w1 passes 2)',
+    W.w1 && W.w1.passes === 2 && W.w1.weak === false, JSON.stringify(W.w1));
+  /* w4 = №33-ын яг тохиолдол: A 3 удаа зөв (хугацаа хэтэрсэн), B өнөөдөр
+     анх удаа зөв. Хуучин дүрэм `due` хожуугаар B-г авч passes 1 болгодог байв. */
+  ok('№33: 3 удаа зөв хариулсан ахиц УХРАХГҮЙ (w4 passes 3, due 11-02)',
+    W.w4 && W.w4.passes === 3 && W.w4.due === '2026-11-02' && W.w4.last === '2026-11-01',
+    JSON.stringify(W.w4));
+  /* w5: A 3 удаа зөв, гэвч B ӨНӨӨДӨР алдсан -> сурагч мартсан, B ялна. */
+  ok('саяхан МАРТСАН нь ялна (w5 weak, маргааш давтана)',
+    W.w5 && W.w5.weak === true && W.w5.passes === 0 && W.w5.due === '2026-11-02',
+    JSON.stringify(W.w5));
   ok('нөгөө төхөөрөмжийн ШИНЭ үг хадгалагдана (w2, w3)',
-    m && m.words && m.words.w2 && m.words.w3, JSON.stringify(m && Object.keys(m.words)));
+    W.w2 && W.w3 && Object.keys(W).sort().join() === 'w1,w2,w3,w4,w5', JSON.stringify(Object.keys(W)));
   ok('өдрийн ахиц — НЭГДЭЛ (10-23-д w1,w2,w3)',
     m && m.days && Array.isArray(m.days['2026-10-23'])
       && m.days['2026-10-23'].length === 3
@@ -618,6 +633,70 @@ async function main() {
   } catch (e) { kRead = 'denied'; }
   ok('anon: koto хүснэгтийг ШУУД уншиж ЧАДАХГҮЙ (RLS)', kRead === 'denied', kRead);
   await db.exec('reset role');
+
+  {
+  /* 432 үг (17 сэдэв) нь өмнөх `limit 400`-аас хэтэрсэн — илүүдэл нь
+     серверт чимээгүй хаягдах байв. */
+  const many = {};
+  for (let i = 0; i < 450; i++) many['16:' + i] = { passes: 1, weak: false, due: '2026-11-02', last: '2026-11-01' };
+  const big = await one('select public.koto_merge($1::jsonb, $2::jsonb) as d',
+    [JSON.stringify({ words: many }), JSON.stringify({ words: {} })]);
+  ok('450 үг уусгалтад ХАЯГДАХГҮЙ (өмнө limit 400)',
+    big && big.d && Object.keys(big.d.words).length === 450, big && big.d && Object.keys(big.d.words).length);
+
+  /* Клиент ба сервер нэг дүрэмтэй байх ёстой — тэд салж явбал синк
+     бүр нэг талын ахицыг өөрчилнө. Аппын ЖИНХЭНЭ `kotoMerge`-ийг
+     `v2/app.js`-ээс ачаалж, SQL-тэй санамсаргүй өгөгдөл дээр тулгана.
+     Мэдэгдэж буй, зориуд хамруулаагүй зөрүү (эвдэрсэн өгөгдөл л):
+     бүхэл бус `selectedTopic`, `completed` дахь тоо, хоосон өдрийн массив. */
+  const appSrc = fs.readFileSync(path.join(ROOT, 'v2', 'app.js'), 'utf8');
+  const kmSrc = appSrc.slice(appSrc.indexOf('  function kotoMerge(a, b) {'),
+    appSrc.indexOf('\n  }\n', appSrc.indexOf('  function kotoMerge(a, b) {')) + 4);
+  const clientMerge = new Function(kmSrc + '; return kotoMerge;')();
+  let seed = 20261101;
+  const rnd = n => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+  const pick = arr => arr[rnd(arr.length)];
+  const DATES = [undefined, '', '2026-10-22', '2026-10-29', '2026-11-01', '2026-11-02', '2026-11-05'];
+  const rec = () => {
+    const r = {};
+    const p = pick([undefined, 0, 1, 2, 3, 4, '3']); if (p !== undefined) r.passes = p;
+    const w = pick([undefined, true, false, 'true']); if (w !== undefined) r.weak = w;
+    const d = pick(DATES); if (d !== undefined) r.due = d;
+    const l = pick(DATES); if (l !== undefined) r.last = l;
+    if (rnd(9) === 0) return pick([7, 'x', null, []]);
+    return r;
+  };
+  const side = () => {
+    const words = {};
+    for (let i = 0; i < 6; i++) if (rnd(3)) words['w' + i] = rec();
+    const days = {};
+    for (const d of ['2026-10-31', '2026-11-01']) if (rnd(2)) days[d] = ['w' + rnd(6), 'w' + rnd(6)];
+    return { version: 1, xp: rnd(500), completed: ['0-' + rnd(4), '1-' + rnd(4)], words, days, selectedTopic: rnd(17) };
+  };
+  const canon = v => {
+    if (Array.isArray(v)) return v.map(canon);
+    if (v && typeof v === 'object') {
+      const o = {};
+      for (const k of Object.keys(v).sort()) o[k] = canon(v[k]);
+      return o;
+    }
+    return v;
+  };
+  const norm = s => {
+    const c = JSON.parse(JSON.stringify(s));
+    c.completed = (c.completed || []).slice().sort();
+    for (const k of Object.keys(c.days || {})) c.days[k] = c.days[k].slice().sort();
+    return JSON.stringify(canon(c));
+  };
+  let diff = 0, firstDiff = '';
+  for (let i = 0; i < 300; i++) {
+    const x = side(), y = side();
+    const s = await one('select public.koto_merge($1::jsonb, $2::jsonb) as d', [JSON.stringify(x), JSON.stringify(y)]);
+    const cs = norm(clientMerge(x, y)), ss = norm(s.d);
+    if (cs !== ss) { diff++; if (!firstDiff) firstDiff = JSON.stringify({ x: x.words, y: y.words }) + '\n  client ' + cs + '\n  server ' + ss; }
+  }
+  ok('клиент kotoMerge ↔ SQL koto_merge: 300 санамсаргүй тохиолдол ИЖИЛ (зөрүү ' + diff + ')', diff === 0, firstDiff.slice(0, 900));
+  }
 
   console.log('\n[KOTO-USER] Google-ээр нэвтэрсэн хэрэглэгчийн ахиц');
   /* Нууц кодын зам нь кодыг мэдсэн хэнд ч нээлттэй. Энэ зам нь
@@ -692,6 +771,7 @@ async function main() {
   const closed = [
     ['jnum', "select public.jnum('1'::jsonb)"],
     ['koto_merge', "select public.koto_merge('{}'::jsonb,'{}'::jsonb)"],
+    ['koto_merge_word', "select public.koto_merge_word('{}'::jsonb,'{}'::jsonb)"],
     ['koto_merge_words', "select public.koto_merge_words('{}'::jsonb,'{}'::jsonb)"],
     ['koto_merge_days', "select public.koto_merge_days('{}'::jsonb,'{}'::jsonb)"],
   ];

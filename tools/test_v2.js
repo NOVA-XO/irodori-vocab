@@ -181,23 +181,29 @@ function getJSON(path, method) {
      хоёр хэрэгжүүлэлт салж явбал энд ялгаа гарна. */
   const m = await ev(`
     const A = { version:1, xp:120, completed:['t0-l0','t0-l1'],
-      words:{ w1:{step:2,due:'2026-11-01',weak:false}, w2:{step:0,due:'2026-10-24',weak:true} },
+      words:{ w1:{passes:2,weak:false,due:'2026-11-01',last:'2026-10-29'}, w2:{passes:0,weak:true,due:'2026-10-24',last:'2026-10-23'},
+              w4:{passes:3,weak:false,due:'2026-10-29',last:'2026-10-22'}, w5:{passes:3,weak:false,due:'2026-11-05',last:'2026-10-29'} },
       days:{ '2026-10-23':['w1','w2'] }, selectedTopic:3 };
     const B = { version:1, xp:80, completed:['t0-l1','t0-l2'],
-      words:{ w1:{step:0,due:'2026-10-24',weak:true}, w3:{step:1,due:'2026-10-30',weak:false} },
+      words:{ w1:{passes:0,weak:true,due:'2026-10-24',last:'2026-10-23'}, w3:{passes:1,weak:false,due:'2026-10-30',last:'2026-10-29'},
+              w4:{passes:1,weak:false,due:'2026-11-02',last:'2026-11-01'}, w5:{passes:0,weak:true,due:'2026-11-02',last:'2026-11-01'} },
       days:{ '2026-10-23':['w3'], '2026-10-24':['w1'] }, selectedTopic:7 };
     const r = window.KOTO.merge(A, B);
-    return { xp:r.xp, comp:r.completed.slice().sort(), w1:r.words.w1,
+    return { xp:r.xp, comp:r.completed.slice().sort(), w1:r.words.w1, w4:r.words.w4, w5:r.words.w5,
              wKeys:Object.keys(r.words).sort(), d23:(r.days['2026-10-23']||[]).slice().sort(),
              d24:r.days['2026-10-24'], topic:r.selectedTopic };
   `);
   ok('XP — ИХ нь ялна (120)', m && m.xp === 120, JSON.stringify(m && m.xp));
   ok('дуусгасан хичээл — НЭГДЭЛ (3)',
     m && m.comp.length === 3 && m.comp.join() === 't0-l0,t0-l1,t0-l2', JSON.stringify(m && m.comp));
-  ok('үгийн хуваарь — step ИХ нь ялна (w1 step=2, weak=false)',
-    m && m.w1 && m.w1.step === 2 && m.w1.weak === false, JSON.stringify(m && m.w1));
-  ok('шинэ үг хоёр талаас хадгалагдана (w1,w2,w3)',
-    m && m.wKeys.join() === 'w1,w2,w3', JSON.stringify(m && m.wKeys));
+  ok('үгийн хуваарь — хуучин алдалт шинэ ахицыг дарахгүй (w1 passes 2)',
+    m && m.w1 && m.w1.passes === 2 && m.w1.weak === false, JSON.stringify(m && m.w1));
+  ok('№33: 3 удаа зөв хариулсан ахиц УХРАХГҮЙ (w4 passes 3)',
+    m && m.w4 && m.w4.passes === 3 && m.w4.due === '2026-11-02', JSON.stringify(m && m.w4));
+  ok('саяхан мартсан нь ялна (w5 weak)',
+    m && m.w5 && m.w5.weak === true && m.w5.passes === 0, JSON.stringify(m && m.w5));
+  ok('шинэ үг хоёр талаас хадгалагдана (w1…w5)',
+    m && m.wKeys.join() === 'w1,w2,w3,w4,w5', JSON.stringify(m && m.wKeys));
   ok('өдрийн ахиц — НЭГДЭЛ (10-23-д 3 үг)',
     m && m.d23.length === 3 && Array.isArray(m.d24), JSON.stringify(m && { a: m.d23, b: m.d24 }));
   ok('selectedTopic — ХОЙД нь (7)', m && m.topic === 7, JSON.stringify(m && m.topic));
@@ -272,6 +278,124 @@ function getJSON(path, method) {
     store && store.xp > 0 && store.words > 0 && store.completed > 0, JSON.stringify(store));
   ok('дэлгэцийн XP нь төлөвтэй таарна',
     store && String(store.xp) === store.topXp, JSON.stringify(store && { st: store.xp, ui: store.topXp }));
+
+  console.log('\n[4б] Хурдан засвар — ахицын зурвас, зорилго, дуу, шүүлтүүр, хадгалалт');
+  /* Хичээлийг ЭХНЭЭС нь эхлүүлж, асуулт бүрт ЗОРИУД алдана. Шалгах зүйл:
+     алдахад зурвас ухрахгүй, давталтын үе гарна, доод самбар төлөвийн
+     класстай, бүх үгээ алдсан хичээл өдрийн зорилгод 0 үг нэмнэ. */
+  /* Цэвэр төлөв: localStorage-ийг солиод ДАХИН АЧААЛНА. Ачаалалгүй бол апп
+     санах ой дахь хуучин төлөвөө save()-ээр буцааж бичдэг (эхний ажиллуулалтад
+     өмнөх хэсгийн 14 үг зорилгод орж, тест буруу дүгнэлт гаргав). */
+  await ev(`localStorage.setItem('koto-irodori-v1', JSON.stringify({version:1,xp:0,completed:[],words:{},days:{},selectedTopic:0})); location.hash = 'learn';`);
+  await send('Page.reload', {});
+  for (let i = 0; i < 40; i++) { await sleep(150); try { if (await ev('return !!window.KOTO')) break; } catch (e) {} }
+  await sleep(400);
+  const qf = await ev(`
+    const S = ms => new Promise(r => setTimeout(r, ms));
+    document.querySelector('[data-action=start]').click(); await S(200);
+    const width = () => parseFloat(document.querySelector('.progress-fill').style.width);
+    const out = { regress: [], bottomCls: '', retryPhase: false, metaRetry: '', chip: false, soundBtn: false };
+    out.soundBtn = !!document.querySelector('.lesson-top [data-action=sound]');
+    for (let i = 0; i < 80; i++) {
+      if (document.querySelector('.completion')) break;
+      const fr = document.querySelector('.lesson-frame');
+      if (fr && fr.classList.contains('is-retry-phase')) {
+        out.retryPhase = true;
+        out.metaRetry = document.querySelector('.lesson-meta span:last-child').textContent;
+      }
+      const nx = document.querySelector('[data-action=next]');
+      if (nx && !document.querySelector('.choice') && !document.querySelector('.token-bank')) { nx.click(); await S(40); continue; }
+      if (nx && document.querySelector('.lesson-bottom.is-correct, .lesson-bottom.is-incorrect')) { nx.click(); await S(40); continue; }
+      const sess = window.KOTO.numTest.session(), q = sess.queue[sess.pos];
+      const before = width();
+      if (q.type === 'quiz') {
+        const wrong = [...document.querySelectorAll('.choice')].find(b => b.textContent.trim().indexOf(q.correct) < 0);
+        wrong.click(); await S(20);
+      } else if (q.type === 'sentence') {
+        const toks = [...document.querySelectorAll('.token-bank .token')].reverse();
+        toks.forEach(t => t.click()); await S(20);
+      }
+      document.querySelector('[data-action=check]').click(); await S(40);
+      const after = width();
+      if (after < before - 0.001) out.regress.push(before + '->' + after);
+      const lb = document.querySelector('.lesson-bottom');
+      if (!out.bottomCls && lb) out.bottomCls = lb.className;
+      if (document.querySelector('.retry-chip')) out.chip = true;
+    }
+    const st = JSON.parse(localStorage.getItem('koto-irodori-v1'));
+    const day = Object.keys(st.days)[0];
+    out.done = !!document.querySelector('.completion');
+    out.dayIds = day ? st.days[day].length : 0;
+    out.weak = Object.values(st.words).filter(w => w.weak).length;
+    document.querySelector('[data-action=finish]').click(); await S(200);
+    const ring = document.querySelector('.goal-ring');
+    out.goal = ring ? ring.getAttribute('aria-label') : '';
+    out.streak = document.getElementById('streak').textContent;
+    return out;
+  `);
+  ok('алдахад ахицын зурвас УХРАХГҮЙ', qf && qf.regress.length === 0, JSON.stringify(qf && qf.regress));
+  ok('давтах асуулт хүлээгдэж байхад «+N давтах» тэмдэг', qf && qf.chip, JSON.stringify(qf));
+  ok('давталтын үе: .is-retry-phase, «Алдсан асуултууд · k / n»',
+    qf && qf.retryPhase && /Алдсан асуултууд · \d+ \/ \d+/.test(qf.metaRetry), JSON.stringify(qf && qf.metaRetry));
+  ok('шалгасны дараа доод самбар төлөвийн класстай (is-incorrect)',
+    qf && /\bis-incorrect\b/.test(qf.bottomCls), JSON.stringify(qf && qf.bottomCls));
+  ok('хичээлийн дотор дууны товч бий', qf && qf.soundBtn);
+  /* Бүгдийг алдсан: идэвх (streak) тоологдоно, «бататгасан» зорилго 0. */
+  ok('бүгдийг алдсан хичээл: streak 1 болно, гэвч зорилгод 0 үг',
+    qf && qf.done && qf.dayIds === 5 && qf.weak === 5 && /Өнөөдөр 0,/.test(qf.goal) && qf.streak === '1',
+    JSON.stringify(qf && { day: qf.dayIds, weak: qf.weak, goal: qf.goal, streak: qf.streak }));
+
+  const snd = await ev(`
+    const S = ms => new Promise(r => setTimeout(r, ms));
+    localStorage.removeItem('koto-sound');
+    document.querySelector('[data-action=start]').click(); await S(200);
+    const b1 = document.querySelector('[data-action=sound]');
+    const p1 = b1.getAttribute('aria-pressed');
+    b1.click(); await S(60);
+    const b2 = document.querySelector('[data-action=sound]');
+    const r = { p1, p2: b2.getAttribute('aria-pressed'), stored: localStorage.getItem('koto-sound'), label: b2.getAttribute('aria-label') };
+    b2.click(); await S(40);
+    r.p3 = document.querySelector('[data-action=sound]').getAttribute('aria-pressed');
+    r.stored3 = localStorage.getItem('koto-sound');
+    document.querySelector('[data-action=exit]').click(); await S(60);
+    document.querySelector('[data-action=discard]').click(); await S(120);
+    return r;
+  `);
+  ok('дууны товч: асаах/унтраах, localStorage-д хадгална',
+    snd && snd.p1 === 'true' && snd.p2 === 'false' && snd.stored === '0' && snd.p3 === 'true' && snd.stored3 === '1',
+    JSON.stringify(snd));
+
+  const flt = await ev(`
+    const S = ms => new Promise(r => setTimeout(r, ms));
+    location.hash = 'words'; await S(200);
+    const inp = document.getElementById('word-search');
+    inp.value = 'だれ'; inp.dispatchEvent(new Event('input', { bubbles: true })); await S(60);
+    const n1 = document.querySelectorAll('#word-results .word-card').length;
+    location.hash = 'learn'; await S(200);
+    location.hash = 'words'; await S(200);
+    return { n1, kept: document.getElementById('word-search').value,
+             n2: document.querySelectorAll('#word-results .word-card').length };
+  `);
+  ok('үгийн сангийн хайлт цэс солиход хадгалагдана',
+    flt && flt.kept === 'だれ' && flt.n1 === flt.n2 && flt.n1 > 0 && flt.n1 < 50, JSON.stringify(flt));
+  await ev(`const i=document.getElementById('word-search');i.value='';i.dispatchEvent(new Event('input',{bubbles:true}));`);
+
+  const sav = await ev(`
+    const S = ms => new Promise(r => setTimeout(r, ms));
+    const local = document.getElementById('save-status').textContent;
+    localStorage.setItem('koto-auth', JSON.stringify({ access_token: 'x', refresh_token: 'r',
+      expires_at: Math.floor(Date.now() / 1000) + 86400, user: { email: 'a@b.c', name: 'A', avatar: null } }));
+    return { local, hasSpan: !!document.getElementById('save-status') };
+  `);
+  ok('footer-ийн хадгалалтын төлөв: синкгүй үед «хөтөч дээр»',
+    sav && sav.hasSpan && /хөтөч дээр/.test(sav.local), JSON.stringify(sav));
+  await send('Page.reload', {});
+  for (let i = 0; i < 40; i++) { await sleep(150); try { if (await ev('return !!window.KOTO')) break; } catch (e) {} }
+  await sleep(400);
+  const sav2 = await ev(`return { mode: window.KOTO.mode(), text: document.getElementById('save-status').textContent };`);
+  ok('Google-ээр нэвтэрсэн үед footer «Google бүртгэлд» гэнэ (өмнө худлаа «хөтөч дээр»)',
+    sav2 && sav2.mode === 'user' && /Google/.test(sav2.text) && !/хөтөч дээр/.test(sav2.text), JSON.stringify(sav2));
+  await ev(`localStorage.removeItem('koto-auth');`);
 
   console.log('\n[5] Консол');
   ok('барьсангүй уналт гараагүй', errs.length === 0, errs.slice(0, 3).join(' | '));

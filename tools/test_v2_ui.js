@@ -98,11 +98,31 @@ function getJSON(path, method) {
   await sleep(2500);
   ok('бичлэг дуусахад .playing арилна', await ev("return window.KOTO.playing()===null&&!document.querySelector('.playing')"), await ev("return String(window.KOTO.playing())"));
   ok('тоглуулсан файл = audio/<au>.mp3', reqs.some(u => /\/audio\/[A-Za-z0-9-]+\.mp3$/.test(u)), reqs.filter(u => u.includes('/audio/')).slice(-1)[0]);
+  /* Карт бүхэлдээ дарагдана (эзний хүсэлт 11-01). Дээрх товчны шалгуур нь
+     давхар тоглохгүйг ч барина: товч ба карт хоёулаа ажиллавал toggle-оор
+     шууд зогсож, playing=null болно. */
+  const cardTap = await ev(`const c=document.querySelectorAll('.word-card')[1];c.querySelector('.word-meaning').click();await new Promise(r=>setTimeout(r,120));
+    return {want:c.dataset.auFor,got:window.KOTO.playing(),say:c.classList.contains('say-card'),cardPlaying:c.classList.contains('playing')}`);
+  ok('үгийн карт: утга дээр дарахад тухайн үг тоглоно, карт .playing', cardTap.say && !!cardTap.want && cardTap.got === cardTap.want && cardTap.cardPlaying, JSON.stringify(cardTap));
+  const stopped = await ev(`document.querySelectorAll('.word-card')[1].querySelector('.word-topic').click();return window.KOTO.playing()`);
+  ok('үгийн карт: дахин дарахад зогсоно', stopped === null, String(stopped));
 
   console.log('\n[C] Хичээл — сурах карт ба асуулт');
   await ev("location.hash='learn';"); await sleep(300);
   await ev("document.querySelector('[data-action=start]').click();"); await sleep(400);
-  ok('сурах картад өргөн товч', await ev("return !!document.querySelector('.learn-card .audio-button-wide')"));
+  const lc = await ev(`const c=document.querySelector('.learn-card'),b=c.querySelector(':scope > .card-audio[data-action=say]');
+    const cr=c.getBoundingClientRect(),br=b?b.getBoundingClientRect():null;
+    return {wide:!!c.querySelector('.audio-button-wide'),corner:!!b,say:c.classList.contains('say-card'),dx:br?Math.round(cr.right-br.right):null,dy:br?Math.round(br.top-cr.top):null,cursor:getComputedStyle(c).cursor}`);
+  ok('сурах карт: «Сонсох» өргөн товчгүй, дүрс картын эхэнд, карт .say-card', !lc.wide && lc.corner && lc.say, JSON.stringify(lc));
+  ok('сурах карт: дүрс ДЭЭД БАРУУН буланд', lc.dx >= 0 && lc.dx <= 32 && lc.dy >= 0 && lc.dy <= 32, JSON.stringify(lc));
+  ok('say-card: cursor:pointer (iOS Safari үүнгүй бол click өгөхгүй)', lc.cursor === 'pointer', lc.cursor);
+  const lt = await ev(`const c=document.querySelector('.learn-card');c.querySelector('.learn-kana').click();await new Promise(r=>setTimeout(r,400));
+    return {want:c.dataset.auFor,got:window.KOTO.playing(),btnBg:getComputedStyle(c.querySelector('.card-audio')).backgroundColor,card:c.classList.contains('playing')}`);
+  ok('сурах карт: кана дээр дарахад тоглоно', !!lt.want && lt.got === lt.want, JSON.stringify(lt));
+  /* `.learn-card .speak-button.audio-button` (0,3,0) нь `.audio-button.playing`
+     (0,2,0)-ийн лайм дэвсгэрийг дардаг байв — Astra олов. */
+  ok('сурах карт: тоглож байхад дүрс ЛАЙМ, карт .playing', lt.btnBg === 'rgb(184, 239, 88)' && lt.card, JSON.stringify(lt));
+  await ev("if(window.KOTO.playing())document.querySelector('.learn-card').click();");
   ok('хичээл доторх товч бүр 44px+', (await ev(TAP)).length === 0, JSON.stringify(await ev(TAP)).slice(0, 300));
   await shot('lesson-learn-1400');
   // 5 сурах карт → эхний асуулт
@@ -113,7 +133,24 @@ function getJSON(path, method) {
   await ev("document.querySelector('.choice').click();"); await sleep(100);
   await ev("document.querySelector('[data-action=check]').click();"); await sleep(250);
   ok('шалгасны дараа товч ҮРГЭЛЖ бий', await ev("return !!document.querySelector('.quiz-prompt-card [data-au-for]')"));
+  const qt = await ev(`const c=document.querySelector('.quiz-prompt-card');c.querySelector('.exercise-prompt').click();await new Promise(r=>setTimeout(r,120));const r={want:c.dataset.auFor,got:window.KOTO.playing()};if(r.got)c.click();return r;`);
+  ok('асуултын карт: шалгасны дараа картыг дарахад тоглоно', !!qt.want && qt.got === qt.want, JSON.stringify(qt));
   await shot('lesson-quiz-checked-1400');
+  /* Монгол→япон асуултыг шалгахаас өмнө олж, картыг дарна — дуудлага нь
+     хариулт тул тоглох ЁСГҮЙ. */
+  const mnq = await ev(`const S=ms=>new Promise(r=>setTimeout(r,ms));
+    for(let i=0;i<40;i++){
+      const q=document.querySelector('.quiz-prompt-card');
+      if(q&&q.querySelector('.mn-prompt')&&!document.querySelector('.lesson-bottom.is-correct,.lesson-bottom.is-incorrect')){
+        const s=window.KOTO.numTest.session(),id=s.queue[s.pos].word.id;
+        q.querySelector('.exercise-prompt').click();q.click();await S(100);
+        return {found:true,say:q.classList.contains('say-card'),au:q.hasAttribute('data-au-for'),playing:window.KOTO.playing(),id};}
+      const nx=document.querySelector('[data-action=next]');if(nx&&!nx.disabled){nx.click();await S(80);continue;}
+      const ch=document.querySelector('.choice:not([disabled])');if(ch){ch.click();document.querySelector('[data-action=check]').click();await S(80);continue;}
+      const tk=[...document.querySelectorAll('.token-bank .token:not(.used):not([disabled])')];if(tk.length){tk.forEach(t=>t.click());const c=document.querySelector('[data-action=check]');if(c)c.click();await S(80);continue;}
+      break;}
+    return {found:false};`);
+  ok('монгол→япон асуулт: шалгахаас өмнө карт дарахад ТОГЛОХГҮЙ', mnq.found && !mnq.say && !mnq.au && mnq.playing !== mnq.id, JSON.stringify(mnq));
   await ev("document.querySelector('[data-action=exit]').click();"); await sleep(150);
   await ev("document.querySelector('[data-action=discard]').click();"); await sleep(200);
 
@@ -186,6 +223,48 @@ function getJSON(path, method) {
   ok('320: хэвтээ гүйлт байхгүй', await ev("return document.documentElement.scrollWidth<=320"), await ev("return document.documentElement.scrollWidth"));
   await shot('home-320');
   await dark(true); await ev("location.hash='words';"); await sleep(300); await shot('words-dark-320');
+
+  console.log('\n[G2] Хариултын самбар утсан дээр (хурдан засвар)');
+  /* Өмнө 390×844-д 4 дэх сонголт sticky самбарын ард дарагддаг, retry-chip-ийн
+     дүрс текстийн дээр тусдаа мөрөнд унадаг байв. Самбарын өнгө ::before-ийн
+     box-shadow-оор бүтэн өргөнд сунадаг тул border-top нь 820px хэрчим болж
+     харагдаж байсан — өнгөт төлөвт хүрээгүй байх ёстой. */
+  const TO_QUIZ = `const S=ms=>new Promise(r=>setTimeout(r,ms));
+    location.hash='learn';await S(200);document.querySelector('[data-action=start]').click();await S(300);
+    for(let i=0;i<10&&!document.querySelector('.choice');i++){document.querySelector('[data-action=next]').click();await S(80);}
+    return !!document.querySelector('.choice');`;
+  const WRONG = `const S=ms=>new Promise(r=>setTimeout(r,ms));const s=window.KOTO.numTest.session(),q=s.queue[s.pos];
+    [...document.querySelectorAll('.choice')].find(b=>b.textContent.trim().indexOf(q.correct)<0).click();await S(30);
+    document.querySelector('[data-action=check]').click();await S(250);`;
+  const LEAVE = "document.querySelector('[data-action=exit]').click();await new Promise(r=>setTimeout(r,150));document.querySelector('[data-action=discard]').click();";
+  await dark(false); await size(390, 844, true); await nav(SITE); await sleep(300);
+  ok('390: асуулт хүртэл явав', await ev(TO_QUIZ));
+  const FIT = "const c=[...document.querySelectorAll('.choice')];return {n:c.length,last:Math.round(c[c.length-1].getBoundingClientRect().bottom),panel:Math.round(document.querySelector('.lesson-bottom').getBoundingClientRect().top)}";
+  const fit = await ev(FIT);
+  ok('390: 4 сонголт бүгд доод самбараас ДЭЭР харагдана', fit.n === 4 && fit.last <= fit.panel, JSON.stringify(fit));
+  await ev(WRONG);
+  const fit2 = await ev(FIT);
+  ok('390: шалгасны дараа (самбар томорсон) ч 4 сонголт харагдана', fit2.n === 4 && fit2.last <= fit2.panel, JSON.stringify(fit2));
+  const pan = await ev("const b=document.querySelector('.lesson-bottom'),s=getComputedStyle(b),p=getComputedStyle(b,'::before');return {cls:b.className,bt:s.borderTopWidth,bg:s.backgroundColor,shadow:p.boxShadow}");
+  ok('390: буруу хариултын самбар — дээд хүрээгүй, дэвсгэр нь бүтэн өргөнд сунана',
+    /\bis-incorrect\b/.test(pan.cls) && pan.bt === '0px' && pan.shadow.indexOf(pan.bg) === 0, JSON.stringify(pan));
+  const chip = await ev("const e=document.querySelector('.retry-chip');if(!e)return null;const b=e.getBoundingClientRect(),i=e.querySelector('svg').getBoundingClientRect();return {h:Math.round(b.height),inTop:Math.round(i.top-b.top),inBot:Math.round(b.bottom-i.bottom)}");
+  ok('390: «+N давтах» нэг мөрөнд, дүрс тэмдэг дотроо', chip && chip.h < 32 && chip.inTop >= 0 && chip.inBot >= 0, JSON.stringify(chip));
+  await shot('lesson-incorrect-390');
+  await ev(LEAVE);
+  await size(320, 640, true); await nav(SITE); await sleep(300);
+  const ov = await ev(`const S=ms=>new Promise(r=>setTimeout(r,ms));location.hash='learn';await S(200);document.querySelector('[data-action=start]').click();await S(300);
+    const out=[];for(let i=0;i<5;i++){const c=document.querySelector('.learn-card');if(!c)break;const b=c.querySelector('.card-audio').getBoundingClientRect(),k=c.querySelector('.learn-kana');
+      const r=document.createRange();r.selectNodeContents(k);for(const t of r.getClientRects())if(t.right>b.left&&t.left<b.right&&t.bottom>b.top&&t.top<b.bottom)out.push(k.textContent);
+      document.querySelector('[data-action=next]').click();await S(80);}
+    return out;`);
+  ok('320: сурах картын кана булангийн дүрстэй ДАВХЦАХГҮЙ (5 үг)', ov.length === 0, JSON.stringify(ov));
+  await ev(LEAVE);
+  await ev(TO_QUIZ); await ev(WRONG);
+  const cont = await ev("const r=document.querySelector('.lesson-bottom .primary-btn').getBoundingClientRect();return {top:Math.round(r.top),bottom:Math.round(r.bottom),vh:innerHeight}");
+  ok('320×640: шалгасны дараа «Үргэлжлүүлэх» дэлгэцэнд бүтэн харагдана', cont.bottom <= cont.vh && cont.top >= 0, JSON.stringify(cont));
+  await shot('lesson-incorrect-320');
+  await ev(LEAVE);
 
   console.log('\n[H] Консол');
   ok('барьсангүй уналт гараагүй (' + errs.length + ')', errs.length === 0, errs.join(' | ').slice(0, 400));
