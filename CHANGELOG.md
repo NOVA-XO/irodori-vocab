@@ -50,6 +50,14 @@ side-card нуух → хоёр багана дүүргэх), `?.` синтак�
 
 Урхи: headless Chrome системийн бараан сэдвийг өвлөдөг — STATE.md §2.85.
 
+### `v2/privacy.html` — Google-ийн Publish-д шаардлагатай
+
+Google Auth Platform нь External аппыг Testing-ээс гаргахад privacy policy
+холбоос шаардав (App name, support email, authorized domain бүгд байсан ч
+`Publish app` саарал). Энгийн хуудас: юу хадгалдаг (ахиц локал, синк бол
+Supabase, Google бол имэйл/нэр/зураг), юу хадгалдаггүй (cookie, tracker,
+нууц үг), хэрхэн устгуулах. Аппын shell-ээс тусдаа, styles.css татахгүй.
+
 ### Нийлүүлэлт — `2026-10-24b`-ийн 17-р сэдэвтэй
 
 Remote дээр «Тоо, цаг, хуанли» 120 үг + 🧮 тооны шалгалт аль хэдийн

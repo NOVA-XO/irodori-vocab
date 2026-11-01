@@ -71,6 +71,9 @@ RLS-тэй, бичилт зөвхөн `koto_user_put()`-ээр бөгөөд тэ
 2. Supabase → Authentication → Providers → Google → Client ID + Secret, Enable.
 3. Supabase → Authentication → URL Configuration → Redirect URLs-д сайтын
    хаяг (`…/v2/`) ба локал тестийн хаяг (`http://127.0.0.1:8765/v2/`).
+   Google Auth Platform → Branding: Authorized domain `nova-xo.github.io`, home page
+   `…/v2/`, privacy policy `…/v2/privacy.html` — эс бөгөөс Audience → **Publish app**
+   саарал хэвээр (2026-11-01-д батлагдсан).
 4. SQL Editor → `../SUPABASE.sql` бүтнээр.
 
 Тохируулаагүй бол апп УНАХГҮЙ — нууц кодын зам ба локал
@@ -89,6 +92,8 @@ RLS-тэй, бичилт зөвхөн `koto_user_put()`-ээр бөгөөд тэ
 - `styles.css` — компьютер болон утасны дэлгэцийн загвар
 - `data.js` — япон бичлэг ба монгол утгын сан (17 сэдэв, 432 үг)
 - `app.js` — дасгал, давтлага, ахиц, **синк**
+- `privacy.html` — нууцлалын бодлого ба нөхцөл. Google OAuth-ийн consent screen
+  **publish хийхэд энэ холбоосыг шаарддаг** (External апп) — үгүй бол зөвхөн Test users нэвтэрнэ
 - `../sync-config.js` — Supabase хаяг ба публик түлхүүр (v1-тэй дундаа)
 - `../SUPABASE.sql` — `koto` (нууц код) ба `koto_user` (Google) хүснэгт,
   уусгалт нь `koto_merge()`-д — хоёр зам түүнийг дуудна

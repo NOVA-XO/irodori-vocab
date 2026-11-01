@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="mn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="KOTO аппын нууцлалын бодлого ба үйлчилгээний нөхцөл: юу хадгалдаг, хэнд өгдөггүй, хэрхэн устгуулах.">
+  <title>KOTO — Нууцлалын бодлого</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' fill='%23b8ef58'/%3E%3Ctext x='12' y='47' font-size='44' fill='%231b3024'%3Eこ%3C/text%3E%3C/svg%3E">
+  <!-- Аппын shell-ээс ТУСДАА энгийн хуудас: Google OAuth-ийн consent screen
+       «privacy policy» холбоос шаарддаг. Өнгөний токен нь styles.css-тэй ижил,
+       гэхдээ тэр файлыг татахгүй — хажуугийн цэс, хавтас хэрэггүй. -->
+  <style>
+    :root{--bg:#f8faf7;--paper:#fff;--ink:#22352c;--muted:#5f7064;--line:#e4eae1;--lime:#b8ef58;--lime-dark:#8dbd38;--soft:#f0f6e9;--accent-ink:#365521;--shadow:0 4px 0 #e1e8dc;color-scheme:light}
+    @media (prefers-color-scheme: dark){:root{--bg:#121a16;--paper:#1b2720;--ink:#edf3e9;--muted:#adbcad;--line:#394c3d;--lime-dark:#91bb4c;--soft:#253629;--accent-ink:#c8e6a5;--shadow:0 4px 0 #0a110d;color-scheme:dark}}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Arial,sans-serif;line-height:1.65;font-size:16px}
+    main{max-width:720px;margin:0 auto;padding:40px 16px 64px}
+    .brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit;font-weight:800;font-size:22px;margin-bottom:28px}
+    .brand-mark{display:grid;place-items:center;width:40px;height:40px;border-radius:13px;background:var(--lime);color:#1b3024;font-size:22px;font-weight:700}
+    .brand-dot{color:var(--lime-dark)}
+    .eyebrow{color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+    h1{font-size:clamp(28px,5vw,36px);line-height:1.2;letter-spacing:-.03em;margin:6px 0 10px}
+    h2{font-size:19px;margin:36px 0 10px}
+    p,li{color:var(--ink)}
+    .lead{color:var(--muted);font-size:17px;margin:0 0 8px}
+    .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:20px 22px;margin:18px 0}
+    table{width:100%;border-collapse:collapse;font-size:15px}
+    th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+    th{color:var(--muted);font-weight:600;font-size:13px}
+    code{background:var(--soft);color:var(--accent-ink);padding:1px 6px;border-radius:6px;font-size:.92em}
+    a{color:var(--accent-ink)}
+    .meta{color:var(--muted);font-size:13px;margin-top:40px;padding-top:16px;border-top:1px solid var(--line)}
+    ul{padding-left:22px}
+  </style>
+</head>
+<body>
+<main>
+  <a class="brand" href="./"><span class="brand-mark" lang="ja">こ</span><span>koto<span class="brand-dot">.</span></span></a>
+
+  <div class="eyebrow">Нууцлалын бодлого</div>
+  <h1>Юу хадгалдаг, юу хадгалдаггүй вэ</h1>
+  <p class="lead">KOTO нь IRODORI A1 материалаар япон үг цээжлэх үнэгүй веб апп. Сурталчилгаагүй, хянах хэрэгсэлгүй, өгөгдлийг хэнд ч зардаггүй.</p>
+
+  <h2>1. Юу хадгалдаг вэ</h2>
+  <div class="card">
+    <table>
+      <tr><th>Өгөгдөл</th><th>Хаана</th><th>Яагаад</th></tr>
+      <tr><td>Сурах ахиц: XP, дуусгасан хичээл, үг бүрийн давтлагын хуваарь, өдөр бүрийн тоо, сонгосон сэдэв</td><td>Таны хөтөч (<code>localStorage</code>)</td><td>Апп ажиллахад</td></tr>
+      <tr><td>Ижил ахиц — <em>зөвхөн та синк асаасан бол</em></td><td>Supabase сервер (Нэгдсэн Улс эсвэл ЕХ-ны дата төв)</td><td>Утас, компьютер хооронд нийлүүлэхэд</td></tr>
+      <tr><td>Google бүртгэлийн <strong>имэйл, нэр, профайл зургийн холбоос</strong> — <em>зөвхөн та Google-ээр нэвтэрсэн бол</em></td><td>Supabase Auth</td><td>Таныг таньж, өөрийн ахицыг л үзүүлэхэд</td></tr>
+    </table>
+  </div>
+  <p>Google-ээс <strong>зөвхөн</strong> үндсэн профайл (<code>email</code>, <code>profile</code>, <code>openid</code>) гуйна. Таны Google-ийн бусад өгөгдөл — холбоо барих, хуанли, файл, байршил — ямар ч хэлбэрээр хүрэхгүй.</p>
+
+  <h2>2. Юу хадгалдаггүй вэ</h2>
+  <ul>
+    <li>Cookie, зар сурталчилгааны tracker, статистикийн хэрэгсэл (Google Analytics г.м.) — <strong>байхгүй</strong>.</li>
+    <li>Нууц үг — Google-ээр нэвтрэхэд таны нууц үг бидэнд ирэхгүй; Google өөрөө баталгаажуулна.</li>
+    <li>Микрофон, камер, байршил — хүсэхгүй.</li>
+    <li>Төлбөрийн мэдээлэл — апп үнэгүй.</li>
+  </ul>
+
+  <h2>3. Хэнтэй хуваалцдаг вэ</h2>
+  <p>Хэнтэй ч. Өгөгдлийг гуравдагч этгээдэд зардаггүй, дамжуулдаггүй. Техникийн ганц туслах нь <a href="https://supabase.com/privacy" rel="noopener">Supabase</a> (өгөгдлийн сан ба нэвтрэлт) — тэд өгөгдлийг бидний нэрийн өмнөөс хадгалахаас өөр зорилгоор ашиглахгүй.</p>
+
+  <h2>4. Хэрхэн устгуулах вэ</h2>
+  <div class="card">
+    <ul style="margin:0">
+      <li><strong>Хөтөч дээрх ахиц:</strong> хөтчийнхөө сайтын өгөгдлийг цэвэрлэнэ — бүгд устна.</li>
+      <li><strong>Google бүртгэл ба серверийн ахиц:</strong> <a href="mailto:superiornova068@gmail.com">superiornova068@gmail.com</a> руу нэвтэрсэн имэйлээсээ бичнэ — 7 хоногийн дотор бүртгэл, ахицыг хамт устгана.</li>
+      <li><strong>Google-ийн зөвшөөрлийг эргүүлэн татах:</strong> <a href="https://myaccount.google.com/permissions" rel="noopener">myaccount.google.com/permissions</a> → KOTO → Remove access.</li>
+    </ul>
+  </div>
+
+  <h2>5. Хүүхэд</h2>
+  <p>Апп бүх насныханд зориулагдсан боловч 13-аас доош насны хүүхдийн Google бүртгэлээр нэвтрэхийг эцэг эхийн зөвшөөрөлтэй гэж үзнэ. Синк, нэвтрэлт заавал биш — апп тэдгээргүйгээр бүрэн ажиллана.</p>
+
+  <h2>6. Үйлчилгээний нөхцөл</h2>
+  <p>KOTO нь «байгаагаараа» үнэгүй олгогдоно. Агуулга сурах зориулалттай; алдаа байж болзошгүй, мэдэгдвэл засна. Аппыг хэвийн зорилгоор ашиглана — серверт зориуд ачаалал өгөх, бусдын ахицад хандахыг оролдохыг хориглоно. Үйлчилгээг урьдчилан мэдэгдэлгүй өөрчлөх, зогсоох эрхтэй; тэр тохиолдолд ахицыг татаж авах боломж олгоно.</p>
+
+  <h2>7. Өөрчлөлт</h2>
+  <p>Энэ бодлого өөрчлөгдвөл энд, огноотой нь шинэчилнэ. Том өөрчлөлт бол аппын нүүрэнд мэдэгдэнэ.</p>
+
+  <p class="meta">Хамгийн сүүлд шинэчилсэн: 2026-11-01 · Апп: <a href="./">nova-xo.github.io/irodori-vocab/v2/</a> · Эх код: <a href="https://github.com/NOVA-XO/irodori-vocab" rel="noopener">github.com/NOVA-XO/irodori-vocab</a> · Холбоо барих: superiornova068@gmail.com</p>
+</main>
+</body>
+</html>
