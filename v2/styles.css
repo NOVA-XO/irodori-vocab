@@ -31,6 +31,8 @@ body:has(.lesson-dialog[open]){overflow:hidden}
 .sync-hint{font-size:11px;color:var(--muted);line-height:1.8;margin-top:12px}
 .sync-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
 .sync-actions .primary-btn,.sync-actions .secondary-btn{min-height:45px}
+/* Тооны шалгалт — сэдвийн картын доод хэсэг */
+.test-cta{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:6px 22px 22px;padding:16px 18px;border-radius:18px;background:#f3fae6;border:1px solid #d9ebbd}.test-cta strong{display:block;font-size:15px}.test-cta span{font-size:12px;color:#5d6d55}.test-cta .primary-btn{margin:0}
 
 /* ════════════════════════════════════════════════════════════════════
    2026-11-01 — Astra (gpt-6-astra)-ийн UI сайжруулалт. Доорх дүрмүүд дээрхийг
@@ -817,6 +819,9 @@ button, a, input, select {
   .completion-mascot svg [stroke="#a6bd7d"] { stroke: #a9c686; }
   .hero-art svg [fill="#6e9b42"],
   .completion-mascot svg [fill="#6e9b42"] { fill: #8fbd60; }
+  /* Тооны шалгалтын карт (10-24b): хатуу #f3fae6 нь бараан дээр цагаан толбо болдог. */
+  .test-cta { background: var(--accent-surface); border-color: var(--line); }
+  .test-cta span { color: var(--muted); }
   /* Google товч цагаан хэвээр; логоны өнгийг өөрчлөхгүй. */
   .google-signin { color-scheme: light; background: #fff; color: #1f1f1f; border-color: #747775; }
 }

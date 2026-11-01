@@ -85,7 +85,8 @@ function getJSON(path, method) {
   await ev("location.hash='words';"); await sleep(300);
   const nCard = await ev("return document.querySelectorAll('.word-card').length");
   const nAu = await ev("return document.querySelectorAll('.word-card [data-au-for]').length");
-  ok('карт бүрд товч (' + nCard + '/' + nAu + ')', nCard === 312 && nAu === 312);
+  const nAll = await ev("return window.KOTO.words().length");
+  ok('карт бүрд товч (' + nCard + '/' + nAu + ' / ' + nAll + ')', nCard === nAll && nAu === nAll);
   ok('товч бүр 44px+', (await ev(TAP)).length === 0, JSON.stringify(await ev(TAP)).slice(0, 300));
   await shot('words-light-1400');
   const firstId = await ev("return document.querySelector('.word-card [data-au-for]').dataset.auFor");
