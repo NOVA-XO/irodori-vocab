@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap');
+/* Гадаад фонт ТАТАХГҮЙ: офлайн нээгдэх ёстой, CDN-гүй зарчим. Япон бичигт төхөөрөмж
+   дээр суусан фонтыг :lang(ja)-аар сонгоно (доорх нэмэлт хэсэг). */
 :root{--bg:#f8faf7;--paper:#fff;--ink:#22352c;--muted:#78837b;--line:#e4eae1;--lime:#b8ef58;--lime-dark:#8dbd38;--soft:#f0f6e9;--green:#2a5744;--orange:#ef9569;--danger:#bf514b;--shadow:0 4px 0 #e1e8dc;font-family:Inter,"Segoe UI","Noto Sans JP",sans-serif;color:var(--ink);background:var(--bg);font-synthesis:none}
 *{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button,a{-webkit-tap-highlight-color:transparent}button{cursor:pointer}button:disabled{cursor:default}a{color:inherit}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #76a334;outline-offset:4px}[hidden]{display:none!important}button{color:inherit}h1,h2,h3,p{margin:0}svg{display:block}button svg{pointer-events:none}.icon{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}.skip{position:absolute;left:20px;top:-60px;z-index:100;background:var(--lime);padding:12px}.skip:focus{top:12px}
 .app-shell{max-width:1600px;margin:auto;min-height:100vh;display:grid;grid-template-columns:224px 1fr}.sidebar{position:sticky;top:0;height:100vh;padding:38px 22px 24px;background:var(--paper);border-right:1px solid var(--line);display:flex;flex-direction:column}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;font-size:37px;font-weight:800;letter-spacing:-2px;line-height:1}.brand-mark{width:45px;height:45px;display:grid;place-items:center;border-radius:15px;background:var(--lime);font-size:32px;letter-spacing:0;font-family:"Noto Sans JP",sans-serif;transform:rotate(-6deg)}.brand-dot{color:var(--lime-dark)}.sidebar-caption{font-size:9px;font-weight:700;letter-spacing:1.8px;color:#96a18e;margin:21px 0 38px 5px}.nav-list{display:grid;gap:10px}.nav-item{border:1px solid transparent;border-radius:13px;background:transparent;display:flex;align-items:center;gap:12px;min-height:51px;padding:12px 13px;font-size:14px;font-weight:650;text-align:left;color:#7a847b}.nav-item:hover{background:var(--bg)}.nav-item.active{background:#f0f8e4;border-color:#d9edbc;color:#416222}.nav-item.active .icon{color:#769d3c}.nav-count{margin-left:auto;font-size:10px;font-weight:700;background:#f0f2ed;padding:4px 5px;border-radius:5px}.notification-dot{width:7px;height:7px;background:var(--orange);border-radius:50%;margin-left:auto}.sidebar-footer{display:flex;gap:11px;margin-top:auto;padding-top:22px;border-top:1px solid var(--line);font-size:12px}.sidebar-footer small{display:block;font-size:10px;color:var(--muted);margin-top:5px;line-height:1.4}.level-dot{background:var(--lime);border:4px solid var(--soft);border-radius:50%;width:20px;height:20px;flex-shrink:0}
@@ -30,3 +31,804 @@ body:has(.lesson-dialog[open]){overflow:hidden}
 .sync-hint{font-size:11px;color:var(--muted);line-height:1.8;margin-top:12px}
 .sync-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
 .sync-actions .primary-btn,.sync-actions .secondary-btn{min-height:45px}
+
+/* ════════════════════════════════════════════════════════════════════
+   2026-11-01 — Astra (gpt-6-astra)-ийн UI сайжруулалт. Доорх дүрмүүд дээрхийг
+   ДАРЖ бичнэ (cascade); эх дүрмийг хөндөөгүй тул зөрүүг diff-ээр харж болно.
+   ════════════════════════════════════════════════════════════════════ */
+/* styles.css: APPEND
+   Дараах бүх дүрмийг файлын хамгийн төгсгөлд дарааллаар нь нэмнэ.
+*/
+
+/* 1. Үсгийн шатлал: жижиг тайлбаруудыг уншигдах хэмжээнд хүргэнэ. */
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --muted: #5f7064;
+  --accent-surface: #edf5df;
+  --accent-ink: #365521;
+  --warm-surface: #faf3e7;
+  --warm-ink: #765b37;
+  --cool-surface: #edf2f8;
+  --cool-ink: #516980;
+  --success-surface: #eaf6d9;
+  --success-ink: #3e6226;
+  --error-surface: #fff0eb;
+  --error-ink: #963e32;
+  --button-ink: #203319;
+  --edge: #dce5d5;
+  --focus: #527d24;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+}
+:lang(ja) {
+  font-family: "Noto Sans JP", "Yu Gothic", "Hiragino Kaku Gothic ProN",
+    Meiryo, system-ui, sans-serif;
+}
+.page-title {
+  font-size: clamp(28px, 2.6vw, 36px);
+  font-weight: 750;
+  letter-spacing: -.035em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.page-subtitle { font-size: 14px; color: var(--muted); }
+.eyebrow, .exercise-type {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: .1em;
+}
+.section-heading h2 { font-size: 19px; }
+.section-heading .meta, .unit-subtitle, .topic-meta,
+.word-topic, .word-status, .method small, .result-stat span {
+  font-size: 12px;
+  color: var(--muted);
+}
+.unit-title, .topic-name, .method strong { font-size: 14px; }
+.unit-progress { font-size: 12px; color: var(--accent-ink); }
+.side-card-title { font-size: 15px; }
+.side-card > p, .small-link, .learn-hint,
+.sync-hint, .bottom-note, .feedback small { font-size: 13px; }
+.page-footer { font-size: 11px; color: var(--muted); }
+.stat-pill, .session-xp, .unit-progress, .result-stat strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 2. Зай: 8 пикселийн хэмнэл, гол үйлдэлд илүү зай өгнө. */
+.main-content { padding-top: 40px; }
+.home-layout { gap: 24px; margin-top: 32px; }
+.right-column { gap: 24px; }
+.section-heading { margin: 32px 0 16px; flex-wrap: wrap; }
+.hero {
+  padding: 32px;
+  gap: 16px;
+  border-radius: 24px;
+  background: var(--accent-surface);
+  border-color: var(--line);
+}
+.hero > div:first-child { min-width: 0; }
+.hero h2 {
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1.18;
+  letter-spacing: -.035em;
+  margin: 20px 0 12px;
+}
+.hero p { font-size: 14px; color: var(--muted); }
+.hero .tag {
+  font-size: 10px;
+  line-height: 1.5;
+  letter-spacing: .04em;
+  color: var(--accent-ink);
+  background: var(--paper);
+  border-color: var(--line);
+}
+.hero .primary-btn { margin-top: 24px; }
+.hero-mini { gap: 8px 16px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.hero-mini strong { font-size: 13px; color: var(--ink); }
+.side-card { padding: 24px; }
+.topic-grid, .word-grid { gap: 16px; }
+.topic-card { padding: 18px; gap: 12px; }
+.topic-info { display: grid; gap: 4px; }
+.topic-meta { margin: 0; }
+.topic-icon { width: 40px; height: 40px; }
+.topic-icon:lang(ja) { line-height: 1; }
+
+/* 3. Карт ба хоосон төлөв: нимгэн хүрээ, нэг төрлийн хатуу сүүдэр. */
+.unit-card, .word-card, .side-card, .empty-state {
+  background: var(--paper);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+.word-card {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 20px;
+}
+.word-topic { padding-right: 0; }
+.word-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 16px 0 12px;
+}
+.word-kana {
+  min-width: 0;
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.65;
+}
+.word-meaning { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+.word-status { margin-top: auto; padding-top: 4px; }
+.word-status.learned { color: var(--success-ink); }
+.empty-state {
+  padding: clamp(32px, 7vw, 72px) 24px;
+  border-radius: 24px;
+  background: radial-gradient(ellipse at top, var(--soft), var(--paper) 70%);
+}
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 26px;
+  background: var(--soft);
+  color: var(--accent-ink);
+  box-shadow: var(--shadow);
+}
+.empty-state h2 { font-size: clamp(23px, 3vw, 30px); text-wrap: balance; }
+.empty-state p { font-size: 15px; max-width: 38ch; }
+.empty-state .primary-btn { min-width: min(100%, 220px); }
+
+/* 4. Хичээл: асуулт, үг, үйлдлийг гурван тодорхой түвшинд байрлуулна. */
+.lesson-dialog { background: var(--bg); }
+.lesson-frame {
+  max-width: 880px;
+  padding: 32px 40px 0;
+  padding-top: max(32px, env(safe-area-inset-top));
+}
+.lesson-top { gap: 16px; margin-bottom: 20px; }
+.lesson-meta { font-size: 12px; color: var(--muted); }
+.progress-track { height: 12px; background: var(--soft); }
+.progress-fill { background: var(--lime); }
+.exercise { max-width: 640px; padding: 40px 0; }
+.exercise h1 {
+  font-size: clamp(25px, 3vw, 32px);
+  line-height: 1.4;
+  letter-spacing: -.025em;
+  text-wrap: balance;
+}
+.learn-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: 24px;
+  padding: 40px 24px 32px;
+}
+.learn-card .learn-meaning { color: var(--muted); font-size: 18px; }
+.learn-hint { color: var(--muted); margin-top: 24px; }
+.quiz-prompt-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  margin-top: 28px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+.quiz-prompt-card .exercise-prompt { margin: 0; flex: 1; min-width: 0; }
+.choices { gap: 16px; margin-top: 24px; }
+.choice {
+  min-width: 0;
+  min-height: 84px;
+  font-size: 15px;
+  border-color: var(--line);
+  background: var(--paper);
+}
+.choice > span:last-child { min-width: 0; }
+.choice.selected {
+  background: var(--accent-surface);
+  border-color: var(--lime-dark);
+  color: var(--accent-ink);
+}
+.choice.correct {
+  background: var(--success-surface);
+  border-color: var(--lime-dark);
+  color: var(--success-ink);
+}
+.choice.incorrect {
+  background: var(--error-surface);
+  border-color: var(--danger);
+  color: var(--error-ink);
+}
+/* Өнгөөр дангаар нь ялгахгүй: хүрээ, тэмдэг нэмнэ. */
+.choice.selected .choice-index { border-color: currentColor; color: inherit; }
+.choice.correct::after { content: "✓"; margin-left: auto; font-weight: 800; }
+.choice.incorrect::after { content: "×"; margin-left: auto; font-weight: 800; }
+.lesson-bottom {
+  z-index: 2;
+  flex-wrap: wrap;
+  padding: 20px 0;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  background: var(--bg);
+  border-color: var(--line);
+}
+.lesson-bottom > .bottom-note, .lesson-bottom > .feedback {
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: none;
+}
+.lesson-bottom .primary-btn { min-height: 48px; max-width: 100%; }
+.feedback > div { min-width: 0; }
+.feedback-icon { background: var(--success-surface); color: var(--success-ink); }
+.feedback.incorrect .feedback-icon { background: var(--error-surface); color: var(--error-ink); }
+.feedback small { color: var(--muted); }
+.feedback.incorrect small { color: var(--error-ink); }
+.sentence-placeholder, .sentence-hint { color: var(--muted); }
+.token { max-width: 100%; overflow-wrap: anywhere; }
+.completion-mascot svg { width: 100%; height: 100%; }
+
+/* 5. Долоо хоног: өнөөдөр болон дууссан өдрийг хэлбэрээр ялгана. */
+.week-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-color: var(--line);
+}
+.week-day { min-width: 0; font-size: 11px; color: var(--muted); }
+.week-day span {
+  width: min(100%, 30px);
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0 auto 8px;
+  background: var(--soft);
+  color: var(--muted);
+  font-size: 12px;
+}
+.week-day.today { color: var(--ink); font-weight: 750; }
+.week-day.today span { outline: 2px solid var(--lime-dark); outline-offset: 2px; }
+.week-day.done span { background: var(--lime); color: var(--button-ink); }
+.goal { gap: 16px; }
+.goal-label strong { font-size: 14px; }
+.goal-label span { font-size: 12px; color: var(--muted); }
+.goal-ring { background: conic-gradient(var(--lime) calc(var(--progress)*1%), var(--soft) 0); }
+.goal-ring::before { background: var(--paper); }
+.goal-ring small { color: var(--muted); }
+
+/* 6. Товч ба жижиг дэлгэц: хүрэх талбай хамгийн багадаа 44 × 44. */
+button, .primary-btn, .secondary-btn, .nav-item,
+.small-link, .hint-btn, .icon-button, .speak-button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.primary-btn, .secondary-btn {
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.primary-btn {
+  background: var(--lime);
+  color: var(--button-ink);
+  border-color: var(--lime-dark);
+}
+.secondary-btn { background: var(--paper); border-color: var(--line); }
+.small-link, .hint-btn {
+  width: fit-content;
+  padding: 10px 2px;
+  font-size: 13px;
+  color: var(--accent-ink);
+}
+button:disabled { opacity: .65; }
+.choice:disabled { opacity: 1; }
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+.search-input, .topic-select { font-size: 16px; background: var(--paper); }
+.search-input::placeholder { color: var(--muted); opacity: 1; }
+.search-input:disabled { opacity: .7; }
+.topic-card, .topic-card.selected { border-bottom-color: var(--edge); }
+.topic-card.selected { background: var(--accent-surface); border-color: var(--lime-dark); }
+.topic-icon { background: var(--soft); color: var(--accent-ink); }
+.topic-card:nth-child(3n+2) .topic-icon { background: var(--warm-surface); color: var(--warm-ink); }
+.topic-card:nth-child(3n) .topic-icon { background: var(--cool-surface); color: var(--cool-ink); }
+.note-card { background: var(--warm-surface); }
+.note-kana { color: var(--warm-ink); }
+.side-card > p { color: var(--muted); }
+.method span { background: var(--soft); color: var(--accent-ink); }
+.method small { color: var(--muted); }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Аудио: энгийн төлөвт чанга яригч; тоглож байхад хүрээ ба гурван багана. */
+.speak-button.audio-button,
+.learn-card .speak-button.audio-button {
+  position: relative;
+  inset: auto;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-bottom: 3px solid var(--edge);
+  border-radius: 16px;
+  background: var(--soft);
+  color: var(--accent-ink);
+  isolation: isolate;
+}
+.audio-button .audio-speaker,
+.learn-card .audio-button .audio-speaker {
+  width: 22px;
+  height: 22px;
+  grid-area: 1 / 1;
+}
+.audio-bars {
+  grid-area: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 22px;
+  height: 22px;
+  visibility: hidden;
+}
+.audio-bars i {
+  display: block;
+  width: 3px;
+  height: 16px;
+  border-radius: 3px;
+  background: currentColor;
+  transform-origin: center;
+}
+.audio-bars i:nth-child(1) { transform: scaleY(.45); }
+.audio-bars i:nth-child(3) { transform: scaleY(.65); }
+.audio-button.playing {
+  background: var(--lime);
+  color: var(--button-ink);
+  border-color: var(--lime-dark);
+  outline: 2px solid var(--lime-dark);
+  outline-offset: 3px;
+}
+.audio-button.playing .audio-speaker { visibility: hidden; }
+.audio-button.playing .audio-bars { visibility: visible; }
+.audio-button.playing .audio-bars i {
+  animation: koto-audio-bars .48s ease-in-out infinite alternate;
+}
+.audio-button.playing .audio-bars i:nth-child(2) { animation-delay: -.16s; }
+.audio-button.playing .audio-bars i:nth-child(3) { animation-delay: -.32s; }
+.learn-card .speak-button.audio-button-wide {
+  display: flex;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 24px auto 0;
+  padding: 0 16px;
+}
+.audio-button-wide .audio-bars { position: absolute; left: 16px; }
+.audio-copy {
+  display: grid;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.audio-copy > span { grid-area: 1 / 1; }
+.audio-active { visibility: hidden; }
+.playing .audio-active { visibility: visible; }
+.playing .audio-idle { visibility: hidden; }
+@keyframes koto-audio-bars {
+  from { transform: scaleY(.35); }
+  to { transform: scaleY(1); }
+}
+
+/* Нэвтрэлт: толгойн товч утсан дээр ч харагдана. */
+.top-stats { gap: 16px; flex-shrink: 0; }
+.avatar.account-trigger {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--accent-ink);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.avatar-fallback { display: grid; place-items: center; width: 100%; height: 100%; }
+.account-trigger img, .account-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+.sync-frame { max-width: 680px; }
+.sync-title { font-size: 21px; line-height: 1.4; }
+.sync-body { padding-top: 8px; }
+.sync-body > .page-subtitle { margin: 0 0 24px; }
+.google-panel {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+.google-panel h2 { font-size: 21px; line-height: 1.4; }
+.google-panel p { margin: 10px 0 20px; font-size: 14px; color: var(--muted); }
+
+/* Google товчны өнгө, лого, дотоод зайг аппын lime өнгөөр солихгүй.
+   Google Sans төхөөрөмж дээр суусан бол ашиглана.
+   Шинэ фонтын файл болон CDN хориглосон тул бүх төхөөрөмж дээр
+   Google-ийн шаардсан фонтыг баталгаажуулах боломжгүй.
+*/
+.google-signin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #747775;
+  border-radius: 4px;
+  background: #fff;
+  color: #1f1f1f;
+  font-family: "Google Sans", Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-align: center;
+}
+.google-mark { width: 20px; height: 20px; flex: 0 0 20px; }
+.google-signin:disabled { opacity: 1; color: #747775; cursor: default; }
+.account-card {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+.account-avatar {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 50%;
+  background: var(--soft);
+  color: var(--accent-ink);
+  font-size: 21px;
+  font-weight: 700;
+}
+.account-details { flex: 1 1 150px; min-width: 0; }
+.account-name { display: block; font-size: 16px; overflow-wrap: anywhere; }
+.account-email { display: block; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--success-ink);
+}
+.sync-status .icon { width: 16px; height: 16px; }
+.sync-code-section {
+  margin-top: 28px;
+  border-top: 1px solid var(--line);
+}
+.sync-code-section summary {
+  display: list-item;
+  min-height: 48px;
+  padding: 14px 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.sync-code-state {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sync-code-body { padding: 0 4px 20px; }
+.sync-code-body > .sync-hint { margin: 0 0 20px; }
+.sync-code-fields { min-width: 0; padding: 0; margin: 0; border: 0; }
+.sync-code-fields:disabled { opacity: .65; }
+.sync-code-fields:disabled button { opacity: 1; }
+.sync-label { color: var(--ink); font-size: 13px; }
+.sync-code-input { padding-left: 13px; }
+.sync-actions { gap: 12px; }
+.sync-note { min-height: 1.8em; overflow-wrap: anywhere; }
+.sync-summary {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+}
+.sync-unavailable {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border: 1px solid var(--danger);
+  border-radius: 12px;
+  background: var(--error-surface);
+  color: var(--error-ink);
+  font-size: 13px;
+}
+
+/* 7. Хөдөлгөөн: богино шилжилт; мэдрэгчтэй дэлгэц дээр hover үсрэхгүй. */
+button, a, input, select {
+  transition: background-color .16s ease, border-color .16s ease,
+    color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .topic-card:hover { border-color: var(--lime-dark); transform: translateY(-2px); }
+  .audio-button:hover { background: var(--accent-surface); border-color: var(--lime-dark); }
+  .audio-button.playing:hover { background: var(--lime); }
+  .google-signin:hover:not(:disabled) { box-shadow: 0 1px 3px #0003; }
+}
+@media (hover: none) {
+  .primary-btn:hover, .topic-card:hover { transform: none; }
+  .node-button:hover { transform: rotate(-5deg); }
+}
+
+/* Завсрын өргөнд баруун баганыг доошлуулж, текстийг шахахгүй. */
+@media (min-width: 701px) and (max-width: 1190px) {
+  .home-layout { grid-template-columns: 1fr; }
+  .right-column { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .right-column .side-card:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 700px) {
+  .main-content { padding: 28px 20px 16px; }
+  .nav-item { min-height: 44px; }
+  .home-layout { gap: 24px; margin-top: 24px; }
+  .hero { padding: 24px; grid-template-columns: minmax(0, 1fr) 110px; gap: 8px; }
+  .hero-art > svg { width: 140px; height: 155px; }
+  .hero h2 { font-size: 29px; }
+  .hero .primary-btn { font-size: 13px; padding: 12px 16px; }
+  .hero p { font-size: 13px; }
+  .topic-grid, .word-grid { gap: 12px; }
+  .topic-card { padding: 16px; }
+  .topic-name { font-size: 13px; }
+  .topic-meta { font-size: 11px; }
+  .right-column { grid-template-columns: 1fr; }
+  .right-column .note-card { display: block; }
+  .side-card { padding: 24px; }
+  .breadcrumb { min-width: 0; gap: 6px; }
+  .breadcrumb strong { overflow: hidden; text-overflow: ellipsis; }
+  .topbar { min-height: 64px; height: auto; padding: 10px 20px; }
+  .top-stats { gap: 12px; }
+  .lesson-frame { padding: 20px 20px 0; padding-top: max(20px, env(safe-area-inset-top)); }
+  .lesson-meta { align-items: flex-start; }
+  .lesson-meta > span:first-child { min-width: 0; }
+  .lesson-meta > span:last-child { flex-shrink: 0; }
+  .exercise { padding: 32px 0; }
+  .quiz-prompt-card { padding: 20px; }
+  .choice { padding: 16px; font-size: 14px; }
+  .lesson-bottom .primary-btn { font-size: 14px; }
+}
+@media (max-width: 480px) {
+  .topbar { flex-wrap: wrap; gap: 6px 12px; padding-inline: 16px; }
+  .breadcrumb { flex: 1 1 145px; font-size: 11px; }
+  .breadcrumb > span:not(.japan-flag) { display: none; }
+  .top-stats { gap: 8px; }
+  .main-content { padding-inline: 16px; }
+  .hero { grid-template-columns: minmax(0, 1fr); padding: 24px; }
+  .hero h2 { max-width: none; }
+  .hero p { max-width: none; }
+  .hero-art { display: none; }
+  .hero .tag { font-size: 9px; letter-spacing: 0; flex-wrap: wrap; }
+  .hero .primary-btn { width: 100%; }
+  .topic-grid, .word-grid, .choices { grid-template-columns: minmax(0, 1fr); }
+  .topic-card .icon { display: block; }
+  .word-card { padding: 24px; }
+  .word-kana { font-size: 25px; }
+  .word-meaning { font-size: 14px; }
+  .word-topic, .word-status { font-size: 12px; }
+  .unit-header { flex-wrap: wrap; padding: 16px; }
+  .unit-header > div:nth-child(2) { flex: 1; min-width: 0; }
+  .unit-progress { margin-left: auto; }
+  .lesson-path { gap: 24px 12px; padding: 32px 16px; }
+  .lesson-node { min-width: 88px; max-width: 120px; }
+  .lesson-node:nth-child(even) { padding-top: 0; }
+  .node-label { font-size: 11px; }
+  .start-label { font-size: 9px; }
+  .learn-card { padding: 32px 20px; }
+  .learn-card .learn-meaning { font-size: 16px; }
+  .quiz-prompt-card { padding: 16px; gap: 12px; }
+  .quiz-prompt-card .exercise-prompt { font-size: 26px; }
+  .quiz-prompt-card .mn-prompt { font-size: 20px; }
+  .lesson-bottom { gap: 16px; }
+  .lesson-bottom .primary-btn { width: 100%; }
+  .result-stats { grid-template-columns: 1fr; }
+  .result-stat { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; }
+  .result-stat strong { margin: 0; }
+  .google-panel, .account-card { padding: 20px; }
+  .google-signin { width: 100%; }
+  .sign-out-button { width: 100%; }
+  .sync-actions { flex-direction: column; }
+  .sync-actions button { width: 100%; }
+  .toast { font-size: 13px; bottom: max(16px, env(safe-area-inset-bottom)); }
+}
+
+/* styles.css: APPEND
+   Бараан горим: дээрх нэмэлтийн ДАРАА байрлуулна.
+
+   Mascot-ийн SVG-г шалгасан:
+   — #d7e5c4 газрын сүүдэр бараан гадаргуу дээр цайвар толбо болдог.
+   — #a6bd7d жижиг чимэглэл, #6e9b42 навч бараан дэвсгэрт бүдгэрнэ.
+   — #b4e962 бие дээрх #2e4a31 нүд, #365334 амын ялгарал хэвээр.
+   — #fffdf7, #eaf2d6 номын хуудас, цагаан нүдний гялбааг хэвээр үлдээнэ.
+   — Тугны цагаан талбайг бараан болгохгүй; хүрээг нь тодруулна.
+   — SVG-г бүхэлд нь invert/filter хийхгүй.
+*/
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121a16;
+    --paper: #1b2720;
+    --ink: #edf3e9;
+    --muted: #adbcad;
+    --line: #394c3d;
+    --lime: #b8ef58;
+    --lime-dark: #91bb4c;
+    --soft: #253629;
+    --green: #9fd1b7;
+    --orange: #f0ad83;
+    --danger: #ed9b8b;
+    --shadow: 0 4px 0 #0a110d;
+    --accent-surface: #263923;
+    --accent-ink: #c8e6a5;
+    --warm-surface: #332c21;
+    --warm-ink: #e0c291;
+    --cool-surface: #253240;
+    --cool-ink: #bbd0e6;
+    --success-surface: #2b4025;
+    --success-ink: #d1ecb2;
+    --error-surface: #402a27;
+    --error-ink: #ffc1b4;
+    --button-ink: #203319;
+    --edge: #101c14;
+    --focus: #c8f88b;
+  }
+  body, .lesson-dialog, .lesson-bottom { background: var(--bg); }
+  .sidebar, .unit-card, .side-card, .word-card, .topic-card,
+  .learn-card, .choice, .token, .result-stat, .secondary-btn,
+  .search-input, .topic-select {
+    background-color: var(--paper);
+    border-color: var(--line);
+    color: var(--ink);
+  }
+  .sidebar-caption, .nav-item, .nav-count,
+  .breadcrumb > span:not(.japan-flag), .stat-name,
+  .node-label, .lesson-meta, .bottom-note,
+  .choice .choice-index, .hint-btn, .page-footer,
+  .page-footer > span, .sidebar-footer small {
+    color: var(--muted);
+  }
+  .brand-mark { color: var(--button-ink); }
+  .brand-dot { color: var(--lime); }
+  .nav-item:hover, .sidebar-footer:hover, .icon-button:hover { background: var(--soft); }
+  .nav-item.active {
+    background: var(--accent-surface);
+    border-color: var(--line);
+    color: var(--accent-ink);
+  }
+  .nav-item.active .icon { color: var(--lime); }
+  .nav-count { background: var(--soft); }
+  .level-dot { border-color: var(--soft); }
+  .notification-dot { background: var(--orange); }
+  .stat-pill .icon { color: var(--orange); }
+  .stat-pill:nth-child(2) .icon, .session-xp { color: var(--lime); }
+  .japan-flag { background: #fff; border-color: #aeb8ad; }
+  .japan-flag::after { background: #c84c5a; }
+  .hero, .review-banner { background: var(--accent-surface); border-color: var(--line); }
+  .hero .tag, .kana-sticker { background: var(--paper); color: var(--ink); border-color: var(--line); }
+  .tag-dot { background: var(--lime); }
+  .hero .primary-btn, .hero .primary-btn:hover {
+    background: var(--lime);
+    color: var(--button-ink);
+    border-color: var(--lime-dark);
+  }
+  .primary-btn:hover { background: #caf77e; }
+  .kana-sticker { box-shadow: var(--shadow); }
+  .kana-sticker::after { background: var(--paper); border-color: var(--line); }
+  .unit-header { border-color: var(--line); }
+  .unit-number { background: var(--soft); color: var(--accent-ink); }
+  .lesson-path {
+    background: radial-gradient(#3b5038 .8px, transparent .8px) 0 0 / 16px 16px;
+  }
+  .node-button {
+    background: var(--soft);
+    border-color: var(--line);
+    border-bottom-color: var(--edge);
+    color: var(--muted);
+  }
+  .node-button.available, .node-button.current {
+    background: var(--lime);
+    border-color: var(--lime-dark);
+    border-bottom-color: #6a9132;
+    color: var(--button-ink);
+  }
+  .node-button.current { box-shadow: 0 0 0 6px var(--soft); }
+  .node-button.completed {
+    background: var(--success-surface);
+    border-color: #668848;
+    border-bottom-color: #162311;
+    color: var(--success-ink);
+  }
+  .node-label strong { color: var(--ink); }
+  .start-label { background: var(--ink); color: var(--bg); }
+  .topic-card.selected { background: var(--accent-surface); border-color: var(--lime-dark); }
+  .topic-card .icon, .side-card-title .icon, .icon-button { color: var(--muted); }
+  .note-card { background: var(--warm-surface); border-color: var(--line); }
+  .goal-ring::before { background: var(--paper); }
+  .week-day span, .method span, .progress-track { background-color: var(--soft); }
+  .week-day.done span { background: var(--lime); color: var(--button-ink); }
+  .choice .choice-index { border-color: var(--line); }
+  .choice:hover:not(:disabled), .token:hover { background: var(--soft); border-color: var(--lime-dark); }
+  .choice.selected, .choice.selected:hover:not(:disabled) {
+    background: var(--accent-surface);
+    border-color: var(--lime-dark);
+    color: var(--accent-ink);
+  }
+  .choice.correct { background: var(--success-surface); border-color: var(--lime-dark); color: var(--success-ink); }
+  .choice.incorrect { background: var(--error-surface); border-color: var(--danger); color: var(--error-ink); }
+  .lesson-bottom .primary-btn:disabled {
+    background: var(--soft);
+    border-color: var(--line);
+    color: var(--muted);
+  }
+  .sentence-answer { border-color: var(--line); }
+  .result-stat strong { color: var(--lime); }
+  .lesson-dialog::backdrop { background: #050a07cc; }
+  .toast {
+    background: #e1edd7;
+    color: #1b3024;
+    box-shadow: 0 4px 0 #070c09;
+  }
+  .hero-art > svg > ellipse[fill="#d7e5c4"],
+  .completion-mascot > svg > ellipse[fill="#d7e5c4"] { fill: #0c160b; }
+  .hero-art svg [stroke="#a6bd7d"],
+  .completion-mascot svg [stroke="#a6bd7d"] { stroke: #a9c686; }
+  .hero-art svg [fill="#6e9b42"],
+  .completion-mascot svg [fill="#6e9b42"] { fill: #8fbd60; }
+  /* Google товч цагаан хэвээр; логоны өнгийг өөрчлөхгүй. */
+  .google-signin { color-scheme: light; background: #fff; color: #1f1f1f; border-color: #747775; }
+}
+
+/* Бүх шинэ хөдөлгөөний дараа байрлуулна.
+   Хөдөлгөөнгүй үед ч тоглож буй төлөв хүрээ, өнгө, баганаар ялгарна. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .primary-btn:hover, .topic-card:hover { transform: none; }
+  .node-button:hover { transform: rotate(-5deg); }
+}

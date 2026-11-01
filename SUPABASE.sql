@@ -153,13 +153,13 @@ begin
 end;
 $wp$;
 
-revoke all on function public.wipe_progress(text) from public;
+revoke all on function public.wipe_progress(text) from public, anon, authenticated;
 grant execute on function public.wipe_progress(text) to anon;
 
 -- Анон хэрэглэгчид ЗӨВХӨН энэ хоёр функцийг дуудах эрх өгнө.
-revoke all on function public.jnum(jsonb) from public;
-revoke all on function public.get_progress(text) from public;
-revoke all on function public.put_progress(text, jsonb) from public;
+revoke all on function public.jnum(jsonb) from public, anon, authenticated;
+revoke all on function public.get_progress(text) from public, anon, authenticated;
+revoke all on function public.put_progress(text, jsonb) from public, anon, authenticated;
 grant execute on function public.get_progress(text) to anon;
 grant execute on function public.put_progress(text, jsonb) to anon;
 
@@ -254,7 +254,7 @@ begin
 end;
 $fb$;
 
-revoke all on function public.add_feedback(text, text, text, jsonb, text) from public;
+revoke all on function public.add_feedback(text, text, text, jsonb, text) from public, anon, authenticated;
 grant execute on function public.add_feedback(text, text, text, jsonb, text) to anon;
 
 
@@ -403,8 +403,8 @@ as $us$
   );
 $us$;
 
-revoke all on function public.ping(text, int, int, int, boolean) from public;
-revoke all on function public.usage_stats() from public;
+revoke all on function public.ping(text, int, int, int, boolean) from public, anon, authenticated;
+revoke all on function public.usage_stats() from public, anon, authenticated;
 grant execute on function public.ping(text, int, int, int, boolean) to anon;
 grant execute on function public.usage_stats() to anon;
 
@@ -445,7 +445,7 @@ as $ud$
   );
 $ud$;
 
-revoke all on function public.usage_days() from public;
+revoke all on function public.usage_days() from public, anon, authenticated;
 grant execute on function public.usage_days() to anon;
 
 -- ═══════════════════════════════════════════════════════════════════════
@@ -902,15 +902,15 @@ begin
 end;
 $ts$;
 
-revoke all on function public.class_join(text, text)  from public;
-revoke all on function public.class_list()            from public;
-revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean, jsonb) from public;
-revoke all on function public.class_roster(text, text, text) from public;
+revoke all on function public.class_join(text, text)  from public, anon, authenticated;
+revoke all on function public.class_list()            from public, anon, authenticated;
+revoke all on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean, jsonb) from public, anon, authenticated;
+revoke all on function public.class_roster(text, text, text) from public, anon, authenticated;
 grant execute on function public.class_join(text, text)  to anon;
 grant execute on function public.class_list()            to anon;
 grant execute on function public.member_put(text, text, jsonb, int, int, int, int, int, jsonb, bigint, boolean, jsonb) to anon;
 grant execute on function public.class_roster(text, text, text) to anon;
-revoke all on function public.task_set(text, text, jsonb, int, int, text, text, text) from public;
+revoke all on function public.task_set(text, text, jsonb, int, int, text, text, text) from public, anon, authenticated;
 grant execute on function public.task_set(text, text, jsonb, int, int, text, text, text) to anon;
 
 -- ═══════════════════════════════════════════════════════════════════
@@ -968,8 +968,20 @@ begin
 end;
 $jb$;
 
-revoke all on function public.judge_bump(text, int) from public;
 -- `anon`-д ЗОРИУД өгөхгүй: зөвхөн сервер талын Edge Function дуудна.
+--
+-- `from public` нь ХҮРЭЛЦЭХГҮЙ. Supabase нь `public` схемийн ШИНЭ
+-- функцэд `anon`/`authenticated`-д эрхийг ТУСГАЙЛАН өгдөг (default
+-- privileges) тул `PUBLIC` pseudo-role-оос хасах нь тэднийг хөндөхгүй.
+-- Үүний улмаас энэ хамгаалалт 2026-10-27 хүртэл БОДИТООР байгаагүй:
+-- anon түлхүүрээр `judge_bump('d:<сурагчийн dev>', 1)` дуудаж тухайн
+-- хүний ярианы үнэлгээг 1 цаг хаах боломжтой байв.
+revoke all on function public.judge_bump(text, int) from public, anon, authenticated;
+-- Edge Function нь `service_role`-ээр дуудна. Default privileges түүнд
+-- эрх өгдөг ч ТОДОРХОЙ бичнэ — дээрх revoke-ийг өргөжүүлэхэд (ж:
+-- `from public, anon, authenticated, service_role`) үнэлгээ чимээгүй
+-- эвдрэхээс сэргийлнэ.
+grant execute on function public.judge_bump(text, int) to service_role;
 -- Хоёр хязгаарыг НЭГ дуудалтаар: Edge Function -> өгөгдлийн сан руу
 -- нэг л удаа очно (сурагч хариултаа хэлчихээд хүлээж байдаг).
 -- Буцаах утга: '' = чөлөөтэй · 'device' · 'ip'.
@@ -991,8 +1003,10 @@ begin
 end;
 $jg$;
 
-revoke all on function public.judge_gate(text, text, int, int) from public;
 -- `anon`-д ЗОРИУД өгөхгүй — зөвхөн сервер талын Edge Function дуудна.
+-- (Дээрх `judge_bump`-ийн тайлбарыг үз: `from public` нь хүрэлцэхгүй.)
+revoke all on function public.judge_gate(text, text, int, int) from public, anon, authenticated;
+grant execute on function public.judge_gate(text, text, int, int) to service_role;
 
 
 
@@ -1076,28 +1090,11 @@ begin
     v_old := '{}'::jsonb;
   end if;
 
-  res := jsonb_build_object(
-    'version', 1,
-    'xp', greatest(public.jnum(v_old -> 'xp'), public.jnum(p_data -> 'xp')),
-    -- Хоёр массивын нэгдэл, давхардалгүй. 400 хүртэл — 67 хичээлд зайтай.
-    'completed', coalesce((
-      select jsonb_agg(distinct x)
-        from (
-          select jsonb_array_elements_text(
-                   case when jsonb_typeof(v_old -> 'completed') = 'array'
-                        then v_old -> 'completed' else '[]'::jsonb end) as x
-          union
-          select jsonb_array_elements_text(
-                   case when jsonb_typeof(p_data -> 'completed') = 'array'
-                        then p_data -> 'completed' else '[]'::jsonb end)
-          limit 400
-        ) u
-    ), '[]'::jsonb),
-    'words', public.koto_merge_words(v_old -> 'words', p_data -> 'words'),
-    'days',  public.koto_merge_days(v_old -> 'days',  p_data -> 'days'),
-    'selectedTopic',
-      least(greatest(public.jnum(p_data -> 'selectedTopic'), 0), 99)::int
-  );
+  -- Уусгалтын дүрэм нь `koto_merge()`-д — нууц кодын зам (энэ функц) ба
+  -- Google-ээр нэвтэрсэн хэрэглэгчийн зам (`koto_user_put`) ХОЁУЛАА
+  -- түүнийг дуудна. Хоёр газар давхардуулбал нэг нь засагдаад нөгөө нь
+  -- хоцорч, аль замаар синк хийснээс хамаарч өөр үр дүн гарах байв.
+  res := public.koto_merge(v_old, p_data);
 
   insert into public.koto as k (code, data)
        values (p_code, res)
@@ -1163,9 +1160,132 @@ as $md$
     ) g;
 $md$;
 
-revoke all on function public.koto_get(text) from public;
-revoke all on function public.koto_put(text, jsonb) from public;
-revoke all on function public.koto_merge_words(jsonb, jsonb) from public;
-revoke all on function public.koto_merge_days(jsonb, jsonb) from public;
+-- ── Бүх талбарын уусгалт НЭГ ГАЗАР ────────────────────────────────────
+-- `a` нь СЕРВЕР дээрх хуучин, `b` нь шинээр ирсэн. Клиентийн
+-- `kotoMerge()`-тэй ИЖИЛ дүрэм — салж явбал нэг талын ахиц алдагдана.
+-- Нууц кодын зам (`koto_put`) ба Google-ийн зам (`koto_user_put`)
+-- хоёулаа ҮҮНИЙГ дуудна.
+create or replace function public.koto_merge(a jsonb, b jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = public
+as $km$
+  select jsonb_build_object(
+    'version', 1,
+    'xp', greatest(public.jnum(a -> 'xp'), public.jnum(b -> 'xp')),
+    -- Хоёр массивын нэгдэл, давхардалгүй. 400 хүртэл — 67 хичээлд зайтай.
+    'completed', coalesce((
+      select jsonb_agg(distinct x)
+        from (
+          select jsonb_array_elements_text(
+                   case when jsonb_typeof(a -> 'completed') = 'array'
+                        then a -> 'completed' else '[]'::jsonb end) as x
+          union
+          select jsonb_array_elements_text(
+                   case when jsonb_typeof(b -> 'completed') = 'array'
+                        then b -> 'completed' else '[]'::jsonb end)
+          limit 400
+        ) u
+    ), '[]'::jsonb),
+    'words', public.koto_merge_words(a -> 'words', b -> 'words'),
+    'days',  public.koto_merge_days(a -> 'days',  b -> 'days'),
+    'selectedTopic',
+      least(greatest(public.jnum(b -> 'selectedTopic'), 0), 99)::int
+  );
+$km$;
+
+-- ══ Google-ээр нэвтэрсэн хэрэглэгчийн ахиц ════════════════════════════
+--
+-- ЯАГААД ТУСДАА ХҮСНЭГТ ВЭ: `koto` нь `code` түлхүүртэй — нууц кодыг
+-- мэдсэн хэн ч хандана. Энд түлхүүр нь `auth.users`-ийн id тул ахиц нь
+-- Google бүртгэлд УЯАТАЙ: хэрэглэгч ямар ч төхөөрөмжөөс нэвтэрвэл
+-- өөрийн xp, хичээл, үгийн давталт нь шууд гарна, код санах шаардлагагүй.
+--
+-- Хоёр хүснэгт ЗЭРЭГ ажиллана: нууц кодын зам хэвээр (Google бүртгэлгүй
+-- сурагч, эсвэл нэвтрэхийг хүсэхгүй хүн).
+create table if not exists public.koto_user (
+  user_id    uuid primary key references auth.users(id) on delete cascade,
+  data       jsonb       not null,
+  updated_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+create index if not exists koto_user_created_idx on public.koto_user (created_at);
+
+alter table public.koto_user enable row level security;
+
+-- Унших policy: хэрэглэгч ЗӨВХӨН өөрийн мөрийг. `anon` түлхүүр нийтэд
+-- харагддаг тул энэ нь хоёр дахь давхарга — JWT-гүй бол юу ч буцаахгүй.
+drop policy if exists koto_user_read on public.koto_user;
+create policy koto_user_read on public.koto_user
+  for select to authenticated using (auth.uid() = user_id);
+
+-- БИЧИХ policy ЗОРИУД БИЧИХГҮЙ. Шууд `PATCH /koto_user` зөвшөөрвөл
+-- хэрэглэгч уусгалтыг ТОЙРЧ, нөгөө төхөөрөмжийнхөө ахицыг бүрэн дарж
+-- бичих байв (хоёр төхөөрөмж зэрэг ажиллахад тэр нь өгөгдөл алдана).
+-- Бичилт зөвхөн `koto_user_put()`-ээр.
+
+create or replace function public.koto_user_get()
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $kug$
+  select data from public.koto_user where user_id = auth.uid();
+$kug$;
+
+create or replace function public.koto_user_put(p_data jsonb)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $kup$
+declare
+  v_uid uuid;
+  v_old jsonb;
+  res   jsonb;
+begin
+  -- `security definer` нь RLS-ийг тойрдог тул эзэмшигчийг ЭНД шалгана.
+  -- Тохиромжтой нь: клиент `user_id`-г ОГТ дамжуулахгүй — хуурах
+  -- гадаргуу байхгүй, JWT-ийн sub л шийднэ.
+  v_uid := auth.uid();
+  if v_uid is null then
+    raise exception 'not signed in';
+  end if;
+  if p_data is null or jsonb_typeof(p_data) <> 'object' then
+    raise exception 'bad data';
+  end if;
+  if pg_column_size(p_data) > 262144 then
+    raise exception 'too big';
+  end if;
+
+  select data into v_old from public.koto_user where user_id = v_uid for update;
+  if v_old is null then
+    v_old := '{}'::jsonb;
+  end if;
+
+  res := public.koto_merge(v_old, p_data);
+
+  insert into public.koto_user as k (user_id, data)
+       values (v_uid, res)
+  on conflict (user_id) do update
+     set data = res, updated_at = now();
+
+  return res;
+end;
+$kup$;
+
+revoke all on function public.koto_get(text) from public, anon, authenticated;
+revoke all on function public.koto_put(text, jsonb) from public, anon, authenticated;
+revoke all on function public.koto_merge(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.koto_merge_words(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.koto_merge_days(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.koto_user_get() from public, anon, authenticated;
+revoke all on function public.koto_user_put(jsonb) from public, anon, authenticated;
 grant execute on function public.koto_get(text) to anon;
 grant execute on function public.koto_put(text, jsonb) to anon;
+-- Google-ийн зам нь ЗӨВХӨН нэвтэрсэн хүнд. `anon`-д эрх өгвөл
+-- `auth.uid()` null болж функц няцаана — гэхдээ эрхийг ч өгөхгүй нь
+-- «нэвтрээгүй бол энэ хаалга бүхэлдээ байхгүй» гэсэн тодорхой хил.
+grant execute on function public.koto_user_get() to authenticated;
+grant execute on function public.koto_user_put(jsonb) to authenticated;

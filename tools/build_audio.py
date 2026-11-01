@@ -410,6 +410,38 @@ def main():
         if kun:
             jobs.append(('JK-' + code, to_kata('、'.join(kun)), '', ''))
 
+    # ── v2 (KOTO)-ийн үгс — `KT-<hash>` ──────────────────────────────
+    # v2-ийн 312 үгийн 248 нь v1-д аль хэдийн бичигдсэн тул ТЭР id-г
+    # дахин ашиглана (`v2/data.js` дахь `au` талбар). Зөвхөн ҮЛДСЭНИЙГ
+    # энд үүсгэнэ — жагсаалтыг `build_v2_audio.py` бэлддэг.
+    #
+    # Өргөлтийн тэмдэглэгээ БАЙХГҮЙ: v2-ийн өгөгдөлд `accent` талбар
+    # байхгүй тул хөдөлгүүрийн толиор уншина (жишээ өгүүлбэртэй ижил
+    # зарчим). Үүний ч учир давхцсан 248-ыг дахин үүсгэхгүй: тэдний
+    # 2/3 нь гараар шалгасан өргөлттэй.
+    # Эх нь `v2/data.js` ӨӨРӨӨ — түр файл дамжуулахгүй. Үгүй бол тэр
+    # файл байхгүй үед v2-ийн бичлэг ЧИМЭЭГҮЙ үүсэхгүй байв.
+    v2_p = os.path.join(ROOT, 'v2', 'data.js')
+    if os.path.exists(v2_p):
+        from build_v2_audio import KANA_FIX
+        raw = io.open(v2_p, encoding='utf-8').read()
+        v2d = json.loads(raw[raw.index('['):raw.rindex(']') + 1])
+        seen_kt = set()
+        for topic in v2d:
+            for w in topic.get('words', []):
+                au = (w.get('au') or '').strip()
+                say = (w.get('jp') or '').strip()
+                # `KT-` нь «v1-д байхгүй, шинээр үүсгэх» гэсэн тэмдэг.
+                # Бусад id нь v1-ийн сангаас дахин ашиглагдана.
+                if not au.startswith('KT-') or not say or au in seen_kt:
+                    continue
+                seen_kt.add(au)
+                # ГАРААР зассан уншлага (бөөсний は→ワ, を→オ, дундах
+                # `～`-ийн завсар) байвал автомат цэвэрлэлтийг давж гарна.
+                kata = KANA_FIX.get(say) or to_kata(
+                    re.sub('[（）()～〜]', '', say).replace('／', '、'))
+                jobs.append((au, kata, '', say))
+
     if a.limit:
         jobs = jobs[:a.limit]
 

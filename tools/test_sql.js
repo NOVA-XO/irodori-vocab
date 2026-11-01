@@ -36,12 +36,40 @@ function ok(name, cond, info) {
 async function main() {
   const db = new PGlite();
   // Supabase-д байдаг хоёр үүрэг. SQL нь `grant ... to anon` хийдэг.
-  await db.exec("create role anon nologin; create role authenticated nologin;");
+  await db.exec("create role anon nologin; create role authenticated nologin; " +
+    // Edge Function (ярианы үнэлгээ) нь ҮҮГЭЭР дуудна. Үүнгүй бол
+    // `grant … to service_role` мөр унаж, бүтэн SQL ажиллахгүй.
+    "create role service_role nologin;");
   // Supabase нь public схемийн ШИНЭ хүснэгтэд anon-д SELECT/INSERT/…
   // эрхийг АНХДАГЧААР өгдөг. Хамгаалалт нь зөвхөн RLS-д тулгуурладаг —
   // тиймээс тэр нөхцлийг ЯГ дуурайна, эс тэгвэл RLS-гүй ч тест тэнцэнэ.
-  await db.exec("grant usage on schema public to anon; " +
-    "alter default privileges in schema public grant all on tables to anon;");
+  /* `authenticated`-д ч эрхийг өгнө: Supabase нь public схемийн шинэ
+     хүснэгтэд ХОЁР үүрэгт анхдагчаар эрх өгдөг. Үүнгүй бол «шууд
+     бичилт няцаагдав» гэсэн шалгуур RLS-ийн ачаар БИШ, зүгээр л
+     эрхгүйн улмаас тэнцэж, хуурамч баталгаа гарах байв. */
+  /* ФУНКЦЭД ч default privileges — Supabase нь `public` схемийн ШИНЭ
+     функцэд `anon`/`authenticated`-д эрхийг ТУСГАЙЛАН өгдөг. Үүнгүй бол
+     `revoke all … from public` нь эрхийг хассан ГЭЖ харагдаж, «anon
+     дуудаж чадахгүй» гэсэн шалгуур хуурамчаар тэнцэнэ. Амьд серверт
+     `judge_gate` нь ийм учраас нээлттэй байв. */
+  await db.exec("grant usage on schema public to anon, authenticated; " +
+    "alter default privileges in schema public grant all on tables to anon, authenticated; " +
+    "alter default privileges in schema public grant all on functions to anon, authenticated;");
+
+  /* Supabase-ийн `auth` схемийн ЖИЖИГ дуураймал. PGlite нь цэвэр
+     Postgres тул `auth.users` ба `auth.uid()` байхгүй — тэднийг
+     хэрэглэдэг `koto_user` хэсэг унах байв.
+
+     `auth.uid()` нь бодитоор JWT-ийн `sub`-ыг уншдаг. Дуураймал нь
+     ИЖИЛ GUC-ээс (`request.jwt.claim.sub`) уншина, тиймээс тестэд
+     `set request.jwt.claim.sub = '<uuid>'` гэж хэрэглэгч сэлгэж болно.
+     Хоосон бол null — яг нэвтрээгүй үеийн зан төлөв. */
+  await db.exec(
+    "create schema if not exists auth;" +
+    "create table if not exists auth.users (id uuid primary key);" +
+    "create or replace function auth.uid() returns uuid language sql stable as $$" +
+    "  select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;" +
+    "grant usage on schema auth to anon, authenticated;");
 
   const sql = fs.readFileSync(path.join(ROOT, 'SUPABASE.sql'), 'utf8');
   const q1 = (s, p) => db.query(s, p).then(r => r.rows);
@@ -590,6 +618,103 @@ async function main() {
   } catch (e) { kRead = 'denied'; }
   ok('anon: koto хүснэгтийг ШУУД уншиж ЧАДАХГҮЙ (RLS)', kRead === 'denied', kRead);
   await db.exec('reset role');
+
+  console.log('\n[KOTO-USER] Google-ээр нэвтэрсэн хэрэглэгчийн ахиц');
+  /* Нууц кодын зам нь кодыг мэдсэн хэнд ч нээлттэй. Энэ зам нь
+     JWT-ийн sub-аар уягдана: хоёр хэрэглэгч ОГТ харилцан харагдахгүй
+     байх ёстой. Мөн уусгалт нь кодын замтай ЯГ ИЖИЛ үр дүн гаргах
+     ёстой — үгүй бол аль замаар синк хийснээс хамаарч ахиц зөрнө. */
+  const U1 = '11111111-1111-1111-1111-111111111111';
+  const U2 = '22222222-2222-2222-2222-222222222222';
+  await db.exec("insert into auth.users (id) values ('" + U1 + "'),('" + U2 +
+    "') on conflict do nothing;");
+  const asUser = u => db.exec("set role authenticated; " +
+    "set request.jwt.claim.sub = '" + u + "';");
+  const putU = d => one('select public.koto_user_put($1::jsonb) as d', [JSON.stringify(d)]);
+
+  // Нэвтрээгүй: JWT-ийн sub хоосон.
+  await db.exec("set role authenticated; set request.jwt.claim.sub = '';");
+  let nosign = 'ok';
+  try { await putU(A); } catch (e) { nosign = 'denied'; }
+  ok('KOTO-USER: нэвтрээгүй бол бичилт няцаана', nosign === 'denied', nosign);
+
+  await asUser(U1);
+  const ua = await putU(A);
+  ok('KOTO-USER: U1-ийн ахиц бичигдэв', ua && ua.d && ua.d.xp === 120,
+    JSON.stringify(ua && ua.d));
+  const ub = await putU(B);
+  // `m` нь ДЭЭР нууц кодын замаар гарсан ижил A+B-ийн уусгалт.
+  ok('KOTO-USER: уусгалт нууц кодын замтай ЯГ ИЖИЛ',
+    JSON.stringify(ub && ub.d) === JSON.stringify(m),
+    JSON.stringify(ub && ub.d) + ' vs ' + JSON.stringify(m));
+  const ug = await one('select public.koto_user_get() as d');
+  ok('KOTO-USER: U1 өөрийн ахицыг татав', ug && ug.d && ug.d.xp === 120,
+    JSON.stringify(ug && ug.d));
+
+  await asUser(U2);
+  const u2g = await one('select public.koto_user_get() as d');
+  ok('KOTO-USER: U2 нь U1-ийн ахицыг ХАРАХГҮЙ', u2g && u2g.d === null,
+    JSON.stringify(u2g && u2g.d));
+  const u2rows = await q1('select user_id from public.koto_user');
+  ok('KOTO-USER: шууд select нь ЗӨВХӨН өөрийн мөрийг (policy)',
+    u2rows.length === 0, 'мөр=' + u2rows.length);
+
+  // Бичих policy ЗОРИУД байхгүй — шууд бичилт уусгалтыг тойрох байв.
+  let wrIns = 'ok';
+  try {
+    await db.exec("insert into public.koto_user (user_id, data) values ('" + U2 +
+      "', '{\"xp\":9999}'::jsonb)");
+  } catch (e) { wrIns = 'denied'; }
+  ok('KOTO-USER: ШУУД insert няцаана (уусгалтыг тойрохгүй)', wrIns === 'denied', wrIns);
+
+  await asUser(U1);
+  let wrUpd = 'ok';
+  try {
+    await db.exec("update public.koto_user set data = '{\"xp\":9999}'::jsonb");
+  } catch (e) { wrUpd = 'denied'; }
+  const stillU1 = await one('select public.koto_user_get() as d');
+  ok('KOTO-USER: ШУУД update нь ахицыг дарж бичихгүй',
+    wrUpd === 'denied' || (stillU1 && stillU1.d && stillU1.d.xp === 120),
+    wrUpd + ' xp=' + JSON.stringify(stillU1 && stillU1.d && stillU1.d.xp));
+
+  await db.exec("reset role; set role anon; set request.jwt.claim.sub = '" + U1 + "';");
+  let anonGet = 'ok', anonPut = 'ok';
+  try { await one('select public.koto_user_get() as d'); } catch (e) { anonGet = 'denied'; }
+  try { await putU(A); } catch (e) { anonPut = 'denied'; }
+  ok('KOTO-USER: anon нь koto_user_get-ийг дуудаж ЧАДАХГҮЙ', anonGet === 'denied', anonGet);
+  ok('KOTO-USER: anon нь koto_user_put-ийг дуудаж ЧАДАХГҮЙ', anonPut === 'denied', anonPut);
+
+  /* ДОТООД функцүүд — аппын клиент тэднийг ХЭЗЭЭ Ч дуудахгүй.
+     `revoke … from public` нь Supabase-д ХҮРЭЛЦЭХГҮЙ: шинэ функцэд
+     `anon`/`authenticated`-д эрх ТУСГАЙЛАН өгөгддөг тул тэднээс ч
+     нэрлэж хасах ёстой. Амьд серверт `judge_gate` яг ийм учраас
+     нээлттэй байв — доорх шалгуурууд тэр олдворын регресс. */
+  const closed = [
+    ['jnum', "select public.jnum('1'::jsonb)"],
+    ['koto_merge', "select public.koto_merge('{}'::jsonb,'{}'::jsonb)"],
+    ['koto_merge_words', "select public.koto_merge_words('{}'::jsonb,'{}'::jsonb)"],
+    ['koto_merge_days', "select public.koto_merge_days('{}'::jsonb,'{}'::jsonb)"],
+  ];
+  for (const role of ['anon', 'authenticated']) {
+    await db.exec('reset role; set role ' + role + ';');
+    for (const [name, sql] of closed) {
+      let st = 'ok';
+      try { await one(sql + ' as d'); } catch (e) { st = 'denied'; }
+      ok('ДОТООД: ' + role + ' нь ' + name + '-ийг дуудаж ЧАДАХГҮЙ', st === 'denied', st);
+    }
+  }
+  /* Edge Function-ий зам нь АЖИЛЛАСАН ЗАЛГАА байх ёстой. Дээрх
+     хаалтууд `service_role`-ийг хөндвөл ярианы үнэлгээ чимээгүй
+     эвдэрнэ — хэрэглэгч «үнэлгээ ажиллахгүй» гэж мэдэхээс өмнө
+     квотын хамгаалалт бүхэлдээ fail-open болно. */
+  await db.exec('reset role; set role service_role;');
+  let svcGate = 'denied';
+  try {
+    const g = await one("select public.judge_gate('zz-dev', '', 1000, 1000) as d");
+    svcGate = g && g.d === '' ? 'ok' : 'unexpected:' + JSON.stringify(g && g.d);
+  } catch (e) { svcGate = 'denied'; }
+  ok('service_role нь judge_gate-ийг дуудаж ЧАДНА (Edge Function)', svcGate === 'ok', svcGate);
+  await db.exec("reset role; set request.jwt.claim.sub = '';");
 
   console.log('\n' + '─'.repeat(50));
   console.log('цэвэр: ' + pass + '   унасан: ' + fail);

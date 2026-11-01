@@ -89,12 +89,151 @@
   try { syncCode = localStorage.getItem(SYNC_KEY) || ''; } catch { syncCode = ''; }
   let pushTimer = null, syncBusy = false;
 
+  /* ── Google-ээр нэвтрэх (Supabase Auth, PKCE) ────────────────────
+   *
+   * ЯАГААД PKCE, implicit БИШ ВЭ: implicit flow нь токеныг
+   * `#access_token=…` гэж HASH-аар буцаана. Энэ апп нь hash-ийг
+   * РОУТЕРТ хэрэглэдэг (`location.hash = view`) тул буцаж ирмэгц
+   * `switchView()` түүнийг дарж бичиж, токен АЛГА болох байв. PKCE нь
+   * `?code=…` гэж query-гээр ирдэг — роутер хөндөхгүй.
+   *
+   * ЯАГААД SDK БИШ ВЭ: supabase-js нь ~40 КБ бөгөөд CDN хамаарал
+   * нэмнэ. Энэ апп bundler, npm багцгүй байх зарчимтай (v1-тэй ижил),
+   * мөн офлайн ажиллах ёстой. Auth API нь REST тул хэрэгтэй 4 дуудлагыг
+   * шууд бичих нь хамаарал нэмэхээс цэвэр.
+   */
+  const AUTH_KEY = 'koto-auth';
+  const PKCE_KEY = 'koto-pkce';
+  const AUTH_BASE = () => SYNC.url.replace(/\/+$/, '') + '/auth/v1';
+  let auth = null;
+  try { auth = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null'); } catch { auth = null; }
+  const signedIn = () => !!(auth && auth.refresh_token);
+  const authUser = () => (auth && auth.user) || null;
+
+  function authSave(a) {
+    auth = a;
+    try {
+      if (a) localStorage.setItem(AUTH_KEY, JSON.stringify(a));
+      else localStorage.removeItem(AUTH_KEY);
+    } catch {}
+  }
+
+  const b64url = buf => btoa(String.fromCharCode(...new Uint8Array(buf)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+  async function pkcePair() {
+    const bytes = new Uint8Array(32);
+    crypto.getRandomValues(bytes);
+    // Verifier нь [A-Za-z0-9-._~] мужид байх ёстой (RFC 7636) — base64url
+    // нь тэр мужид багтана.
+    const verifier = b64url(bytes);
+    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+    return { verifier: verifier, challenge: b64url(hash) };
+  }
+
+  /** Google руу үсэрнэ. Буцаж ирэхэд `authFinish()` үргэлжлүүлнэ. */
+  async function googleIn() {
+    if (!syncOn()) { toast('Синк тохируулагдаагүй.'); return; }
+    try {
+      const p = await pkcePair();
+      // Verifier нь ЭНЭ хөтөч дээр үлдэнэ — сервер түүнийг хэзээ ч
+      // харахгүй. Үүний ачаар хулгайлсан `?code=` нь дангаараа хүчингүй.
+      localStorage.setItem(PKCE_KEY, p.verifier);
+      const back = location.origin + location.pathname;
+      location.href = AUTH_BASE() + '/authorize?provider=google'
+        + '&redirect_to=' + encodeURIComponent(back)
+        + '&code_challenge=' + encodeURIComponent(p.challenge)
+        + '&code_challenge_method=s256';
+    } catch (e) { toast('Нэвтрэлт эхлүүлж чадсангүй.'); }
+  }
+
+  /** Google-ээс буцаж ирэхэд `?code=`-ийг токен болгон солино. */
+  async function authFinish() {
+    const q = new URLSearchParams(location.search);
+    const code = q.get('code');
+    const err = q.get('error') || q.get('error_description');
+    if (!code && !err) return false;
+    // URL-ийг ШУУД цэвэрлэнэ: хэрэглэгч хуудсыг дахин ачаалбал нэг
+    // удаагийн код хоёр дахь удаа илгээгдэж, алдаа гарах байв.
+    const verifier = (() => { try { return localStorage.getItem(PKCE_KEY) || ''; } catch { return ''; } })();
+    try { localStorage.removeItem(PKCE_KEY); } catch {}
+    history.replaceState(null, '', location.origin + location.pathname + location.hash);
+    if (err) { toast('Нэвтрэлт цуцлагдлаа.'); return false; }
+    if (!verifier) { toast('Нэвтрэлт тасарлаа. Дахин оролдоно уу.'); return false; }
+    try {
+      const r = await fetch(AUTH_BASE() + '/token?grant_type=pkce', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SYNC.key },
+        body: JSON.stringify({ auth_code: code, code_verifier: verifier }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      authSave(authShape(await r.json()));
+      return true;
+    } catch (e) { toast('Нэвтэрч чадсангүй. Дахин оролдоно уу.'); return false; }
+  }
+
+  /** Серверийн хариунаас ЗӨВХӨН хэрэгтэйг авна — бусдыг хадгалахгүй. */
+  function authShape(j) {
+    const u = (j && j.user) || {};
+    const md = u.user_metadata || {};
+    return {
+      access_token: j.access_token, refresh_token: j.refresh_token,
+      // `expires_at` нь секунд. Сервер буцаахгүй бол `expires_in`-ээс гаргана.
+      expires_at: j.expires_at || (Math.floor(Date.now() / 1000) + (j.expires_in || 3600)),
+      user: { email: u.email || md.email || '', name: md.full_name || md.name || '',
+              avatar: md.avatar_url || md.picture || '' },
+    };
+  }
+
+  // 400/401/403 нь «токен хүчингүй»; бусад (сүлжээ, 5xx) нь түр зуурын.
+  const authInvalid = e => /HTTP 40[013]/.test(String(e && e.message));
+
+  /** Хүчинтэй access token. Дуусах дөхвөл СЭРГЭЭНЭ. */
+  async function authToken() {
+    if (!signedIn()) return '';
+    // 60 секундын зай: дуудалт явж байх хооронд дуусахаас сэргийлнэ.
+    if (auth.access_token && (auth.expires_at || 0) - 60 > Date.now() / 1000)
+      return auth.access_token;
+    try {
+      const r = await fetch(AUTH_BASE() + '/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SYNC.key },
+        body: JSON.stringify({ refresh_token: auth.refresh_token }),
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      authSave(authShape(await r.json()));
+      return auth.access_token;
+    } catch (e) {
+      /* Сэргээлт УНАСАН. Сүлжээгүй байж ч болох тул бүртгэлийг
+         ЦУЦЛАХГҮЙ — локал ахиц хэвээр үлдэж, дараа дахин оролдоно.
+         Зөвхөн сервер «refresh_token хүчингүй» гэвэл цуцална. */
+      if (authInvalid(e)) authSave(null);
+      return '';
+    }
+  }
+
+  async function signOut() {
+    const t = signedIn() ? (auth.access_token || '') : '';
+    authSave(null);
+    try {
+      if (t) await fetch(AUTH_BASE() + '/logout', {
+        method: 'POST',
+        headers: { apikey: SYNC.key, Authorization: 'Bearer ' + t },
+      });
+    } catch {}
+    toast('Гарлаа. Ахиц энэ хөтөч дээр хэвээр.');
+  }
+
   async function rpc(fn, body) {
     /* Supabase-ийн ШИНЭ `sb_publishable_…` түлхүүр нь JWT БИШ тул
        `Authorization: Bearer` толгойд явуулбал задлах алдаа өгнө.
        Зөвхөн хуучин `eyJ…` JWT-д тэр толгой хэрэгтэй. */
     const headers = { 'Content-Type': 'application/json', apikey: SYNC.key };
-    if (/^eyJ/.test(SYNC.key)) headers.Authorization = 'Bearer ' + SYNC.key;
+    /* Нэвтэрсэн бол ХЭРЭГЛЭГЧИЙН токеныг явуулна — `koto_user_*` нь
+       `auth.uid()`-аар эзэмшигчийг шийддэг тул үүнгүй бол няцаана. */
+    const tok = await authToken();
+    if (tok) headers.Authorization = 'Bearer ' + tok;
+    else if (/^eyJ/.test(SYNC.key)) headers.Authorization = 'Bearer ' + SYNC.key;
     const r = await fetch(SYNC.url.replace(/\/+$/, '') + '/rest/v1/rpc/' + fn, {
       method: 'POST', headers: headers, body: JSON.stringify(body),
     });
@@ -142,10 +281,26 @@
   }
 
   /** Серверээс татаад ЛОКАЛТАЙ нийлүүлнэ. Дэлгэцийг шинэчилнэ. */
+  /** Аль зам ажиллаж байна вэ.
+   *
+   *  `user` — Google-ээр нэвтэрсэн: ахиц нь бүртгэлд уягдана, код
+   *           санах шаардлагагүй, ЭРХЭМ зам.
+   *  `code` — нууц код: Google бүртгэлгүй эсвэл нэвтрэхийг хүсэхгүй хүн.
+   *  ''     — аль нь ч үгүй: ахиц зөвхөн энэ хөтөч дээр.
+   *
+   *  Хоёулаа ЗЭРЭГ тохируулсан бол Google нь ялна — нэг түлхэлт хоёр
+   *  газар бичвэл аль нь үнэн болох нь тодорхойгүй болно. Хэрэглэгчид
+   *  аль нь ажиллаж байгааг синкийн цонх ил харуулна.
+   */
+  const syncMode = () => (!syncOn() ? '' : signedIn() ? 'user' : syncCode ? 'code' : '');
+
   async function syncPull(quiet) {
-    if (!syncOn() || !syncCode) return false;
+    const mode = syncMode();
+    if (!mode) return false;
     try {
-      const remote = await rpc('koto_get', { p_code: syncCode });
+      const remote = mode === 'user'
+        ? await rpc('koto_user_get', {})
+        : await rpc('koto_get', { p_code: syncCode });
       if (!remote) { if (!quiet) toast('Серверт ахиц хараахан алга.'); return false; }
       state = readStateFrom(kotoMerge(remote, state));
       save();
@@ -160,10 +315,13 @@
 
   /** Локал төлөвийг түлхээд СЕРВЕРИЙН уусгасан хариуг хүлээн авна. */
   async function syncPush(quiet) {
-    if (!syncOn() || !syncCode || syncBusy) return false;
+    const mode = syncMode();
+    if (!mode || syncBusy) return false;
     syncBusy = true;
     try {
-      const saved = await rpc('koto_put', { p_code: syncCode, p_data: state });
+      const saved = mode === 'user'
+        ? await rpc('koto_user_put', { p_data: state })
+        : await rpc('koto_put', { p_code: syncCode, p_data: state });
       if (saved) { state = readStateFrom(saved); save(); updateTop(); }
       if (!quiet) toast('Ахиц хадгалагдлаа.');
       return true;
@@ -176,7 +334,7 @@
   /* Хичээл дуусах, хариулт бүрд түлхэх нь хэрэгтэйгээс олон дуудалт
      болно — 4 секунд хүлээж нэгтгэнэ. Хуудас хаагдахад шууд түлхэнэ. */
   function syncSoon() {
-    if (!syncOn() || !syncCode) return;
+    if (!syncMode()) return;
     clearTimeout(pushTimer);
     pushTimer = setTimeout(() => syncPush(true), 4000);
   }
@@ -202,30 +360,74 @@
   /* ── Синкийн цонх ──────────────────────────────────────────────── */
   function syncMarkup() {
     const on = syncOn();
+    const mode = syncMode();
+    const user = mode === 'user' ? authUser() : null;
+    const name = String((user && (user.name || user.email)) || 'Хэрэглэгч');
+    const email = String((user && user.email) || '');
+    const initial = (Array.from(name.trim())[0] || 'Х').toLocaleUpperCase();
+    const avatar = user && typeof user.avatar === 'string' && user.avatar.indexOf('https://') === 0
+      ? user.avatar : '';
+    const codeOff = !on || mode === 'user';
     return `<div class="lesson-frame sync-frame">
       <div class="lesson-top">
-        <button class="icon-button" data-action="sync-close" aria-label="Хаах">${icon('close')}</button>
-        <strong style="flex:1">Ахицын синк</strong>
+        <button type="button" class="icon-button" data-action="sync-close" aria-label="Хаах">${icon('close')}</button>
+        <h1 class="sync-title">Ахицын синк</h1>
       </div>
-      <div class="exercise" style="padding-top:10px">
-        <p class="page-subtitle" style="margin-bottom:18px">
-          Нэг нууц кодоор утас, компьютер хоёрын ахицыг нийлүүлнэ.
-          Кодыг хэн ч мэдэхгүй байх ёстой — мэдсэн хүн ахицыг харж, өөрчилж чадна.
-        </p>
-        ${on ? '' : '<p class="page-subtitle" style="color:var(--danger)">Синк тохируулагдаагүй (<code>sync-config.js</code> хоосон). Ахиц зөвхөн энэ хөтөч дээр үлдэнэ.</p>'}
-        <label class="sync-label" for="sync-code">Нууц код (8–64 тэмдэгт)</label>
-        <input id="sync-code" class="search-input" style="padding-left:13px"
-               type="text" inputmode="latin" autocomplete="off" spellcheck="false"
-               minlength="8" maxlength="64"
-               placeholder="жишээ: naran-2026-koto" ${on ? '' : 'disabled'}>
-        <p class="sync-hint" id="sync-note"></p>
-        <div class="sync-actions">
-          <button class="primary-btn" data-action="sync-save" ${on ? '' : 'disabled'}>Хадгалах ба нийлүүлэх</button>
-          <button class="secondary-btn" data-action="sync-pull" ${on && syncCode ? '' : 'disabled'}>Серверээс татах</button>
-        </div>
-        <p class="sync-hint">Одоогийн ахиц: <strong>${state.xp} XP</strong> ·
-          ${state.completed.length} хичээл · ${Object.keys(state.words).length} үг.</p>
-      </div>
+      <section class="exercise sync-body" aria-label="Нэвтрэлт ба хадгалалт">
+        <p class="page-subtitle">Утас, компьютер дээрээ сурсан үгс болон хичээлийн ахицаа нийлүүлээрэй.</p>
+        ${mode === 'user' ? `
+        <section class="account-card" aria-label="Нэвтэрсэн бүртгэл">
+          <div class="account-avatar" aria-hidden="true">
+            <span class="avatar-fallback">${esc(initial)}</span>
+            ${avatar ? `<img src="${esc(avatar)}" alt="" width="52" height="52" referrerpolicy="no-referrer">` : ''}
+          </div>
+          <div class="account-details">
+            <strong class="account-name">${esc(name)}</strong>
+            ${email ? `<span class="account-email">${esc(email)}</span>` : ''}
+            <span class="sync-status">${icon('check')}Google бүртгэлээр нэвтэрсэн</span>
+          </div>
+          <button type="button" class="secondary-btn sign-out-button" data-action="sign-out">Гарах</button>
+        </section>
+        <p class="sync-hint">Ахиц таны Google бүртгэлтэй холбогдоно. Нууц кодын синк одоогоор идэвхгүй.</p>
+        ` : `
+        <section class="google-panel" aria-label="Google бүртгэлээр нэвтрэх">
+          <h2>Ахицаа хамт авч яваарай.</h2>
+          <p>Төхөөрөмж бүр дээрээ ижил Google бүртгэлээр нэвтрээрэй.</p>
+          <button type="button" class="google-signin" data-action="google-in" ${on ? '' : 'disabled'}>
+            <svg class="google-mark" viewBox="0 0 48 48" aria-hidden="true">
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65Z"/>
+              <path fill="#FBBC05" d="M10.53 28.59A14.41 14.41 0 0 1 9.75 24c0-1.59.27-3.13.78-4.59l-7.98-6.19A23.87 23.87 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19Z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z"/>
+            </svg>
+            <span>Google-ээр нэвтрэх</span>
+          </button>
+        </section>`}
+        ${on ? '' : '<p class="sync-unavailable" role="status">Синк одоогоор боломжгүй (<code>sync-config.js</code> хоосон). Ахиц зөвхөн энэ хөтөч дээр хадгалагдана.</p>'}
+        <details class="sync-code-section" ${mode === 'code' ? 'open' : ''}>
+          <summary><span>Нууц кодоор нийлүүлэх</span>
+            <span class="sync-code-state">${mode === 'user' ? 'Идэвхгүй' : mode === 'code' ? 'Ашиглаж байна' : 'Өөр сонголт'}</span></summary>
+          <div class="sync-code-body">
+            <p class="sync-hint" id="sync-code-help">${mode === 'user'
+              ? 'Кодоор үргэлжлүүлэхийн тулд Google бүртгэлээсээ эхлээд гарна уу.'
+              : 'Хоёр төхөөрөмж дээр ижил код оруулна. Кодыг мэдсэн хүн ахицыг харж, өөрчилж чадна.'}</p>
+            <fieldset class="sync-code-fields" ${codeOff ? 'disabled' : ''}>
+              <legend class="sr-only">Нууц кодын тохиргоо</legend>
+              <label class="sync-label" for="sync-code">Нууц код (8–64 тэмдэгт)</label>
+              <input id="sync-code" class="search-input sync-code-input" type="text" inputmode="latin"
+                     autocomplete="off" spellcheck="false" autocapitalize="none" minlength="8" maxlength="64"
+                     aria-describedby="sync-code-help sync-note" placeholder="жишээ: naran-2026-koto">
+              <div class="sync-actions">
+                <button type="button" class="secondary-btn" data-action="sync-save" ${codeOff ? 'disabled' : ''}>Хадгалах ба нийлүүлэх</button>
+                <button type="button" class="secondary-btn" data-action="sync-pull" ${!codeOff && syncCode ? '' : 'disabled'}>Серверээс татах</button>
+              </div>
+            </fieldset>
+          </div>
+        </details>
+        <p class="sync-hint sync-note" id="sync-note" role="status" aria-live="polite"></p>
+        <p class="sync-summary">Энэ хөтөч дээр: <strong>${state.xp} XP</strong> ·
+          ${state.completed.length} хичээл · ${Object.keys(state.words).length} үг</p>
+      </section>
     </div>`;
   }
 
@@ -245,6 +447,15 @@
     if (!btn) return;
     const act = btn.dataset.action;
     if (act === 'sync-close') { $('sync-dialog').close(); return; }
+    if (act === 'google-in') { btn.disabled = true; await googleIn(); return; }
+    if (act === 'sign-out') {
+      await signOut();
+      $('sync-content').innerHTML = syncMarkup();
+      initIcons();
+      if ($('sync-code')) $('sync-code').value = syncCode || '';
+      updateTop();
+      return;
+    }
     if (act === 'sync-save') {
       const v = ($('sync-code').value || '').trim();
       if (v.length < 8 || v.length > 64) {
@@ -281,6 +492,97 @@
     }
   });
 
+  /* ── Дуудлага ──────────────────────────────────────────────────────
+   * Үг бүрт `au` талбар бий (`data.js`) — урьдчилан бэлдсэн VOICEVOX
+   * бичлэгийн id. 312 үгийн 248 нь v1-ийн сангаас дахин ашиглагдсан
+   * (тэдний 2/3 нь ГАРААР шалгасан өргөлттэй), үлдсэн 64 нь `KT-…`.
+   * Файлууд v1-тэй НЭГ хавтсанд (`../audio/`) — хоёр апп ижил бичлэг
+   * хуваалцана, давхардуулж татахгүй.
+   *
+   * `speechSynthesis` нь ЗӨВХӨН нөөц: сүлжээгүй үед (v2-д service
+   * worker байхгүй — №29) эсвэл файл унавал. Утсан дээр найдваргүй,
+   * япон хоолойгүй систем дээр чимээгүй, өргөлтийг буруу уншина.
+   */
+  const AU_DIR='../audio/';
+  const canSpeak=!!window.speechSynthesis;
+  const JA_FEMALE=/haruka|ayumi|nanami|sayaka|mayu|aoi|shiori|kyoko|o-?ren|mizuki|google/i;
+  const JA_MALE=/ichiro|keita|otoya|hattori|daichi|naoki|takumi/i;
+  let jaVoice=null,lastUtterance=null;
+  function pickVoice(){
+    if(!canSpeak)return;
+    const ja=speechSynthesis.getVoices().filter(v=>/^ja\b|^ja[-_]/i.test(v.lang));
+    const score=v=>(JA_FEMALE.test(v.name)?2:0)-(JA_MALE.test(v.name)?3:0)+(/natural|online|neural/i.test(v.name)?1:0);
+    jaVoice=ja.reduce((best,v)=>(!best||score(v)>score(best)?v:best),null);
+  }
+  /* Ихэнх гар утас эхний дуунаас ӨМНӨ хэрэглэгчийн хүрэлт шаардана.
+     Эхний хүрэлт дотор чимээгүй бичлэг тоглуулж «түгжээг» тайлна —
+     үүнгүй бол iOS дээр програмаас дуудсан тоглуулалт бүр татгалзана. */
+  const SILENT_WAV='data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAwF0AAIC7AAACABAAZGF0YQIAAAAAAA==';
+  let player=null,speechUnlocked=false;
+  function ensurePlayer(){if(!player){player=new Audio();player.preload='auto';}return player;}
+  function unlockSpeech(){
+    if(speechUnlocked)return;speechUnlocked=true;
+    try{const p=ensurePlayer();p.src=SILENT_WAV;const r=p.play();if(r&&r.catch)r.catch(()=>{});}catch{}
+    if(!canSpeak)return;
+    try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u);}catch{}
+  }
+  document.addEventListener('pointerdown',unlockSpeech,{once:true});
+  document.addEventListener('keydown',unlockSpeech,{once:true});
+
+  function speak(text){
+    /* Бичлэг тоглож байхад TTS эхэлбэл хоёр дуу ДАВХЦАНА. */
+    try{if(player&&!player.paused)player.pause();}catch{}
+    if(!canSpeak||!text)return;
+    /* `なに／なん`-ийн хоёрдугаар хэлбэрийг, `～`-ийг хасна: хөтөчийн
+       хоолой тэдгээрийг үсгээр нь уншиж гажуудуулдаг. */
+    const clean=text.replace(/[／/].*$/,'').replace(/[（(].*?[）)]/g,'').replace(/[～〜]/g,'').trim();
+    if(!clean)return;
+    if(speechSynthesis.speaking||speechSynthesis.pending)speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(clean);
+    if(jaVoice)u.voice=jaVoice;
+    u.lang='ja-JP';u.rate=0.85;
+    lastUtterance=u;speechSynthesis.speak(u);
+  }
+
+  /* Одоо тоглож байгаа үгийн id — товчны төлөвийг зурахад хэрэглэнэ. */
+  let auNow=null;
+  function auPaint(){
+    for(const el of document.querySelectorAll('[data-au-for]'))
+      el.classList.toggle('playing',el.dataset.auFor===auNow);
+  }
+  function auSet(id){auNow=id;auPaint();}
+
+  /** Бичлэгийг тоглуулна. Унавал `onFail` — офлайн, эвдэрсэн файл, 404.
+   *  `play()`-ийн татгалзлыг ЗАЛГИХГҮЙ: үүнгүй бол апп чимээгүй үлдэж,
+   *  нөөц TTS рүү ч шилжихгүй байв (v1-д тохиолдсон). */
+  function playFile(id,onFail){
+    if(!id)return false;
+    try{
+      const p=ensurePlayer();
+      p.src=AU_DIR+id+'.mp3';
+      p.onended=()=>auSet(null);
+      const r=p.play();
+      if(r&&r.catch)r.catch(err=>{
+        // Дараагийн үг рүү шилжихэд өмнөхийг тасалдаг — тэр нь алдаа биш.
+        if(err&&(err.name==='AbortError'||err.name==='NotAllowedError'))return;
+        auSet(null);if(onFail)onFail();
+      });
+      return true;
+    }catch{return false;}
+  }
+
+  /** Үгийн дуудлага: бичлэг байвал бичлэг, эс бөгөөс хөтөчийн хоолой. */
+  function sayWord(w){
+    if(!w)return;
+    const wid=w.id||null;
+    if(auNow===wid){try{ensurePlayer().pause();}catch{}auSet(null);return;}
+    auSet(wid);
+    if(playFile(w.au,()=>speak(w.jp)))return;
+    auSet(null);speak(w.jp);
+  }
+  /** Сонсох боломж бий юу — бичлэг ЭСВЭЛ хоолой. */
+  const canHear=w=>!!(w&&(w.au||canSpeak));
+
   function dayWords(){const words=state.days[today()];return Array.isArray(words)?words:[];}
   function streak(){let day=today(),count=0;if(!Array.isArray(state.days[day])||!state.days[day].length)day=shiftDate(day,-1);while(Array.isArray(state.days[day])&&state.days[day].length){count++;day=shiftDate(day,-1);}return count;}
   function weakWords(){return allWords.filter(w=>state.words[w.id]&&state.words[w.id].weak);}
@@ -291,7 +593,12 @@
   function shuffle(items){const a=[...items];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
   function toast(message){$('toast').textContent=message;$('toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').hidden=true,3800);}
   function initIcons(){document.querySelectorAll('[data-icon]').forEach(el=>{el.innerHTML=icon(el.dataset.icon);});}
-  function updateTop(){$('xp').textContent=state.xp;$('streak').textContent=streak();$('review-dot').hidden=!dueWords().length;}
+  /* Толгойн avatar: нэвтрээгүй бол わ; нэвтэрсэн ч зураггүй бол нэрийн эхний үсэг.
+     innerHTML-ийг зөвхөн төлөв ӨӨРЧЛӨГДСӨН үед бичнэ — updateTop нь view бүрд дуудагддаг тул
+     зургийг дахин дахин үүсгэвэл анивчина. */
+  let avatarKey=null;
+  function updateAvatar(){const el=$('open-sync-top');if(!el)return;const u=syncMode()==='user'?authUser():null;const name=String((u&&(u.name||u.email))||'Хэрэглэгч');const photo=u&&typeof u.avatar==='string'&&u.avatar.indexOf('https://')===0?u.avatar:'';const key=u?name+'|'+photo:'';if(key===avatarKey)return;avatarKey=key;el.setAttribute('aria-label',u?name+' — нэвтрэлт ба ахицын синк':'Нэвтрэлт ба ахицын синк');el.innerHTML=u?`<span class="avatar-fallback" aria-hidden="true">${esc((Array.from(name.trim())[0]||'Х').toLocaleUpperCase())}</span>${photo?`<img src="${esc(photo)}" alt="" width="44" height="44" referrerpolicy="no-referrer">`:''}`:'<span class="avatar-fallback" lang="ja" aria-hidden="true">わ</span>';}
+  function updateTop(){$('xp').textContent=state.xp;$('streak').textContent=streak();$('review-dot').hidden=!dueWords().length;updateAvatar();}
   function switchView(next){view=['learn','words','review'].includes(next)?next:'learn';document.querySelectorAll('.view').forEach(el=>el.hidden=el.id!==`view-${view}`);document.querySelectorAll('.nav-item').forEach(el=>{el.classList.toggle('active',el.dataset.view===view);if(el.dataset.view===view)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});$('page-name').textContent={learn:'Миний сурах зам',words:'Миний үгийн сан',review:'Давтах цаг'}[view];if(view==='learn')renderHome();if(view==='words')renderWords();if(view==='review')renderReview();location.hash=view;updateTop();}
   function weekMarkup(){const d=today();const weekday=new Date(d+'T12:00:00Z').getUTCDay();const monday=shiftDate(d,-((weekday+6)%7));return ['Да','Мя','Лх','Пү','Ба','Бя','Ня'].map((label,i)=>{const date=shiftDate(monday,i),done=Array.isArray(state.days[date])&&state.days[date].length;return `<div class="week-day ${date===d?'today':''} ${done?'done':''}" aria-label="${label}${done?' хичээллэсэн':''}"><span>${done?'✓':label.slice(0,1)}</span>${label}</div>`;}).join('');}
   function renderHome(){
@@ -305,7 +612,9 @@
     <section class="side-card note-card"><h2 class="side-card-title">Таны түвшинд тохируулсан${icon('leaf')}</h2><div class="note-illustration"><span class="note-kana" lang="ja">あ</span><p>Кана уншиж чадна.<br>Латин уншлага хэрэггүй.</p></div><p>Япон бичлэгээс нь шууд уншиж, монгол утгаас нь санаж хэлж хэвшээрэй.</p><button class="small-link" data-view="words">Үгийн сангаа харах${icon('arrow')}</button></section>
     <section class="side-card"><h2 class="side-card-title">Нэг хичээлд</h2><div class="method-list"><div class="method"><span>01</span><div><strong>5 шинэ үгтэй танилцана</strong><small>Кана бичлэг + монгол утга</small></div></div><div class="method"><span>02</span><div><strong>Хоёр чиглэлд шалгана</strong><small>Утга болон япон үгийг сонгоно</small></div></div><div class="method"><span>03</span><div><strong>Өгүүлбэр эвлүүлнэ</strong><small>Үгсээ яриандаа ашиглана</small></div></div></div></section></aside></div>`;
   }
-  function wordCard(w){const learned=state.words[w.id];return `<article class="word-card"><p class="word-topic">${TOPICS[w.topic][0]}</p><h2 class="word-kana" lang="ja">${esc(w.jp)}</h2><p class="word-meaning">${esc(w.mn)}</p><span class="word-status ${learned?'learned':''}">${icon(learned&&learned.weak?'repeat':learned?'check':'book')}${learned?(learned.weak?'Дахин бататгана':'Үзсэн үг'):'Шинэ үг'}</span></article>`;}
+  // Дуудлагын товч: бичлэггүй үгэнд (canHear=false) ОГТ гаргахгүй — зохиомж түүнгүйгээр ч бүтэн.
+  function audioBtn(w,extra){return canHear(w)?`<button type="button" class="speak-button audio-button${extra||''}" data-action="say" data-au-for="${esc(w.id)}" aria-label="Дуудлагыг сонсох"><svg class="icon audio-speaker" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/></svg><span class="audio-bars" aria-hidden="true"><i></i><i></i><i></i></span></button>`:'';}
+  function wordCard(w){const learned=state.words[w.id];return `<article class="word-card"><p class="word-topic">${esc(TOPICS[w.topic][0])}</p><div class="word-heading"><h2 class="word-kana" lang="ja">${esc(w.jp)}</h2>${audioBtn(w)}</div><p class="word-meaning">${esc(w.mn)}</p><span class="word-status ${learned?'learned':''}">${icon(learned&&learned.weak?'repeat':learned?'check':'book')}${learned?(learned.weak?'Дахин бататгана':'Үзсэн үг'):'Шинэ үг'}</span></article>`;}
   function renderWords(){
     $('view-words').innerHTML=`<div class="eyebrow">ТАНЫ ҮГИЙН САН</div><h1 class="page-title">Үг бүр нэг алхам.</h1><p class="page-subtitle">${allWords.length} үг, хэллэг · ${Object.keys(state.words).filter(id=>wordById[id]).length} үг үзсэн · Латин уншлагагүй</p><div class="word-toolbar"><label class="search-wrap"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Япон эсвэл монгол үгээр хайх</span>${icon('search')}<input id="word-search" class="search-input" placeholder="Япон эсвэл монгол үгээр хайх…" autocomplete="off"></label><select id="word-topic" class="topic-select" aria-label="Сэдэв сонгох"><option value="all">Бүх сэдэв</option>${TOPICS.map((t,i)=>`<option value="${i}">${t[0]}</option>`).join('')}</select></div><p id="word-result-count" class="page-subtitle" role="status" style="margin:0 0 18px"></p><div id="word-results" class="word-grid"></div>`;
     filterWords();
@@ -318,8 +627,8 @@
   function startReview(){const studied=allWords.filter(w=>state.words[w.id]);const due=dueWords();const words=shuffle(due.length?due:studied).sort((a,b)=>Number(!!state.words[b.id].weak)-Number(!!state.words[a.id].weak)).slice(0,5);if(!words.length){startLesson(nextLesson().id);return;}session={review:true,lesson:null,words,queue:buildQueue(words,true,words[0].topic),pos:0,selected:null,selectedTokens:[],checked:false,correct:false,showHint:false,xp:0,firstAnswers:0,firstCorrect:0,results:{},started:Date.now(),completed:false};openSession();}
   function openSession(){renderSession();if(!$('lesson-dialog').open)$('lesson-dialog').showModal();$('lesson-dialog').scrollTop=0;}
   function exerciseMarkup(q){
-    if(q.type==='learn')return `<div class="exercise-type">${icon('leaf')}ШИНЭ ҮГ · ${session.pos+1} / ${session.words.length}</div><h1 id="exercise-title" tabindex="-1">Энэ үгтэй танилцаарай.</h1><div class="learn-card"><p class="learn-kana" lang="ja">${esc(q.word.jp)}</p><p class="learn-meaning">${esc(q.word.mn)}</p></div><p class="learn-hint">Канагаар нь чангаар уншаад, утгатай нь холбоорой.</p>`;
-    if(q.type==='quiz'){const forward=q.direction==='jp-mn';return `<div class="exercise-type">${icon(q.retry?'repeat':'target')}${q.retry?'ДАХИН БАТАТГАЯ':forward?'УТГЫГ НЬ ТАНИХ':'ЯПОНООР НЬ САНАХ'}</div><h1 id="exercise-title" tabindex="-1">${forward?'Ямар утгатай вэ?':'Японоор яаж хэлэх вэ?'}</h1><p class="exercise-prompt ${forward?'':'mn-prompt'}" ${forward?'lang="ja"':''}>${esc(forward?q.word.jp:q.word.mn)}</p><div class="choices" role="group" aria-label="Хариултууд">${q.options.map((option,i)=>{let cls=session.selected===i?' selected':'';if(session.checked&&option===q.correct)cls=' correct';else if(session.checked&&session.selected===i&&!session.correct)cls=' incorrect';return `<button class="choice ${forward?'':'jp-choice'}${cls}" data-action="choose" data-option="${i}" aria-pressed="${session.selected===i}" ${session.checked?'disabled':''} ${!forward?'lang="ja"':''}><span class="choice-index">${i+1}</span><span>${esc(option)}</span></button>`;}).join('')}</div>`;}
+    if(q.type==='learn')return `<div class="exercise-type">${icon('leaf')}ШИНЭ ҮГ · ${session.pos+1} / ${session.words.length}</div><h1 id="exercise-title" tabindex="-1">Энэ үгтэй танилцаарай.</h1><div class="learn-card"><p class="learn-kana" lang="ja">${esc(q.word.jp)}</p><p class="learn-meaning">${esc(q.word.mn)}</p>${canHear(q.word)?`<button type="button" class="speak-button audio-button audio-button-wide" data-action="say" data-au-for="${esc(q.word.id)}" aria-label="Дуудлагыг сонсох"><svg class="icon audio-speaker" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/></svg><span class="audio-bars" aria-hidden="true"><i></i><i></i><i></i></span><span class="audio-copy" aria-hidden="true"><span class="audio-idle">Сонсох</span><span class="audio-active">Тоглож байна</span></span></button>`:''}</div><p class="learn-hint">Канагаар нь чангаар уншаад, утгатай нь холбоорой.</p>`;
+    if(q.type==='quiz'){const forward=q.direction==='jp-mn';return `<div class="exercise-type">${icon(q.retry?'repeat':'target')}${q.retry?'ДАХИН БАТАТГАЯ':forward?'УТГЫГ НЬ ТАНИХ':'ЯПОНООР НЬ САНАХ'}</div><h1 id="exercise-title" tabindex="-1">${forward?'Ямар утгатай вэ?':'Японоор яаж хэлэх вэ?'}</h1><div class="quiz-prompt-card"><p class="exercise-prompt ${forward?'':'mn-prompt'}" ${forward?'lang="ja"':''}>${esc(forward?q.word.jp:q.word.mn)}</p>${forward||session.checked?audioBtn(q.word):''}</div><div class="choices" role="group" aria-label="Хариултууд">${q.options.map((option,i)=>{let cls=session.selected===i?' selected':'';if(session.checked&&option===q.correct)cls=' correct';else if(session.checked&&session.selected===i&&!session.correct)cls=' incorrect';return `<button class="choice ${forward?'':'jp-choice'}${cls}" data-action="choose" data-option="${i}" aria-pressed="${session.selected===i}" ${session.checked?'disabled':''} ${!forward?'lang="ja"':''}><span class="choice-index">${i+1}</span><span>${esc(option)}</span></button>`;}).join('')}</div>`;}
     return `<div class="exercise-type">${icon(q.retry?'repeat':'tiles')}${q.retry?'ДАХИН БАТАТГАЯ':'ҮГСЭЭ ХОЛБОЁ'}</div><h1 id="exercise-title" tabindex="-1">Өгүүлбэрийг эвлүүлээрэй.</h1><p class="exercise-prompt mn-prompt">${esc(q.sentence.mn)}</p><div class="sentence-answer" aria-label="Таны өгүүлбэр" aria-live="polite">${session.selectedTokens.length?session.selectedTokens.map(id=>{const token=q.tokens.find(t=>t.id===id);return `<button class="token" data-action="remove-token" data-token="${id}" ${session.checked?'disabled':''} lang="ja" aria-label="${esc(token.text)}, буцаах">${esc(token.text)}</button>`;}).join(''):'<span class="sentence-placeholder">Доорх үгсийг дарааллаар нь сонгоно уу.</span>'}</div><div class="token-bank" aria-label="Эвлүүлэх үгс">${q.tokens.map(token=>`<button class="token ${session.selectedTokens.includes(token.id)?'used':''}" data-action="token" data-token="${token.id}" ${session.checked||session.selectedTokens.includes(token.id)?'disabled':''} lang="ja">${esc(token.text)}</button>`).join('')}</div><button class="hint-btn" data-action="hint">${session.showHint?'Загварыг нуух':'Тусламж · өгүүлбэрийн загвар'}</button>${session.showHint?`<p class="sentence-hint" lang="ja">${q.sentence.tokens.map(esc).join('　')}</p>`:''}`;
   }
   function renderSession(){if(!session)return;if(session.completed){renderCompletion();return;}const q=session.queue[session.pos];const ready=q.type==='learn'||q.type==='quiz'&&session.selected!==null||q.type==='sentence'&&session.selectedTokens.length===q.tokens.length;const feedback=session.checked?`<div class="feedback ${session.correct?'':'incorrect'}" role="status"><span class="feedback-icon">${icon(session.correct?'check':'repeat')}</span><div><strong>${session.correct?'Зөв байна!':'Дахиад нэг тогтооё.'}</strong><small>${session.correct?(q.retry?'Сайн байна. Санаж хэллээ.':`+${q.type==='sentence'?20:10} XP`):`Зөв хариулт: <span lang="${q.type==='sentence'||q.direction==='mn-jp'?'ja':'mn'}">${esc(q.type==='sentence'?q.sentence.tokens.join(' '):q.correct)}</span>`}</small></div></div>`:`<p class="bottom-note">${q.type==='learn'?'Үгээ уншаад дараагийн алхамд ороорой.':q.type==='sentence'?'Үг дээр дарж нэмнэ. Сонгосон үг дээр дарж буцаана.':'Хариултаа сонгоод шалгаарай.'}</p>`;
@@ -348,6 +657,8 @@
     const button=event.target.closest('button,a');if(!button)return;
     if(button.dataset.view){switchView(button.dataset.view);return;}
     const action=button.dataset.action;if(!action)return;
+    if(action==='say'){sayWord(wordById[button.dataset.auFor]);return;}
+    if(action==='sync-open'){openSync();return;}
     if(action==='start')startLesson(button.dataset.lesson);
     else if(action==='review')startReview();
     else if(action==='topic'){state.selectedTopic=Number(button.dataset.topic);save();renderHome();$('current-unit').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'center'});}
@@ -372,14 +683,29 @@
   window.addEventListener('hashchange',()=>{const next=location.hash.slice(1);if(next!==view)switchView(next);});
   const syncBtn=$('open-sync');if(syncBtn)syncBtn.addEventListener('click',openSync);
   initIcons();switchView(location.hash.slice(1)||'learn');
+  /* Хоолойн жагсаалт хөтөч дээр ХОЖУУ дүүрдэг тул нэг удаа уншаад
+     өнгөрвөл `jaVoice` үргэлж null болно. */
+  pickVoice();
+  if(canSpeak&&typeof speechSynthesis.addEventListener==='function')
+    speechSynthesis.addEventListener('voiceschanged',pickVoice);
   /* Код хадгалагдсан бол нээгдмэгц ТАТНА: нөгөө төхөөрөмж дээр
      хийсэн ахиц шууд харагдана. Чимээгүй — холболт байхгүй байж
      болно, тэр нь алдаа биш. */
-  if(syncCode)syncPull(true);
+  /* Google-ээс буцаж ирсэн бол `?code=`-ийг ЭХЛЭЭД токен болгоно —
+     тэгэхгүй бол `syncMode()` нь хуучин төлөвөөр шийдэж, шинэ
+     нэвтрэлт анзаарагдахгүй. Локал ахиц байвал татахдаа НЭГДЭНЭ
+     (`kotoMerge`), тиймээс нэвтрэхээс өмнөх хөдөлмөр үрэгдэхгүй. */
+  (async () => {
+    const fresh = await authFinish();
+    if (syncMode()) await syncPull(true);
+    if (fresh) { updateTop(); switchView(view); toast('Нэвтэрлээ. Ахиц нийлүүлэгдлээ.'); }
+  })();
   /* ТЕСТИЙН гарц. `kotoMerge` нь `koto_put` дахь SQL-тэй ИЖИЛ дүрэмтэй
      байх ёстой — хоёр нь салж явбал нэг талын ахиц алдагдана.
      Апп нь IIFE тул гаднаас хандах өөр арга алга. Зөвхөн ЛОКАЛ
      өгөгдөл тул нийтэд хортой зүйл нээхгүй. */
   window.KOTO={merge:kotoMerge,state:()=>state,pull:syncPull,push:syncPush,
-    code:()=>syncCode,on:syncOn};
+    code:()=>syncCode,on:syncOn,mode:syncMode,
+    words:()=>allWords,say:sayWord,hear:canHear,playing:()=>auNow,
+    signedIn:signedIn,user:authUser,signOut:signOut,googleIn:googleIn};
 })();
