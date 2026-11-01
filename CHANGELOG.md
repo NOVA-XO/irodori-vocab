@@ -50,6 +50,14 @@ side-card нуух → хоёр багана дүүргэх), `?.` синтак�
 
 Урхи: headless Chrome системийн бараан сэдвийг өвлөдөг — STATE.md §2.85.
 
+### Google-ээр нэвтрэлт АМЬД дээр ажиллав
+
+Google Cloud client `KOTO web` + Supabase provider + URL Configuration.
+Эзэн nova-xo.github.io/irodori-vocab/v2/ дээр нэвтэрч батлав. Замд 4 урхи
+(2SV, Publish-ийн privacy шаардлага, хөтчийн автомат бөглөлт Client
+ID/Secret-д, Supabase-ийн чимээгүй `localhost:3000` fallback) —
+STATE.md §2.86. `v2/README.md`-ийн тохиргооны заавар бүтнээр шинэчлэгдэв.
+
 ### `v2/privacy.html` — Google-ийн Publish-д шаардлагатай
 
 Google Auth Platform нь External аппыг Testing-ээс гаргахад privacy policy

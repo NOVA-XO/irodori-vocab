@@ -64,17 +64,25 @@ localStorage-д хадгалагдана.
 RLS-тэй, бичилт зөвхөн `koto_user_put()`-ээр бөгөөд тэр нь JWT-ийн
 `sub`-аар эзэмшигчийг шийднэ — клиент `user_id`-г огт дамжуулахгүй.
 
-**Тохируулах** (нэг удаа, сангийн эзэн):
+**Тохируулах** (нэг удаа, сангийн эзэн) — 2026-11-01-д бүтнээр хийгдсэн:
 
-1. Google Cloud Console → Credentials → OAuth client ID (Web).
-   Authorized redirect URI: `https://<проект>.supabase.co/auth/v1/callback`
-2. Supabase → Authentication → Providers → Google → Client ID + Secret, Enable.
-3. Supabase → Authentication → URL Configuration → Redirect URLs-д сайтын
-   хаяг (`…/v2/`) ба локал тестийн хаяг (`http://127.0.0.1:8765/v2/`).
-   Google Auth Platform → Branding: Authorized domain `nova-xo.github.io`, home page
-   `…/v2/`, privacy policy `…/v2/privacy.html` — эс бөгөөс Audience → **Publish app**
-   саарал хэвээр (2026-11-01-д батлагдсан).
+1. Google Cloud Console (2SV заавал) → Google Auth Platform:
+   - **Branding:** App name `KOTO`, support email, Authorized domain
+     `nova-xo.github.io`, home page `…/v2/`, privacy ба terms → `…/v2/privacy.html`.
+     **Лого бүү оруул** — verification дуудна.
+   - **Audience:** External → **Publish app** (privacy холбоосгүй бол саарал).
+   - **Clients:** Web application, JavaScript origins хоосон, redirect URI
+     `https://<проект>.supabase.co/auth/v1/callback`. «AI-powered agent» ☐.
+2. Supabase → Authentication → Sign In / Providers → Google → Client ID +
+   Secret, Enable. ⚠️ Хөтөч эдгээр талбарыг хадгалсан имэйл/нууц үгээр
+   өөрөө бөглөдөг — арилгаж оруул.
+3. Supabase → Authentication → URL Configuration: **Site URL** `…/v2/`
+   (анхдагч `localhost:3000` — үлдээвэл нэвтэрсний дараа тийш унана),
+   Redirect URLs `https://nova-xo.github.io/irodori-vocab/v2/**` ба
+   `http://127.0.0.1:8765/v2/**`.
 4. SQL Editor → `../SUPABASE.sql` бүтнээр.
+
+Урхиудын дэлгэрэнгүй: `../docs/STATE.md` §2.86.
 
 Тохируулаагүй бол апп УНАХГҮЙ — нууц кодын зам ба локал
 хадгалалт хэвээр ажиллана.
