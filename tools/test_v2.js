@@ -53,10 +53,11 @@ function getJSON(path, method) {
 
   const ws = new WebSocket(tab.webSocketDebuggerUrl);
   await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
-  let id = 0; const w = new Map(); const errs = [];
+  let id = 0; const w = new Map(); const errs = []; let onPaused = null;
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
     if (m.id && w.has(m.id)) { const x = w.get(m.id); w.delete(m.id); m.error ? x.rej(new Error(JSON.stringify(m.error))) : x.res(m.result); }
+    if (m.method === 'Fetch.requestPaused' && onPaused) onPaused(m.params);
     if (m.method === 'Runtime.exceptionThrown') {
       const d = m.params.exceptionDetails;
       errs.push(String((d.exception || {}).description || d.text).slice(0, 200));
@@ -396,6 +397,157 @@ function getJSON(path, method) {
   ok('Google-ээр нэвтэрсэн үед footer «Google бүртгэлд» гэнэ (өмнө худлаа «хөтөч дээр»)',
     sav2 && sav2.mode === 'user' && /Google/.test(sav2.text) && !/хөтөч дээр/.test(sav2.text), JSON.stringify(sav2));
   await ev(`localStorage.removeItem('koto-auth');`);
+
+  console.log('\n[4в] Ахиц: бичиг (кана/ханз), катакана, өдрийн XP, нүдэн график');
+  const reload = async () => { await send('Page.reload', {}); for (let i = 0; i < 40; i++) { await sleep(150); try { if (await ev('return !!window.KOTO')) break; } catch (e) {} } await sleep(400); };
+  await ev(`localStorage.removeItem('koto-auth');localStorage.removeItem('koto-script');localStorage.setItem('koto-irodori-v1', JSON.stringify({version:1,xp:0,completed:[],words:{},days:{},selectedTopic:0}));location.hash='learn';`);
+  await reload();
+  /* Хичээлийг туулна: асуултад зөв (эсвэл `wrongFirst` бол эхнийхэд буруу). */
+  const RUN = `const S=ms=>new Promise(r=>setTimeout(r,ms));const K=window.KOTO;
+    for(let i=0;i<120;i++){if(document.querySelector('.completion'))break;const s=K.numTest.session(),q=s.queue[s.pos];
+      if(q.type==='learn'){document.querySelector('[data-action=next]').click();await S(25);continue;}
+      if(q.type==='quiz'){const idx=q.options.indexOf(q.correct);const pickIdx=window.__wrong?(idx+1)%4:idx;window.__wrong=false;document.querySelectorAll('.choice')[pickIdx].click();}
+      else{for(let k=0;k<30;k++){const b=document.querySelector('.token-bank .token:not(.used):not([disabled])');if(!b)break;b.click();await S(5);}}
+      await S(15);document.querySelector('[data-action=check]').click();await S(25);document.querySelector('[data-action=next]').click();await S(25);}
+    return !!document.querySelector('.completion');`;
+  const sc = await ev(`
+    const S = ms => new Promise(r => setTimeout(r, ms)), K = window.KOTO, P = K.profile, out = {};
+    location.hash = 'words'; await S(200);
+    out.kanaFirst = document.querySelector('.word-card .word-kana').innerHTML;
+    location.hash = 'profile'; await S(200);
+    out.profileShown = !document.getElementById('view-profile').hidden;
+    document.querySelector('[data-action=script][data-script=kanji]').click(); await S(150);
+    out.script = P.script(); out.stored = localStorage.getItem('koto-script');
+    location.hash = 'words'; await S(200);
+    out.ruby = document.querySelectorAll('#word-results ruby.jp-face').length;
+    out.first = document.querySelector('.word-card .word-kana ruby') ? document.querySelector('.word-card .word-kana ruby').firstChild.textContent : '';
+    const inp = document.getElementById('word-search'); inp.value = '何'; inp.dispatchEvent(new Event('input', { bubbles: true })); await S(60);
+    out.searchKj = document.querySelectorAll('#word-results .word-card').length;
+    inp.value = ''; inp.dispatchEvent(new Event('input', { bubbles: true }));
+    const sel = document.getElementById('word-topic'); sel.value = 'kata'; sel.dispatchEvent(new Event('change', { bubbles: true })); await S(60);
+    out.kata = document.querySelectorAll('#word-results .word-card').length;
+    out.kataMarked = document.querySelectorAll('#word-results .word-card.is-kata').length;
+    out.kataAll = P.kata().length;
+    sel.value = 'all'; sel.dispatchEvent(new Event('change', { bubbles: true }));
+    return out;`);
+  ok('ханзын горим: тохиргоо хадгалагдана, үгийн карт ruby (なに → 何), кана горимд ruby-гүй',
+    sc.profileShown && sc.script === 'kanji' && sc.stored === 'kanji' && sc.ruby === 289 && sc.first === '何' && !/ruby/.test(sc.kanaFirst),
+    JSON.stringify(sc));
+  ok('үгийн сан: ханзаар хайна (何), «Катакана үгс» шүүлтүүр 34 / бүгд .is-kata',
+    sc.searchKj > 5 && sc.kata === 34 && sc.kataMarked === 34 && sc.kataAll === 34, JSON.stringify(sc));
+
+  const ls = await ev(`
+    const S = ms => new Promise(r => setTimeout(r, ms)), K = window.KOTO;
+    location.hash = 'learn'; await S(200);
+    document.querySelector('[data-action=start]').click(); await S(300);
+    const s = K.numTest.session(), kq = s.queue.filter(q => q.direction === 'kj-jp');
+    const out = { kjq: kq.length, kjWords: s.words.filter(w => w.kj).length,
+      kjOk: kq.every(q => q.options.length === 4 && new Set(q.options).size === 4 && q.options.includes(q.correct) && q.correct === q.word.jp) };
+    out.done = await (async () => { ${RUN} })();
+    out.sessXp = s.xp; const st = K.state(); out.xp = st.xp; out.xpd = st.xpd; out.dev = K.profile.dev();
+    document.querySelector('[data-action=finish]').click(); await S(200);
+    return out;`);
+  const xd = ls && ls.xpd && Object.values(ls.xpd)[0];
+  ok('ханзын горимд хичээл: ханзтай үг бүрд «ханзаар унших» асуулт (4 өөр сонголт)',
+    ls.kjq === ls.kjWords && ls.kjq > 0 && ls.kjOk, JSON.stringify({ kjq: ls.kjq, kjWords: ls.kjWords, kjOk: ls.kjOk }));
+  ok('өдрийн XP: хичээлийн XP өнөөдрийн төхөөрөмжийн тоолуурт (нийт XP-тэй ижил)',
+    ls.done && ls.sessXp > 0 && ls.xp === ls.sessXp && Object.keys(ls.xpd).length === 1 && xd && xd[ls.dev] === ls.sessXp && /^[a-z0-9]{8}$/.test(ls.dev),
+    JSON.stringify({ done: ls.done, sessXp: ls.sessXp, xp: ls.xp, xpd: ls.xpd, dev: ls.dev }));
+
+  const kn = await ev(`
+    const S = ms => new Promise(r => setTimeout(r, ms)), K = window.KOTO;
+    const before = JSON.parse(JSON.stringify(K.state()));
+    location.hash = 'profile'; await S(200);
+    document.querySelector('[data-action=kana-lesson][data-kana="0"]').click(); await S(300);
+    const s = K.numTest.session();
+    const out = { title: s.title, learn: s.queue.filter(q => q.type === 'learn').length,
+      kh: s.queue.filter(q => q.direction === 'kata-hira'), hk: s.queue.filter(q => q.direction === 'hira-kata') };
+    out.khOk = out.kh.length === 5 && out.kh.every(q => q.options.length === 4 && q.options.every(o => /^[\\u3041-\\u309f]+$/.test(o)));
+    out.hkOk = out.hk.length === 5 && out.hk.every(q => q.options.length === 4 && q.options.every(o => /^[\\u30a1-\\u30fa]+$/.test(o)));
+    out.chars = s.words.map(k => k.jp).join('');
+    delete out.kh; delete out.hk;
+    window.__wrong = true;
+    out.done = await (async () => { ${RUN} })();
+    const st = K.state(), today = Object.keys(st.xpd)[0];
+    out.kana = Object.keys(st.kana).sort().join(',');
+    out.weak = Object.values(st.kana).filter(r => r.weak).length;
+    out.wordsSame = JSON.stringify(Object.keys(st.words).sort()) === JSON.stringify(Object.keys(before.words).sort());
+    out.completedSame = st.completed.length === before.completed.length;
+    out.dayK = st.days[today].filter(id => /^K-/.test(id)).length;
+    out.xpGrew = st.xp > before.xp && st.xpd[today][K.profile.dev()] === st.xp;
+    document.querySelector('[data-action=finish]').click(); await S(200);
+    const p = K.profile.data();
+    out.p = { seen: p.kana.seen, l0: p.kana.lessons[0].seen + '/' + p.kana.lessons[0].total, lessons: p.kana.lessons.length, total: p.kana.total };
+    return out;`);
+  ok('катакана үсгийн хичээл: ア–オ, 5 сурах карт, катакана→хирагана 5, хирагана→катакана 5',
+    kn.chars === 'アイウエオ' && kn.learn === 5 && kn.khOk && kn.hkOk, JSON.stringify(kn));
+  ok('катакана ахиц `kana`-д (үг, хичээлийн жагсаалт хөндөгдөөгүй), streak-д тоологдоно, алдсан нь сул',
+    kn.done && kn.kana === 'K-001,K-002,K-003,K-004,K-005' && kn.weak === 1 && kn.wordsSame && kn.completedSame && kn.dayK === 5 && kn.xpGrew,
+    JSON.stringify(kn));
+  ok('ахицын өгөгдөл: катакана 5/107, 21 хичээл, эхний хичээл 5/5',
+    kn.p.seen === 5 && kn.p.total === 107 && kn.p.lessons === 21 && kn.p.l0 === '5/5', JSON.stringify(kn.p));
+
+  /* Нүдэн график ба streak: зохиомол түүх. Өдрийн XP бичигдэхээс өмнөх
+     идэвхтэй өдөр — legacy (түвшин 1, XP зохиохгүй). */
+  await ev(`const t=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ulaanbaatar',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    const d=n=>{const x=new Date(t+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);};
+    const days={};for(const n of [-400,-12,-11,-10,-3,-1,0])days[d(n)]=['0:0'];days['bad-key']=['0:1'];
+    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:0,completed:[],words:{},days,xpd:{[d(-1)]:{a1:60},[d(0)]:{a1:200,b2:150},[d(-3)]:{a1:-5}},selectedTopic:0}));
+    window.__t=t;`);
+  await reload();
+  const hm = await ev(`
+    const t=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ulaanbaatar',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    const d=n=>{const x=new Date(t+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);};
+    const P=window.KOTO.profile,p=P.data(),cells=p.heat.weeks.flat(),at=k=>cells.find(c=>c.date===k)||{};
+    const lastCol=p.heat.weeks[52];
+    return { weeks:p.heat.weeks.length, cols7:p.heat.weeks.every(c=>c.length===7), monday:new Date(p.heat.weeks[0][0].date+'T12:00:00Z').getUTCDay(),
+      todayInLast:lastCol.some(c=>c.date===t), futureOk:cells.every(c=>c.future===(c.date>t)), futureZero:cells.filter(c=>c.future).every(c=>c.level===0),
+      today:at(t), y:at(d(-1)), m3:at(d(-3)), m10:at(d(-10)), m2:at(d(-2)), old:cells.some(c=>c.date===d(-400)),
+      streak:p.streak, longest:p.longest, active:p.activeDays, todayXp:p.todayXp, hasLegacy:p.heat.hasLegacy };`);
+  ok('нүдэн график: 53 долоо хоног × 7, Даваагаас, өнөөдөр сүүлийн баганад, ирээдүй хоосон',
+    hm.weeks === 53 && hm.cols7 && hm.monday === 1 && hm.todayInLast && hm.futureOk && hm.futureZero, JSON.stringify(hm));
+  ok('нүдний түвшин: өнөөдөр 2 төхөөрөмж 350 XP → 4, өчигдөр 60 → 2, XP-гүй идэвхтэй өдөр → 1 legacy, сөрөг XP тоологдохгүй',
+    hm.today.xp === 350 && hm.today.level === 4 && hm.y.level === 2 && hm.m10.level === 1 && hm.m10.legacy && hm.m3.xp === 0 && hm.m3.legacy && hm.m2.level === 0 && hm.todayXp === 350 && hm.hasLegacy,
+    JSON.stringify({ today: hm.today, y: hm.y, m3: hm.m3, m10: hm.m10, m2: hm.m2 }));
+  ok('streak 2 (өнөөдөр+өчигдөр), хамгийн урт 3 (-12…-10), хог түлхүүр алгасна, 400 хоногийн өмнөх график гадна',
+    hm.streak === 2 && hm.longest === 3 && hm.active === 7 && !hm.old, JSON.stringify({ streak: hm.streak, longest: hm.longest, active: hm.active, old: hm.old }));
+
+  /* Avatar → ахицын хуудас; синкийн цонх хуудсан дээрх товчоор. */
+  const av = await ev(`const S=ms=>new Promise(r=>setTimeout(r,ms));location.hash='learn';await S(150);
+    document.getElementById('open-sync-top').click();await S(200);const prof=location.hash==='#profile'&&!document.getElementById('view-profile').hidden;
+    document.querySelector('#view-profile [data-action=sync-open]').click();await S(250);const open=document.getElementById('sync-dialog').open;
+    document.querySelector('[data-action=sync-close]').click();await S(100);return {prof,open,nav:document.querySelectorAll('.nav-item[data-view=profile]').length};`);
+  ok('avatar ба «Ахиц» цэс → ахицын хуудас; синкийн цонх тэндээс нээгдэнэ', av.prof && av.open && av.nav === 1, JSON.stringify(av));
+
+  /* Хуучин SQL (`xpd`, `kana`-г мэдэхгүй) түлхэлтийн хариунаас тэднийг хаявал
+     локал өгөгдөл УСТАХГҮЙ — клиент хариуг локалтай нийлүүлдэг. Серверийн
+     хариуг CDP Fetch-ээр дуурайна (жинхэнэ сервер рүү бичихгүй). */
+  await send('Fetch.enable', { patterns: [{ urlPattern: '*rpc/koto_put*', requestStage: 'Request' }] });
+  let putSeen = null;
+  onPaused = p => {
+    if (p.request.method !== 'POST') { send('Fetch.continueRequest', { requestId: p.requestId }); return; }
+    const body = JSON.parse(p.request.postData || '{}'), old = Object.assign({}, body.p_data);
+    putSeen = { xpd: !!(old.xpd && Object.keys(old.xpd).length), kana: !!(old.kana && Object.keys(old.kana).length) };
+    delete old.xpd; delete old.kana;
+    send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: 200,
+      responseHeaders: [{ name: 'Content-Type', value: 'application/json' }, { name: 'Access-Control-Allow-Origin', value: '*' }],
+      body: Buffer.from(JSON.stringify(old)).toString('base64') });
+  };
+  const sp = await ev(`const s=JSON.parse(localStorage.getItem('koto-irodori-v1'));s.kana={'K-001':{passes:1,weak:false,due:'2099-01-01',last:'2026-11-01'}};
+    localStorage.setItem('koto-irodori-v1',JSON.stringify(s));localStorage.setItem('koto-sync-code','zz-test-xpd-kana-01');location.hash='learn';return true;`);
+  await reload();
+  /* Эерэг XP-ийг (өдөр|төхөөрөмж=xp) жагсааж харьцуулна — сөрөгийг уусгалт зөв хаяна. */
+  const sp2 = await ev(`const K=window.KOTO,pos=x=>Object.keys(x).sort().flatMap(d=>Object.keys(x[d]).sort().filter(v=>x[d][v]>0).map(v=>d+'|'+v+'='+x[d][v])).join(',');
+    const before={xpd:pos(K.state().xpd),kana:Object.keys(K.state().kana).length};
+    const r=await K.push(true);const st=K.state(),saved=JSON.parse(localStorage.getItem('koto-irodori-v1'));
+    return {mode:K.mode(),r,before,xpd:pos(st.xpd),kana:Object.keys(st.kana).length,savedXpd:pos(saved.xpd||{}),savedKana:Object.keys(saved.kana||{}).length};`);
+  onPaused = null;
+  await send('Fetch.disable', {});
+  await ev(`localStorage.removeItem('koto-sync-code');`);
+  ok('хуучин SQL `xpd`/`kana`-г хаяж буцаасан ч локал хэвээр (түлхэлтийн хариуг нийлүүлнэ)',
+    sp && sp2.mode === 'code' && sp2.r === true && putSeen && putSeen.xpd && putSeen.kana && sp2.before.kana === 1 && sp2.before.xpd.split(',').length === 3
+      && sp2.xpd === sp2.before.xpd && sp2.kana === 1 && sp2.savedXpd === sp2.before.xpd && sp2.savedKana === 1,
+    JSON.stringify({ sp2, putSeen }));
 
   console.log('\n[5] Консол');
   ok('барьсангүй уналт гараагүй', errs.length === 0, errs.slice(0, 3).join(' | '));

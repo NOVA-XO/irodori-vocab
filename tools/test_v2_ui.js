@@ -70,6 +70,11 @@ function getJSON(path, method) {
   const nav = async (url) => { await send('Page.navigate', { url }); for (let i = 0; i < 40; i++) { await sleep(150); try { if (await ev('return !!window.KOTO')) break; } catch (e) {} } await sleep(400); };
   const dark = on => send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: on ? 'dark' : 'light' }] });
   const size = (wd, ht, mobile) => send('Emulation.setDeviceMetricsOverride', { width: wd, height: ht, deviceScaleFactor: 1, mobile: !!mobile });
+  /* 11-01-ээс avatar нь ахицын хуудас нээнэ; синкийн цонх тэр хуудсан дээрх товчоор. */
+  const openSync = async () => {
+    await ev("document.getElementById('open-sync-top').click();"); await sleep(250);
+    await ev("document.querySelector('#view-profile [data-action=sync-open]').click();"); await sleep(300);
+  };
   const TAP = `const bad=[];for(const b of document.querySelectorAll('button')){const r=b.getBoundingClientRect();if(!r.width&&!r.height)continue;if(r.width<44||r.height<44)bad.push((b.className||b.id||b.tagName).toString().slice(0,40)+' '+Math.round(r.width)+'x'+Math.round(r.height));}return bad;`;
 
   await dark(false);   // OS-ийн сэдвийг ӨВЛӨХГҮЙ (§2.85)
@@ -155,7 +160,7 @@ function getJSON(path, method) {
   await ev("document.querySelector('[data-action=discard]').click();"); await sleep(200);
 
   console.log('\n[D] Синкийн цонх — нэвтрээгүй');
-  await ev("document.getElementById('open-sync-top').click();"); await sleep(300);
+  await openSync();
   ok('цонх нээгдэв (толгойн avatar-аар)', await ev("return document.getElementById('sync-dialog').open"));
   ok('Google товч бий, идэвхтэй', await ev("const b=document.querySelector('.google-signin');return !!b&&!b.disabled"));
   ok('нууц код хэсэг ХААЛТТАЙ (details), шошго «Өөр сонголт»', await ev("const d=document.querySelector('details.sync-code-section');return d&&!d.open&&/Өөр сонголт/.test(d.textContent)"));
@@ -170,7 +175,7 @@ function getJSON(path, method) {
   await nav(SITE);
   ok('mode=user', await ev("return window.KOTO.mode()==='user'"), await ev("return window.KOTO.mode()"));
   ok('толгойн avatar = нэрийн эхний үсэг «Б»', await ev("return document.getElementById('open-sync-top').textContent.trim()==='Б'"), await ev("return document.getElementById('open-sync-top').textContent.trim()"));
-  await ev("document.getElementById('open-sync-top').click();"); await sleep(300);
+  await openSync();
   ok('бүртгэлийн карт: нэр, имэйл', await ev("const c=document.querySelector('.account-card');return !!c&&/Бат Болд/.test(c.textContent)&&/bat@example.com/.test(c.textContent)"));
   ok('Google товч АЛГА', await ev("return !document.querySelector('.google-signin')"));
   ok('кодын хэсэг идэвхгүй (fieldset disabled, «Идэвхгүй»)', await ev("const f=document.querySelector('.sync-code-fields');const d=document.querySelector('details.sync-code-section');return f&&f.disabled&&/Идэвхгүй/.test(d.textContent)"));
@@ -182,7 +187,7 @@ function getJSON(path, method) {
   await nav(SITE);
   ok('зурагтай бол толгойд <img>, ард нь үсэг', await ev("const b=document.getElementById('open-sync-top');return !!b.querySelector('img')&&b.textContent.trim()==='Б'"));
   ok('http:// зураг НЯЦААГДАНА (зөвхөн https)', await ev("const a=JSON.parse(localStorage.getItem('koto-auth'));a.user.avatar='http://evil/x.png';localStorage.setItem('koto-auth',JSON.stringify(a));return true;") && (await nav(SITE), await ev("return !document.getElementById('open-sync-top').querySelector('img')")));
-  await ev("document.getElementById('open-sync-top').click();"); await sleep(300);
+  await openSync();
   await ev("document.querySelector('[data-action=sign-out]').click();"); await sleep(1200);
   ok('Гарах → Google товч буцаж ирнэ, толгой わ', await ev("return !!document.querySelector('.google-signin')&&document.getElementById('open-sync-top').textContent.trim()==='わ'&&window.KOTO.mode()!=='user'"));
   await ev("document.querySelector('[data-action=sync-close]').click();");
@@ -195,7 +200,7 @@ function getJSON(path, method) {
   ok('mascot-ийн сүүдэр бараан болов', await ev("const e=document.querySelector('.hero-art svg ellipse');return getComputedStyle(e).fill==='rgb(12, 22, 11)'"), await ev("return getComputedStyle(document.querySelector('.hero-art svg ellipse')).fill"));
   await shot('home-dark-1400');
   await ev("location.hash='words';"); await sleep(300); await shot('words-dark-1400');
-  await ev("document.getElementById('open-sync-top').click();"); await sleep(300);
+  await openSync();
   ok('Google товч бараан сэдэвт ЦАГААН хэвээр', await ev("return getComputedStyle(document.querySelector('.google-signin')).backgroundColor==='rgb(255, 255, 255)'"));
   await shot('sync-dark-1400');
   await ev("document.querySelector('[data-action=sync-close]').click();");
@@ -212,7 +217,7 @@ function getJSON(path, method) {
   await ev("location.hash='words';"); await sleep(300);
   ok('390: үгийн сангийн товч бүр 44px+', (await ev(TAP)).length === 0, JSON.stringify(await ev(TAP)).slice(0, 400));
   await shot('words-390');
-  await ev("document.getElementById('open-sync-top').click();"); await sleep(300); await shot('sync-390');
+  await openSync(); await shot('sync-390');
   ok('390: синк цонхны товч бүр 44px+', (await ev(TAP)).length === 0, JSON.stringify(await ev(TAP)).slice(0, 400));
   await ev("document.querySelector('[data-action=sync-close]').click();");
   await ev("location.hash='learn';"); await sleep(200);
@@ -265,6 +270,75 @@ function getJSON(path, method) {
   ok('320×640: шалгасны дараа «Үргэлжлүүлэх» дэлгэцэнд бүтэн харагдана', cont.bottom <= cont.vh && cont.top >= 0, JSON.stringify(cont));
   await shot('lesson-incorrect-320');
   await ev(LEAVE);
+
+  console.log('\n[I] Ахицын хуудас (Astra-гийн загвар, 11-01)');
+  /* Бодит харагдахын тулд 60 хоногийн түүх: өдрийн XP, сүүлийн 9 хоногт
+     streak, хуучин XP-гүй идэвхтэй өдөр (legacy), үзсэн үг ба катакана. */
+  const SEED = `const t=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ulaanbaatar',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    const d=n=>{const x=new Date(t+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);};
+    const days={},xpd={},words={},kana={},ws=window.KOTO.words();
+    for(let n=-60;n<=0;n++){if(n>-9||(n*7)%5===0){days[d(n)]=[ws[(-n)%40].id];if(n>-45)xpd[d(n)]={a1:[30,80,130,200,340][(-n)%5]};}}
+    ws.slice(0,40).forEach((w,i)=>{words[w.id]={passes:i%4,weak:i%7===0,due:d(i%3),last:d(-1),attempts:3,misses:i%7===0?1:0};});
+    window.KOTO.profile.kana().slice(0,12).forEach((k,i)=>{kana[k.id]={passes:i%4,weak:i===3,due:d(1),last:d(-1)};});
+    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:5230,completed:['0-0','0-1','0-2','1-0'],words,kana,days,xpd,selectedTopic:0}));
+    localStorage.removeItem('koto-script');location.hash='profile';`;
+  const PCHECK = `const v=document.getElementById('view-profile'),sc=document.getElementById('profile-heat-scroll');
+    const cols=[...v.querySelectorAll('.heat-grid .heat-col')],last=cols[cols.length-1];const sr=sc?sc.getBoundingClientRect():null,lr=last?last.getBoundingClientRect():null;
+    const bad=[];for(const b of v.querySelectorAll('button')){const r=b.getBoundingClientRect();if(!r.width&&!r.height)continue;if(r.width<44||r.height<44)bad.push((b.className||b.dataset.action||'').toString().slice(0,30)+' '+Math.round(r.width)+'x'+Math.round(r.height));}
+    return {shown:!v.hidden,cells:v.querySelectorAll('.heat-grid .heat-cell').length,cols:cols.length,page:document.documentElement.scrollWidth,vw:innerWidth,
+      lastVisible:!!(sr&&lr&&lr.right<=sr.right+1&&lr.left>=sr.left-1),scrolled:sc?Math.round(sc.scrollLeft):null,max:sc?sc.scrollWidth-sc.clientWidth:null,small:bad,
+      kana:v.querySelectorAll('[data-action=kana-lesson]').length,seg:v.querySelectorAll('[data-action=script]').length,sync:!!v.querySelector('[data-action=sync-open]'),
+      legacy:v.querySelectorAll('.heat-grid .heat-cell[data-legacy]').length,...HEATX()};
+    function HEATX(){const dr=v.querySelector('.heat-days').getBoundingClientRect(),tr=v.querySelector('.heat-timeline').getBoundingClientRect();
+      const lb=[...v.querySelectorAll('.heat-month b:not(.is-cut)')].map(b=>({t:b.textContent.trim(),r:b.getBoundingClientRect()}));
+      const clash=[];for(let i=1;i<lb.length;i++)if(lb[i].r.left<lb[i-1].r.right+2)clash.push(lb[i-1].t+'|'+lb[i].t);
+      const under=lb.filter(x=>x.r.left<dr.right-1).map(x=>x.t),past=lb.filter(x=>x.r.right>tr.right+1).map(x=>x.t);
+      const rgb=c=>{const n=(c.match(/[0-9.]+/g)||[]).map(Number);return c.startsWith('color(')?n.slice(0,3).map(x=>x*255):n.slice(0,3);};
+      const col=[0,1,2,3,4].map(k=>rgb(getComputedStyle(v.querySelector('.p-heat-scale .heat-cell[data-level="'+k+'"]')).backgroundColor));
+      const dist=(x,y)=>Math.round(Math.hypot(x[0]-y[0],x[1]-y[1],x[2]-y[2]));
+      const kg=v.querySelector('.p-kana-groups'),kb=[...v.querySelectorAll('.p-kana-group[open] .p-kana-lesson')].map(b=>Math.round(b.getBoundingClientRect().left));
+      return {labels:lb.length,clash,under,past,daysIn:dr.left>=sr.left-1&&dr.right<=sr.right,gap0:dist(col[0],col[1]),gapMin:Math.min(...[1,2,3].map(k=>dist(col[k],col[k+1]))),
+        kanaH:Math.round(kg.getBoundingClientRect().height),kanaCols:new Set(kb).size};}`;
+  const toProfile = async () => { await nav(SITE); await ev("location.hash='profile'"); await sleep(500); };
+  await size(1400, 900, false); await dark(false); await nav(SITE); await ev(SEED); await toProfile();
+  const p1 = await ev(PCHECK);
+  ok('1400: хуудас, 53×7 нүд, 21 катакана хичээл, бичгийн 2 товч, синкийн товч, legacy нүд',
+    p1.shown && p1.cells === 371 && p1.cols === 53 && p1.kana === 21 && p1.seg === 2 && p1.sync && p1.legacy > 0, JSON.stringify(p1));
+  ok('1400: хэвтээ гүйлт 0, товч бүр 44px+', p1.page <= 1400 && p1.small.length === 0, JSON.stringify({ page: p1.page, small: p1.small }));
+  /* 11-01-ний нүдээр хийсэн хяналт: «10-р са11-р сар» давхцал, 1–2-р шат хоосон нүднээс ялгагдахгүй. */
+  ok('1400: сарын шошго давхцахгүй, графикаас хальж гарахгүй; хоосон→1-р шат ялгарна (RGB зай ≥65), хөрш шат ≥40',
+    p1.labels >= 8 && !p1.clash.length && !p1.under.length && !p1.past.length && p1.gap0 >= 65 && p1.gapMin >= 40, JSON.stringify({ labels: p1.labels, clash: p1.clash, under: p1.under, past: p1.past, gap0: p1.gap0, gapMin: p1.gapMin }));
+  await shot('profile-1400');
+  for (const [w, h, dk] of [[390, 844, false], [390, 844, true], [320, 640, false]]) {
+    await size(w, h, true); await dark(dk); await toProfile();
+    const pm = await ev(PCHECK);
+    const tag = w + (dk ? ' бараан' : '');
+    ok(tag + ': хуудасны хэвтээ гүйлт 0, товч бүр 44px+', pm.page <= w && pm.small.length === 0, JSON.stringify({ page: pm.page, small: pm.small }));
+    ok(tag + ': график хамгийн сүүлийн долоо хоног руу гүйлгэгдсэн', pm.lastVisible && pm.max > 0 && Math.abs(pm.scrolled - pm.max) <= 1, JSON.stringify({ lastVisible: pm.lastVisible, scrolled: pm.scrolled, max: pm.max }));
+    ok(tag + ': гарагийн багана гүйлгэсэн ч харагдана, сарын шошго давхцахгүй/хагас тасрахгүй, XP-ийн шат ялгарна',
+      pm.daysIn && pm.labels >= 2 && !pm.clash.length && !pm.under.length && !pm.past.length && pm.gap0 >= 65 && pm.gapMin >= 40, JSON.stringify({ daysIn: pm.daysIn, labels: pm.labels, clash: pm.clash, under: pm.under, past: pm.past, gap0: pm.gap0, gapMin: pm.gapMin }));
+    ok(tag + ': катаканы хичээл 2 баганаар, хэсэг ≤ 900px (өмнө 1742)', pm.kanaCols === 2 && pm.kanaH <= 900, JSON.stringify({ kanaCols: pm.kanaCols, kanaH: pm.kanaH }));
+    await shot('profile-' + w + (dk ? '-dark' : ''));
+  }
+  /* Бичиг солиход: фокус сонгосон товч дээр, графикийн гүйлт хэвээр. */
+  await size(390, 844, true); await dark(false); await toProfile();
+  const sw = await ev(`const S=ms=>new Promise(r=>setTimeout(r,ms));const sc=document.getElementById('profile-heat-scroll');sc.scrollLeft=120;await S(50);const before=Math.round(sc.scrollLeft);
+    const b=document.querySelector('#view-profile [data-action=script][data-script=kanji]');b.focus();b.click();await S(200);
+    const sc2=document.getElementById('profile-heat-scroll'),ae=document.activeElement;
+    return {before,after:Math.round(sc2.scrollLeft),focus:ae&&ae.dataset?ae.dataset.script:null,pressed:document.querySelector('#view-profile [data-action=script][data-script=kanji]').getAttribute('aria-pressed'),script:window.KOTO.profile.script()};`);
+  ok('бичиг солиход: шинэ товч aria-pressed, фокус түүн дээр, графикийн гүйлт хэвээр',
+    sw.script === 'kanji' && sw.pressed === 'true' && sw.focus === 'kanji' && sw.before === 120 && sw.after === 120, JSON.stringify(sw));
+  /* Ханзын горимд 320-д хичээл: ruby гарна, хэвтээ гүйлт 0. */
+  await size(320, 640, true); await nav(SITE); await sleep(300);
+  /* 7-р сэдэв: 32 үгийн 25 нь ханзтай (0-р сэдэвт 20-иос 2 л). */
+  await ev(`const s=JSON.parse(localStorage.getItem('koto-irodori-v1'));s.selectedTopic=6;localStorage.setItem('koto-irodori-v1',JSON.stringify(s));`); await nav(SITE); await sleep(300);
+  const kl = await ev(`const S=ms=>new Promise(r=>setTimeout(r,ms));location.hash='learn';await S(200);document.querySelector('[data-action=start][data-lesson="6-0"]').click();await S(400);
+    const out=[];for(let i=0;i<5;i++){const c=document.querySelector('.learn-card');if(!c)break;out.push({ruby:!!c.querySelector('ruby.jp-face'),dw:document.getElementById('lesson-dialog').scrollWidth});document.querySelector('[data-action=next]').click();await S(80);}
+    return out;`);
+  ok('320 ханзын горим: сурах картад ruby, хичээлд хэвтээ гүйлт 0', kl.some(x => x.ruby) && kl.every(x => x.dw <= 320), JSON.stringify(kl));
+  await shot('lesson-kanji-320');
+  await ev(LEAVE);
+  await ev(`localStorage.removeItem('koto-script');`);
 
   console.log('\n[H] Консол');
   ok('барьсангүй уналт гараагүй (' + errs.length + ')', errs.length === 0, errs.join(' | ').slice(0, 400));

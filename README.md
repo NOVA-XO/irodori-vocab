@@ -495,9 +495,9 @@ python tools/build_audio.py --speaker 2
 ```
 python -m http.server 8765          # ЭХЛЭЭД — үүнгүй бол test_ui унана
 node tools/test_ui.js               # 494 шалгуур, бодит Chrome дотор
-node tools/test_sql.js              # 147 — SUPABASE.sql, PGlite дээр
-node tools/test_v2.js               #  39 — v2 (KOTO): UI, синк, тооны шалгалт, хариултын мэдрэмж
-node tools/test_v2_ui.js            #  52 — v2 UI: сонсох карт, Google, бараан сэдэв, 44px, утасны хариултын самбар
+node tools/test_sql.js              # 153 — SUPABASE.sql, PGlite дээр
+node tools/test_v2.js               #  51 — v2 (KOTO): UI, синк, тооны шалгалт, хариултын мэдрэмж, ахиц/ханз/катакана
+node tools/test_v2_ui.js            #  69 — v2 UI: сонсох карт, Google, бараан сэдэв, 44px, утасны хариултын самбар, ахицын хуудас
 node tools/test_attack.js           #  24 — халдлагын хувилбарууд
 node tools/test_answers.js          # хариулт шалгагч
 node tools/test_judge.js --local    # ярианы үнэлгээний чанар (сүлжээгүй)
@@ -545,6 +545,7 @@ tools/build_exam.py                入門 шалгалтын асуулт -> dat
 tools/build_exam_el1.py            初級1 шалгалт -> data/exam-el1.json (ruby-г эхнийхээс зээлнэ)
 tools/kanji_mn*.json               ханзны монгол утга (гараар, түвшин тус бүрээр)
 tools/build_audio.py               VOICEVOX -> audio/*.mp3 (өргөлтийг номоор)
+tools/build_v2_kanji.py            v2-ийн ханз (`kj`, v1 + tools/v2_kanji_manual.tsv) ба v2/kana.js
 tools/test_answers.js              хариулт шалгагчийн тест (node)
 tools/test_audio.py                дуудлагын дүрмийн тест (VOICEVOX асаалттай)
 tools/test_sql.js                  SUPABASE.sql-ийн тест бодит Postgres дээр (PGlite)

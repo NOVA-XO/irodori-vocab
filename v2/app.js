@@ -64,9 +64,9 @@
   // Үгийн тоо сэдэв нэмэгдэхэд HTML-д хатуу бичсэнээс зөрөхгүй.
   document.querySelectorAll('.nav-count').forEach(el=>{el.textContent=allWords.length;});
   const STORAGE_KEY='koto-irodori-v1';
-  function emptyState(){return {version:1,xp:0,completed:[],words:{},days:{},selectedTopic:0};}
+  function emptyState(){return {version:1,xp:0,completed:[],words:{},kana:{},days:{},xpd:{},selectedTopic:0};}
   let storageWorks=true;
-  function readState(){try{const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!s||s.version!==1)return emptyState();return {version:1,xp:Math.max(0,Number(s.xp)||0),completed:Array.isArray(s.completed)?s.completed.filter(id=>lessonById[id]):[],words:s.words&&typeof s.words==='object'&&!Array.isArray(s.words)?s.words:{},days:s.days&&typeof s.days==='object'&&!Array.isArray(s.days)?s.days:{},selectedTopic:Number.isInteger(s.selectedTopic)&&DATA[s.selectedTopic]?s.selectedTopic:0};}catch{return emptyState();}}
+  function readState(){try{const s=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!s||s.version!==1)return emptyState();return {version:1,xp:Math.max(0,Number(s.xp)||0),completed:Array.isArray(s.completed)?s.completed.filter(id=>lessonById[id]):[],words:s.words&&typeof s.words==='object'&&!Array.isArray(s.words)?s.words:{},days:s.days&&typeof s.days==='object'&&!Array.isArray(s.days)?s.days:{},kana:s.kana&&typeof s.kana==='object'&&!Array.isArray(s.kana)?s.kana:{},xpd:s.xpd&&typeof s.xpd==='object'&&!Array.isArray(s.xpd)?s.xpd:{},selectedTopic:Number.isInteger(s.selectedTopic)&&DATA[s.selectedTopic]?s.selectedTopic:0};}catch{return emptyState();}}
   let state=readState();
   let view='learn', session=null, toastTimer=null;
   function today(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ulaanbaatar',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());return ['year','month','day'].map(t=>p.find(x=>x.type===t).value).join('-');}
@@ -281,23 +281,51 @@
       if (last) out.last = last;
       return out;
     };
-    const words = {};
-    for (const key of new Set([...Object.keys(obj(a.words)), ...Object.keys(obj(b.words))])) {
-      const w = mergeWord(obj(obj(a.words)[key]), obj(obj(b.words)[key]));
-      if (Object.keys(w).length) words[key] = w;
-    }
+    const keysOf = (x, y) => [...new Set([...Object.keys(obj(x)), ...Object.keys(obj(y))])];
+    // Үг ба катакана үсэг (`kana`) ИЖИЛ дүрмээр — SQL хоёуланд нь `koto_merge_words`.
+    const mergeMap = (x, y) => {
+      const out = {};
+      for (const key of keysOf(x, y)) {
+        const w = mergeWord(obj(obj(x)[key]), obj(obj(y)[key]));
+        if (Object.keys(w).length) out[key] = w;
+      }
+      return out;
+    };
+    // Өдрийн түлхүүр зөвхөн `YYYY-MM-DD`, ХАМГИЙН СҮҮЛИЙН 800 өдөр. Өмнө SQL
+    // нь ЭРЭМБЭГҮЙ `limit 400`-аар санамсаргүй өдрийг хаядаг, клиент
+    // хязгааргүй байв — 400 өдөр хичээллэсэн хүний streak хоёр талд зөрнө.
+    const DAY = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+    const newestDays = (x, y) => keysOf(x, y).filter(k => DAY.test(k)).sort().reverse();
     // Өдрийн ахиц: нэг өдөр хоёр төхөөрөмж дээр ӨӨР үг давтсан байж
-    // болно — нэгдэл авна.
+    // болно — нэгдэл авна. Хоосон өдрийг хаяна (SQL ч мөн адил).
     const days = {};
-    for (const key of new Set([...Object.keys(obj(a.days)), ...Object.keys(obj(b.days))])) {
-      days[key] = [...new Set([...arr(obj(a.days)[key]), ...arr(obj(b.days)[key])])];
+    for (const key of newestDays(a.days, b.days)) {
+      if (Object.keys(days).length >= 800) break;
+      const ids = [...new Set([...arr(obj(a.days)[key]), ...arr(obj(b.days)[key])])];
+      if (ids.length) days[key] = ids;
+    }
+    // Өдрийн XP — төхөөрөмж бүрийн тоолуур `{өдөр: {төхөөрөмж: xp}}`. Нэг өдөр
+    // хоёр төхөөрөмж дээр цуглуулсан XP-ийн НИЙЛБЭР нь үнэн; төхөөрөмж бүрт
+    // max авдаг тул дахин нийлүүлэхэд давхар тоологдохгүй. Өдөрт 16
+    // төхөөрөмж хүртэл (түлхүүрийн эрэмбээр) — хог өгөгдлийн хамгаалалт.
+    const xpd = {};
+    for (const key of newestDays(a.xpd, b.xpd)) {
+      if (Object.keys(xpd).length >= 800) break;
+      const x = obj(obj(a.xpd)[key]), y = obj(obj(b.xpd)[key]), o = {};
+      for (const dev of keysOf(x, y).sort()) {
+        const v = Math.max(num(x[dev]), num(y[dev]));
+        if (v > 0 && Object.keys(o).length < 16) o[dev] = v;
+      }
+      if (Object.keys(o).length) xpd[key] = o;
     }
     return {
       version: 1,
       xp: Math.max(num(a.xp), num(b.xp)),
       completed: [...new Set([...arr(a.completed), ...arr(b.completed)])],
-      words: words,
+      words: mergeMap(a.words, b.words),
+      kana: mergeMap(a.kana, b.kana),
       days: days,
+      xpd: xpd,
       // UI сонголт — ХОЙД нь (push хийж буй төхөөрөмжийнх).
       selectedTopic: Number.isInteger(b.selectedTopic) ? b.selectedTopic
                    : Number.isInteger(a.selectedTopic) ? a.selectedTopic : 0,
@@ -346,7 +374,10 @@
       const saved = mode === 'user'
         ? await rpc('koto_user_put', { p_data: state })
         : await rpc('koto_put', { p_code: syncCode, p_data: state });
-      if (saved) { state = readStateFrom(saved); save(); updateTop(); }
+      // Хариуг локалтай НИЙЛҮҮЛНЭ, шууд солихгүй: (1) илгээлт явж байх
+      // хооронд дуусгасан хичээл устахгүй; (2) SQL хуучин бол мэдэхгүй
+      // талбарыг (`xpd`, `kana`) хаяж буцаадаг — солибол локал ч устана.
+      if (saved) { state = readStateFrom(kotoMerge(saved, state)); save(); updateTop(); }
       syncFailed = false; paintSave();
       if (!quiet) toast('Ахиц хадгалагдлаа.');
       return true;
@@ -659,6 +690,89 @@
   function saveKind(){const m=syncMode();return m?(syncFailed?'error':m):'local';}
   function paintSave(){const el=$('save-status');if(el)el.textContent=SAVE_TEXT[saveKind()][0];}
 
+  /* ── Бичиг (кана/ханз), катакана, өдрийн XP, ахицын хуудас ─────────
+     Логик (Claude); markup/CSS-ийг Astra өгнө.
+
+     Бичиг нь төхөөрөмж бүрийн тохиргоо (`koto-script`, дууны тохиргоо шиг).
+     Ханзын горимд `kj`-тэй үг ханзаар, уншлагатайгаа харагдана; хичээлд
+     «ханзаар унших» асуулт нэмэгдэнэ. `kj`-г `tools/build_v2_kanji.py`
+     гаргадаг — 432-оос 289. */
+  const SCRIPT_KEY='koto-script';
+  let scriptMode=(()=>{try{return localStorage.getItem(SCRIPT_KEY)==='kanji'?'kanji':'kana';}catch{return 'kana';}})();
+  const kanjiOn=()=>scriptMode==='kanji';
+  function setScript(m){scriptMode=m==='kanji'?'kanji':'kana';try{localStorage.setItem(SCRIPT_KEY,scriptMode);}catch{}}
+  /* Сонголтын текст нь кана мөр тул ханзыг үгээр нь олно. Ижил канатай
+     хоёр үг өөр ханзтай бол ханз ХАРУУЛАХГҮЙ — аль нь болохыг мэдэхгүй. */
+  const kjByJp=new Map();
+  for(const w of allWords){const k=w.kj||'';if(!kjByJp.has(w.jp))kjByJp.set(w.jp,k);else if(kjByJp.get(w.jp)!==k)kjByJp.set(w.jp,'');}
+  /** Япон бичлэгийн HTML: ханзын горимд ханз + уншлага, эс бөгөөс кана. */
+  function face(jp,kj){
+    if (kj === undefined) kj = kjByJp.get(jp) || '';
+    if (!kanjiOn() || !kj) return esc(jp);
+    return `<span class="jp-face-line" lang="ja"><ruby class="jp-face">${esc(kj)}<rp>（</rp><rt>${esc(jp)}</rt><rp>）</rp></ruby></span>`;
+  }
+  /** «Ханзаар унших»: ханзыг уншлагагүй харуулж, 4 кана уншлагаас сонгоно.
+   *  Хуурамч хариулт нь мөн ханзтай үгсийн уншлага, ойр сэдвээс эхэлнэ. */
+  function kjQuiz(word){const pool=allWords.filter(w=>w.kj&&w.id!==word.id&&w.jp!==word.jp&&w.kj!==word.kj);const near=shuffle(pool.filter(w=>w.topic===word.topic)),far=shuffle(pool.filter(w=>w.topic!==word.topic));const opts=[];for(const w of near.concat(far)){if(!opts.includes(w.jp))opts.push(w.jp);if(opts.length===3)break;}return {type:'quiz',word,direction:'kj-jp',correct:word.jp,options:shuffle([word.jp,...opts]),retry:false};}
+
+  /* Катакана үг: катакана ҮСЭГ агуулсан бүх үг (モンゴルご г.м. холимог ч орно). */
+  const KATA_RE=/[ァ-ヺ]/;
+  const isKata=w=>KATA_RE.test(w.jp);
+  const kataWords=allWords.filter(isKata);
+  function newSession(extra){return Object.assign({lesson:null,review:true,words:[],queue:[],pos:0,selected:null,selectedTokens:[],checked:false,correct:false,showHint:false,xp:0,firstAnswers:0,firstCorrect:0,results:{},started:Date.now(),completed:false},extra);}
+  /** 5 катакана үг: алдсан/хугацаа болсон → үзээгүй → бусад. Үзээгүйд сурах карт. */
+  function startKataWords(){const d=today(),r=w=>state.words[w.id];const rank=w=>!r(w)?1:r(w).weak?0:r(w).due<=d?0:2;const words=shuffle(kataWords).sort((a,b)=>rank(a)-rank(b)).slice(0,5);if(!words.length)return;session=newSession({title:'Катакана үгс',words,queue:[...words.filter(w=>!r(w)).map(word=>({type:'learn',word})),...buildQueue(words,true)]});openSession();}
+
+  /* Катакана үсэг (`v2/kana.js`, v1-ийн kana.json-аас 107). Хариулт нь
+     хирагана (латингүй зарчим); `mn` нь кирилл уншлага. Ахиц `state.kana`-д,
+     үгийнхтэй ижил хуваарьтай; `days`-д id нь орж streak-д тоологдоно. */
+  const KANA=(window.KOTO_KANA||[]).map(k=>({id:k.id,jp:k.kata,hira:k.hira,mn:k.hira+' · '+k.mn,au:k.id,g:k.g,kana:true}));
+  const kanaById=Object.fromEntries(KANA.map(k=>[k.id,k]));
+  /* Мөр мөрөөр: gojuon ア…ヤ(3)…ワヲン(3), dakuten 5×5, yoon 2 мөр (6) тутам. */
+  const kanaLessons=(()=>{const rows={gojuon:[5,5,5,5,5,5,5,3,5,3],dakuten:[5,5,5,5,5],yoon:[6,6,6,6,6,6]};const out=[];for(const g of Object.keys(rows)){const list=KANA.filter(k=>k.g===g);let p=0;for(const n of rows[g].concat([Infinity])){const chars=list.slice(p,p+n);p+=chars.length;if(chars.length)out.push({group:g,chars,title:chars[0].jp+'–'+chars[chars.length-1].jp});}}return out;})();
+  function kanaQuiz(k,dir){const key=dir==='kata-hira'?'hira':'jp',correct=k[key],pool=KANA.filter(x=>x.id!==k.id);const near=shuffle(pool.filter(x=>x.g===k.g)),far=shuffle(pool.filter(x=>x.g!==k.g));const opts=[];for(const x of near.concat(far)){if(x[key]!==correct&&!opts.includes(x[key]))opts.push(x[key]);if(opts.length===3)break;}return {type:'quiz',word:k,direction:dir,correct,options:shuffle([correct,...opts]),retry:false};}
+  const kanaQueue=(chars,learn)=>[...(learn?chars.map(word=>({type:'learn',word})):[]),...shuffle(chars.flatMap(k=>[kanaQuiz(k,'kata-hira'),kanaQuiz(k,'hira-kata')]))];
+  function startKana(i){const L=kanaLessons[i];if(!L)return;session=newSession({kana:true,title:'Катакана · '+L.title,words:L.chars,queue:kanaQueue(L.chars,true)});openSession();}
+  function kanaDue(){const d=today();return KANA.filter(k=>{const r=state.kana[k.id];return r&&(r.weak||r.due<=d);});}
+  /** 8 хүртэл: хугацаа болсон/алдсан, эс бөгөөс үзсэнээс санамсаргүй. */
+  function startKanaReview(){const due=kanaDue(),seen=KANA.filter(k=>state.kana[k.id]);const chars=shuffle(due.length?due:seen).slice(0,8);if(!chars.length){startKana(0);return;}session=newSession({kana:true,title:'Катакана давтлага',words:chars,queue:kanaQueue(chars,false)});openSession();}
+
+  /* Өдрийн XP: төхөөрөмж бүрийн тоолуур (`kotoMerge`-ийн тайлбар). */
+  const DEV_KEY='koto-dev';
+  const devId=(()=>{try{let d=localStorage.getItem(DEV_KEY);if(!/^[a-z0-9]{8}$/.test(d||'')){d=(Math.random().toString(36).slice(2)+'00000000').slice(0,8);localStorage.setItem(DEV_KEY,d);}return d;}catch{return 'local';}})();
+  function addDayXp(n){n=Number(n)||0;if(n<=0)return;const d=today();const day=state.xpd[d]&&typeof state.xpd[d]==='object'&&!Array.isArray(state.xpd[d])?state.xpd[d]:(state.xpd[d]={});day[devId]=(Number(day[devId])||0)+n;}
+  function dayXp(d){const o=state.xpd[d];let s=0;if(o&&typeof o==='object')for(const v of Object.values(o))if(Number(v)>0)s+=Number(v);return s;}
+  const isDay=k=>/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(k);
+  const activeDay=d=>Array.isArray(state.days[d])&&state.days[d].length>0;
+  /* Түвшин: нэг хичээл ≈ 120 XP (5 үг × 2 асуулт × 10 + өгүүлбэр 20). */
+  const heatLevel=xp=>xp>=300?4:xp>=150?3:xp>=50?2:xp>0?1:0;
+  /** GitHub шиг: `n` долоо хоног (багана = Да…Ня), сүүлийнх нь энэ долоо хоног.
+   *  XP бичигдэж эхлэхээс өмнөх идэвхтэй өдөр (`days` бий, `xpd` алга) —
+   *  түвшин 1, `legacy` (XP-г зохиохгүй). */
+  function heatWeeks(n){n=n||53;const t=today(),wd=new Date(t+'T12:00:00Z').getUTCDay(),start=shiftDate(t,-((wd+6)%7)-7*(n-1)),weeks=[];for(let w=0;w<n;w++){const col=[];for(let i=0;i<7;i++){const date=shiftDate(start,w*7+i),future=date>t,xp=future?0:dayXp(date),on=!future&&activeDay(date);col.push({date,xp,active:on,future,legacy:on&&!xp,level:xp?heatLevel(xp):on?1:0});}weeks.push(col);}return weeks;}
+  function longestStreak(){let best=0,run=0,prev=null;for(const d of Object.keys(state.days).filter(k=>isDay(k)&&activeDay(k)).sort()){run=prev&&shiftDate(prev,1)===d?run+1:1;if(run>best)best=run;prev=d;}return best;}
+  /* «Бататгасан» = алдаагүй, дараалан 3+ удаа зөв (давталт 7 хоног). */
+  const mastered=r=>!!r&&!r.weak&&(Number(r.passes)||0)>=3;
+  function wordStats(list,store){store=store||state.words;let seen=0,strong=0,weak=0;for(const w of list){const r=store[w.id];if(!r)continue;seen++;if(r.weak)weak++;else if(mastered(r))strong++;}return {total:list.length,seen,strong,weak,learning:seen-strong-weak};}
+  /** Ахицын хуудасны бүх тоо — markup үүнээс л уншина. */
+  function profileData(){
+    let att=0,mis=0;for(const w of allWords){const r=state.words[w.id];if(r){att+=Number(r.attempts)||0;mis+=Number(r.misses)||0;}}
+    const weeks=heatWeeks(53),past=weeks.flat().filter(c=>!c.future);
+    return {
+      xp:state.xp,todayXp:dayXp(today()),streak:streak(),longest:longestStreak(),
+      activeDays:Object.keys(state.days).filter(k=>isDay(k)&&activeDay(k)).length,
+      heat:{weeks,yearXp:past.reduce((s,c)=>s+c.xp,0),yearDays:past.filter(c=>c.level>0).length,hasLegacy:past.some(c=>c.legacy)},
+      words:Object.assign(wordStats(allWords),{due:dueWords().length}),
+      accuracy:att?Math.round((att-mis)/att*100):null,
+      lessons:{done:state.completed.length,total:lessons.length},
+      topics:TOPICS.map((t,i)=>({title:t[0],learned:topicLearned(i),total:allWords.filter(w=>w.topic===i).length})),
+      kanji:wordStats(allWords.filter(w=>w.kj)),
+      kataWords:wordStats(kataWords),
+      kana:Object.assign(wordStats(KANA,state.kana),{due:kanaDue().length,lessons:kanaLessons.map((L,i)=>({i,title:L.title,group:L.group,chars:L.chars.map(k=>k.jp),seen:L.chars.filter(k=>state.kana[k.id]).length,total:L.chars.length}))}),
+      script:scriptMode,mode:syncMode(),account:syncMode()==='user'?authUser():null
+    };
+  }
+
   function dayWords(){const words=state.days[today()];return Array.isArray(words)?words:[];}
   function streak(){let day=today(),count=0;if(!Array.isArray(state.days[day])||!state.days[day].length)day=shiftDate(day,-1);while(Array.isArray(state.days[day])&&state.days[day].length){count++;day=shiftDate(day,-1);}return count;}
   function weakWords(){return allWords.filter(w=>state.words[w.id]&&state.words[w.id].weak);}
@@ -673,9 +787,9 @@
      innerHTML-ийг зөвхөн төлөв ӨӨРЧЛӨГДСӨН үед бичнэ — updateTop нь view бүрд дуудагддаг тул
      зургийг дахин дахин үүсгэвэл анивчина. */
   let avatarKey=null;
-  function updateAvatar(){const el=$('open-sync-top');if(!el)return;const u=syncMode()==='user'?authUser():null;const name=String((u&&(u.name||u.email))||'Хэрэглэгч');const photo=u&&typeof u.avatar==='string'&&u.avatar.indexOf('https://')===0?u.avatar:'';const key=u?name+'|'+photo:'';if(key===avatarKey)return;avatarKey=key;el.setAttribute('aria-label',u?name+' — нэвтрэлт ба ахицын синк':'Нэвтрэлт ба ахицын синк');el.innerHTML=u?`<span class="avatar-fallback" aria-hidden="true">${esc((Array.from(name.trim())[0]||'Х').toLocaleUpperCase())}</span>${photo?`<img src="${esc(photo)}" alt="" width="44" height="44" referrerpolicy="no-referrer">`:''}`:'<span class="avatar-fallback" lang="ja" aria-hidden="true">わ</span>';}
+  function updateAvatar(){const el=$('open-sync-top');if(!el)return;const u=syncMode()==='user'?authUser():null;const name=String((u&&(u.name||u.email))||'Хэрэглэгч');const photo=u&&typeof u.avatar==='string'&&u.avatar.indexOf('https://')===0?u.avatar:'';const key=u?name+'|'+photo:'';if(key===avatarKey)return;avatarKey=key;el.setAttribute('aria-label',u?name+' — миний ахиц':'Миний ахиц');el.innerHTML=u?`<span class="avatar-fallback" aria-hidden="true">${esc((Array.from(name.trim())[0]||'Х').toLocaleUpperCase())}</span>${photo?`<img src="${esc(photo)}" alt="" width="44" height="44" referrerpolicy="no-referrer">`:''}`:'<span class="avatar-fallback" lang="ja" aria-hidden="true">わ</span>';}
   function updateTop(){$('xp').textContent=state.xp;$('streak').textContent=streak();$('review-dot').hidden=!dueWords().length;updateAvatar();paintSave();}
-  function switchView(next){view=['learn','words','review'].includes(next)?next:'learn';document.querySelectorAll('.view').forEach(el=>el.hidden=el.id!==`view-${view}`);document.querySelectorAll('.nav-item').forEach(el=>{el.classList.toggle('active',el.dataset.view===view);if(el.dataset.view===view)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});$('page-name').textContent={learn:'Миний сурах зам',words:'Миний үгийн сан',review:'Давтах цаг'}[view];if(view==='learn')renderHome();if(view==='words')renderWords();if(view==='review')renderReview();location.hash=view;updateTop();}
+  function switchView(next){view=['learn','words','review','profile'].includes(next)?next:'learn';document.querySelectorAll('.view').forEach(el=>el.hidden=el.id!==`view-${view}`);document.querySelectorAll('.nav-item').forEach(el=>{el.classList.toggle('active',el.dataset.view===view);if(el.dataset.view===view)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});$('page-name').textContent={learn:'Миний сурах зам',words:'Миний үгийн сан',review:'Давтах цаг',profile:'Миний ахиц'}[view];if(view==='learn')renderHome();if(view==='profile')renderProfile();if(view==='words')renderWords();if(view==='review')renderReview();location.hash=view;updateTop();}
   function weekMarkup(){const d=today();const weekday=new Date(d+'T12:00:00Z').getUTCDay();const monday=shiftDate(d,-((weekday+6)%7));return ['Да','Мя','Лх','Пү','Ба','Бя','Ня'].map((label,i)=>{const date=shiftDate(monday,i),done=Array.isArray(state.days[date])&&state.days[date].length;return `<div class="week-day ${date===d?'today':''} ${done?'done':''}" aria-label="${label}${done?' хичээллэсэн':''}"><span>${done?'✓':label.slice(0,1)}</span>${label}</div>`;}).join('');}
   function renderHome(){
     const t=state.selectedTopic,group=topicLessons(t),completed=group.filter(l=>state.completed.includes(l.id)).length,current=group.find(l=>!state.completed.includes(l.id))||group[0];
@@ -696,17 +810,17 @@
      товчлуур ба дэлгэц уншигчийн зам тул ҮЛДЭНЭ. `on===false` — монгол→япон
      асуултад шалгахаас өмнө (хариултыг задруулна). */
   const cardAttrs=(cls,w,on)=>on!==false&&canHear(w)?`class="${cls} say-card" data-au-for="${esc(w.id)}"`:`class="${cls}"`;
-  function wordCard(w){const learned=state.words[w.id];return `<article ${cardAttrs('word-card',w)}><p class="word-topic">${esc(TOPICS[w.topic][0])}</p><div class="word-heading"><h2 class="word-kana" lang="ja">${esc(w.jp)}</h2>${audioBtn(w)}</div><p class="word-meaning">${esc(w.mn)}</p><span class="word-status ${learned?'learned':''}">${icon(learned&&learned.weak?'repeat':learned?'check':'book')}${learned?(learned.weak?'Дахин бататгана':'Үзсэн үг'):'Шинэ үг'}</span></article>`;}
+  function wordCard(w){const learned=state.words[w.id];return `<article ${cardAttrs('word-card'+(isKata(w)?' is-kata':''),w)}><div class="word-meta"><p class="word-topic">${esc(TOPICS[w.topic][0])}</p>${isKata(w) ? '<span class="word-kata-badge">Катакана</span>' : ''}</div><div class="word-heading"><h2 class="word-kana" lang="ja">${face(w.jp,w.kj)}</h2>${audioBtn(w)}</div><p class="word-meaning">${esc(w.mn)}</p><span class="word-status ${learned?'learned':''}">${icon(learned&&learned.weak?'repeat':learned?'check':'book')}${learned?(learned.weak?'Дахин бататгана':'Үзсэн үг'):'Шинэ үг'}</span></article>`;}
   let wordQuery='',wordTopic='all';
   function renderWords(){
-    $('view-words').innerHTML=`<div class="eyebrow">ТАНЫ ҮГИЙН САН</div><h1 class="page-title">Үг бүр нэг алхам.</h1><p class="page-subtitle">${allWords.length} үг, хэллэг · ${Object.keys(state.words).filter(id=>wordById[id]).length} үг үзсэн · Латин уншлагагүй</p><div class="word-toolbar"><label class="search-wrap"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Япон эсвэл монгол үгээр хайх</span>${icon('search')}<input id="word-search" class="search-input" placeholder="Япон эсвэл монгол үгээр хайх…" autocomplete="off"></label><select id="word-topic" class="topic-select" aria-label="Сэдэв сонгох"><option value="all">Бүх сэдэв</option>${TOPICS.map((t,i)=>`<option value="${i}">${t[0]}</option>`).join('')}</select></div><p id="word-result-count" class="page-subtitle" role="status" style="margin:0 0 18px"></p><div id="word-results" class="word-grid"></div>`;
+    $('view-words').innerHTML=`<div class="eyebrow">ТАНЫ ҮГИЙН САН</div><h1 class="page-title">Үг бүр нэг алхам.</h1><p class="page-subtitle">${allWords.length} үг, хэллэг · ${Object.keys(state.words).filter(id=>wordById[id]).length} үг үзсэн · Латин уншлагагүй</p><div class="word-toolbar"><label class="search-wrap"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Япон эсвэл монгол үгээр хайх</span>${icon('search')}<input id="word-search" class="search-input" placeholder="Япон эсвэл монгол үгээр хайх…" autocomplete="off"></label><select id="word-topic" class="topic-select" aria-label="Сэдэв сонгох"><option value="all">Бүх сэдэв</option><option value="kata">Катакана үгс (${kataWords.length})</option>${TOPICS.map((t,i)=>`<option value="${i}">${t[0]}</option>`).join('')}</select></div><p id="word-result-count" class="page-subtitle" role="status" style="margin:0 0 18px"></p><div id="word-results" class="word-grid"></div>`;
     $('word-search').value=wordQuery;$('word-topic').value=wordTopic;
     filterWords();
   }
-  function filterWords(){wordQuery=$('word-search').value;wordTopic=$('word-topic').value;const query=wordQuery.trim().toLocaleLowerCase(),topic=wordTopic;const words=allWords.filter(w=>(topic==='all'||w.topic===Number(topic))&&(!query||w.jp.toLowerCase().includes(query)||w.mn.toLocaleLowerCase().includes(query)));$('word-result-count').textContent=`${words.length} үг, хэллэг`;$('word-results').innerHTML=words.length?words.map(wordCard).join(''):'<p class="page-subtitle">Тохирох үг олдсонгүй. Өөр үгээр хайгаарай.</p>';}
+  function filterWords(){wordQuery=$('word-search').value;wordTopic=$('word-topic').value;const query=wordQuery.trim().toLocaleLowerCase(),topic=wordTopic;const words=allWords.filter(w=>(topic==='all'||(topic==='kata'?isKata(w):w.topic===Number(topic)))&&(!query||w.jp.toLowerCase().includes(query)||(w.kj&&w.kj.includes(query))||w.mn.toLocaleLowerCase().includes(query)));$('word-result-count').textContent=`${words.length} үг, хэллэг`;$('word-results').innerHTML=words.length?words.map(wordCard).join(''):'<p class="page-subtitle">Тохирох үг олдсонгүй. Өөр үгээр хайгаарай.</p>';markOverflowSoon($('word-results'));}
   function renderReview(){const learned=allWords.filter(w=>state.words[w.id]),due=dueWords(),weak=weakWords();$('view-review').innerHTML=`<div class="eyebrow">ДАВТЛАГА</div><h1 class="page-title">Санаж байна уу?</h1><p class="page-subtitle">Өмнө үзсэн үгсээ монгол утга болон япон бичлэгээс нь санаж хэлээрэй.</p>${!learned.length?`<section class="empty-state"><div class="empty-icon">${icon('repeat')}</div><h2>Эхний үгсээ суръя.</h2><p>Хичээлээ дуусгасны дараа үзсэн болон алдсан үгс чинь энд гарна.</p><button class="primary-btn" data-action="start" data-lesson="${nextLesson().id}">Эхний хичээл${icon('arrow')}</button></section>`:`<section class="review-banner"><div><h2>${due.length?`${due.length} үг давтахад бэлэн`:'Өнөөдрийн давтлага бэлэн'}</h2><p>${weak.length?`${weak.length} алдсан үгээс эхэлнэ. `:''}Нэг удаад 5 хүртэл үгээ бататгана.</p></div><button class="primary-btn" data-action="review">Давтаж эхлэх${icon('repeat')}</button></section><div class="section-heading"><h2>${weak.length?'Бататгах үгс':'Үзсэн үгс'}</h2><span class="meta">${weak.length||learned.length} үг</span></div><div class="word-grid">${(weak.length?weak:learned).map(wordCard).join('')}</div>`}`;}
   function quiz(word,direction){const correct=direction==='jp-mn'?word.mn:word.jp;const pool=allWords.filter(w=>w.id!==word.id&&w.jp!==word.jp&&w.mn!==word.mn);const near=shuffle(pool.filter(w=>w.topic===word.topic)),far=shuffle(pool.filter(w=>w.topic!==word.topic));const unique=[];for(const w of near.concat(far)){const value=direction==='jp-mn'?w.mn:w.jp;if(value!==correct&&!unique.includes(value))unique.push(value);if(unique.length===3)break;}return {type:'quiz',word,direction,correct,options:shuffle([correct,...unique]),retry:false};}
-  function buildQueue(words,isReview,topic){const queue=isReview?[]:words.map(word=>({type:'learn',word}));queue.push(...shuffle(words.flatMap(w=>[quiz(w,'jp-mn'),quiz(w,'mn-jp')])));if(!isReview){const sentence=SENTENCES[topic];queue.push({type:'sentence',sentence,tokens:shuffle(sentence.tokens.map((text,i)=>({text,id:i}))),retry:false});}return queue;}
+  function buildQueue(words,isReview,topic){const queue=isReview?[]:words.map(word=>({type:'learn',word}));queue.push(...shuffle(words.flatMap(w=>[quiz(w,'jp-mn'),quiz(w,'mn-jp'),...(kanjiOn()&&w.kj?[kjQuiz(w)]:[])])));if(!isReview){const sentence=SENTENCES[topic];queue.push({type:'sentence',sentence,tokens:shuffle(sentence.tokens.map((text,i)=>({text,id:i}))),retry:false});}return queue;}
   /* ── Тооны шалгалт ─────────────────────────────────────────────────
      «Тоо, цаг, хуанли» (17) ба «Тоо…» (16) сэдвийн бүх үгсээс санамсаргүй
      14 асуулт + огноо 3 + цаг 3 = 20. Огноо, цагийг ҮҮСГЭДЭГ тул сурагч
@@ -733,18 +847,503 @@
   function startTest(){const t=buildTest();session={review:true,test:true,lesson:null,words:t.words,queue:t.queue,pos:0,selected:null,selectedTokens:[],checked:false,correct:false,showHint:false,xp:0,firstAnswers:0,firstCorrect:0,results:{},started:Date.now(),completed:false};openSession();}
   function startLesson(id){const lesson=lessonById[id];if(!lesson)return;session={lesson,review:false,words:lesson.words,queue:buildQueue(lesson.words,false,lesson.topic),pos:0,selected:null,selectedTokens:[],checked:false,correct:false,showHint:false,xp:0,firstAnswers:0,firstCorrect:0,results:{},started:Date.now(),completed:false};openSession();}
   function startReview(){const studied=allWords.filter(w=>state.words[w.id]);const due=dueWords();const words=shuffle(due.length?due:studied).sort((a,b)=>Number(!!state.words[b.id].weak)-Number(!!state.words[a.id].weak)).slice(0,5);if(!words.length){startLesson(nextLesson().id);return;}session={review:true,lesson:null,words,queue:buildQueue(words,true,words[0].topic),pos:0,selected:null,selectedTokens:[],checked:false,correct:false,showHint:false,xp:0,firstAnswers:0,firstCorrect:0,results:{},started:Date.now(),completed:false};openSession();}
-  function openSession(){renderSession();if(!$('lesson-dialog').open)$('lesson-dialog').showModal();$('lesson-dialog').scrollTop=0;}
+  function openSession(){renderSession();markOverflowSoon($('lesson-content'));if(!$('lesson-dialog').open)$('lesson-dialog').showModal();$('lesson-dialog').scrollTop=0;}
+  /* Ахицын хуудас — markup ба CSS: Astra (gpt-6-astra, 2026-11-01); GitHub-ийн
+     жилийн график, Duolingo-гийн streak, Quizlet-ийн ангиллаас санаа авсан.
+     Тоо бүгд `profileData()`-аас. Холболт: data-action script/kana-lesson/
+     kana-review/kata-words/sync-open/review, data-view, .heat-cell[data-level]. */
+  let profileKeep = null;
+  /** Урт ханз/кана мөр хайрцгаасаа халивал (товч дотор биш) Tab-аар хүрч
+   *  гүйлгэх боломжтой болгоно. Хэмжээ layout-ын дараа л мэдэгдэнэ. */
+  function markOverflowSoon(root) {
+    if (!root) return;
+    requestAnimationFrame(() => {
+      for (const el of root.querySelectorAll('.jp-face-line, .kj-prompt, .kana-prompt'))
+        if (!el.closest('button') && el.scrollWidth > el.clientWidth + 1) el.tabIndex = 0;
+    });
+  }
+  function renderProfile() {
+    const p = profileData();
+    const n = value => value == null ? '—' : esc(value);
+
+    const meter = (value, total, label) => `
+      <progress class="p-progress"
+        value="${esc(value)}" max="${esc(total)}"
+        aria-label="${esc(label)}: ${esc(value)} / ${esc(total)}">
+        ${esc(value)} / ${esc(total)}
+      </progress>`;
+
+    const heatTitle = c =>
+      `${c.date}: ${
+        c.future ? 'Ирээдүйн өдөр' :
+        c.legacy ? 'Идэвхтэй · XP бүртгэгдээгүй' :
+        `${c.xp} XP`
+      }`;
+
+    const heat = p.heat.weeks.map(col => `
+      <div class="heat-col">
+        ${col.map(c => `
+          <span class="heat-cell"
+            data-level="${c.level}"
+            data-date="${esc(c.date)}"
+            ${c.future ? 'data-future' : ''}
+            ${c.legacy ? 'data-legacy' : ''}
+            title="${esc(heatTitle(c))}">
+          </span>
+        `).join('')}
+      </div>
+    `).join('');
+
+    // Зөвхөн огнооны шошго; ахицын шинэ тоо бодохгүй. Шошго (≈40px) дараагийн
+    // шошго эсвэл төгсгөл хүртэл 3 багана (45px) хүрэхгүй бол харуулахгүй:
+    // давхцахгүй, өмнөх сарын нүдний дээр буруу сар бичихгүй.
+    const starts = p.heat.weeks
+      .map((col, i) => ({ i, first: col.find(c => c.date.slice(8) === '01') }))
+      .filter(x => x.first);
+    const label = new Map(starts
+      .filter((x, k) => (k + 1 < starts.length ? starts[k + 1].i : p.heat.weeks.length) - x.i >= 3)
+      .map(x => [x.i, Number(x.first.date.slice(5, 7))]));
+    const months = p.heat.weeks.map((col, i) => `
+        <span class="heat-month">
+          ${label.has(i) ? `<b>${label.get(i)}-р сар</b>` : ''}
+        </span>`).join('');
+
+    const groups = [
+      ['gojuon', 'Үндсэн', 'Энгийн катакана үсгүүд'],
+      ['dakuten', 'Дуу оруулсан', 'Дакүтэн, хандакүтэн тэмдэгтэй үсгүүд'],
+      ['yoon', 'Нийлмэл', 'Жижиг үсэгтэй нийлсэн авианууд']
+    ];
+
+    const milestones = [
+      {
+        title: 'Эхний алхам',
+        text: 'Нэг үгийн хичээл дуусгах',
+        earned: p.lessons.done > 0,
+        symbol: 'flag'
+      },
+      {
+        title: 'Долоо хоногийн хэмнэл',
+        text: 'Долоон өдөр дараалан сурах',
+        earned: p.longest >= 7,
+        symbol: 'flame'
+      },
+      {
+        title: 'Үгийн суурь',
+        text: 'Тавин үг бататгах',
+        earned: p.words.strong >= 50,
+        symbol: 'book'
+      }
+    ];
+
+    $('view-profile').innerHTML = `
+      <div class="profile-page">
+        <header class="p-header">
+          <div>
+            <p class="eyebrow">ӨДӨР БҮР НЭГ АЛХАМ</p>
+            <h1 class="page-title">Миний ахиц</h1>
+            <p class="p-muted">
+              ${p.account
+                ? `${esc(p.account.name || p.account.email || 'Суралцагч')} · `
+                : ''}
+              Жижиг давталт бүр унших чадварыг нэмнэ.
+            </p>
+          </div>
+          <button type="button" class="p-btn" data-view="learn">
+            Суралцах ${icon('arrow')}
+          </button>
+        </header>
+
+        <div class="p-activity">
+          <section class="p-card p-streak" aria-labelledby="p-streak-title">
+            <div class="p-card-head">
+              <h2 id="p-streak-title">Таны хэмнэл</h2>
+              ${icon('flame')}
+            </div>
+            <p class="p-streak-number">
+              <strong>${n(p.streak)}</strong>
+              <span>өдөр дараалан</span>
+            </p>
+            <p class="p-muted">
+              ${p.streak > 0
+                ? 'Өнөөдөр ч багахан давтаад үргэлжлүүлье.'
+                : 'Өнөөдрийн хичээлээс шинэ хэмнэлээ эхлүүлээрэй.'}
+            </p>
+            <div class="p-streak-best">
+              ${icon('trophy')}
+              <span>Хамгийн урт <strong>${n(p.longest)} өдөр</strong></span>
+            </div>
+          </section>
+
+          <section class="p-card p-heat" aria-labelledby="p-heat-title">
+            <div class="p-card-head">
+              <div>
+                <h2 id="p-heat-title">
+                  Сүүлийн жилд ${n(p.heat.yearXp)} XP
+                </h2>
+                <p class="p-muted">
+                  ${n(p.heat.yearDays)} идэвхтэй өдөр · 53 долоо хоног
+                </p>
+              </div>
+              ${icon('tiles')}
+            </div>
+
+            <div id="profile-heat-scroll"
+              class="heat-scroll"
+              tabindex="0"
+              role="region"
+              aria-label="Жилийн графикийн гүйлгэх хэсэг"
+              aria-describedby="p-heat-help">
+              <div class="heat-calendar"
+                role="img"
+                aria-label="Сүүлийн 53 долоо хоногт ${n(p.heat.yearXp)} XP,
+                  ${n(p.heat.yearDays)} идэвхтэй өдөр.
+                  Багана бүр даваагаас ням хүртэл.
+                  Өнгөний түвшин өдрийн XP-г илэрхийлнэ."
+                aria-describedby="p-heat-key">
+                <div class="heat-days" aria-hidden="true">
+                  <span>Да</span><span></span>
+                  <span>Лх</span><span></span>
+                  <span>Ба</span><span></span><span></span>
+                </div>
+                <div class="heat-timeline">
+                  <div class="heat-months" aria-hidden="true">${months}</div>
+                  <div class="heat-grid">${heat}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-heat-footer">
+              <p id="p-heat-help" class="p-muted">
+                Өмнөх өдрүүдийг хажуу тийш гүйлгэж харна.
+              </p>
+              <div class="p-heat-scale" aria-hidden="true">
+                <span>Бага</span>
+                ${[0, 1, 2, 3, 4].map(level => `
+                  <span class="heat-cell" data-level="${level}"></span>
+                `).join('')}
+                <span>Их</span>
+              </div>
+            </div>
+
+            <p id="p-heat-key" class="p-small">
+              Өдрийн XP: 0 · 1–49 · 50–149 · 150–299 · 300+.
+              Тасархай хүрээтэй нүд нь ирээдүйн өдөр.
+              ${p.heat.hasLegacy
+                ? 'Ташуу хээтэй нүд: идэвхтэй, XP бүртгэгдээгүй.'
+                : ''}
+            </p>
+            ${p.heat.hasLegacy ? `
+              <p class="p-legacy-note">
+                <span class="heat-cell" data-level="1"
+                  data-legacy aria-hidden="true"></span>
+                XP бүртгэгдээгүй өдрүүд нийт XP-д нэмэгдэхгүй.
+              </p>
+            ` : ''}
+          </section>
+        </div>
+
+        <dl class="p-stats" aria-label="Суралцах статистик">
+          <div>
+            <dt>Өнөөдрийн XP</dt>
+            <dd>${n(p.todayXp)}</dd>
+          </div>
+          <div>
+            <dt>Нийт XP</dt>
+            <dd>${n(p.xp)}</dd>
+          </div>
+          <div>
+            <dt>Нийт идэвхтэй өдөр</dt>
+            <dd>${n(p.activeDays)}</dd>
+          </div>
+          <div>
+            <dt>Үгийн зөв хариулт</dt>
+            <dd>${p.accuracy == null ? '—' : `${n(p.accuracy)}%`}</dd>
+            ${p.accuracy == null
+              ? '<p class="p-small">Хариулсны дараа гарна.</p>'
+              : ''}
+          </div>
+        </dl>
+
+        <section class="p-card" aria-labelledby="p-script-title">
+          <div class="p-card-head">
+            <div>
+              <h2 id="p-script-title">Бичиг</h2>
+              <p class="p-muted">Уншиж сурах бичлэгээ сонгоорой.</p>
+            </div>
+            ${icon('book')}
+          </div>
+
+          <div class="p-script-layout">
+            <div>
+              <div class="p-segment" role="group"
+                aria-labelledby="p-script-title"
+                aria-describedby="p-script-help">
+                <button type="button"
+                  data-action="script" data-script="kana"
+                  aria-pressed="${p.script === 'kana'}">
+                  <span lang="ja" aria-hidden="true">かな</span>
+                  <span>Кана</span>
+                </button>
+                <button type="button"
+                  data-action="script" data-script="kanji"
+                  aria-pressed="${p.script === 'kanji'}">
+                  <span lang="ja" aria-hidden="true">漢字</span>
+                  <span>Ханз</span>
+                </button>
+              </div>
+              <p id="p-script-help" class="p-muted p-space">
+                ${p.script === 'kanji'
+                  ? 'Ханзтай үг ханз болон дээрх кана уншлагатай харагдана. Хичээлд «Ханзаар унших» асуулт нэмэгдэнэ.'
+                  : 'Үгс канагаар харагдана. Ханз сонговол ханз, кана уншлага хамт гарч, «Ханзаар унших» асуулт нэмэгдэнэ.'}
+              </p>
+              <p class="p-small p-space">
+                ${n(p.kanji.total)} / ${n(p.words.total)} үг ханзтай.
+                Сонголт энэ төхөөрөмж дээр хадгалагдана.
+                Катаканы дасгал хоёр горимд хоёуланд нь нээлттэй.
+              </p>
+            </div>
+
+            <div class="p-inset">
+              <h3>Ханзтай үгийн ахиц</h3>
+              <p class="p-count">
+                <strong>${n(p.kanji.seen)}</strong>
+                / ${n(p.kanji.total)} үг үзсэн
+              </p>
+              ${meter(p.kanji.seen, p.kanji.total, 'Ханзтай үг үзсэн ахиц')}
+              <p class="p-small">
+                ${n(p.kanji.strong)} бататгасан ·
+                ${n(p.kanji.weak)} сул
+              </p>
+              <p class="p-small p-space">
+                Энэ нь ханзтай үгийн ахиц; тусдаа ханзын шалгалтын дүн биш.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section class="p-card" aria-labelledby="p-words-title">
+          <div class="p-card-head">
+            <div>
+              <h2 id="p-words-title">Үгийн сангийн ахиц</h2>
+              <p class="p-muted">
+                ${n(p.words.seen)} / ${n(p.words.total)} үг үзсэн
+              </p>
+            </div>
+            <button type="button" class="p-btn"
+              data-action="review" ${p.words.seen ? '' : 'disabled'}>
+              ${icon('repeat')} Давтах (${n(p.words.due)})
+            </button>
+          </div>
+
+          ${meter(p.words.seen, p.words.total, 'Үг үзсэн ахиц')}
+
+          <dl class="p-word-states">
+            <div class="p-state-strong">
+              <dt>${icon('check')} Бататгасан</dt>
+              <dd>${n(p.words.strong)}</dd>
+              <p>Алдаагүй, дараалан гурваас дээш удаа зөв.</p>
+            </div>
+            <div class="p-state-learning">
+              <dt>${icon('book')} Сурч буй</dt>
+              <dd>${n(p.words.learning)}</dd>
+              <p>Үзсэн, цааш бататгаж буй үгс.</p>
+            </div>
+            <div class="p-state-weak">
+              <dt>${icon('repeat')} Сул</dt>
+              <dd>${n(p.words.weak)}</dd>
+              <p>Алдсан тул дахин бататгах үгс.</p>
+            </div>
+          </dl>
+
+          <div class="p-line-row">
+            <span>Дуусгасан үгийн хичээл</span>
+            <strong>${n(p.lessons.done)} / ${n(p.lessons.total)}</strong>
+          </div>
+          ${meter(p.lessons.done, p.lessons.total, 'Дуусгасан үгийн хичээл')}
+
+          ${p.words.seen === 0 ? `
+            <p class="p-muted p-space">
+              Эхний хичээлээ дуусгахад үгсийн төлөв энд гарна.
+            </p>
+          ` : ''}
+
+          <details class="p-details">
+            <summary>Сэдэв бүрийн ахиц</summary>
+            <ul class="p-topic-list">
+              ${p.topics.map(t => `
+                <li>
+                  <div class="p-line-row">
+                    <span>${esc(t.title)}</span>
+                    <strong>${n(t.learned)} / ${n(t.total)}</strong>
+                  </div>
+                  ${meter(t.learned, t.total, `${t.title}: үзсэн үг`)}
+                </li>
+              `).join('')}
+            </ul>
+          </details>
+
+          <button type="button" class="p-btn p-space" data-view="words">
+            Үгийн сангаа нээх ${icon('arrow')}
+          </button>
+        </section>
+
+        <section class="p-card" aria-labelledby="p-kana-title">
+          <div class="p-card-head">
+            <div>
+              <h2 id="p-kana-title">Катакана үсэг</h2>
+              <p class="p-muted">
+                ${n(p.kana.seen)} / ${n(p.kana.total)} тэмдэгт үзсэн ·
+                21 хичээл
+              </p>
+            </div>
+            <button type="button" class="p-btn"
+              data-action="kana-review" ${p.kana.seen ? '' : 'disabled'}>
+              ${icon('repeat')} Давтах (${n(p.kana.due)})
+            </button>
+          </div>
+
+          ${meter(p.kana.seen, p.kana.total, 'Катакана тэмдэгт үзсэн ахиц')}
+
+          <p class="p-small">
+            ${n(p.kana.strong)} бататгасан · ${n(p.kana.weak)} сул.
+            Хирагана болон кирилл уншлагатай сураад, хоёр чиглэлд шалгана.
+          </p>
+          <p class="p-small p-space">
+            «Бүгдийг үзсэн» тэмдэг нь хичээлийн бүх тэмдэгтийг үзсэнийг илэрхийлнэ.
+          </p>
+
+          <div class="p-kana-groups">
+            ${groups.map(([group, title, description]) => `
+              <details class="p-kana-group"
+                ${group === 'gojuon' ? 'open' : ''}>
+                <summary>
+                  <h3>${title}</h3>
+                  <span class="p-small">${description}</span>
+                </summary>
+                <div class="p-kana-grid">
+                  ${p.kana.lessons.filter(L => L.group === group).map(L => `
+                    <button type="button"
+                      class="p-kana-lesson${L.seen === L.total ? ' is-seen' : ''}"
+                      data-action="kana-lesson" data-kana="${L.i}"
+                      aria-label="${esc(title)}: ${esc(L.title)}.
+                        ${L.seen} / ${L.total} тэмдэгт үзсэн.
+                        ${L.seen === L.total ? 'Бүгдийг үзсэн.' : 'Хичээл нээх.'}">
+                      <span class="p-kana-top">
+                        <strong lang="ja">${esc(L.title)}</strong>
+                        ${L.seen === L.total ? icon('check') : icon('play')}
+                      </span>
+                      <span class="p-kana-chars" lang="ja">
+                        ${L.chars.map(char => `<span>${esc(char)}</span>`).join('')}
+                      </span>
+                      <span class="p-kana-bottom">
+                        <span>${n(L.seen)} / ${n(L.total)} үзсэн</span>
+                        <span>${L.seen === L.total
+                          ? 'Бүгдийг үзсэн'
+                          : L.seen > 0 ? 'Үргэлжлүүлэх' : 'Эхлэх'}</span>
+                      </span>
+                    </button>
+                  `).join('')}
+                </div>
+              </details>
+            `).join('')}
+          </div>
+        </section>
+
+        <section class="p-card p-kata-words" aria-labelledby="p-kata-title">
+          <div class="p-kata-symbol" lang="ja" aria-hidden="true">カタカナ</div>
+          <div>
+            <h2 id="p-kata-title">Катакана үгс</h2>
+            <p class="p-muted">
+              Хаяг, цэс, барааны нэр уншихад хэрэгтэй үгсээ давтаарай.
+            </p>
+            <p class="p-count">
+              <strong>${n(p.kataWords.seen)}</strong>
+              / ${n(p.kataWords.total)} үг үзсэн
+            </p>
+            ${meter(p.kataWords.seen, p.kataWords.total, 'Катакана үг үзсэн ахиц')}
+            <p class="p-small">
+              ${n(p.kataWords.strong)} бататгасан ·
+              ${n(p.kataWords.weak)} сул
+            </p>
+          </div>
+          <button type="button" class="p-btn p-btn-primary"
+            data-action="kata-words">
+            ${icon('repeat')}
+            ${p.kataWords.seen ? 'Үгсээ давтах' : 'Үгсээ сурах'}
+          </button>
+        </section>
+
+        <section class="p-card" aria-labelledby="p-achievements-title">
+          <div class="p-card-head">
+            <div>
+              <h2 id="p-achievements-title">Таны амжилт</h2>
+              <p class="p-muted">Ахицынхаа жижиг үе шатуудыг хараарай.</p>
+            </div>
+            ${icon('trophy')}
+          </div>
+          <ul class="p-achievements">
+            ${milestones.map(m => `
+              <li class="${m.earned ? 'is-earned' : ''}">
+                <span class="p-achievement-icon">${icon(m.symbol)}</span>
+                <h3>${m.title}</h3>
+                <p class="p-small">${m.text}</p>
+                <span class="p-achievement-status">
+                  ${m.earned ? `${icon('check')} Биелсэн` : 'Дараагийн зорилго'}
+                </span>
+              </li>
+            `).join('')}
+          </ul>
+        </section>
+
+        <section class="p-card p-sync" aria-labelledby="p-sync-title">
+          <div>
+            <h2 id="p-sync-title">Ахицын хадгалалт</h2>
+            <p class="p-muted">
+              ${p.mode === 'user'
+                ? 'Бүртгэл холбогдсон. Нэвтрэлт болон синкийн тохиргоогоо нээнэ.'
+                : p.mode === 'code'
+                  ? 'Нууц код холбогдсон. Төхөөрөмж хоорондын синкээ тохируулна.'
+                  : 'Ахиц энэ хөтөч дээр хадгалагдана. Өөр төхөөрөмжтэй холбохын тулд синк тохируулаарай.'}
+            </p>
+          </div>
+          <button type="button" class="p-btn" data-action="sync-open">
+            Нэвтрэлт ба синк ${icon('arrow')}
+          </button>
+        </section>
+      </div>
+    `;
+
+    /* Claude: график анх нээхэд хамгийн сүүлийн долоо хоног руу; бичиг
+       солиход өмнөх гүйлт ба сегментийн фокус хэвээр (Astra-гийн хүсэлт). */
+    const keep = profileKeep; profileKeep = null;
+    const sc = $('profile-heat-scroll');
+    if (sc) {
+      // Гарагийн багана sticky; түүний доор хагас орсон сарын шошгыг нууна.
+      const days = sc.querySelector('.heat-days');
+      const cut = () => { const edge = days.getBoundingClientRect().right; for (const b of sc.querySelectorAll('.heat-month b')) b.classList.toggle('is-cut', b.getBoundingClientRect().left < edge - 1); };
+      sc.addEventListener('scroll', cut, { passive: true });
+      requestAnimationFrame(() => { sc.scrollLeft = keep && keep.left != null ? keep.left : sc.scrollWidth; cut(); });
+    }
+    if (keep && keep.focus) { const btn = document.querySelector(`#view-profile [data-action=script][data-script="${keep.focus}"]`); if (btn) btn.focus({ preventScroll: true }); }
+    markOverflowSoon($('view-profile'));
+  }
+  /* Асуултын төрөл бүрийн [дээд шошго, гарчиг]. */
+  const QUIZ_HEAD={'jp-mn':['УТГЫГ НЬ ТАНИХ','Ямар утгатай вэ?'],'mn-jp':['ЯПОНООР НЬ САНАХ','Японоор яаж хэлэх вэ?'],'kj-jp':['ХАНЗААР УНШИХ','Хэрхэн уншдаг вэ?'],'kata-hira':['КАТАКАНА УНШИХ','Хираганаар аль нь вэ?'],'hira-kata':['КАТАКАНААР ТАНИХ','Катаканаар аль нь вэ?']};
   function exerciseMarkup(q){
-    if(q.type==='learn')return `<div class="exercise-type">${icon('leaf')}ШИНЭ ҮГ · ${session.pos+1} / ${session.words.length}</div><h1 id="exercise-title" tabindex="-1">Энэ үгтэй танилцаарай.</h1><div ${cardAttrs('learn-card',q.word)}>${audioBtn(q.word,' card-audio')}<p class="learn-kana" lang="ja">${esc(q.word.jp)}</p><p class="learn-meaning">${esc(q.word.mn)}</p></div><p class="learn-hint">Дууны дүрстэй картын аль ч хэсэгт дарж сонсоод, чангаар давтаж уншаарай. Дахин дарвал зогсоно.</p>`;
-    if(q.type==='quiz'){const forward=q.direction==='jp-mn';return `<div class="exercise-type">${icon(q.retry?'repeat':'target')}${q.retry?'ДАХИН БАТАТГАЯ':forward?'УТГЫГ НЬ ТАНИХ':'ЯПОНООР НЬ САНАХ'}</div><h1 id="exercise-title" tabindex="-1">${forward?'Ямар утгатай вэ?':'Японоор яаж хэлэх вэ?'}</h1><div ${cardAttrs('quiz-prompt-card',q.word,forward||session.checked)}><p class="exercise-prompt ${forward?'':'mn-prompt'}" ${forward?'lang="ja"':''}>${esc(forward?q.word.jp:q.word.mn)}</p>${forward||session.checked?audioBtn(q.word):''}</div><div class="choices" role="group" aria-label="Хариултууд">${q.options.map((option,i)=>{let cls=session.selected===i?' selected':'';if(session.checked&&option===q.correct)cls=' correct';else if(session.checked&&session.selected===i&&!session.correct)cls=' incorrect';return `<button class="choice ${forward?'':'jp-choice'}${cls}" data-action="choose" data-option="${i}" aria-pressed="${session.selected===i}" ${session.checked?'disabled':''} ${!forward?'lang="ja"':''}><span class="choice-index">${i+1}</span><span>${esc(option)}</span></button>`;}).join('')}</div>`;}
+    if(q.type==='learn')return `<div class="exercise-type">${icon('leaf')}${q.word.kana?'ШИНЭ ҮСЭГ':'ШИНЭ ҮГ'} · ${session.pos+1} / ${session.words.length}</div><h1 id="exercise-title" tabindex="-1">${q.word.kana?'Энэ үсэгтэй танилцаарай.':'Энэ үгтэй танилцаарай.'}</h1><div ${cardAttrs('learn-card',q.word)}>${audioBtn(q.word,' card-audio')}<p class="learn-kana${q.word.kana ? ' is-kana-learn' : ''}" lang="ja">${q.word.kana?esc(q.word.jp):face(q.word.jp,q.word.kj)}</p><p class="learn-meaning">${esc(q.word.mn)}</p></div><p class="learn-hint">Дууны дүрстэй картын аль ч хэсэгт дарж сонсоод, чангаар давтаж уншаарай. Дахин дарвал зогсоно.</p>`;
+    if(q.type==='quiz'){const d=q.direction,forward=d==='jp-mn',mnPrompt=d==='mn-jp';
+      /* Япон→монголоос бусад чиглэлд дуудлага нь ХАРИУЛТ (уншлага) тул шалгасны дараа л. */
+      const hear=forward||session.checked,head=QUIZ_HEAD[d]||QUIZ_HEAD['jp-mn'];
+      const prompt=forward?face(q.word.jp,q.word.kj):mnPrompt?esc(q.word.mn):d==='kj-jp'?esc(q.word.kj):d==='hira-kata'?esc(q.word.hira):esc(q.word.jp);
+      return `<div class="exercise-type">${icon(q.retry?'repeat':'target')}${q.retry?'ДАХИН БАТАТГАЯ':head[0]}</div><h1 id="exercise-title" tabindex="-1">${head[1]}</h1><div ${cardAttrs('quiz-prompt-card',q.word,hear)}><p class="exercise-prompt${mnPrompt?' mn-prompt':''}${d==='kj-jp'?' kj-prompt':''}${q.word.kana?' kana-prompt':''}" ${mnPrompt?'':'lang="ja"'}>${prompt}</p>${hear?audioBtn(q.word):''}</div><div class="choices" role="group" aria-label="Хариултууд">${q.options.map((option,i)=>{let cls=session.selected===i?' selected':'';if(session.checked&&option===q.correct)cls=' correct';else if(session.checked&&session.selected===i&&!session.correct)cls=' incorrect';return `<button class="choice ${forward?'':'jp-choice'}${cls}" data-action="choose" data-option="${i}" aria-pressed="${session.selected===i}" ${session.checked?'disabled':''} ${!forward?'lang="ja"':''}><span class="choice-index">${i+1}</span><span>${d==='mn-jp'?face(option):esc(option)}</span></button>`;}).join('')}</div>`;}
     return `<div class="exercise-type">${icon(q.retry?'repeat':'tiles')}${q.retry?'ДАХИН БАТАТГАЯ':'ҮГСЭЭ ХОЛБОЁ'}</div><h1 id="exercise-title" tabindex="-1">Өгүүлбэрийг эвлүүлээрэй.</h1><p class="exercise-prompt mn-prompt">${esc(q.sentence.mn)}</p><div class="sentence-answer" aria-label="Таны өгүүлбэр" aria-live="polite">${session.selectedTokens.length?session.selectedTokens.map(id=>{const token=q.tokens.find(t=>t.id===id);return `<button class="token" data-action="remove-token" data-token="${id}" ${session.checked?'disabled':''} lang="ja" aria-label="${esc(token.text)}, буцаах">${esc(token.text)}</button>`;}).join(''):'<span class="sentence-placeholder">Доорх үгсийг дарааллаар нь сонгоно уу.</span>'}</div><div class="token-bank" aria-label="Эвлүүлэх үгс">${q.tokens.map(token=>`<button class="token ${session.selectedTokens.includes(token.id)?'used':''}" data-action="token" data-token="${token.id}" ${session.checked||session.selectedTokens.includes(token.id)?'disabled':''} lang="ja">${esc(token.text)}</button>`).join('')}</div><button class="hint-btn" data-action="hint">${session.showHint?'Загварыг нуух':'Тусламж · өгүүлбэрийн загвар'}</button>${session.showHint?`<p class="sentence-hint" lang="ja">${q.sentence.tokens.map(esc).join('　')}</p>`:''}`;
   }
-  function renderSession(){if(!session)return;if(session.completed){renderCompletion();return;}const q=session.queue[session.pos];const ready=q.type==='learn'||q.type==='quiz'&&session.selected!==null||q.type==='sentence'&&session.selectedTokens.length===q.tokens.length;const feedback=session.checked?`<div class="feedback ${session.correct?'':'incorrect'}" role="status"><span class="feedback-icon">${icon(session.correct?'check':'repeat')}</span><div><strong>${session.correct?'Зөв байна!':'Дахиад нэг тогтооё.'}</strong><small>${session.correct?(q.retry?'Сайн байна. Санаж хэллээ.':`+${q.type==='sentence'?20:10} XP`):`Зөв хариулт: <span lang="${q.type==='sentence'||q.direction==='mn-jp'?'ja':'mn'}">${esc(q.type==='sentence'?q.sentence.tokens.join(' '):q.correct)}</span>`}</small></div></div>`:`<p class="bottom-note">${q.type==='learn'?'Үгээ уншаад дараагийн алхамд ороорой.':q.type==='sentence'?'Үг дээр дарж нэмнэ. Сонгосон үг дээр дарж буцаана.':'Хариултаа сонгоод шалгаарай.'}</p>`;
+  function renderSession(){if(!session)return;if(session.completed){renderCompletion();return;}const q=session.queue[session.pos];const ready=q.type==='learn'||q.type==='quiz'&&session.selected!==null||q.type==='sentence'&&session.selectedTokens.length===q.tokens.length;const feedback=session.checked?`<div class="feedback ${session.correct?'':'incorrect'}" role="status"><span class="feedback-icon">${icon(session.correct?'check':'repeat')}</span><div><strong>${session.correct?'Зөв байна!':'Дахиад нэг тогтооё.'}</strong><small>${session.correct?(q.retry?'Сайн байна. Санаж хэллээ.':`+${q.type==='sentence'?20:10} XP`):`Зөв хариулт: <span lang="${q.type==='sentence'||q.direction!=='jp-mn'?'ja':'mn'}">${q.type==='sentence'?esc(q.sentence.tokens.join(' ')):q.direction==='mn-jp'?face(q.correct):esc(q.correct)}</span>`}</small></div></div>`:`<p class="bottom-note">${q.type==='learn'?'Үгээ уншаад дараагийн алхамд ороорой.':q.type==='sentence'?'Үг дээр дарж нэмнэ. Сонгосон үг дээр дарж буцаана.':'Хариултаа сонгоод шалгаарай.'}</p>`;
     /* Ахицын зурвас: давтах асуулт төгсгөлд нэмэгдэхэд УХРАХГҮЙ — суурь нь
        эхний дарааллын урт (`session.base`). Суурь дуусахад 100%, дараа нь «давталтын үе». */
     const base=session.base||(session.base=session.queue.filter(x=>!x.retry).length),extra=session.queue.length-base,inRetry=session.pos>=base,done=Math.min(session.pos,base);
     const metaRight=inRetry?`Алдсан асуултууд · ${session.pos-base+1} / ${extra}`:`${session.pos+1} / ${base}${extra?` <span class="retry-chip">${icon('repeat')}+${extra} давтах</span>`:''}`;
-    $('lesson-content').innerHTML=`<div class="lesson-frame${inRetry?' is-retry-phase':''}"><div class="lesson-top"><button class="icon-button" data-action="exit" aria-label="Хичээлээс гарах">${icon('close')}</button><div class="progress-track" role="progressbar" aria-label="Хичээлийн ахиц" aria-valuenow="${done}" aria-valuemin="0" aria-valuemax="${base}"><div class="progress-fill" style="width:${inRetry?100:done/base*100}%"></div></div><span class="session-xp">${session.xp} XP</span>${soundBtn()}</div><div class="lesson-meta"><span>${session.test?'🧮 Тооны шалгалт':session.review?'Үзсэн үгсийн давтлага':TOPICS[session.lesson.topic][0]+' · '+(session.lesson.chunk+1)+'-р хичээл'}</span><span>${metaRight}</span></div><section class="exercise">${exerciseMarkup(q)}</section><div class="lesson-bottom${session.checked?(session.correct?' is-correct':' is-incorrect'):''}">${feedback}<button class="primary-btn" data-action="${q.type==='learn'?'next':session.checked?'next':'check'}" ${!session.checked&&!ready?'disabled':''}>${q.type==='learn'?'Уншлаа, үргэлжлүүлье':session.checked?'Үргэлжлүүлэх':'Шалгах'}${icon('arrow')}</button></div></div>`;
+    $('lesson-content').innerHTML=`<div class="lesson-frame${inRetry?' is-retry-phase':''}"><div class="lesson-top"><button class="icon-button" data-action="exit" aria-label="Хичээлээс гарах">${icon('close')}</button><div class="progress-track" role="progressbar" aria-label="Хичээлийн ахиц" aria-valuenow="${done}" aria-valuemin="0" aria-valuemax="${base}"><div class="progress-fill" style="width:${inRetry?100:done/base*100}%"></div></div><span class="session-xp">${session.xp} XP</span>${soundBtn()}</div><div class="lesson-meta"><span>${session.title?esc(session.title):session.test?'🧮 Тооны шалгалт':session.review?'Үзсэн үгсийн давтлага':TOPICS[session.lesson.topic][0]+' · '+(session.lesson.chunk+1)+'-р хичээл'}</span><span>${metaRight}</span></div><section class="exercise">${exerciseMarkup(q)}</section><div class="lesson-bottom${session.checked?(session.correct?' is-correct':' is-incorrect'):''}">${feedback}<button class="primary-btn" data-action="${q.type==='learn'?'next':session.checked?'next':'check'}" ${!session.checked&&!ready?'disabled':''}>${q.type==='learn'?'Уншлаа, үргэлжлүүлье':session.checked?'Үргэлжлүүлэх':'Шалгах'}${icon('arrow')}</button></div></div>`;
   }
   function checkAnswer(){if(!session||session.checked||session.completed)return;const q=session.queue[session.pos];if(q.type==='learn')return;if(q.type==='quiz'&&session.selected===null)return;if(q.type==='sentence'&&session.selectedTokens.length!==q.tokens.length)return;
     const actual=q.type==='quiz'?q.options[session.selected]:session.selectedTokens.map(id=>q.tokens.find(t=>t.id===id).text).join('|');const correct=q.type==='quiz'?actual===q.correct:[q.sentence.tokens,...(q.sentence.alts||[])].some(tokens=>tokens.join('|')===actual);
@@ -756,13 +1355,13 @@
     if(!correct&&!q.retry)session.queue.push({...q,retry:true,...(q.type==='sentence'?{tokens:shuffle(q.tokens)}:{options:shuffle(q.options)})});
     renderSession();
   }
-  function nextQuestion(){if(!session||session.completed)return;const q=session.queue[session.pos];if(q.type!=='learn'&&!session.checked)return;session.pos++;if(session.pos>=session.queue.length){finishLesson();return;}session.selected=null;session.selectedTokens=[];session.checked=false;session.showHint=false;renderSession();$('lesson-dialog').scrollTop=0;const h=$('exercise-title');if(h)h.focus({preventScroll:true});}
-  function finishLesson(){if(session.completed)return;session.completed=true;state.xp+=session.xp;if(!session.review&&!state.completed.includes(session.lesson.id))state.completed.push(session.lesson.id);const date=today();const daySet=new Set(Array.isArray(state.days[date])?state.days[date]:[]);
-    for(const word of session.words){const result=session.results[word.id]||{attempts:0,misses:0,correct:0},prior=state.words[word.id]||{},passes=result.misses?0:(Number(prior.passes)||0)+1;state.words[word.id]={passes,weak:result.misses>0,due:shiftDate(date,result.misses?1:passes>=3?7:passes===2?3:1),last:date,attempts:(Number(prior.attempts)||0)+result.attempts,misses:(Number(prior.misses)||0)+result.misses};daySet.add(word.id);}
+  function nextQuestion(){if(!session||session.completed)return;const q=session.queue[session.pos];if(q.type!=='learn'&&!session.checked)return;session.pos++;if(session.pos>=session.queue.length){finishLesson();return;}session.selected=null;session.selectedTokens=[];session.checked=false;session.showHint=false;renderSession();$('lesson-dialog').scrollTop=0;const h=$('exercise-title');if(h)h.focus({preventScroll:true});markOverflowSoon($('lesson-content'));}
+  function finishLesson(){if(session.completed)return;session.completed=true;state.xp+=session.xp;addDayXp(session.xp);if(!session.review&&!state.completed.includes(session.lesson.id))state.completed.push(session.lesson.id);const date=today();const daySet=new Set(Array.isArray(state.days[date])?state.days[date]:[]);
+    const store=session.kana?state.kana:state.words;for(const word of session.words){const result=session.results[word.id]||{attempts:0,misses:0,correct:0},prior=store[word.id]||{},passes=result.misses?0:(Number(prior.passes)||0)+1;store[word.id]={passes,weak:result.misses>0,due:shiftDate(date,result.misses?1:passes>=3?7:passes===2?3:1),last:date,attempts:(Number(prior.attempts)||0)+result.attempts,misses:(Number(prior.misses)||0)+result.misses};daySet.add(word.id);}
     state.days[date]=[...daySet];save();updateTop();sfx(SFX.done);renderCompletion();
   }
   function renderCompletion(){const accuracy=session.firstAnswers?Math.round(session.firstCorrect/session.firstAnswers*100):100;const minutes=Math.max(1,Math.round((Date.now()-session.started)/60000));const missed=Object.values(session.results).filter(r=>r.misses).length;
-    $('lesson-content').innerHTML=`<div class="lesson-frame"><div class="lesson-top"><button class="icon-button" data-action="finish" aria-label="Сурах зам руу буцах">${icon('close')}</button><div class="progress-track"><div class="progress-fill" style="width:100%"></div></div><span class="session-xp">${session.xp} XP</span>${soundBtn()}</div><section class="completion"><div class="completion-mascot">${mascot()}</div><div class="eyebrow">ӨНӨӨДРИЙН НЭГ АЛХАМ</div><h1>${session.test?'Шалгалт дууслаа!':session.review?'Үгсээ бататгалаа!':'Хичээлээ дуусгалаа!'}</h1><p>${session.test?`${session.firstAnswers} асуултад хариуллаа.`:`${session.words.length} үг, хэллэг дээр ажиллалаа.`}<br>${missed?`${missed} алдсан үгээ давтлагад дахин бататгаарай.`:'Дараа нь харахгүйгээр санаж хэлж үзээрэй.'}</p><div class="result-stats"><div class="result-stat"><strong>+${session.xp}</strong><span>ХУРИМТЛУУЛСАН XP</span></div><div class="result-stat"><strong>${accuracy}%</strong><span>ЭХНИЙ ОРОЛДЛОГО</span></div><div class="result-stat"><strong>${minutes}</strong><span>МИНУТ</span></div></div><button class="primary-btn" data-action="finish">Сурах зам руу буцах${icon('arrow')}</button><p class="save-note">${storageWorks?SAVE_TEXT[saveKind()][1]:'Ахиц энэ хөтөч дээр хадгалагдсангүй.'}</p></section></div>`;
+    $('lesson-content').innerHTML=`<div class="lesson-frame"><div class="lesson-top"><button class="icon-button" data-action="finish" aria-label="Сурах зам руу буцах">${icon('close')}</button><div class="progress-track"><div class="progress-fill" style="width:100%"></div></div><span class="session-xp">${session.xp} XP</span>${soundBtn()}</div><section class="completion"><div class="completion-mascot">${mascot()}</div><div class="eyebrow">ӨНӨӨДРИЙН НЭГ АЛХАМ</div><h1>${session.test?'Шалгалт дууслаа!':session.kana?'Катаканаа бататгалаа!':session.review?'Үгсээ бататгалаа!':'Хичээлээ дуусгалаа!'}</h1><p>${session.test?`${session.firstAnswers} асуултад хариуллаа.`:session.kana?`${session.words.length} катакана үсэг дээр ажиллалаа.`:`${session.words.length} үг, хэллэг дээр ажиллалаа.`}<br>${missed?`${missed} алдсан ${session.kana?'үсгээ':'үгээ'} давтлагад дахин бататгаарай.`:'Дараа нь харахгүйгээр санаж хэлж үзээрэй.'}</p><div class="result-stats"><div class="result-stat"><strong>+${session.xp}</strong><span>ХУРИМТЛУУЛСАН XP</span></div><div class="result-stat"><strong>${accuracy}%</strong><span>ЭХНИЙ ОРОЛДЛОГО</span></div><div class="result-stat"><strong>${minutes}</strong><span>МИНУТ</span></div></div><button class="primary-btn" data-action="finish">Сурах зам руу буцах${icon('arrow')}</button><p class="save-note">${storageWorks?SAVE_TEXT[saveKind()][1]:'Ахиц энэ хөтөч дээр хадгалагдсангүй.'}</p></section></div>`;
   }
   function exitSession(){if(!session||session.completed){closeSession();return;}$('lesson-content').innerHTML=`<div class="lesson-frame"><section class="exit-confirm"><div class="empty-icon">${icon('leaf')}</div><h2>Түр завсарлах уу?</h2><p>Энэ хичээлийн ахиц дуусах үед хадгалагдана. Одоо гарвал энэ хичээлийг эхнээс нь үзнэ.</p><div class="exit-actions"><button class="secondary-btn" data-action="discard">Одоо гарах</button><button class="primary-btn" data-action="resume">Хичээлээ үргэлжлүүлэх</button></div></section></div>`;}
   function closeSession(){$('lesson-dialog').close();session=null;switchView(view);}
@@ -774,6 +1373,10 @@
     const action=button.dataset.action;if(!action)return;
     if(action==='say'){sayId(button.dataset.auFor);return;}
     if(action==='sync-open'){openSync();return;}
+    if(action==='script'){const sc=$('profile-heat-scroll');profileKeep={left:sc?sc.scrollLeft:null,focus:button.dataset.script==='kanji'?'kanji':'kana'};setScript(button.dataset.script);switchView(view);return;}
+    if(action==='kana-lesson'){startKana(Number(button.dataset.kana));return;}
+    if(action==='kana-review'){startKanaReview();return;}
+    if(action==='kata-words'){startKataWords();return;}
     if(action==='sound'){soundOn=!soundOn;try{localStorage.setItem(SOUND_KEY,soundOn?'1':'0');}catch{}renderSession();if(soundOn)sfx(SFX.ok);return;}
     if(action==='start')startLesson(button.dataset.lesson);
     else if(action==='review')startReview();
@@ -794,6 +1397,8 @@
   $('lesson-dialog').addEventListener('cancel',event=>{event.preventDefault();exitSession();});
   document.addEventListener('keydown',event=>{
     if(!session||session.completed||!$('lesson-dialog').open||!$('exercise-title'))return;
+    // Сонголт доторх урт ханзыг сумаар гүйлгэнэ (Tab-ийн нэмэлт цэг үүсгэхгүй).
+    const ae=document.activeElement;if((event.key==='ArrowLeft'||event.key==='ArrowRight')&&ae&&ae.classList.contains('choice')){const line=ae.querySelector('.jp-face-line');if(line&&line.scrollWidth>line.clientWidth){line.scrollLeft+=event.key==='ArrowRight'?48:-48;event.preventDefault();}return;}
     const q=session.queue[session.pos];if(event.key==='Enter'){event.preventDefault();if(q.type==='learn'||session.checked)nextQuestion();else checkAnswer();}
     else if(q.type==='quiz'&&!session.checked&&['1','2','3','4'].includes(event.key)){session.selected=Number(event.key)-1;renderSession();}
   });
@@ -825,5 +1430,6 @@
     code:()=>syncCode,on:syncOn,mode:syncMode,
     words:()=>allWords,say:sayWord,hear:canHear,playing:()=>auNow,
     signedIn:signedIn,user:authUser,signOut:signOut,googleIn:googleIn,
-    numTest:{build:buildTest,genDate,genTime,MONTHS,DAYS,HOURS,session:()=>session}};
+    numTest:{build:buildTest,genDate,genTime,MONTHS,DAYS,HOURS,session:()=>session},
+    profile:{data:profileData,heat:heatWeeks,longest:longestStreak,dev:()=>devId,script:()=>scriptMode,kana:()=>KANA,kanaLessons:()=>kanaLessons,kata:()=>kataWords}};
 })();

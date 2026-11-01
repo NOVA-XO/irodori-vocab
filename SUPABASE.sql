@@ -1172,6 +1172,10 @@ $mw$;
 
 -- ── Өдрийн ахицыг уусгана: өдөр тутмын үгийн id-ийн НЭГДЭЛ ─────────────
 -- Хоёр төхөөрөмж дээр нэг өдөр өөр өөр үг давтсан байж болно.
+-- 2026-11-01: түлхүүр зөвхөн `YYYY-MM-DD`, ХАМГИЙН СҮҮЛИЙН 800 өдөр. Өмнө нь
+-- ЭРЭМБЭГҮЙ `limit 400` 400 өдрөөс хойш САНАМСАРГҮЙ өдрийг хаяж (хамгийн
+-- урт streak, жилийн нүдэн график эвдэрнэ), клиент хязгааргүй байв.
+-- Клиент `kotoMerge`-тэй ИЖИЛ — `test_sql.js` санамсаргүй тохиолдлоор тулгана.
 create or replace function public.koto_merge_days(a jsonb, b jsonb)
 returns jsonb
 language sql
@@ -1186,15 +1190,55 @@ as $md$
     select key, jsonb_array_elements_text(value) as id
       from src
      where jsonb_typeof(value) = 'array'
+       and key ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
   )
   select coalesce(jsonb_object_agg(key, arr), '{}'::jsonb)
     from (
       select key, jsonb_agg(distinct id) as arr
         from ids
        group by key
-       limit 400
+       order by key collate "C" desc
+       limit 800
     ) g;
 $md$;
+
+-- ── Өдрийн XP: төхөөрөмж бүрийн тоолуур `{өдөр: {төхөөрөмж: xp}}` ────────
+-- Нэг өдөр хоёр төхөөрөмж дээр цуглуулсан XP-ийн НИЙЛБЭР нь үнэн. Төхөөрөмж
+-- бүрт max авдаг тул дахин нийлүүлэхэд давхар тоологдохгүй (нийлбэр авбал
+-- синк бүрд өсөж, max авбал хоёр төхөөрөмжийн нэг нь алдагдана). Сүүлийн
+-- 800 өдөр, өдөрт 16 төхөөрөмж (түлхүүрийн эрэмбээр) — хог өгөгдлийн
+-- хамгаалалт. Клиент `kotoMerge`-тэй ИЖИЛ.
+create or replace function public.koto_merge_xpd(a jsonb, b jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = public
+as $mx$
+  with src as (
+    select key, value from jsonb_each(case when jsonb_typeof(a) = 'object' then a else '{}'::jsonb end)
+    union all
+    select key, value from jsonb_each(case when jsonb_typeof(b) = 'object' then b else '{}'::jsonb end)
+  ), cells as (
+    select s.key as day, e.key as dev, public.jnum(e.value) as xp
+      from src s
+     cross join lateral jsonb_each(case when jsonb_typeof(s.value) = 'object' then s.value else '{}'::jsonb end) e
+     where s.key ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+  ), best as (
+    select day, dev, max(xp) as xp from cells group by day, dev
+  ), ranked as (
+    select day, dev, xp, row_number() over (partition by day order by dev collate "C") as rn
+      from best
+     where xp > 0
+  ), kept as (
+    select day, jsonb_object_agg(dev, xp) as o
+      from ranked
+     where rn <= 16
+     group by day
+     order by day collate "C" desc
+     limit 800
+  )
+  select coalesce(jsonb_object_agg(day, o), '{}'::jsonb) from kept;
+$mx$;
 
 -- ── Бүх талбарын уусгалт НЭГ ГАЗАР ────────────────────────────────────
 -- `a` нь СЕРВЕР дээрх хуучин, `b` нь шинээр ирсэн. Клиентийн
@@ -1225,7 +1269,10 @@ as $km$
         ) u
     ), '[]'::jsonb),
     'words', public.koto_merge_words(a -> 'words', b -> 'words'),
+    -- Катакана үсгийн ахиц — үгийнхтэй ИЖИЛ дүрэм (2026-11-01).
+    'kana',  public.koto_merge_words(a -> 'kana',  b -> 'kana'),
     'days',  public.koto_merge_days(a -> 'days',  b -> 'days'),
+    'xpd',   public.koto_merge_xpd(a -> 'xpd',   b -> 'xpd'),
     'selectedTopic',
       least(greatest(public.jnum(b -> 'selectedTopic'), 0), 99)::int
   );
@@ -1317,6 +1364,7 @@ revoke all on function public.koto_merge(jsonb, jsonb) from public, anon, authen
 revoke all on function public.koto_merge_word(jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.koto_merge_words(jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.koto_merge_days(jsonb, jsonb) from public, anon, authenticated;
+revoke all on function public.koto_merge_xpd(jsonb, jsonb) from public, anon, authenticated;
 revoke all on function public.koto_user_get() from public, anon, authenticated;
 revoke all on function public.koto_user_put(jsonb) from public, anon, authenticated;
 grant execute on function public.koto_get(text) to anon;

@@ -1297,6 +1297,1188 @@ button, a, input, select {
   outline-offset: 4px;
 }
 
+/* ── Ахиц, бичиг, катакана ─────────────────────────────────── */
+
+#view-profile,
+.profile-page,
+.profile-page > *,
+.p-card,
+.p-card-head > *,
+.p-script-layout > *,
+.p-kata-words > *,
+.p-sync > * {
+  min-width: 0;
+}
+
+.profile-page {
+  display: grid;
+  gap: 24px;
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.profile-page h2 {
+  font-size: 19px;
+  line-height: 1.4;
+  letter-spacing: -.02em;
+}
+
+.profile-page h3 {
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.profile-page p,
+.profile-page h1,
+.profile-page h2,
+.profile-page h3,
+.profile-page dt,
+.profile-page dd {
+  overflow-wrap: anywhere;
+}
+
+.p-header,
+.p-card-head,
+.p-line-row,
+.p-heat-footer,
+.p-sync {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.p-header,
+.p-card-head,
+.p-heat-footer {
+  flex-wrap: wrap;
+}
+
+.p-header .page-title {
+  margin: 6px 0 10px;
+}
+
+.p-muted {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.p-small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.p-space {
+  margin-top: 12px;
+}
+
+.p-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.p-card-head {
+  margin-bottom: 20px;
+}
+
+.p-card-head > .icon {
+  color: var(--muted);
+}
+
+.p-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  min-height: 48px;
+  max-width: 100%;
+  padding: 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.p-btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.p-btn-primary {
+  background: var(--lime);
+  color: var(--button-ink);
+  border-color: var(--lime-dark);
+  border-bottom-width: 3px;
+}
+
+.p-btn:disabled {
+  color: var(--muted);
+  background: var(--soft);
+  border-style: dashed;
+}
+
+.profile-page :is(button, summary):focus-visible,
+.heat-scroll:focus-visible,
+.jp-face-line:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* Streak зүүн талд; жилийн график баруун талд. */
+
+.p-activity {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.p-streak {
+  background: var(--warm-surface);
+}
+
+.p-streak .p-card-head > .icon {
+  width: 28px;
+  height: 28px;
+  color: var(--warm-ink);
+}
+
+.p-streak-number {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0;
+  color: var(--warm-ink);
+}
+
+.p-streak-number strong {
+  font-size: clamp(48px, 5vw, 64px);
+  line-height: 1;
+  letter-spacing: -.05em;
+}
+
+.p-streak-number > span {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.p-streak-best {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--warm-ink);
+  font-size: 12px;
+}
+
+.p-streak-best strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 17px;
+}
+
+/* Графикийн өргөн зөвхөн өөрийн гүйлгэх хэсэгт хадгалагдана. */
+
+.heat-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 8px 4px 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) var(--soft);
+  overscroll-behavior-x: contain;
+  scroll-behavior: auto;
+  border-radius: 6px;
+}
+
+.heat-scroll:focus-visible {
+  outline-offset: -3px;
+}
+
+.heat-calendar {
+  display: flex;
+  width: max-content;
+}
+
+/* Гарагийн багана гүйлгэхэд хөдлөхгүй (утсан дээр график төгсгөлдөө
+   гүйлгэгдсэн тул үгүй бол Да/Лх/Ба огт харагдахгүй). Дээд 24px нь сарын
+   мөрийн булангийг ч халхална. */
+.heat-days {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: repeat(7, 12px);
+  gap: 3px;
+  flex: 0 0 32px;
+  width: 32px;
+  padding: 24px 8px 0 0;
+  background: var(--paper);
+  box-shadow: -4px 0 0 var(--paper);
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 12px;
+}
+
+/* 53 × 12px + 52 × 3px = 792px. */
+.heat-timeline {
+  width: 792px;
+  flex: 0 0 792px;
+}
+
+.heat-months,
+.heat-grid {
+  display: grid;
+  grid-template-columns: repeat(53, 12px);
+  gap: 3px;
+}
+
+.heat-months {
+  height: 20px;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 16px;
+}
+
+.heat-month {
+  position: relative;
+  min-width: 0;
+}
+
+.heat-month b {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.heat-month b.is-cut {
+  visibility: hidden;
+}
+
+.heat-col {
+  display: grid;
+  grid-template-rows: repeat(7, 12px);
+  gap: 3px;
+}
+
+.heat-cell {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--soft);
+}
+
+/* Өдрийн XP-ийн 4 шат. Хуучин green-тэй холих шат гэрэлтэйд саарал гарч
+   1–2-р шат хоосон нүднээс ялгагдахгүй байсан (2026-11-01) → lime-аас
+   ногоон руу; бараанд бүдэг lime-аас тод lime руу. Хөрш шатны гэрлийн
+   харьцаа ≥1.4, хоосон → 1-р шат: гэрэлтэйд өнгөөр, бараанд 2.2. */
+:root {
+  --heat-1: #b8ef58;
+  --heat-2: #8dbd38;
+  --heat-3: #5b8a3e;
+  --heat-4: #2a5744;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --heat-1: #516e37;
+    --heat-2: #769c43;
+    --heat-3: #9bca4f;
+    --heat-4: #b8ef58;
+  }
+}
+
+.heat-cell[data-level="1"] {
+  background: var(--heat-1);
+  border-color: var(--heat-1);
+}
+
+.heat-cell[data-level="2"] {
+  background: var(--heat-2);
+  border-color: var(--heat-2);
+}
+
+.heat-cell[data-level="3"] {
+  background: var(--heat-3);
+  border-color: var(--heat-3);
+}
+
+.heat-cell[data-level="4"] {
+  background: var(--heat-4);
+  border-color: var(--heat-4);
+}
+
+/* XP мэдэгдэхгүй өдрийг бага XP-тэй өдрөөс хээгээр ялгана. */
+.heat-cell[data-legacy] {
+  border-color: var(--muted);
+  background: repeating-linear-gradient(
+    135deg,
+    var(--soft) 0 3px,
+    var(--muted) 3px 4px
+  );
+}
+
+.heat-cell[data-future] {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--muted);
+  opacity: .5;
+}
+
+.p-heat-footer {
+  margin: 12px 0 8px;
+}
+
+.p-heat-footer .p-muted {
+  flex: 1 1 180px;
+  font-size: 12px;
+}
+
+.p-heat-scale {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.p-heat-scale > span:first-child {
+  margin-right: 4px;
+}
+
+.p-heat-scale > span:last-child {
+  margin-left: 4px;
+}
+
+.p-legacy-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.p-legacy-note .heat-cell {
+  margin-top: 4px;
+}
+
+/* Статистик ба явцын зурвас. */
+
+.p-stats,
+.p-word-states {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.p-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.p-stats > div {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+}
+
+.p-stats dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.p-stats dd {
+  margin: 6px 0 0;
+  font-size: clamp(24px, 2.6vw, 32px);
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.p-progress {
+  display: block;
+  appearance: none;
+  width: 100%;
+  max-width: 100%;
+  height: 10px;
+  margin: 12px 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 99px;
+  background: var(--soft);
+  color: var(--green);
+  accent-color: var(--green);
+}
+
+.p-progress::-webkit-progress-bar {
+  background: var(--soft);
+  border-radius: 99px;
+}
+
+.p-progress::-webkit-progress-value {
+  background: var(--green);
+  border-radius: 99px;
+}
+
+.p-progress::-moz-progress-bar {
+  background: var(--green);
+  border-radius: 99px;
+}
+
+.p-line-row {
+  align-items: baseline;
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+.p-line-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.p-line-row > strong {
+  flex-shrink: 0;
+}
+
+/* Бичгийн сонголт. */
+
+.p-script-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.p-segment {
+  display: flex;
+  gap: 4px;
+  width: min(100%, 360px);
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--soft);
+}
+
+.p-segment button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 52px;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.p-segment button > [lang="ja"] {
+  font-size: 19px;
+}
+
+.p-segment button[aria-pressed="true"] {
+  background: var(--paper);
+  border-color: var(--green);
+  color: var(--ink);
+  box-shadow: inset 0 -3px 0 var(--green);
+}
+
+.p-inset {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--soft);
+}
+
+.p-inset .p-progress,
+.p-inset .p-progress::-webkit-progress-bar {
+  background: var(--paper);
+}
+
+.p-count {
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.p-count strong {
+  color: var(--ink);
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+/* Үгийн гурван төлөв. */
+
+.p-word-states {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 20px 0;
+}
+
+.p-word-states > div {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+
+.p-word-states dt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.p-word-states dt .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.p-word-states dd {
+  margin: 8px 0;
+  font-size: 30px;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.p-word-states p {
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.p-state-strong {
+  background: var(--success-surface);
+  color: var(--success-ink);
+}
+
+.p-state-learning {
+  background: var(--cool-surface);
+  color: var(--cool-ink);
+}
+
+.p-state-weak {
+  background: var(--warm-surface);
+  color: var(--warm-ink);
+}
+
+.p-details {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+}
+
+.p-details > summary,
+.p-kana-group > summary {
+  min-height: 48px;
+  padding: 12px 4px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.p-details > summary {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.p-topic-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.p-topic-list > li {
+  min-width: 0;
+}
+
+/* Катаканы 21 хичээл. */
+
+.p-kana-groups {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.p-kana-group {
+  min-width: 0;
+  border-top: 1px solid var(--line);
+}
+
+.p-kana-group > summary h3 {
+  display: inline;
+  margin-left: 4px;
+}
+
+.p-kana-group > summary .p-small {
+  display: block;
+  margin: 3px 0 0 22px;
+}
+
+.p-kana-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 8px 0 4px;
+}
+
+.p-kana-lesson {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 128px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-bottom-width: 3px;
+  border-radius: 15px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+}
+
+.p-kana-top,
+.p-kana-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.p-kana-top strong {
+  font-size: 17px;
+}
+
+.p-kana-top .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
+.p-kana-chars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+.p-kana-chars > span {
+  white-space: nowrap;
+}
+
+.p-kana-bottom {
+  margin-top: auto;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.p-kana-lesson.is-seen {
+  border-color: var(--green);
+  background: var(--success-surface);
+}
+
+.p-kana-lesson.is-seen .p-kana-top .icon,
+.p-kana-lesson.is-seen .p-kana-bottom {
+  color: var(--success-ink);
+}
+
+.p-kata-words {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  background: var(--cool-surface);
+}
+
+.p-kata-symbol {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+  color: var(--cool-ink);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+/* Амжилтууд нь дарах товч биш. */
+
+.p-achievements {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.p-achievements > li {
+  min-width: 0;
+  padding: 18px;
+  border: 1px dashed var(--line);
+  border-radius: 16px;
+  background: var(--bg);
+}
+
+.p-achievement-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: var(--soft);
+  color: var(--muted);
+}
+
+.p-achievements h3 {
+  margin-bottom: 6px;
+}
+
+.p-achievement-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.p-achievement-status .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.p-achievements > .is-earned {
+  border-style: solid;
+  border-color: var(--lime-dark);
+  background: var(--accent-surface);
+}
+
+.is-earned .p-achievement-icon {
+  background: var(--lime);
+  color: var(--button-ink);
+}
+
+.is-earned .p-achievement-status {
+  color: var(--accent-ink);
+}
+
+.p-sync {
+  background: var(--soft);
+}
+
+.p-sync > div {
+  flex: 1;
+}
+
+.p-sync .p-btn {
+  flex-shrink: 0;
+}
+
+/* ── Ruby: ханз ба уншлагыг хамтад нь нэг мөрд хадгална ─────── */
+
+.jp-face-line {
+  display: inline-block;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: .7em .12em .18em;
+  overflow-x: auto;
+  overflow-y: hidden;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  line-height: 1.8;
+  text-align: inherit;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) var(--soft);
+  overscroll-behavior-x: contain;
+}
+
+ruby.jp-face {
+  ruby-position: over;
+  ruby-align: center;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  letter-spacing: 0;
+}
+
+ruby.jp-face rt {
+  color: var(--muted);
+  font-size: max(11px, .48em);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-align: center;
+}
+
+.word-heading > .word-kana {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#lesson-dialog .choice > span:last-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#lesson-dialog .learn-kana,
+#lesson-dialog .exercise-prompt {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#lesson-dialog .feedback > div {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#lesson-dialog .feedback small > span:has(.jp-face-line) {
+  display: block;
+  max-width: 100%;
+}
+
+#lesson-dialog .feedback .jp-face-line {
+  font-size: 18px;
+}
+
+/* ── Шинэ асуултын том бичлэг ─────────────────────────────── */
+
+#lesson-dialog .quiz-prompt-card .exercise-prompt.kj-prompt {
+  font-size: clamp(30px, 5vw, 48px);
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+#lesson-dialog .quiz-prompt-card .exercise-prompt.kana-prompt,
+#lesson-dialog .learn-card .learn-kana.is-kana-learn {
+  font-size: clamp(44px, 8vw, 68px);
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+#lesson-dialog .quiz-prompt-card .exercise-prompt:is(
+  .kj-prompt, .kana-prompt
+) {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  overflow-x: auto;
+  padding-block: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) var(--soft);
+}
+
+/* ── Үгийн картын катакана тэмдэг ─────────────────────────── */
+
+.word-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.word-meta .word-topic {
+  flex: 1 1 120px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.word-kata-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--cool-surface);
+  color: var(--cool-ink);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.word-card.is-kata {
+  border-inline-start: 3px solid var(--cool-ink);
+}
+
+/* Сонсож буй картын одоогийн playing өнгийг өөрчлөхгүй. */
+@media (hover: hover) and (pointer: fine) {
+  .p-btn:not(:disabled):hover,
+  .p-segment button[aria-pressed="false"]:hover,
+  .p-kana-lesson:hover {
+    border-color: var(--green);
+    background: var(--soft);
+  }
+
+  .p-btn-primary:not(:disabled):hover {
+    background: var(--lime);
+    color: var(--button-ink);
+  }
+}
+
+/* ── Дунд ба жижиг дэлгэц ────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .p-kana-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .p-kata-words {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .p-kata-words > .p-btn {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 900px) {
+  .p-activity,
+  .p-script-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .p-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .p-streak-number {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 12px;
+  }
+
+  .p-streak-best {
+    margin-top: 16px;
+  }
+
+  .p-word-states,
+  .p-achievements {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .p-sync {
+    flex-wrap: wrap;
+  }
+
+  .p-sync > div {
+    flex-basis: 100%;
+  }
+}
+
+/* Дөрвөн цэс нэг мөрд; дүрс дээр, нэр доор. */
+@media (max-width: 700px) {
+  .sidebar {
+    padding-inline: 12px;
+  }
+
+  .nav-list {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+    min-width: 0;
+    gap: 4px;
+    padding-bottom: 10px;
+  }
+
+  .nav-list .nav-item {
+    position: relative;
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-width: 0;
+    min-height: 60px;
+    padding: 6px 2px;
+    border-radius: 10px;
+    font-size: 11px;
+    line-height: 1.4;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  .nav-list .nav-item .icon {
+    width: 19px;
+    height: 19px;
+  }
+
+  .nav-list .nav-count {
+    display: none;
+  }
+
+  .nav-list .notification-dot {
+    position: absolute;
+    top: 7px;
+    right: 12px;
+    margin: 0;
+  }
+
+  .avatar.account-trigger {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .profile-page {
+    gap: 18px;
+  }
+
+  .p-card {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .p-topic-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
+  .breadcrumb {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .breadcrumb strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .top-stats {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 72%;
+    gap: 6px;
+  }
+
+  .stat-pill {
+    min-width: 0;
+  }
+
+  .stat-pill strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-page h2 {
+    font-size: 18px;
+  }
+
+  .p-card {
+    padding: 16px;
+  }
+
+  .p-header > .p-btn,
+  .p-card-head > .p-btn,
+  .p-sync > .p-btn {
+    width: 100%;
+  }
+
+  .p-stats {
+    gap: 10px;
+  }
+
+  .p-stats > div {
+    padding: 14px 12px;
+  }
+
+  /* Утсан дээр 2 багана, нягт карт: нэг баганатай 149px карт катаканы
+     хэсгийг 1742px болгож байсан. Төлөвийг дүрс ба aria-label илэрхийлнэ. */
+  .p-kana-grid {
+    gap: 8px;
+  }
+
+  .p-kana-lesson {
+    gap: 6px;
+    min-height: 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+  }
+
+  .p-kana-top strong {
+    font-size: 15px;
+  }
+
+  .p-kana-chars {
+    gap: 0 4px;
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  .p-kana-bottom > span:last-child {
+    display: none;
+  }
+
+  .p-kata-words {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .p-kata-symbol {
+    width: auto;
+    min-height: 44px;
+    justify-self: start;
+    padding: 8px 14px;
+    border-radius: 12px;
+  }
+
+  .p-kata-words > .p-btn {
+    width: 100%;
+  }
+}
+
 /* Бүх шинэ хөдөлгөөний дараа байрлуулна.
    Хөдөлгөөнгүй үед ч тоглож буй төлөв хүрээ, өнгө, баганаар ялгарна. */
 @media (prefers-reduced-motion: reduce) {

@@ -648,13 +648,17 @@ async function main() {
      бүр нэг талын ахицыг өөрчилнө. Аппын ЖИНХЭНЭ `kotoMerge`-ийг
      `v2/app.js`-ээс ачаалж, SQL-тэй санамсаргүй өгөгдөл дээр тулгана.
      Мэдэгдэж буй, зориуд хамруулаагүй зөрүү (эвдэрсэн өгөгдөл л):
-     бүхэл бус `selectedTopic`, `completed` дахь тоо, хоосон өдрийн массив. */
+     бүхэл бус `selectedTopic`, `completed` ба `days` дахь тоо (SQL текст
+     болгоно). Хоосон өдрийн массив 11-01-ээс хоёр талд хаягддаг болсон. */
   const appSrc = fs.readFileSync(path.join(ROOT, 'v2', 'app.js'), 'utf8');
   const kmSrc = appSrc.slice(appSrc.indexOf('  function kotoMerge(a, b) {'),
     appSrc.indexOf('\n  }\n', appSrc.indexOf('  function kotoMerge(a, b) {')) + 4);
   const clientMerge = new Function(kmSrc + '; return kotoMerge;')();
   let seed = 20261101;
-  const rnd = n => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed % n; };
+  /* ДЭЭД битээс: LCG-ийн доод бит богино давтамжтай — `seed % 2` нь
+     0,1,0,1 ээлжилж, «хоёр талд ижил төхөөрөмж», «хоосон өдөр» зэрэг
+     тохиолдол ОГТ үүсэхгүй байв (11-01, mutation-оор илрэв). */
+  const rnd = n => { seed = (seed * 1103515245 + 12345) % 2147483648; return Math.floor(seed / 2147483648 * n); };
   const pick = arr => arr[rnd(arr.length)];
   const DATES = [undefined, '', '2026-10-22', '2026-10-29', '2026-11-01', '2026-11-02', '2026-11-05'];
   const rec = () => {
@@ -666,12 +670,23 @@ async function main() {
     if (rnd(9) === 0) return pick([7, 'x', null, []]);
     return r;
   };
+  /* Өдрийн түлхүүрт хог (`x`, `2026-1-1`) ба хоосон/массив биш утга
+     зориуд орно — хоёр тал ижил хаях ёстой. */
+  const DAYKEYS = ['2026-10-30', '2026-10-31', '2026-11-01', 'x', '2026-1-1', '9999-99-99'];
   const side = () => {
     const words = {};
     for (let i = 0; i < 6; i++) if (rnd(3)) words['w' + i] = rec();
+    const kana = {};
+    for (let i = 0; i < 4; i++) if (rnd(2)) kana['K-00' + i] = rec();
     const days = {};
-    for (const d of ['2026-10-31', '2026-11-01']) if (rnd(2)) days[d] = ['w' + rnd(6), 'w' + rnd(6)];
-    return { version: 1, xp: rnd(500), completed: ['0-' + rnd(4), '1-' + rnd(4)], words, days, selectedTopic: rnd(17) };
+    for (const d of DAYKEYS) if (rnd(2)) days[d] = pick([['w' + rnd(6), 'w' + rnd(6)], ['w' + rnd(6)], [], 5]);
+    const xpd = {};
+    for (const d of DAYKEYS) if (rnd(2)) {
+      const o = {};
+      for (const dev of ['a1', 'b2', 'c3']) if (rnd(2)) o[dev] = pick([0, 10, 25, 120, -5, '30', null, 7.5]);
+      xpd[d] = rnd(8) ? o : pick([5, [], null]);
+    }
+    return { version: 1, xp: rnd(500), completed: ['0-' + rnd(4), '1-' + rnd(4)], words, kana, days, xpd, selectedTopic: rnd(17) };
   };
   const canon = v => {
     if (Array.isArray(v)) return v.map(canon);
@@ -693,9 +708,38 @@ async function main() {
     const x = side(), y = side();
     const s = await one('select public.koto_merge($1::jsonb, $2::jsonb) as d', [JSON.stringify(x), JSON.stringify(y)]);
     const cs = norm(clientMerge(x, y)), ss = norm(s.d);
-    if (cs !== ss) { diff++; if (!firstDiff) firstDiff = JSON.stringify({ x: x.words, y: y.words }) + '\n  client ' + cs + '\n  server ' + ss; }
+    if (cs !== ss) { diff++; if (!firstDiff) firstDiff = JSON.stringify({ x, y }) + '\n  client ' + cs + '\n  server ' + ss; }
   }
-  ok('клиент kotoMerge ↔ SQL koto_merge: 300 санамсаргүй тохиолдол ИЖИЛ (зөрүү ' + diff + ')', diff === 0, firstDiff.slice(0, 900));
+  ok('клиент kotoMerge ↔ SQL koto_merge: 300 санамсаргүй тохиолдол ИЖИЛ (зөрүү ' + diff + ')', diff === 0, firstDiff.slice(0, 1500));
+
+  /* Өмнө `koto_merge_days` нь ЭРЭМБЭГҮЙ `limit 400` — 400 өдрөөс хойш
+     санамсаргүй өдөр хаягдаж хамгийн урт streak эвдэрнэ. */
+  const merge = async (x, y) => (await one('select public.koto_merge($1::jsonb, $2::jsonb) as d', [JSON.stringify(x), JSON.stringify(y)])).d;
+  const dayN = i => new Date(Date.UTC(2024, 0, 1) + i * 864e5).toISOString().slice(0, 10);
+  const manyDays = {};
+  for (let i = 0; i < 900; i++) manyDays[dayN(i)] = ['w' + (i % 7)];
+  const md = await merge({ days: manyDays }, {});
+  const sk = Object.keys(md.days).sort(), ck = Object.keys(clientMerge({ days: manyDays }, {}).days).sort();
+  ok('900 өдөр → ХАМГИЙН СҮҮЛИЙН 800 үлдэнэ, клиент ижил (өмнө эрэмбэгүй 400)',
+    sk.length === 800 && sk[0] === dayN(100) && sk[799] === dayN(899) && JSON.stringify(sk) === JSON.stringify(ck),
+    sk.length + ' ' + sk[0] + '…' + sk[sk.length - 1] + ' / client ' + ck.length);
+
+  /* Өдрийн XP: хоёр төхөөрөмжийн НИЙЛБЭР, дахин нийлүүлэхэд давхардахгүй. */
+  const A = { xpd: { '2026-11-01': { a1: 50 } } }, B = { xpd: { '2026-11-01': { b2: 30 } } };
+  const ab = await merge(A, B), abb = await merge(ab, B), aab = await merge(A, ab);
+  const tot = o => Object.values(o.xpd['2026-11-01'] || {}).reduce((s, v) => s + v, 0);
+  ok('өдрийн XP: 2 төхөөрөмж 50+30 = 80; дахин нийлүүлэхэд 80 хэвээр',
+    tot(ab) === 80 && tot(abb) === 80 && tot(aab) === 80, [tot(ab), tot(abb), tot(aab)].join(','));
+  const devs = {};
+  for (let i = 0; i < 20; i++) devs['d' + String(i).padStart(2, '0')] = 10;
+  const dv = await merge({ xpd: { '2026-11-01': devs } }, {});
+  const cdv = clientMerge({ xpd: { '2026-11-01': devs } }, {});
+  ok('өдрийн XP: өдөрт 16 төхөөрөмж хүртэл (хог өгөгдлийн хамгаалалт), клиент ижил',
+    Object.keys(dv.xpd['2026-11-01']).length === 16 && JSON.stringify(canon(dv.xpd)) === JSON.stringify(canon(cdv.xpd)),
+    Object.keys(dv.xpd['2026-11-01']).length + ' / client ' + Object.keys(cdv.xpd['2026-11-01']).length);
+  const kk = await merge({}, { kana: { 'K-001': { passes: 2, weak: false, due: '2026-11-03', last: '2026-11-01' } } });
+  ok('катакана үсгийн ахиц серверт ХАДГАЛАГДАНА (koto_merge-д `kana`)',
+    kk.kana && kk.kana['K-001'] && kk.kana['K-001'].passes === 2, JSON.stringify(kk.kana));
   }
 
   console.log('\n[KOTO-USER] Google-ээр нэвтэрсэн хэрэглэгчийн ахиц');
@@ -774,6 +818,7 @@ async function main() {
     ['koto_merge_word', "select public.koto_merge_word('{}'::jsonb,'{}'::jsonb)"],
     ['koto_merge_words', "select public.koto_merge_words('{}'::jsonb,'{}'::jsonb)"],
     ['koto_merge_days', "select public.koto_merge_days('{}'::jsonb,'{}'::jsonb)"],
+    ['koto_merge_xpd', "select public.koto_merge_xpd('{}'::jsonb,'{}'::jsonb)"],
   ];
   for (const role of ['anon', 'authenticated']) {
     await db.exec('reset role; set role ' + role + ';');
