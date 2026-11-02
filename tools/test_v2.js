@@ -512,7 +512,7 @@ function getJSON(path, method) {
   await ev(`const t=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ulaanbaatar',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     const d=n=>{const x=new Date(t+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);};
     const days={};for(const n of [-400,-12,-11,-10,-3,-1,0])days[d(n)]=['0:0'];days['bad-key']=['0:1'];
-    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:0,completed:[],words:{},days,xpd:{[d(-1)]:{a1:60},[d(0)]:{a1:200,b2:150},[d(-3)]:{a1:-5}},selectedTopic:0}));
+    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:0,completed:[],words:{},days,xpd:{[d(-1)]:{a1:499},[d(0)]:{a1:300,b2:220},[d(-3)]:{a1:-5},[d(-20)]:{a1:119},[d(-21)]:{a1:120},[d(-22)]:{a1:249},[d(-23)]:{a1:250},[d(-24)]:{a1:500}},selectedTopic:0}));
     window.__t=t;`);
   await reload();
   const hm = await ev(`
@@ -523,12 +523,15 @@ function getJSON(path, method) {
     return { weeks:p.heat.weeks.length, cols7:p.heat.weeks.every(c=>c.length===7), monday:new Date(p.heat.weeks[0][0].date+'T12:00:00Z').getUTCDay(),
       todayInLast:lastCol.some(c=>c.date===t), futureOk:cells.every(c=>c.future===(c.date>t)), futureZero:cells.filter(c=>c.future).every(c=>c.level===0),
       today:at(t), y:at(d(-1)), m3:at(d(-3)), m10:at(d(-10)), m2:at(d(-2)), old:cells.some(c=>c.date===d(-400)),
+      edge:[-20,-21,-22,-23,-24].map(n=>at(d(n)).level),
       streak:p.streak, longest:p.longest, active:p.activeDays, todayXp:p.todayXp, hasLegacy:p.heat.hasLegacy };`);
   ok('нүдэн график: 53 долоо хоног × 7, Даваагаас, өнөөдөр сүүлийн баганад, ирээдүй хоосон',
     hm.weeks === 53 && hm.cols7 && hm.monday === 1 && hm.todayInLast && hm.futureOk && hm.futureZero, JSON.stringify(hm));
-  ok('нүдний түвшин: өнөөдөр 2 төхөөрөмж 350 XP → 4, өчигдөр 60 → 2, XP-гүй идэвхтэй өдөр → 1 legacy, сөрөг XP тоологдохгүй',
-    hm.today.xp === 350 && hm.today.level === 4 && hm.y.level === 2 && hm.m10.level === 1 && hm.m10.legacy && hm.m3.xp === 0 && hm.m3.legacy && hm.m2.level === 0 && hm.todayXp === 350 && hm.hasLegacy,
+  ok('нүдний түвшин: өнөөдөр 2 төхөөрөмж 300+220 XP → 4 (тус бүр 500 хүрэхгүй), өчигдөр 499 → 3, XP-гүй идэвхтэй өдөр → 1 legacy, сөрөг XP тоологдохгүй',
+    hm.today.xp === 520 && hm.today.level === 4 && hm.y.level === 3 && hm.m10.level === 1 && hm.m10.legacy && hm.m3.xp === 0 && hm.m3.legacy && hm.m2.level === 0 && hm.todayXp === 520 && hm.hasLegacy,
     JSON.stringify({ today: hm.today, y: hm.y, m3: hm.m3, m10: hm.m10, m2: hm.m2 }));
+  ok('шатлалын хил: 119 → 1, 120 → 2, 249 → 2, 250 → 3, 500 → 4 (дээд шат 500+)',
+    JSON.stringify(hm.edge) === '[1,2,2,3,4]', JSON.stringify(hm.edge));
   ok('streak 2 (өнөөдөр+өчигдөр), хамгийн урт 3 (-12…-10), хог түлхүүр алгасна, 400 хоногийн өмнөх график гадна',
     hm.streak === 2 && hm.longest === 3 && hm.active === 7 && !hm.old, JSON.stringify({ streak: hm.streak, longest: hm.longest, active: hm.active, old: hm.old }));
 
@@ -565,7 +568,7 @@ function getJSON(path, method) {
   await send('Fetch.disable', {});
   await ev(`localStorage.removeItem('koto-sync-code');`);
   ok('хуучин SQL `xpd`/`kana`-г хаяж буцаасан ч локал хэвээр (түлхэлтийн хариуг нийлүүлнэ)',
-    sp && sp2.mode === 'code' && sp2.r === true && putSeen && putSeen.xpd && putSeen.kana && sp2.before.kana === 1 && sp2.before.xpd.split(',').length === 3
+    sp && sp2.mode === 'code' && sp2.r === true && putSeen && putSeen.xpd && putSeen.kana && sp2.before.kana === 1 && sp2.before.xpd.split(',').length === 8
       && sp2.xpd === sp2.before.xpd && sp2.kana === 1 && sp2.savedXpd === sp2.before.xpd && sp2.savedKana === 1,
     JSON.stringify({ sp2, putSeen }));
 

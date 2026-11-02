@@ -727,8 +727,9 @@
   function dayXp(d){const o=state.xpd[d];let s=0;if(o&&typeof o==='object')for(const v of Object.values(o))if(Number(v)>0)s+=Number(v);return s;}
   const isDay=k=>/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(k);
   const activeDay=d=>Array.isArray(state.days[d])&&state.days[d].length>0;
-  /* Түвшин: нэг хичээл ≈ 120 XP (5 үг × 2 асуулт × 10 + өгүүлбэр 20). */
-  const heatLevel=xp=>xp>=300?4:xp>=150?3:xp>=50?2:xp>0?1:0;
+  /* Түвшин: нэг хичээл ≈ 120 XP (5 үг × 2 асуулт × 10 + өгүүлбэр 20).
+     Дээд шат 500+ (≈4 хичээл) — эзний сонголт (2026-11-02). */
+  const heatLevel=xp=>xp>=500?4:xp>=250?3:xp>=120?2:xp>0?1:0;
   /** GitHub шиг: `n` долоо хоног (багана = Да…Ня), сүүлийнх нь энэ долоо хоног.
    *  XP бичигдэж эхлэхээс өмнөх идэвхтэй өдөр (`days` бий, `xpd` алга) —
    *  түвшин 1, `legacy` (XP-г зохиохгүй). */
@@ -1009,7 +1010,7 @@
             </div>
 
             <p id="p-heat-key" class="p-small">
-              Өдрийн XP: 0 · 1–49 · 50–149 · 150–299 · 300+.
+              Өдрийн XP: 0 · 1–119 · 120–249 · 250–499 · 500+.
               Тасархай хүрээтэй нүд нь ирээдүйн өдөр.
               ${p.heat.hasLegacy
                 ? 'Ташуу хээтэй нүд: идэвхтэй, XP бүртгэгдээгүй.'

@@ -277,7 +277,7 @@ function getJSON(path, method) {
   const SEED = `const t=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ulaanbaatar',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     const d=n=>{const x=new Date(t+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10);};
     const days={},xpd={},words={},kana={},ws=window.KOTO.words();
-    for(let n=-60;n<=0;n++){if(n>-9||(n*7)%5===0){days[d(n)]=[ws[(-n)%40].id];if(n>-45)xpd[d(n)]={a1:[30,80,130,200,340][(-n)%5]};}}
+    for(let n=-60;n<=0;n++){if(n>-9||(n*7)%5===0){days[d(n)]=[ws[(-n)%40].id];if(n>-45)xpd[d(n)]={a1:[60,180,320,540,100][(-n)%5]};}}
     ws.slice(0,40).forEach((w,i)=>{words[w.id]={passes:i%4,weak:i%7===0,due:d(i%3),last:d(-1),attempts:3,misses:i%7===0?1:0};});
     window.KOTO.profile.kana().slice(0,12).forEach((k,i)=>{kana[k.id]={passes:i%4,weak:i===3,due:d(1),last:d(-1)};});
     localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:5230,completed:['0-0','0-1','0-2','1-0'],words,kana,days,xpd,selectedTopic:0}));

@@ -496,7 +496,7 @@ python tools/build_audio.py --speaker 2
 python -m http.server 8765          # ЭХЛЭЭД — үүнгүй бол test_ui унана
 node tools/test_ui.js               # 494 шалгуур, бодит Chrome дотор
 node tools/test_sql.js              # 153 — SUPABASE.sql, PGlite дээр
-node tools/test_v2.js               #  53 — v2 (KOTO): UI, синк, тооны шалгалт, хариултын мэдрэмж, ахиц/ханз/катакана, хичээлийн өгүүлбэр
+node tools/test_v2.js               #  54 — v2 (KOTO): UI, синк, тооны шалгалт, хариултын мэдрэмж, ахиц/ханз/катакана, хичээлийн өгүүлбэр
 node tools/test_v2_sentences.js     #  10 — v2-ийн 91 өгүүлбэр тухайн хичээлийн үгтэй, заагаагүй үггүй (хөтөчгүй)
 node tools/test_v2_ui.js            #  70 — v2 UI: сонсох карт, Google, бараан сэдэв, 44px, утасны хариултын самбар, ахицын хуудас
 node tools/test_attack.js           #  24 — халдлагын хувилбарууд
