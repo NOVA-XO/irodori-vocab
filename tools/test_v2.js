@@ -123,6 +123,26 @@ function getJSON(path, method) {
   ok('17-р сэдэв сонгоход 24 хичээл, эхний хичээл «ゼロ／れい»-гээр эхэлнэ',
     l17 && /Тоо, цаг, хуанли/.test(l17.unit) && l17.nodes === 24 && l17.open && l17.first === 'ゼロ／れい',
     JSON.stringify(l17));
+  /* Өгүүлбэр хичээлээр (v2/sentences.js): өмнө сэдэвт 1 өгүүлбэр бүх хичээлд давтагддаг байв. */
+  const sq = await ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    const pick = async (topic, id) => {
+      document.querySelector('.topic-card[data-topic="' + topic + '"]').click(); await wait(100);
+      document.querySelector('#current-unit .node-button[data-lesson="' + id + '"]').click(); await wait(150);
+      const s = window.KOTO.numTest.session(), q = s.queue, last = q[q.length - 1];
+      const r = { id: s.lesson && s.lesson.id, last: last.type, sentences: q.filter(x => x.type === 'sentence').length,
+                  tokens: last.sentence ? last.sentence.tokens.join(' ') : null, mn: last.sentence ? last.sentence.mn : null };
+      document.getElementById('lesson-dialog').close(); return r; };
+    const out = { a: await pick(16, '16-0'), b: await pick(16, '16-15'), c: await pick(0, '0-0') };
+    document.querySelector('.topic-card[data-topic="0"]').click(); await wait(100);
+    return out;
+  `);
+  ok('хичээл бүр ӨӨРИЙН өгүүлбэртэй: 16-0 «…せんえん…», 0-0 «だれ です か» — сүүлийн дасгал, ганц',
+    sq && sq.a.id === '16-0' && sq.a.last === 'sentence' && sq.a.sentences === 1 && /せんえん/.test(sq.a.tokens) &&
+    sq.c.id === '0-0' && sq.c.tokens === 'だれ です か', JSON.stringify(sq && { a: sq.a, c: sq.c }));
+  ok('16-15: эзний төрсөн өдөр «わたし は にせんよねん くがつ はつか に うまれました»',
+    sq && sq.b.id === '16-15' && sq.b.tokens === 'わたし は にせんよねん くがつ はつか に うまれました' && /2004/.test(sq.b.mn),
+    JSON.stringify(sq && sq.b));
   /* Тооны шалгалт: дуудлага өөрчлөгддөг тоо (хүснэгт) + үүсгэсэн огноо/цаг. */
   const nt = await ev(`
     const T = window.KOTO.numTest, wait = ms => new Promise(r => setTimeout(r, ms));

@@ -1505,8 +1505,10 @@ button, a, input, select {
   border-radius: 6px;
 }
 
+/* Хүрээ гадна талд: дотор (-3px) байхад sticky гарагийн багана зүүн
+   талыг нь халхалдаг байв (2026-11-02). */
 .heat-scroll:focus-visible {
-  outline-offset: -3px;
+  outline-offset: 3px;
 }
 
 .heat-calendar {

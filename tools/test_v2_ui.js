@@ -328,6 +328,10 @@ function getJSON(path, method) {
     return {before,after:Math.round(sc2.scrollLeft),focus:ae&&ae.dataset?ae.dataset.script:null,pressed:document.querySelector('#view-profile [data-action=script][data-script=kanji]').getAttribute('aria-pressed'),script:window.KOTO.profile.script()};`);
   ok('бичиг солиход: шинэ товч aria-pressed, фокус түүн дээр, графикийн гүйлт хэвээр',
     sw.script === 'kanji' && sw.pressed === 'true' && sw.focus === 'kanji' && sw.before === 120 && sw.after === 120, JSON.stringify(sw));
+  /* Sticky гарагийн багана (z-index 1) графикийн дотор талын хүрээг халхалдаг байв → хүрээ гадна талд. */
+  const fo = await ev(`const sc=document.getElementById('profile-heat-scroll');sc.focus();const cs=getComputedStyle(sc);
+    return {fv:sc.matches(':focus-visible'),style:cs.outlineStyle,offset:parseFloat(cs.outlineOffset)};`);
+  ok('графикийн фокус хүрээ sticky гарагийн баганын доор орохгүй (offset ≥ 0)', fo.fv && fo.style === 'solid' && fo.offset >= 0, JSON.stringify(fo));
   /* Ханзын горимд 320-д хичээл: ruby гарна, хэвтээ гүйлт 0. */
   await size(320, 640, true); await nav(SITE); await sleep(300);
   /* 7-р сэдэв: 32 үгийн 25 нь ханзтай (0-р сэдэвт 20-иос 2 л). */
