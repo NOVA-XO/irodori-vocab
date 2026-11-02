@@ -35,7 +35,9 @@
     leaf:'<path d="M20 3C7 1 1 10 7 17s15-1 13-14ZM6 20 17 7"/>',
     tiles:'<rect x="3" y="4" width="8" height="7" rx="2"/><rect x="13" y="4" width="8" height="7" rx="2"/><rect x="7" y="14" width="10" height="7" rx="2"/>',
     trophy:'<path d="M8 3h8v7a4 4 0 0 1-8 0ZM8 5H4v3c0 3 2 5 5 5m7-8h4v3c0 3-2 5-5 5m-3 1v6m-4 1h8"/>',
-    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    game:'<rect x="2" y="7" width="20" height="11" rx="5.5"/><path d="M7 10.5v4M5 12.5h4M15.5 11.5h.01M18 13.5h.01"/>',
+    heart:'<path d="M12 20s-7.5-4.6-9.3-9.2C1.6 7.6 3.7 4.5 7 4.5c2 0 3.5 1.1 5 3 1.5-1.9 3-3 5-3 3.3 0 5.4 3.1 4.3 6.3C19.5 15.4 12 20 12 20Z"/>'
   };
   function icon(name){return `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]||ICONS.star}</svg>`;}
   function esc(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -773,7 +775,7 @@
   let avatarKey=null;
   function updateAvatar(){const el=$('open-sync-top');if(!el)return;const u=syncMode()==='user'?authUser():null;const name=String((u&&(u.name||u.email))||'Хэрэглэгч');const photo=u&&typeof u.avatar==='string'&&u.avatar.indexOf('https://')===0?u.avatar:'';const key=u?name+'|'+photo:'';if(key===avatarKey)return;avatarKey=key;el.setAttribute('aria-label',u?name+' — миний ахиц':'Миний ахиц');el.innerHTML=u?`<span class="avatar-fallback" aria-hidden="true">${esc((Array.from(name.trim())[0]||'Х').toLocaleUpperCase())}</span>${photo?`<img src="${esc(photo)}" alt="" width="44" height="44" referrerpolicy="no-referrer">`:''}`:'<span class="avatar-fallback" lang="ja" aria-hidden="true">わ</span>';}
   function updateTop(){$('xp').textContent=state.xp;$('streak').textContent=streak();$('review-dot').hidden=!dueWords().length;updateAvatar();paintSave();}
-  function switchView(next){view=['learn','words','review','profile'].includes(next)?next:'learn';document.querySelectorAll('.view').forEach(el=>el.hidden=el.id!==`view-${view}`);document.querySelectorAll('.nav-item').forEach(el=>{el.classList.toggle('active',el.dataset.view===view);if(el.dataset.view===view)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});$('page-name').textContent={learn:'Миний сурах зам',words:'Миний үгийн сан',review:'Давтах цаг',profile:'Миний ахиц'}[view];if(view==='learn')renderHome();if(view==='profile')renderProfile();if(view==='words')renderWords();if(view==='review')renderReview();location.hash=view;updateTop();}
+  function switchView(next){view=['learn','words','review','profile','games'].includes(next)?next:'learn';document.querySelectorAll('.view').forEach(el=>el.hidden=el.id!==`view-${view}`);document.querySelectorAll('.nav-item').forEach(el=>{el.classList.toggle('active',el.dataset.view===view);if(el.dataset.view===view)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});$('page-name').textContent={learn:'Миний сурах зам',words:'Миний үгийн сан',review:'Давтах цаг',profile:'Миний ахиц',games:'Тоглоом'}[view];if(view==='learn')renderHome();if(view==='profile')renderProfile();if(view==='words')renderWords();if(view==='review')renderReview();if(view==='games')renderGames();location.hash=view;updateTop();}
   function weekMarkup(){const d=today();const weekday=new Date(d+'T12:00:00Z').getUTCDay();const monday=shiftDate(d,-((weekday+6)%7));return ['Да','Мя','Лх','Пү','Ба','Бя','Ня'].map((label,i)=>{const date=shiftDate(monday,i),done=Array.isArray(state.days[date])&&state.days[date].length;return `<div class="week-day ${date===d?'today':''} ${done?'done':''}" aria-label="${label}${done?' хичээллэсэн':''}"><span>${done?'✓':label.slice(0,1)}</span>${label}</div>`;}).join('');}
   function renderHome(){
     const t=state.selectedTopic,group=topicLessons(t),completed=group.filter(l=>state.completed.includes(l.id)).length,current=group.find(l=>!state.completed.includes(l.id))||group[0];
@@ -1349,6 +1351,403 @@
   }
   function exitSession(){if(!session||session.completed){closeSession();return;}$('lesson-content').innerHTML=`<div class="lesson-frame"><section class="exit-confirm"><div class="empty-icon">${icon('leaf')}</div><h2>Түр завсарлах уу?</h2><p>Энэ хичээлийн ахиц дуусах үед хадгалагдана. Одоо гарвал энэ хичээлийг эхнээс нь үзнэ.</p><div class="exit-actions"><button class="secondary-btn" data-action="discard">Одоо гарах</button><button class="primary-btn" data-action="resume">Хичээлээ үргэлжлүүлэх</button></div></section></div>`;}
   function closeSession(){$('lesson-dialog').close();session=null;switchView(view);}
+  /* ── Тоглоом: буудах, хослуулах, хурдан зөв/буруу ─────────────────
+     Эзний хүсэлт (2026-11-02): өмнө цээжилсэн үгсээс санамсаргүйгээр,
+     зөвхөн оноо ба рекорд. `state`-д юу ч БИЧИХГҮЙ — XP, streak, өдрийн
+     график, давтлагын хуваарь хөндөгдөхгүй. Рекорд нь төхөөрөмж бүрийнх
+     (`koto-games`), синк хийгдэхгүй.
+     Markup/CSS-ийг Claude хийв (Astra-гийн квот дууссан) — Astra хянана.
+     Цаг нь rAF-ийн алхам; нэг алхмыг 100ms-ээр таслана, тиймээс таб
+     нуугдаад буцаж ирэхэд үгс «үсрэхгүй». Хүлээлт (`wait`) ч тоглоомын
+     цагаар явдаг тул тест `advance(ms)`-ээр урагшлуулна. */
+  const GAME_KEY = 'koto-games', GAME_MIN = 6, MATCH_PAIRS = 6;
+  const SHOOT_START = 8000, SHOOT_MIN = 3200, SHOOT_LIVES = 3, TF_TIME = 60000;
+  const GAMES = {
+    shoot: { title: 'Буудах', text: 'Монгол утгыг уншаад доош унаж буй япон үгсээс зөвийг нь буудна. Гурван амьтай, хурд аажмаар нэмэгдэнэ.' },
+    match: { title: 'Хослуулах', text: '6 япон үгийг монгол утгатай нь аль болох хурдан хослуулна. Алдаа бүр +1 секунд.' },
+    tf: { title: 'Хурдан зөв/буруу', text: '60 секундэд үг ба утга таарч байгаа эсэхийг шийднэ. Дараалсан зөв хариулт оноог үржүүлнэ.' }
+  };
+  const GAME_ART = {
+    shoot: '<span class="ga-bubble" lang="ja">みず</span><span class="ga-bubble is-hit" lang="ja">ねこ</span><span class="ga-bubble" lang="ja">ほん</span><span class="ga-prompt">муур</span>',
+    match: '<span class="ga-tile is-on" lang="ja">いぬ</span><span class="ga-tile">уул</span><span class="ga-tile" lang="ja">やま</span><span class="ga-tile is-on">нохой</span>',
+    tf: '<span class="ga-card"><b lang="ja">みず</b><i>ус</i></span><span class="ga-chip is-no">✕</span><span class="ga-chip is-yes">✓</span>'
+  };
+  let game = null, gameRaf = 0, gameLast = 0;
+
+  /* Тоглоомд монгол утгын товч хэлбэр (бүтэн нь 58 тэмдэгт хүрдэг): хаалтын
+     ГАДНАХ эхний `;` хүртэл, хаалтгүй. Хаалтгүй хэлбэр үсэггүй («…» — ～ひき)
+     эсвэл өөр бичлэгтэй үгийнхтэй давхцвал (～まい/～さつ «… ширхэг») хаалтыг
+     үлдээнэ — тоолох нэрийн ялгаа тэнд. Япон жишээг (しちじごろ) хасна —
+     эс бөгөөс буудах тоглоомд хариултыг задална. */
+  const JA_RUN = /[\s:：—-]*[぀-ヿ㐀-鿿～]+[\s:：—-]*/g;
+  function mnCut(mn) {
+    mn = String(mn);
+    let d = 0, i = 0;
+    for (; i < mn.length; i++) {
+      const ch = mn[i];
+      if (ch === '(') d++; else if (ch === ')') d = Math.max(0, d - 1); else if (ch === ';' && !d) break;
+    }
+    const first = mn.slice(0, i).trim() || mn;
+    return { first, bare: first.replace(/\s*\([^)]*\)/g, '').trim() };
+  }
+  const bareJp = new Map();
+  for (const w of allWords) {
+    const b = mnCut(w.mn).bare;
+    if (!bareJp.has(b)) bareJp.set(b, new Set());
+    bareJp.get(b).add(w.jp);
+  }
+  function shortMn(w) {
+    const c = mnCut(w.mn), keep = !/[\p{L}\p{N}]/u.test(c.bare) || (bareJp.get(c.bare) || { size: 0 }).size > 1;
+    const s = (keep ? c.first : c.bare).replace(JA_RUN, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').replace(/\(\)/g, '').replace(/\s{2,}/g, ' ').trim();
+    return s || c.first;
+  }
+  /* Ижил кана өөр утгатай үг бий (に «хоёр» ба に дагавар) — нэг тоглолтод
+     хамт орвол зөв хариулт хоёр болно. */
+  const meansOf = new Map();
+  for (const w of allWords) {
+    if (!meansOf.has(w.jp)) meansOf.set(w.jp, new Set());
+    meansOf.get(w.jp).add(shortMn(w));
+  }
+  /** a, b хоёрыг нэг тоглолтод андуурч болох уу: ижил бичлэг, ижил утга, эсвэл ижил бичлэгтэй өөр үгийн утга. */
+  function gameClash(a, b) {
+    const ma = shortMn(a), mb = shortMn(b);
+    const none = new Set();
+    return a.jp === b.jp || ma === mb || (meansOf.get(a.jp) || none).has(mb) || (meansOf.get(b.jp) || none).has(ma);
+  }
+  /** Жагсаалтын дарааллаар, бие биетэйгээ (ба `withWords`-тэй) андуурагдахгүй n үг. */
+  function gamePick(list, n, withWords) {
+    const out = [], base = withWords || [];
+    for (const w of list) {
+      if (out.length >= n) break;
+      if (!base.concat(out).some(x => gameClash(x, w))) out.push(w);
+    }
+    return out;
+  }
+  function gamePool() { return allWords.filter(w => state.words[w.id]); }
+  function gameRecords() {
+    try {
+      const r = JSON.parse(localStorage.getItem(GAME_KEY) || '{}');
+      return r && typeof r === 'object' && !Array.isArray(r) ? r : {};
+    } catch { return {}; }
+  }
+  function gameRecord(kind) { const v = Number(gameRecords()[kind]); return v > 0 ? v : null; }
+  /** Оноо ихсэх тусам, хослуулахад хугацаа (ms) багасах тусам сайн. */
+  function saveGameRecord(kind, value) {
+    const old = gameRecord(kind), better = value > 0 && (old === null || (kind === 'match' ? value < old : value > old));
+    if (better) {
+      const r = gameRecords(); r[kind] = value;
+      try { localStorage.setItem(GAME_KEY, JSON.stringify(r)); } catch {}
+    }
+    return { best: better ? value : old, isNew: better };
+  }
+  const secs = ms => (ms / 1000).toFixed(1);
+  function recordText(kind) {
+    const v = gameRecord(kind);
+    return v === null ? 'Рекорд алга' : kind === 'match' ? `Рекорд ${secs(v)} сек` : `Рекорд ${v} оноо`;
+  }
+  /** Дараагийн үг холисон багцаас — бүх үг гарсны дараа л давтагдана, дараалан хоёр удаа гарахгүй. */
+  function gameNext() {
+    const g = game;
+    if (!g.deck.length) {
+      g.deck = shuffle(g.pool);
+      if (g.last && g.deck.length > 1 && g.deck[g.deck.length - 1].id === g.last.id) g.deck.unshift(g.deck.pop());
+    }
+    return (g.last = g.deck.pop());
+  }
+  function gameReady(pool) { return gamePick(shuffle(pool), GAME_MIN).length >= GAME_MIN; }
+
+  function renderGames() {
+    const pool = gamePool(), need = Math.max(1, GAME_MIN - pool.length);
+    $('view-games').innerHTML = `<div class="eyebrow">ТОГЛООМ</div><h1 class="page-title">Тоглож бататгая.</h1>
+      <p class="page-subtitle">Цээжилсэн ${pool.length} үгээсээ санамсаргүйгээр. Оноо, рекорд зөвхөн энэ хөтөч дээр хадгалагдана — XP, давтлагад нөлөөлөхгүй.</p>
+      ${gameReady(pool) ? `<div class="game-grid">${Object.keys(GAMES).map(k => `
+        <article class="game-card game-card--${k}">
+          <div class="game-art" aria-hidden="true">${GAME_ART[k]}</div>
+          <div class="game-card-body">
+            <h2>${GAMES[k].title}</h2>
+            <p>${GAMES[k].text}</p>
+            <p class="game-record">${icon('trophy')}<span>${recordText(k)}</span></p>
+          </div>
+          <button type="button" class="primary-btn" data-action="game" data-game="${k}">Тоглох${icon('play')}</button>
+        </article>`).join('')}</div>`
+      : `<section class="empty-state"><div class="empty-icon">${icon('game')}</div><h2>Дахиад ${need} үг цээжилбэл нээгдэнэ.</h2>
+        <p>Тоглоом таны өмнө үзсэн үгсээс бүрдэнэ — дор хаяж ${GAME_MIN} үг хэрэгтэй.</p>
+        <button type="button" class="primary-btn" data-action="start" data-lesson="${nextLesson().id}">Хичээл үзэх${icon('arrow')}</button></section>`}`;
+  }
+
+  function openGame(kind) {
+    if (!GAMES[kind]) return;
+    const pool = gamePool();
+    if (!gameReady(pool)) return;
+    stopGameLoop();
+    game = { kind, pool, deck: [], last: null, score: 0, combo: 0, hits: 0, total: 0, missed: new Map(),
+      wait: 0, after: null, over: false, still: matchMedia('(prefers-reduced-motion: reduce)').matches };
+    if (kind === 'shoot') Object.assign(game, { hearts: SHOOT_LIVES, dur: SHOOT_START, wave: null });
+    if (kind === 'match') Object.assign(game, { t: 0, penalty: 0, mistakes: 0, started: false, finished: false, sel: null, wrong: null, done: new Set(), tiles: [] });
+    if (kind === 'tf') Object.assign(game, { left: TF_TIME, card: null });
+    if (!$('game-dialog').open) $('game-dialog').showModal();
+    $('game-dialog').scrollTop = 0;
+    if (kind === 'shoot') shootWave(); else if (kind === 'match') matchDeal(); else tfDeal();
+    gameLoop();
+  }
+  function closeGame() {
+    stopGameLoop(); game = null;
+    if ($('game-dialog').open) $('game-dialog').close();
+    switchView(view);
+  }
+  function gameOver() {
+    const g = game;
+    if (!g || g.over) return;
+    g.over = true; stopGameLoop();
+    const value = g.kind === 'match' ? Math.round(g.t + g.penalty) : g.score;
+    g.result = Object.assign({ value }, saveGameRecord(g.kind, value));
+    sfx(SFX.done); renderGameEnd();
+  }
+
+  /* Цаг: rAF → gameTick (≤100ms) → gameStep. Тест gameStep-ийг шууд дуудна. */
+  function gameTick(ts) { const dt = gameLast ? Math.min(ts - gameLast, 100) : 0; gameLast = ts; gameStep(dt); }
+  function gameLoop() {
+    stopGameLoop();
+    const f = ts => { gameTick(ts); if (game && !game.over) gameRaf = requestAnimationFrame(f); };
+    gameRaf = requestAnimationFrame(f);
+  }
+  function stopGameLoop() { cancelAnimationFrame(gameRaf); gameRaf = 0; gameLast = 0; }
+  function gameStep(dt) {
+    const g = game;
+    if (!g || g.over || !(dt > 0)) return;
+    if (g.kind === 'match' && g.started && !g.finished) {
+      g.t += dt;
+      const el = $('match-time'); if (el) el.textContent = secs(g.t + g.penalty);
+    }
+    if (g.kind === 'tf') {
+      g.left = Math.max(0, g.left - dt); paintTfClock();
+      if (g.left <= 0) { gameOver(); return; }
+    }
+    if (g.wait > 0) {
+      g.wait -= dt;
+      if (g.wait > 0) return;
+      g.wait = 0;
+      const f = g.after; g.after = null; if (f) f();
+      return;
+    }
+    if (g.kind === 'shoot' && g.wave && !g.wave.done) {
+      const w = g.wave; w.t += dt;
+      const p = Math.min(1, w.t / w.dur);
+      paintShoot(p);
+      if (p >= 1) shootMiss();
+    }
+  }
+
+  function gameFrame(body) {
+    const g = game;
+    return `<div class="lesson-frame game-frame game-${g.kind}">
+      <div class="lesson-top game-top"><button type="button" class="icon-button" data-action="game-exit" aria-label="Тоглоомоос гарах">${icon('close')}</button>
+        <div id="game-hud" class="game-hud">${gameHud()}</div>${soundBtn()}</div>
+      <div class="lesson-meta"><span>${GAMES[g.kind].title}</span><span>${recordText(g.kind)}</span></div>${body}</div>`;
+  }
+  function gameHud() {
+    const g = game;
+    if (g.kind === 'match') return `<span class="game-score"><strong id="match-time">${secs(g.t + g.penalty)}</strong> сек</span><span class="game-pairs">${g.done.size} / ${g.tiles.length / 2} хос</span>`;
+    const m = g.kind === 'shoot' ? shootMult(g.combo) : tfMult(g.combo);
+    const hearts = g.kind === 'shoot' ? `<span class="game-hearts" role="img" aria-label="${g.hearts} амь үлдсэн">${Array.from({ length: SHOOT_LIVES }, (_, i) => `<span class="game-heart${i < g.hearts ? ' is-on' : ''}">${icon('heart')}</span>`).join('')}</span>` : '';
+    return `${hearts}<span class="game-score"><strong>${g.score}</strong> оноо</span><span class="game-combo"${m > 1 ? '' : ' hidden'}>×${m}</span>`;
+  }
+  function paintHud() { const el = $('game-hud'); if (el && game) el.innerHTML = gameHud(); }
+  /** Дахин зурсны дараа гарын фокусыг ижил товч руу буцаана. */
+  function keepFocus(attr, render) {
+    const ae = document.activeElement, key = ae && ae.closest && ae.closest('#game-dialog') ? ae.getAttribute(attr) : null;
+    render();
+    if (key === null) return;
+    const el = document.querySelector(`#game-content [${attr}="${key}"]`);
+    if (el && !el.disabled) el.focus({ preventScroll: true });
+  }
+  function gameMiss(w) { game.missed.set(w.id, w); }
+
+  /* ── Буудах: 3 зам, нэг нь зөв. Зөв үг газарт хүрвэл амь хасагдана. */
+  const shootMult = c => Math.min(5, 1 + Math.floor(c / 3));
+  function shootWave() {
+    const g = game;
+    if (!g || g.over) return;
+    const target = gameNext();
+    let others = gamePick(shuffle(g.pool), 2, [target]);
+    if (others.length < 2) others = others.concat(gamePick(shuffle(allWords), 2 - others.length, [target, ...others]));
+    g.wave = { target, words: shuffle([target, ...others]), offs: shuffle([0, .12, .24]), t: 0, dur: g.dur, wrong: [], done: false };
+    renderShoot();
+  }
+  function renderShoot() {
+    const g = game, w = g.wave;
+    $('game-content').innerHTML = gameFrame(`<section class="shoot-arena" id="shoot-arena" aria-label="Тоглоомын талбар">
+      ${w.words.map((x, i) => `<button type="button" class="shoot-target" data-action="game-shoot" data-lane="${i}" style="--lane:${i}" lang="ja"><span class="game-keys" aria-hidden="true">${i + 1}</span>${face(x.jp, x.kj)}</button>`).join('')}
+      <div class="shoot-ground" id="shoot-ground"><div class="shoot-fuse" aria-hidden="true"><i id="shoot-fuse"></i></div>
+        <p class="shoot-prompt" aria-live="polite"><small>Энэ утгатай үгийг буудаарай</small><strong>${esc(shortMn(w.target))}</strong></p></div></section>
+      <p class="game-tip">Зөв үг газарт хүрэхээс өмнө дарна. <span class="game-keys">Гараас: 1 · 2 · 3</span></p>`);
+    g.els = [...document.querySelectorAll('#shoot-arena .shoot-target')];
+    g.fuse = $('shoot-fuse');
+    shootGeo(); paintShoot(0);
+  }
+  function shootGeo() {
+    const g = game, arena = $('shoot-arena'), ground = $('shoot-ground');
+    if (!arena || !ground || !g.els) return;
+    const H = arena.clientHeight - ground.offsetHeight;
+    g.range = g.els.map(el => Math.max(0, H - el.offsetHeight - 10));
+  }
+  function paintShoot(p) {
+    const g = game, w = g.wave;
+    if (!w || !g.els || !g.range) return;
+    g.els.forEach((el, i) => {
+      const r = g.range[i], y = g.still ? r * .08 : r * (p * (1 + w.offs[i]) - w.offs[i]);
+      el.style.transform = `translateY(${Math.round(y)}px)`;
+    });
+    if (g.fuse) g.fuse.style.transform = `scaleX(${1 - p})`;
+  }
+  function shootMark(i, cls) { const el = game.els && game.els[i]; if (el) { el.classList.add(cls); if (cls === 'is-wrong') el.disabled = true; } }
+  /** Онох мөчид буудлагын шугам: утганаас бай руу (хөдөлгөөнгүй горимд үгүй). */
+  function shootBeam(i) {
+    const arena = $('shoot-arena'), t = game.els[i], pr = arena && arena.querySelector('.shoot-prompt');
+    if (!t || !pr || game.still) return;
+    const a = arena.getBoundingClientRect(), b = t.getBoundingClientRect(), c = pr.getBoundingClientRect();
+    const x1 = c.left + c.width / 2 - a.left, y1 = c.top - a.top, x2 = b.left + b.width / 2 - a.left, y2 = b.top + b.height / 2 - a.top;
+    const el = document.createElement('i');
+    el.className = 'shoot-beam'; el.setAttribute('aria-hidden', 'true');
+    el.style.cssText = `left:${x1}px;top:${y1}px;width:${Math.hypot(x2 - x1, y2 - y1)}px;transform:rotate(${Math.atan2(y2 - y1, x2 - x1)}rad)`;
+    arena.appendChild(el);
+  }
+  function gameShoot(i) {
+    const g = game;
+    if (!g || g.kind !== 'shoot' || g.over || g.wait > 0) return;
+    const w = g.wave, word = w && w.words[i];
+    if (!word || w.done || w.wrong.includes(i)) return;
+    if (word.id === w.target.id) {
+      w.done = true; g.combo++; g.hits++; g.score += 10 * shootMult(g.combo);
+      g.dur = Math.max(SHOOT_MIN, g.dur * .94);
+      sfx(SFX.ok); shootBeam(i); shootMark(i, 'is-hit'); paintHud();
+      g.wait = 380; g.after = shootWave;
+      return;
+    }
+    w.wrong.push(i); g.hearts--; g.combo = 0; gameMiss(w.target);
+    sfx(SFX.bad); shootMark(i, 'is-wrong'); paintHud();
+    if (g.hearts <= 0) { w.done = true; shootMark(w.words.indexOf(w.target), 'is-reveal'); g.wait = 900; g.after = gameOver; }
+  }
+  function shootMiss() {
+    const g = game, w = g.wave;
+    w.done = true; g.hearts--; g.combo = 0; gameMiss(w.target);
+    sfx(SFX.bad); shootMark(w.words.indexOf(w.target), 'is-reveal'); paintHud();
+    g.wait = 900; g.after = g.hearts <= 0 ? gameOver : shootWave;
+  }
+
+  /* ── Хослуулах: 12 хавтан. Ижил талын хоёр дахь хавтас сонголтыг шилжүүлнэ. */
+  function matchDeal() {
+    const g = game, words = gamePick(shuffle(g.pool), MATCH_PAIRS);
+    g.tiles = shuffle(words.flatMap(w => [{ w, side: 'jp' }, { w, side: 'mn' }]));
+    renderMatch();
+  }
+  function renderMatch() {
+    const g = game;
+    $('game-content').innerHTML = gameFrame(`<p class="game-tip match-tip">Япон үгийг утгатай нь хослуулаарай. Эхний дарахад цаг эхэлнэ.</p>
+      <section class="match-board" aria-label="Хослуулах самбар">${g.tiles.map((t, i) => {
+        const done = g.done.has(t.w.id), sel = g.sel === i, wrong = !!g.wrong && g.wrong.includes(i), mn = shortMn(t.w);
+        const cls = `match-tile is-${t.side}${sel ? ' is-selected' : ''}${wrong ? ' is-wrong' : ''}${done ? ' is-done' : ''}${t.side === 'mn' && mn.length > 22 ? ' is-long' : ''}`;
+        return `<button type="button" class="${cls}" data-action="game-tile" data-tile="${i}" aria-pressed="${sel}"${done ? ' disabled' : ''}${t.side === 'jp' ? ' lang="ja"' : ''}>${t.side === 'jp' ? face(t.w.jp, t.w.kj) : esc(mn)}</button>`;
+      }).join('')}</section>`);
+  }
+  function gameTile(i) {
+    const g = game;
+    if (!g || g.kind !== 'match' || g.over || g.wait > 0) return;
+    const t = g.tiles[i];
+    if (!t || g.done.has(t.w.id)) return;
+    g.started = true;
+    const s = g.sel === null ? null : g.tiles[g.sel];
+    if (!s || g.sel === i || s.side === t.side) {
+      g.sel = g.sel === i ? null : i;
+      keepFocus('data-tile', renderMatch);
+      return;
+    }
+    g.sel = null;
+    if (s.w.id === t.w.id) {
+      g.done.add(t.w.id); g.hits++; sfx(SFX.ok);
+      if (g.done.size * 2 === g.tiles.length) { g.finished = true; renderMatch(); g.wait = 350; g.after = gameOver; return; }
+      /* Олдсон хавтан идэвхгүй болно — фокус body руу унахгүйн тулд эхний үлдсэн хавтан руу. */
+      const ae = document.activeElement, inside = !!(ae && ae.closest && ae.closest('#game-content'));
+      renderMatch();
+      const next = $('game-content').querySelector('.match-tile:not(:disabled)');
+      if (inside && next) next.focus({ preventScroll: true });
+      return;
+    }
+    g.mistakes++; g.penalty += 1000; gameMiss(s.w); gameMiss(t.w); sfx(SFX.bad);
+    g.wrong = [g.tiles.indexOf(s), i];
+    keepFocus('data-tile', renderMatch);
+    g.wait = 450; g.after = () => { g.wrong = null; keepFocus('data-tile', renderMatch); };
+  }
+
+  /* ── Хурдан зөв/буруу: 60 сек, хагас нь таарсан хос. Буруу хос нь
+     андуурагдахгүй үгийн утга (gameClash) — «に = хоёр» гэж худал гарахгүй. */
+  const tfMult = c => Math.min(4, 1 + Math.floor(c / 5));
+  function tfDeal() {
+    const g = game;
+    if (!g || g.over) return;
+    const w = gameNext();
+    let shown = w, truth = Math.random() < .5;
+    if (!truth) { const f = gamePick(shuffle(g.pool), 1, [w])[0]; if (f) shown = f; else truth = true; }
+    g.card = { w, shown, truth, state: null };
+    keepFocus('data-answer', renderTf);
+  }
+  function renderTf() {
+    const g = game, c = g.card;
+    const lock = c.state ? ' aria-disabled="true"' : '';
+    $('game-content').innerHTML = gameFrame(`<div class="tf-clock"><div class="progress-track" aria-hidden="true"><div class="progress-fill" id="tf-fill" style="width:${g.left / TF_TIME * 100}%"></div></div>
+        <span class="tf-left" role="timer"><strong id="tf-left">${Math.ceil(g.left / 1000)}</strong> сек</span></div>
+      <section class="tf-card${c.state ? ' is-' + c.state : ''}" aria-live="polite">
+        <p class="tf-q">Утга нь зөв үү?</p>
+        <p class="tf-jp" lang="ja">${face(c.w.jp, c.w.kj)}</p>
+        <p class="tf-mn">${esc(shortMn(c.shown))}</p>
+        ${c.state === 'bad' ? `<p class="tf-reveal">${c.truth ? 'Энэ нь зөв байсан.' : `Зөв утга: ${esc(shortMn(c.w))}`}</p>` : ''}
+      </section>
+      <div class="tf-actions"><button type="button" class="tf-btn tf-no" data-action="game-tf" data-answer="0"${lock}>${icon('close')}Буруу<span class="game-keys" aria-hidden="true">←</span></button>
+        <button type="button" class="tf-btn tf-yes" data-action="game-tf" data-answer="1"${lock}>${icon('check')}Зөв<span class="game-keys" aria-hidden="true">→</span></button></div>`);
+  }
+  function paintTfClock() {
+    const g = game, s = $('tf-left'), f = $('tf-fill');
+    if (s) s.textContent = Math.ceil(g.left / 1000);
+    if (f) f.style.width = g.left / TF_TIME * 100 + '%';
+  }
+  function gameTf(yes) {
+    const g = game;
+    if (!g || g.kind !== 'tf' || g.over || g.wait > 0 || !g.card || g.card.state) return;
+    const c = g.card; g.total++;
+    if (yes === c.truth) {
+      g.hits++; g.combo++; g.score += 10 * tfMult(g.combo); c.state = 'ok'; sfx(SFX.ok);
+      g.wait = 160;
+    } else {
+      g.combo = 0; c.state = 'bad'; gameMiss(c.w); sfx(SFX.bad);
+      g.wait = 1100;
+    }
+    g.after = tfDeal;
+    keepFocus('data-answer', renderTf);
+  }
+
+  function renderGameEnd() {
+    const g = game, r = g.result, missed = [...g.missed.values()].slice(0, 12);
+    const best = r.best === null ? '—' : g.kind === 'match' ? secs(r.best) : r.best;
+    const stats = g.kind === 'match' ? [[secs(r.value), 'СЕКУНД'], [g.mistakes, 'АЛДАА'], [best, 'РЕКОРД, СЕК']]
+      : g.kind === 'shoot' ? [[g.score, 'ОНОО'], [g.hits, 'ОНОСОН ҮГ'], [best, 'РЕКОРД']]
+      : [[g.score, 'ОНОО'], [`${g.hits}/${g.total}`, 'ЗӨВ'], [best, 'РЕКОРД']];
+    const said = g.kind === 'match' ? `${g.tiles.length / 2} хосыг ${secs(r.value)} секундэд оллоо${g.mistakes ? ` (${g.mistakes} алдаа, +${g.mistakes} сек)` : ''}.`
+      : g.kind === 'shoot' ? `${g.hits} үг онож, ${g.score} оноо авлаа.`
+      : `60 секундэд ${g.total} үгнээс ${g.hits}-д нь зөв хариуллаа.`;
+    $('game-content').innerHTML = `<div class="lesson-frame game-frame">
+      <div class="lesson-top game-top"><button type="button" class="icon-button" data-action="game-exit" aria-label="Тоглоом руу буцах">${icon('close')}</button>
+        <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>${soundBtn()}</div>
+      <section class="completion game-end"><div class="eyebrow">${esc(GAMES[g.kind].title.toUpperCase())}</div>
+        <h1 id="game-end-title" tabindex="-1">${r.isNew ? 'Шинэ рекорд!' : g.kind === 'shoot' ? 'Тоглолт дууслаа' : 'Сайн тоглолоо!'}</h1>
+        <p>${said}</p>
+        <div class="result-stats">${stats.map(([v, l]) => `<div class="result-stat"><strong>${esc(v)}</strong><span>${l}</span></div>`).join('')}</div>
+        ${missed.length ? `<div class="game-missed"><h2>Алдсан үгс</h2><ul>${missed.map(w => `<li><span class="game-missed-jp" lang="ja">${face(w.jp, w.kj)}</span><span class="game-missed-mn">${esc(w.mn)}</span>${audioBtn(w)}</li>`).join('')}</ul></div>` : ''}
+        <div class="exit-actions game-actions"><button type="button" class="secondary-btn" data-action="game-exit">Тоглоом руу буцах</button>
+          <button type="button" class="primary-btn" data-action="game-again">Дахин тоглох${icon('repeat')}</button></div>
+      </section></div>`;
+    const h = $('game-end-title'); if (h) h.focus({ preventScroll: true });
+  }
+
   document.addEventListener('click',event=>{
     const button=event.target.closest('button,a');
     // Картын хоосон хэсэг: текст сонгож байгаа үед (давхар товшилт г.м.) дуудахгүй.
@@ -1361,7 +1760,13 @@
     if(action==='kana-lesson'){startKana(Number(button.dataset.kana));return;}
     if(action==='kana-review'){startKanaReview();return;}
     if(action==='kata-words'){startKataWords();return;}
-    if(action==='sound'){soundOn=!soundOn;try{localStorage.setItem(SOUND_KEY,soundOn?'1':'0');}catch{}renderSession();if(soundOn)sfx(SFX.ok);return;}
+    if(action==='game'){openGame(button.dataset.game);return;}
+    if(action==='game-shoot'){gameShoot(Number(button.dataset.lane));return;}
+    if(action==='game-tile'){gameTile(Number(button.dataset.tile));return;}
+    if(action==='game-tf'){gameTf(button.dataset.answer==='1');return;}
+    if(action==='game-again'){if(game)openGame(game.kind);return;}
+    if(action==='game-exit'){closeGame();return;}
+    if(action==='sound'){soundOn=!soundOn;try{localStorage.setItem(SOUND_KEY,soundOn?'1':'0');}catch{}renderSession();if(game&&button.closest('#game-dialog')){button.outerHTML=soundBtn();const nb=document.querySelector('#game-dialog [data-action=sound]');if(nb)nb.focus();}if(soundOn)sfx(SFX.ok);return;}
     if(action==='start')startLesson(button.dataset.lesson);
     else if(action==='review')startReview();
     else if(action==='test')startTest();
@@ -1379,6 +1784,14 @@
   document.addEventListener('input',event=>{if(event.target.id==='word-search')filterWords();});
   document.addEventListener('change',event=>{if(event.target.id==='word-topic')filterWords();});
   $('lesson-dialog').addEventListener('cancel',event=>{event.preventDefault();exitSession();});
+  $('game-dialog').addEventListener('cancel',event=>{event.preventDefault();closeGame();});
+  /* Тоглоом: 1·2·3 — буудах зам, ←/→ — буруу/зөв. Esc нь `cancel`-аар. */
+  document.addEventListener('keydown',event=>{
+    if(!game||game.over||!$('game-dialog').open||event.altKey||event.ctrlKey||event.metaKey)return;
+    if(game.kind==='shoot'&&['1','2','3'].includes(event.key)){event.preventDefault();gameShoot(Number(event.key)-1);}
+    else if(game.kind==='tf'&&(event.key==='ArrowLeft'||event.key==='ArrowRight')){event.preventDefault();gameTf(event.key==='ArrowRight');}
+  });
+  window.addEventListener('resize',()=>{if(game&&game.kind==='shoot'&&!game.over)shootGeo();});
   document.addEventListener('keydown',event=>{
     if(!session||session.completed||!$('lesson-dialog').open||!$('exercise-title'))return;
     // Сонголт доторх урт ханзыг сумаар гүйлгэнэ (Tab-ийн нэмэлт цэг үүсгэхгүй).
@@ -1415,5 +1828,7 @@
     words:()=>allWords,say:sayWord,hear:canHear,playing:()=>auNow,
     signedIn:signedIn,user:authUser,signOut:signOut,googleIn:googleIn,
     numTest:{build:buildTest,genDate,genTime,MONTHS,DAYS,HOURS,session:()=>session},
+    games:{pool:gamePool,pick:gamePick,clash:gameClash,short:shortMn,ready:gameReady,start:openGame,close:closeGame,state:()=>game,
+      advance:gameStep,tick:gameTick,stop:stopGameLoop,records:gameRecords,min:GAME_MIN},
     profile:{data:profileData,heat:heatWeeks,longest:longestStreak,dev:()=>devId,script:()=>scriptMode,kana:()=>KANA,kanaLessons:()=>kanaLessons,kata:()=>kataWords}};
 })();

@@ -2492,3 +2492,326 @@ ruby.jp-face rt {
   .primary-btn:hover, .topic-card:hover { transform: none; }
   .node-button:hover { transform: rotate(-5deg); }
 }
+
+/* ══ Тоглоом (2026-11-02, Claude — Astra-гийн квот дууссан; Astra хянана) ══
+   Бүх өнгө токеноор — бараан сэдэв токеноор өөрөө солигдоно. */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 26px;
+}
+.game-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+}
+.game-card-body { flex: 1; }
+.game-card h2 { font-size: 18px; line-height: 1.35; }
+.game-card-body > p:not(.game-record) {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.game-record {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--accent-ink);
+}
+.game-record .icon { width: 17px; height: 17px; }
+.game-card .primary-btn { width: 100%; }
+
+/* Картын жижиг зураг — зөвхөн чимэг. */
+.game-art {
+  position: relative;
+  height: 118px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: radial-gradient(color-mix(in srgb, var(--accent-ink) 22%, transparent) .8px, transparent .8px) 0 0 / 14px 14px, var(--accent-surface);
+}
+.ga-bubble, .ga-prompt, .ga-tile, .ga-card, .ga-chip {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-bottom-width: 3px;
+  border-radius: 11px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+}
+.ga-bubble { width: 25%; height: 30px; }
+.ga-bubble:nth-child(1) { left: 7%; top: 16px; }
+.ga-bubble:nth-child(2) { left: 38%; top: 40px; }
+.ga-bubble:nth-child(3) { left: 69%; top: 10px; }
+.ga-bubble.is-hit { background: var(--lime); border-color: var(--lime-dark); color: var(--button-ink); }
+.ga-prompt { left: 30%; right: 30%; bottom: 8px; height: 26px; border-radius: 999px; font-size: 12px; }
+.ga-tile { width: 38%; height: 38px; }
+.ga-tile:nth-child(1) { left: 9%; top: 14px; }
+.ga-tile:nth-child(2) { right: 9%; top: 14px; }
+.ga-tile:nth-child(3) { left: 9%; bottom: 14px; }
+.ga-tile:nth-child(4) { right: 9%; bottom: 14px; }
+.ga-tile.is-on { background: var(--success-surface); border-color: var(--lime-dark); color: var(--success-ink); }
+.ga-card { left: 18%; right: 18%; top: 12px; height: 56px; gap: 0; line-height: 1.25; }
+.ga-card b { font-size: 16px; }
+.ga-card i { font-style: normal; font-size: 12px; color: var(--muted); }
+.ga-chip { bottom: 10px; width: 30%; height: 30px; font-size: 15px; }
+.ga-chip.is-no { left: 17%; background: var(--error-surface); color: var(--error-ink); border-color: var(--danger); }
+.ga-chip.is-yes { right: 17%; background: var(--success-surface); color: var(--success-ink); border-color: var(--lime-dark); }
+
+/* ── Тоглоомын цонх */
+.game-frame { padding-bottom: 24px; }
+.game-hud {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-width: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.game-score strong { font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.game-hearts { display: flex; gap: 3px; }
+.game-heart { color: var(--line); }
+.game-heart.is-on { color: var(--danger); }
+.game-heart .icon { width: 21px; height: 21px; }
+.game-heart.is-on .icon { fill: currentColor; }
+.game-combo {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--button-ink);
+  font-weight: 800;
+}
+.game-pairs { font-weight: 650; }
+.game-tip { margin-top: 12px; text-align: center; font-size: 13px; color: var(--muted); }
+.game-keys { display: none; }
+@media (hover: hover) and (pointer: fine) {
+  .game-keys { display: inline; }
+  .shoot-target .game-keys, .tf-btn .game-keys {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 4px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: 700 11px/1 system-ui, sans-serif;
+    color: var(--muted);
+  }
+  .game-tip .game-keys { margin-left: 6px; font-weight: 650; }
+}
+
+/* Буудах */
+.shoot-arena {
+  position: relative;
+  height: clamp(340px, 60dvh, 560px);
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: radial-gradient(color-mix(in srgb, var(--accent-ink) 18%, transparent) .8px, transparent .8px) 0 0 / 16px 16px, var(--accent-surface);
+}
+.shoot-target {
+  position: absolute;
+  top: 0;
+  left: calc(var(--lane) * 33.333% + 6px);
+  width: calc(33.333% - 12px);
+  min-height: 56px;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-bottom: 4px solid var(--edge);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  will-change: transform;
+  touch-action: manipulation;
+}
+.shoot-target:hover { border-color: var(--lime-dark); }
+.shoot-target.is-wrong {
+  background: var(--error-surface);
+  border-color: var(--danger);
+  color: var(--error-ink);
+  text-decoration: line-through;
+  animation: game-shake .3s;
+}
+.shoot-target.is-reveal { background: var(--success-surface); border-color: var(--lime-dark); color: var(--success-ink); }
+.shoot-target.is-hit {
+  background: var(--lime);
+  border-color: var(--lime-dark);
+  color: var(--button-ink);
+  animation: shoot-pop .38s ease-out forwards;
+}
+.shoot-beam {
+  position: absolute;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--lime-dark);
+  transform-origin: 0 50%;
+  pointer-events: none;
+  animation: shoot-beam .3s ease-out forwards;
+}
+.shoot-ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 12px 12px;
+  border-top: 2px dashed var(--lime-dark);
+  background: var(--paper);
+}
+.shoot-fuse { height: 6px; border-radius: 6px; background: var(--soft); overflow: hidden; }
+.shoot-fuse i { display: block; height: 100%; background: var(--orange); transform-origin: 0 50%; }
+.shoot-prompt { margin-top: 8px; text-align: center; line-height: 1.35; }
+.shoot-prompt small { display: block; font-size: 12px; color: var(--muted); }
+.shoot-prompt strong { display: block; font-size: 20px; overflow-wrap: anywhere; }
+/* `scale`/`translate` нь JS-ийн `transform: translateY`-тэй нийлнэ — `transform` бол дарна. */
+@keyframes shoot-pop { 60% { scale: 1.12; opacity: 1; } to { scale: 1.2; opacity: 0; } }
+@keyframes shoot-beam { from { opacity: 1; } to { opacity: 0; } }
+@keyframes game-shake { 25% { translate: -5px 0; } 75% { translate: 5px 0; } }
+
+/* Хослуулах */
+.match-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.match-tile {
+  min-height: 84px;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-bottom: 4px solid var(--edge);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  touch-action: manipulation;
+}
+.match-tile.is-jp { font-size: 18px; }
+.match-tile.is-long { font-size: 12px; }
+.match-tile:hover:not(:disabled) { border-color: var(--lime-dark); }
+.match-tile.is-selected { background: var(--soft); border-color: var(--lime-dark); box-shadow: 0 0 0 3px var(--lime); }
+.match-tile.is-wrong { background: var(--error-surface); border-color: var(--danger); color: var(--error-ink); animation: game-shake .3s; }
+.match-tile.is-done {
+  background: transparent;
+  border-style: dashed;
+  border-bottom-width: 1px;
+  color: var(--muted);
+  opacity: .45;
+}
+
+/* Хурдан зөв/буруу */
+.tf-clock { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+.tf-clock #tf-fill { transition: none; background: var(--orange); }
+.tf-left { min-width: 64px; text-align: right; font-size: 13px; color: var(--muted); }
+.tf-left strong { font-size: 20px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tf-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-height: 250px;
+  align-content: center;
+  margin-top: 18px;
+  padding: 26px 20px;
+  border: 1px solid var(--line);
+  border-bottom: 4px solid var(--edge);
+  border-radius: 22px;
+  background: var(--paper);
+  text-align: center;
+}
+.tf-card.is-ok { background: var(--success-surface); border-color: var(--lime-dark); }
+.tf-card.is-bad { background: var(--error-surface); border-color: var(--danger); }
+.tf-q { font-size: 12px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+.tf-jp { font-size: 34px; font-weight: 650; line-height: 1.5; overflow-wrap: anywhere; }
+.tf-mn { font-size: 20px; font-weight: 650; line-height: 1.4; overflow-wrap: anywhere; }
+.tf-reveal { margin-top: 6px; font-size: 14px; font-weight: 650; color: var(--error-ink); }
+.tf-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.tf-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 64px;
+  border: 1px solid var(--line);
+  border-bottom: 4px solid var(--edge);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 750;
+  touch-action: manipulation;
+}
+.tf-no { color: var(--error-ink); background: var(--error-surface); border-color: var(--danger); }
+.tf-yes { color: var(--success-ink); background: var(--success-surface); border-color: var(--lime-dark); }
+.tf-btn[aria-disabled="true"] { opacity: .55; cursor: default; }
+
+/* Дуусах дэлгэц */
+.game-end h1:focus { outline: none; }
+.game-end > p { margin: 10px 0 22px; color: var(--muted); }
+.game-missed { margin-top: 24px; text-align: left; }
+.game-missed h2 { font-size: 15px; margin-bottom: 10px; }
+.game-missed ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.game-missed li {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 11px 52px 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+.game-missed-jp { font-size: 18px; font-weight: 650; }
+.game-missed-mn { font-size: 13px; color: var(--muted); }
+/* `.speak-button.audio-button` нь position: relative өгдөг — мөрийн баруун талд тогтооно. */
+.game-missed .speak-button.audio-button { position: absolute; inset: auto; top: 50%; right: 8px; transform: translateY(-50%); }
+/* `.completion .primary-btn`-ийн margin-top нь хөрш товчийг сунгадаг байв. */
+.game-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; margin-top: 24px; }
+.game-actions > button { margin: 0; min-width: 0; min-height: 48px; }
+
+@media (max-width: 1000px) {
+  .game-grid { grid-template-columns: 1fr; }
+  .game-card { display: grid; grid-template-columns: 150px minmax(0, 1fr); align-items: center; }
+  .game-card .game-art { grid-row: span 2; height: 100%; min-height: 118px; }
+}
+@media (max-width: 700px) {
+  .match-board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  #game-dialog .lesson-frame { padding: 12px 16px 16px; padding-top: max(12px, env(safe-area-inset-top)); }
+  #game-dialog .lesson-top { gap: 8px; margin-bottom: 10px; }
+  #game-dialog .lesson-meta { padding: 0; font-size: 12px; }
+  .game-card { grid-template-columns: 1fr; }
+  .game-card .game-art { grid-row: auto; height: 104px; min-height: 0; }
+  .game-hud { gap: 9px; }
+  .shoot-target { left: calc(var(--lane) * 33.333% + 4px); width: calc(33.333% - 8px); padding: 8px 4px; font-size: 16px; }
+  .match-board { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .match-tile { min-height: 64px; }
+  .tf-card { min-height: 210px; padding: 20px 14px; }
+  .tf-jp { font-size: 30px; }
+  .game-actions > button { flex: 1 1 100%; }
+}

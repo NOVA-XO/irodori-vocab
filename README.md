@@ -499,6 +499,7 @@ node tools/test_sql.js              # 153 — SUPABASE.sql, PGlite дээр
 node tools/test_v2.js               #  54 — v2 (KOTO): UI, синк, тооны шалгалт, хариултын мэдрэмж, ахиц/ханз/катакана, хичээлийн өгүүлбэр
 node tools/test_v2_sentences.js     #  10 — v2-ийн 91 өгүүлбэр тухайн хичээлийн үгтэй, заагаагүй үггүй (хөтөчгүй)
 node tools/test_v2_ui.js            #  70 — v2 UI: сонсох карт, Google, бараан сэдэв, 44px, утасны хариултын самбар, ахицын хуудас
+node tools/test_v2_games.js         #  57 — v2 тоглоом: буудах, хослуулах, зөв/буруу; үг сонголт, рекорд, ахицад нөлөөгүй, 320–1400
 node tools/test_attack.js           #  24 — халдлагын хувилбарууд
 node tools/test_answers.js          # хариулт шалгагч
 node tools/test_judge.js --local    # ярианы үнэлгээний чанар (сүлжээгүй)
