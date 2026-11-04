@@ -499,8 +499,9 @@ node tools/test_sql.js              # 153 — SUPABASE.sql, PGlite дээр
 node tools/test_v2.js               #  54 — v2 (KOTO): UI, синк, тооны шалгалт, хариултын мэдрэмж, ахиц/ханз/катакана, хичээлийн өгүүлбэр
 node tools/test_v2_sentences.js     #  10 — v2-ийн 91 өгүүлбэр тухайн хичээлийн үгтэй, заагаагүй үггүй (хөтөчгүй)
 node tools/test_v2_ui.js            #  70 — v2 UI: сонсох карт, Google, бараан сэдэв, 44px, утасны хариултын самбар, ахицын хуудас
-node tools/test_v2_kanji.js         #   8 — v2 ханз: jisho-гийн N5/N4 жагсаалт, v1-ийн утга, уншлага, жишээ үг (хөтөчгүй)
-node tools/test_v2_kanji_ui.js      #  22 — v2 «Ханз» хуудас: хичээл, 4 төрлийн асуулт, давтлага, 320–1400
+node tools/test_v2_kanji.js         #  28 — v2 ханз: jisho-гийн N5/N4 жагсаалт, v1-ийн утга, уншлага, жишээ үг, үүсэл, эртний бичиг, KanjiVG, зураг (хөтөчгүй)
+node tools/test_v2_kanji_ui.js      #  40 — v2 «Ханз» хуудас: хичээл, 4 төрлийн асуулт, давтлага, үүсэл, галерей, «Юуг зурсан бэ?», 320–1400
+node tools/check_v2_kanji_svg.js --old <кэш> --vg <кэш>  # татсны дараа: SVG-г эхтэй нь пикселээр (Commons ≤2%, KanjiVG 0)
 node tools/test_v2_games.js         #  57 — v2 тоглоом: буудах, хослуулах, зөв/буруу; үг сонголт, рекорд, ахицад нөлөөгүй, 320–1400
 node tools/test_attack.js           #  24 — халдлагын хувилбарууд
 node tools/test_answers.js          # хариулт шалгагч

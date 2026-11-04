@@ -3482,3 +3482,1220 @@ ruby.jp-face rt {
   .sidebar .nav-list .nav-item { padding-inline: 1px; font-size: 10px; }
   .sidebar .nav-list .nav-item > span:not([data-icon]):not(.nav-count):not(.notification-dot) { overflow-wrap: normal; word-break: keep-all; }
 }
+
+/* ══ Ханзны үүсэл — Astra (gpt-6-astra, 2026-11-04, 2-р хувилбар: дүрс төвтэй карт); Claude холбосон ══ */
+
+.kj-origin {
+  /* Role palette: light theme. */
+  --kj-meaning: #08786c;
+  --kj-sound: #7641ac;
+  --kj-part-0: #956000;
+  --kj-part-1: #2865ad;
+  --kj-part-2: #b04452;
+  --kj-part-3: #08786c;
+  --kj-part-4: #7641ac;
+  --kj-part-5: #785540;
+
+  --kj-art: 112px;
+  --kj-paper: var(--bg, #fff);
+  --kj-rule: var(--line, #d5d9df);
+  --kj-focus: var(--focus, #2865ad);
+  --kj-strokes-total: 6s;
+
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid var(--kj-rule);
+  border-radius: 18px;
+  color: inherit;
+  text-align: left;
+  font-size: .875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.kj-origin *,
+.kj-origin *::before,
+.kj-origin *::after {
+  box-sizing: border-box;
+}
+
+/* Explicit theme overrides system preference. */
+:where([data-theme="dark"], .dark, .theme-dark) .kj-origin {
+  --kj-meaning: #75decd;
+  --kj-sound: #d4adff;
+  --kj-part-0: #efc36c;
+  --kj-part-1: #91c5ff;
+  --kj-part-2: #ffa5b3;
+  --kj-part-3: #75decd;
+  --kj-part-4: #d4adff;
+  --kj-part-5: #dfbba2;
+  --kj-paper: var(--bg, #17202b);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.light):not(.theme-light)
+  .kj-origin:not(
+    :where([data-theme="light"], .light, .theme-light) *
+  ) {
+    --kj-meaning: #75decd;
+    --kj-sound: #d4adff;
+    --kj-part-0: #efc36c;
+    --kj-part-1: #91c5ff;
+    --kj-part-2: #ffa5b3;
+    --kj-part-3: #75decd;
+    --kj-part-4: #d4adff;
+    --kj-part-5: #dfbba2;
+    --kj-paper: var(--bg, #17202b);
+  }
+}
+
+.kj-origin .kj-tone-s { --kj-ink: var(--kj-meaning); }
+.kj-origin .kj-tone-p { --kj-ink: var(--kj-sound); }
+.kj-origin .kj-tone-0 { --kj-ink: var(--kj-part-0); }
+.kj-origin .kj-tone-1 { --kj-ink: var(--kj-part-1); }
+.kj-origin .kj-tone-2 { --kj-ink: var(--kj-part-2); }
+.kj-origin .kj-tone-3 { --kj-ink: var(--kj-part-3); }
+.kj-origin .kj-tone-4 { --kj-ink: var(--kj-part-4); }
+.kj-origin .kj-tone-5 { --kj-ink: var(--kj-part-5); }
+
+.kj-origin .kj-origin-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin-bottom: 8px;
+}
+
+.kj-origin .kj-origin-head > strong {
+  font-size: .8125rem;
+  font-weight: 650;
+}
+
+.kj-origin .kj-origin-badge {
+  padding: 2px 8px;
+  border: 1px solid var(--kj-rule);
+  border-radius: 99px;
+  font-size: .6875rem;
+}
+
+.kj-origin .kj-origin-disputed {
+  margin: 0 0 10px;
+  padding: 7px 10px;
+  border-inline-start: 3px solid currentColor;
+  border-radius: 3px;
+  font-size: .8125rem;
+}
+
+.kj-origin .kj-origin-visual {
+  position: relative;
+  min-width: 0;
+  min-height: 192px;
+}
+
+.kj-origin .kj-origin-track {
+  display: grid;
+  grid-template-columns: repeat(var(--kj-stage-count), minmax(0, 1fr));
+  align-items: start;
+  gap: 16px;
+  min-width: 0;
+  padding: 10px 3px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scroll-padding-inline: 3px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.kj-origin .kj-origin-stage {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+}
+
+.kj-origin .kj-origin-art {
+  display: block;
+  width: var(--kj-art);
+  height: auto;
+  aspect-ratio: 1;
+  max-width: 100%;
+  margin: 0 auto 8px;
+  color: inherit;
+}
+
+.kj-origin .kj-origin-picture {
+  padding: 8px;
+  border: 1px dashed var(--kj-rule);
+  border-radius: 16px;
+}
+
+/* KOTO is a separate teaching illustration, not a historical era. */
+.kj-origin .kj-stage--picture figcaption {
+  padding-inline: 2px;
+}
+
+.kj-origin .kj-stage--picture .kj-origin-stage-name {
+  display: inline-block;
+  width: fit-content;
+  margin-inline: auto;
+  padding: 1px 6px;
+  border: 1px dashed var(--kj-rule);
+  border-radius: 5px;
+}
+
+.kj-origin .kj-origin-ancient {
+  background: currentColor;
+  -webkit-mask: var(--kj-origin-mask) center / contain no-repeat;
+  mask: var(--kj-origin-mask) center / contain no-repeat;
+  mask-mode: alpha;
+}
+
+.kj-origin .kj-origin-glyph {
+  display: grid;
+  place-items: center;
+}
+
+.kj-origin .kj-glyph-fallback {
+  display: block;
+  font-family: "Noto Sans JP", "Yu Gothic", "Hiragino Kaku Gothic ProN",
+    Meiryo, sans-serif;
+  font-size: calc(var(--kj-art) * .8);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.kj-origin .kj-origin-stage figcaption {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-height: 3.5em;
+  font-size: .6875rem;
+  line-height: 1.35;
+}
+
+.kj-origin .kj-origin-stage-name {
+  font-weight: 550;
+}
+
+.kj-origin .kj-origin-stage figcaption small,
+.kj-origin .kj-origin-frame small {
+  font-size: .6875rem;
+  font-weight: 400;
+}
+
+.kj-origin .kj-origin-link {
+  position: absolute;
+  inset-inline-start: -15px;
+  top: 42px;
+  width: 14px;
+  font-size: 1rem;
+  line-height: 1;
+  text-align: center;
+}
+
+.kj-origin .kj-origin-link--idea {
+  top: 49px;
+  border-top: 1px dashed currentColor;
+}
+
+.kj-origin .kj-origin-scroll-hint {
+  display: none;
+  margin: 0 0 6px;
+  font-size: .6875rem;
+}
+
+.kj-origin .kj-origin-caveat {
+  margin: 0 0 8px;
+  font-size: .6875rem;
+  line-height: 1.45;
+}
+
+.kj-origin .kj-origin-text {
+  margin: 8px 0 0;
+  font-size: .875rem;
+  line-height: 1.55;
+}
+
+/* Controls: real buttons, no autoplay. */
+.kj-origin .kj-origin-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.kj-origin .kj-origin-play {
+  display: inline-flex;
+  flex: 1 1 170px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--kj-rule);
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: .8125rem;
+  line-height: 1.35;
+  white-space: normal;
+  cursor: pointer;
+}
+
+.kj-origin .kj-origin-play:hover {
+  border-color: currentColor;
+}
+
+/* Loading / failure: plain kanji remains; unavailable playback is hidden. */
+.kj-origin:not(:has(.kj-origin-track .kj-vg-svg))
+.kj-origin-play--strokes {
+  display: none;
+}
+
+.kj-origin :is(button, summary, a, [tabindex]):focus-visible {
+  outline: 3px solid var(--kj-focus);
+  outline-offset: 3px;
+}
+
+/* KanjiVG */
+.kj-origin .kj-vg-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.kj-origin .kj-vg-stroke {
+  fill: none;
+  stroke: var(--kj-ink, currentColor);
+  stroke-width: 3.5;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.kj-origin .kj-vg--mono .kj-vg-stroke {
+  stroke: currentColor;
+}
+
+.kj-origin .kj-vg-numbers {
+  opacity: 0;
+}
+
+.kj-origin .kj-vg-number {
+  fill: currentColor;
+  stroke: var(--kj-paper);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+  font-family: system-ui, sans-serif;
+  font-size: 7px;
+  font-weight: 700;
+}
+
+/* Equal-sized parts. Voice never receives a larger box. */
+.kj-origin .kj-origin-components {
+  margin-top: 12px;
+}
+
+.kj-origin .kj-origin-parts-title {
+  margin: 0 0 6px;
+  font-size: .6875rem;
+  font-weight: 650;
+}
+
+.kj-origin .kj-origin-parts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 18px;
+  min-width: 0;
+}
+
+.kj-origin .kj-origin-part {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--kj-rule);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.kj-origin .kj-origin-part:only-child {
+  grid-column: 1 / -1;
+}
+
+.kj-origin .kj-origin-plus {
+  position: absolute;
+  inset-inline-start: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: .875rem;
+}
+
+/* A new row does not begin with a detached plus sign. */
+.kj-origin .kj-origin-part:nth-child(odd) .kj-origin-plus {
+  display: none;
+}
+
+.kj-origin .kj-origin-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: .625rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.kj-origin .kj-origin-swatch {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Only a successfully mapped glyph enables the matching legend colors. */
+.kj-origin:has(.kj-origin-track .kj-vg--colored)
+.kj-origin-swatch {
+  background: var(--kj-ink, currentColor);
+}
+
+.kj-origin .kj-origin-part-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+}
+
+.kj-origin .kj-origin-part-main b {
+  font-size: 1.625rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.kj-origin .kj-origin-part-main > span {
+  font-size: .875rem;
+}
+
+.kj-origin .kj-origin-part-meaning {
+  font-size: .75rem;
+  line-height: 1.35;
+}
+
+.kj-origin .kj-origin-result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 3px 8px;
+  margin-top: 4px;
+  text-align: center;
+}
+
+.kj-origin .kj-origin-down {
+  flex: 0 0 100%;
+  line-height: 1.1;
+}
+
+.kj-origin .kj-origin-result b {
+  font-size: 1.75rem;
+  font-weight: 500;
+}
+
+.kj-origin .kj-origin-match {
+  flex: 0 0 100%;
+  font-size: .6875rem;
+}
+
+.kj-origin .kj-origin-color-note {
+  display: none;
+  margin: 6px 0 0;
+  font-size: .6875rem;
+  line-height: 1.4;
+}
+
+.kj-origin:has(.kj-origin-track .kj-vg--colored)
+.kj-color-note--mapped,
+.kj-origin:has(.kj-origin-track .kj-vg--mono)
+.kj-color-note--historical {
+  display: block;
+}
+
+/* Secondary material */
+.kj-origin .kj-origin-details {
+  margin-top: 10px;
+  border-top: 1px solid var(--kj-rule);
+}
+
+.kj-origin .kj-origin-details > summary {
+  min-height: 44px;
+  padding: 12px 2px;
+  font-size: .75rem;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.kj-origin .kj-origin-detail-body {
+  padding: 0 2px 3px;
+  font-size: .8125rem;
+  line-height: 1.6;
+}
+
+.kj-origin .kj-origin-detail-body > p {
+  margin: 0 0 10px;
+}
+
+.kj-origin .kj-origin-old [lang="ja"] {
+  font-size: 1.125rem;
+}
+
+.kj-origin .kj-origin-family {
+  margin: 12px 0;
+}
+
+.kj-origin .kj-origin-family-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 9px;
+  margin: 5px 0;
+}
+
+.kj-origin .kj-origin-family-row [lang="ja"] {
+  font-size: 1.0625rem;
+}
+
+.kj-origin .kj-origin-sources {
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--kj-rule);
+  font-size: .6875rem;
+  line-height: 1.7;
+}
+
+.kj-origin .kj-origin-sources a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Playback overlay uses the same space as the normal sequence. */
+.kj-origin .kj-origin-film {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.kj-origin .kj-origin-frame {
+  --kj-art: 124px;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
+  opacity: 0;
+  text-align: center;
+}
+
+.kj-origin .kj-origin-frame .kj-origin-art {
+  flex: 0 0 auto;
+  margin-bottom: 5px;
+}
+
+.kj-origin .kj-origin-frame-name {
+  font-size: .75rem;
+  font-weight: 550;
+}
+
+/* Animation declarations exist only while an explicit play class is set. */
+.kj-origin.is-playing-evolve .kj-origin-film {
+  animation: kj-player-window var(--kj-evolve-total) linear both;
+}
+
+.kj-origin.is-playing-evolve .kj-origin-track {
+  animation: kj-track-window var(--kj-evolve-total) linear both;
+}
+
+.kj-origin.is-playing-evolve .kj-origin-frame {
+  animation: kj-frame-pass 1.4s ease both;
+  animation-delay: calc(var(--stage-i) * 1.1s);
+}
+
+.kj-origin.is-playing-evolve .kj-frame--last {
+  animation-name: kj-frame-arrive;
+}
+
+.kj-origin.is-playing-evolve
+.kj-origin-film .kj-origin-picture
+:is(path, circle, ellipse, line, polyline, polygon, rect) {
+  stroke-dasharray: 1;
+  animation: kj-picture-draw .95s ease-out both;
+}
+
+.kj-origin.is-playing-strokes .kj-origin-film {
+  animation: kj-player-window var(--kj-strokes-total) linear both;
+}
+
+.kj-origin.is-playing-strokes .kj-origin-track {
+  animation: kj-track-window var(--kj-strokes-total) linear both;
+}
+
+.kj-origin.is-playing-strokes .kj-frame--last {
+  opacity: 1;
+}
+
+.kj-origin.is-playing-strokes .kj-vg-stroke {
+  animation: kj-stroke-draw .38s ease-out both;
+  animation-delay: calc(var(--i) * .32s);
+}
+
+.kj-origin.is-playing-strokes .kj-vg-numbers {
+  animation: kj-number-window var(--kj-strokes-total) linear both;
+}
+
+.kj-origin.is-playing-strokes .kj-vg-number {
+  animation: kj-number-appear .38s steps(1, end) both;
+  animation-delay: calc(var(--i) * .32s);
+}
+
+@keyframes kj-player-window {
+  0%, 99.9% { visibility: visible; }
+  100% { visibility: hidden; }
+}
+
+@keyframes kj-track-window {
+  0%, 99.9% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes kj-frame-pass {
+  0% { opacity: 0; }
+  20%, 78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes kj-frame-arrive {
+  0% { opacity: 0; }
+  24%, 100% { opacity: 1; }
+}
+
+@keyframes kj-picture-draw {
+  0% { stroke-dashoffset: 1; fill-opacity: 0; }
+  70% { fill-opacity: 0; }
+  100% { stroke-dashoffset: 0; fill-opacity: 1; }
+}
+
+@keyframes kj-stroke-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes kj-number-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes kj-number-window {
+  0%, 94% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Compact cards: smaller figures, no playback controls / overlay. */
+.kj-origin.kj-origin--compact {
+  --kj-art: 64px;
+  margin: 10px 0 0;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: .8125rem;
+}
+
+.kj-origin--compact .kj-origin-visual {
+  min-height: 120px;
+}
+
+.kj-origin--compact .kj-origin-track {
+  gap: 12px;
+  padding-block: 6px;
+}
+
+.kj-origin--compact .kj-origin-link {
+  inset-inline-start: -12px;
+  top: 24px;
+  width: 11px;
+  font-size: .8125rem;
+}
+
+.kj-origin--compact .kj-origin-link--idea {
+  top: 30px;
+}
+
+.kj-origin--compact .kj-origin-text {
+  font-size: .8125rem;
+}
+
+.kj-origin--compact .kj-origin-controls,
+.kj-origin--compact .kj-origin-film {
+  display: none;
+}
+
+/* Phone: one large stage, with a preview of the next stage. */
+@media (max-width: 480px) {
+  .kj-origin {
+    --kj-art: 128px;
+    padding: 12px;
+  }
+
+  .kj-origin .kj-origin-visual {
+    min-height: 202px;
+  }
+
+  .kj-origin .kj-origin-track {
+    display: flex;
+    gap: 20px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .kj-origin .kj-origin-stage {
+    flex: 0 0 82%;
+    scroll-snap-align: start;
+  }
+
+  .kj-origin .kj-origin-stage:only-child {
+    flex-basis: 100%;
+  }
+
+  .kj-origin .kj-origin-link {
+    inset-inline-start: -18px;
+    top: 56px;
+    width: 16px;
+  }
+
+  .kj-origin .kj-origin-link--idea {
+    top: 63px;
+  }
+
+  .kj-origin .kj-origin-scroll-hint {
+    display: block;
+  }
+
+  .kj-origin.kj-origin--compact {
+    --kj-art: 72px;
+    padding: 10px;
+  }
+
+  .kj-origin--compact .kj-origin-visual {
+    min-height: 130px;
+  }
+
+  .kj-origin--compact .kj-origin-stage {
+    flex-basis: 68%;
+  }
+
+  .kj-origin--compact .kj-origin-link {
+    top: 28px;
+  }
+
+  .kj-origin--compact .kj-origin-link--idea {
+    top: 35px;
+  }
+}
+
+/* Reduced motion: show the complete, final drawings without animation. */
+@media (prefers-reduced-motion: reduce) {
+  .kj-origin *,
+  .kj-origin *::before,
+  .kj-origin *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  .kj-origin .kj-origin-track {
+    opacity: 1 !important;
+  }
+
+  .kj-origin .kj-origin-film {
+    display: none !important;
+  }
+
+  .kj-origin .kj-vg-stroke {
+    stroke-dashoffset: 0 !important;
+  }
+
+  .kj-origin .kj-vg-numbers {
+    opacity: 0 !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .kj-origin .kj-vg-stroke {
+    stroke: CanvasText;
+  }
+
+  .kj-origin .kj-origin-swatch {
+    background: CanvasText !important;
+  }
+
+  .kj-origin .kj-origin-ancient {
+    background: CanvasText;
+  }
+}
+
+/* Existing introduction layout: retained for the next design pass. */
+#view-kanji .kj-origin-intro {
+  margin: 0 0 20px;
+}
+
+#view-kanji .kj-origin-intro > summary {
+  min-height: 44px;
+  padding: 8px 0;
+  cursor: pointer;
+  line-height: 1.45;
+}
+
+#view-kanji .kj-origin-intro > summary strong {
+  font-size: 1rem;
+}
+
+#view-kanji .kj-origin-teaser {
+  display: block;
+  margin: 4px 0 0 1.25em;
+  font-size: .8125rem;
+}
+
+#view-kanji .kj-origin-intro-body {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: .875rem;
+  line-height: 1.65;
+}
+
+#view-kanji .kj-origin-intro-body > p {
+  margin: 0 0 14px;
+}
+
+#view-kanji .kj-origin-history {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+  padding-left: 1.5em;
+}
+
+#view-kanji .kj-origin-history p {
+  margin: 3px 0 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+#view-kanji .kj-origin-intro-note {
+  padding: 10px 12px;
+  border-left: 3px solid var(--line);
+}
+
+#view-kanji .kj-origin-types {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 20px;
+}
+
+#view-kanji .kj-origin-type {
+  min-width: 0;
+}
+
+#view-kanji .kj-origin-type > h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+#view-kanji .kj-origin-count {
+  font-size: .8125rem;
+  font-weight: 500;
+}
+
+#view-kanji .kj-origin-type > p {
+  margin: 6px 0 0;
+  font-size: .8125rem;
+  line-height: 1.55;
+}
+
+#view-kanji .kj-origin-intro > summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.kj-origin .kj-origin-result-old { font-size: .6875rem; }
+
+/* ══ Ханзны үүсэл — хуудас: таб, галерей, «Юуг зурсан бэ?» — Claude (Astra-гийн квот 11-04 дууссан;
+   Astra-гийн картын хэв маягаар, Astra хянана). Өнгө зөвхөн апп-ын токеноор. ══ */
+#view-kanji .kj-intro-lead {
+  margin: 0 0 12px;
+  font-size: .9375rem;
+  font-weight: 600;
+}
+
+#view-kanji .kj-intro-tablist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+}
+
+#view-kanji .kj-intro-tab {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+#view-kanji .kj-intro-tab[aria-pressed="true"] {
+  border-color: var(--accent-ink);
+  background: var(--accent-surface);
+  color: var(--accent-ink);
+  box-shadow: inset 0 0 0 1px var(--accent-ink);
+}
+
+#view-kanji .kj-intro-tab:focus-visible,
+#view-kanji .kj-gallery > summary:focus-visible,
+#view-kanji .kj-gal-item > summary:focus-visible,
+#view-kanji .kj-intro-history > summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+#view-kanji .kj-intro-tab strong { font-size: .875rem; }
+#view-kanji .kj-intro-tab-count { font-size: .75rem; font-weight: 650; }
+#view-kanji .kj-intro-tab-line { font-size: .75rem; line-height: 1.4; color: var(--muted); }
+#view-kanji .kj-intro-tab[aria-pressed="true"] .kj-intro-tab-line { color: inherit; }
+
+#view-kanji .kj-intro-panel .kj-origin { margin-top: 0; }
+
+#view-kanji .kj-intro-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 8px 0 0;
+  font-size: .8125rem;
+  color: var(--muted);
+}
+
+#view-kanji .kj-intro-more [lang="ja"] {
+  font-size: 1.125rem;
+  letter-spacing: .12em;
+  color: var(--ink);
+}
+
+#view-kanji .kj-intro-history {
+  margin: 14px 0;
+}
+
+#view-kanji .kj-intro-history > summary,
+#view-kanji .kj-gallery > summary {
+  min-height: 44px;
+  padding: 8px 0;
+  cursor: pointer;
+  line-height: 1.45;
+}
+
+#view-kanji .kj-intro-history > summary { font-weight: 650; font-size: .875rem; }
+
+/* Галерей */
+#view-kanji .kj-gallery { margin: 0 0 20px; }
+#view-kanji .kj-gallery > summary strong { font-size: 1rem; }
+
+#view-kanji .kj-gallery-body {
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+#view-kanji .kj-gallery-game {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--accent-surface);
+  color: var(--accent-ink);
+}
+
+#view-kanji .kj-gallery-game p { margin: 0; font-size: .875rem; }
+#view-kanji .kj-gallery-play { min-height: 44px; }
+
+#view-kanji .kj-gallery-group + .kj-gallery-group { margin-top: 18px; }
+
+#view-kanji .kj-gallery-group h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: .9375rem;
+}
+
+#view-kanji .kj-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 176px), 1fr));
+  gap: 8px;
+}
+
+#view-kanji .kj-gal-item {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+
+#view-kanji .kj-gal-item[open] {
+  grid-column: 1 / -1;
+  border-color: var(--accent-ink);
+}
+
+#view-kanji .kj-gal-item > summary {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 10px 8px;
+  list-style: none;
+  cursor: pointer;
+}
+
+#view-kanji .kj-gal-item > summary::-webkit-details-marker { display: none; }
+
+#view-kanji .kj-gal-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+#view-kanji .kj-gal-pic,
+#view-kanji .kj-gal-old {
+  display: block;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  color: var(--ink);
+}
+
+#view-kanji .kj-gal-old {
+  background: currentColor;
+  -webkit-mask: var(--kj-gal-mask) center / contain no-repeat;
+  mask: var(--kj-gal-mask) center / contain no-repeat;
+  opacity: .78;
+}
+
+#view-kanji .kj-gal-glyph {
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+#view-kanji .kj-gal-name {
+  font-size: .75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+#view-kanji .kj-gal-detail { padding: 0 10px 10px; }
+#view-kanji .kj-gal-detail .kj-origin { margin: 0; }
+
+@media (max-width: 480px) {
+  #view-kanji .kj-gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #view-kanji .kj-gal-pic,
+  #view-kanji .kj-gal-old { width: 36px; height: 36px; }
+  #view-kanji .kj-gal-glyph { font-size: 1.875rem; }
+  #view-kanji .kj-gal-row { gap: 4px; }
+}
+
+@media (max-width: 360px) {
+  #view-kanji .kj-gal-old { display: none; }
+}
+
+/* «Юуг зурсан бэ?» */
+#game-dialog .kjpic {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr); /* хувьслын гүйлгээ баганыг тэлж хальж байв (390, 11-04) */
+  justify-items: center;
+  gap: 14px;
+  padding: 8px 0 24px;
+  text-align: center;
+}
+
+#game-dialog .kjpic-count { margin: 0; font-size: .8125rem; color: var(--muted); }
+#game-dialog .kjpic-q { margin: 0; font-size: 1.25rem; line-height: 1.35; outline: none; }
+
+#game-dialog .kjpic-frame {
+  margin: 0;
+  padding: 14px;
+  border: 1px dashed var(--line);
+  border-radius: 20px;
+  background: var(--paper);
+}
+
+#game-dialog .kjpic-art {
+  display: block;
+  width: min(44vw, 168px);
+  height: min(44vw, 168px);
+  color: var(--ink);
+}
+
+#game-dialog .kjpic-frame figcaption { margin-top: 4px; font-size: .75rem; color: var(--muted); }
+
+#game-dialog .kjpic-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: min(100%, 420px);
+}
+
+#game-dialog .kjpic-opt {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-height: 88px;
+  padding: 10px 6px;
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+#game-dialog .kjpic-opt:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+#game-dialog .kjpic-opt[aria-disabled="true"] { cursor: default; }
+#game-dialog .kjpic-glyph { font-size: 2.75rem; line-height: 1.1; }
+#game-dialog .kjpic-opt .game-keys { position: absolute; top: 6px; right: 8px; }
+#game-dialog .kjpic-mark { font-size: .6875rem; font-weight: 700; }
+
+#game-dialog .kjpic-opt.is-correct {
+  border-color: var(--success-ink);
+  background: var(--success-surface);
+  color: var(--success-ink);
+}
+
+#game-dialog .kjpic-opt.is-wrong {
+  border-color: var(--error-ink);
+  background: var(--error-surface);
+  color: var(--error-ink);
+}
+
+#game-dialog .kjpic-reveal { width: min(100%, 560px); min-width: 0; text-align: left; }
+#game-dialog .kjpic-say { margin: 0 0 6px; font-size: .9375rem; }
+#game-dialog .kjpic-say [lang="ja"] { font-size: 1.25rem; }
+#game-dialog .kjpic.is-ok .kjpic-say strong { color: var(--success-ink); }
+#game-dialog .kjpic.is-bad .kjpic-say strong { color: var(--error-ink); }
+#game-dialog .kjpic-next,
+#game-dialog .kjpic-skip { min-width: min(100%, 240px); min-height: 48px; }
+
+@media (max-width: 360px) {
+  #game-dialog .kjpic-glyph { font-size: 2.25rem; }
+  #game-dialog .kjpic-opt { min-height: 76px; }
+}
+
+.game-card--kjpic .ga-kjpic svg {
+  width: 34px;
+  height: 34px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ══ Astra-гийн хяналт №41 (11-05) — Claude оруулав ══ */
+/* Галерейн нүд: нээх/хаах дохио. */
+#view-kanji .kj-gal-toggle { font-size: .75rem; color: var(--accent-ink); }
+#view-kanji .kj-gal-hide { display: none; }
+#view-kanji .kj-gal-item[open] .kj-gal-show { display: none; }
+#view-kanji .kj-gal-item[open] .kj-gal-hide { display: inline; }
+
+/* Түвшин ба «Бүх ханз» эвхэгддэг. */
+#view-kanji .kj-level > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+#view-kanji .kj-level > summary::-webkit-details-marker { display: none; }
+#view-kanji .kj-level > summary::after {
+  content: "+";
+  margin-inline-start: auto;
+  padding-inline-start: 12px;
+  font-size: 1.25rem;
+  color: var(--accent-ink);
+}
+#view-kanji .kj-level[open] > summary::after { content: "−"; }
+#view-kanji .kj-level-meta { min-width: 0; }
+#view-kanji .kj-level-meta > * { display: block; }
+#view-kanji .kj-level-meta > strong { font-size: 1.125rem; }
+#view-kanji .kj-level[open] > summary { margin-bottom: 12px; }
+#view-kanji .kj-inventory > summary {
+  min-height: 44px;
+  padding-block: 10px;
+  cursor: pointer;
+}
+#view-kanji .kj-level > summary:focus-visible,
+#view-kanji .kj-inventory > summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Гар утсанд хувьслын бүх үе мөр дамжин харагдана (56px), гүйлгээгүй — 2+ шаттай үед л.
+   Astra: нэг мөрөнд шахахгүй (320-д нэр/огноо багтахгүй); Claude-ийн 52–56px-ийг зөвшөөрөв.
+   «▶ Хувьслыг үзэх»-ийн хүрээ (film) том хэвээр. */
+@media (max-width: 480px) {
+  .kj-origin .kj-origin-track:has(> .kj-origin-stage + .kj-origin-stage) {
+    --kj-art: 56px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+    gap: 16px 8px;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+  .kj-origin .kj-origin-track:has(> .kj-origin-stage + .kj-origin-stage) > .kj-origin-stage {
+    flex: none;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 6px;
+    min-width: 0;
+    width: auto;
+    text-align: center;
+    overflow-wrap: anywhere;
+  }
+  .kj-origin .kj-origin-track:has(> .kj-origin-stage + .kj-origin-stage) .kj-origin-link { display: none; }
+  .kj-origin:has(.kj-origin-track > .kj-origin-stage + .kj-origin-stage) .kj-origin-scroll-hint { display: none; }
+}

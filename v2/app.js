@@ -723,8 +723,8 @@
   /** 8 хүртэл: хугацаа болсон/алдсан, эс бөгөөс үзсэнээс санамсаргүй. */
   function startKanaReview(){const due=kanaDue(),seen=KANA.filter(k=>state.kana[k.id]);const chars=shuffle(due.length?due:seen).slice(0,8);if(!chars.length){startKana(0);return;}session=newSession({kana:true,title:'Катакана давтлага',words:chars,queue:kanaQueue(chars,false)});openSession();}
 
-  /* ── Ханз N5 · N4 (`v2/kanji.js`, 79 + 166) ─────────────────────────
-     Эзний хүсэлт (2026-11-04): jisho.org-ийн N5, N4-ийн бүх ханз, тусдаа
+  /* ── Ханз N5 · N4 · N3 (`v2/kanji.js`, 79 + 166 + 367) ───────────────
+     Эзний хүсэлт (2026-11-04): jisho.org-ийн N5, N4-ийн бүх ханз (N3 — 11-04 орой, эзэн «N3 хүртэл»), тусдаа
      «Ханз» цэс. Жагсаалт jisho-той ханз бүрээрээ таарсан; утга, уншлага нь
      v1-ийн KANJIDIC2 + гараар шалгасан монгол утга. Логик (Claude); хуудас,
      ханзны карт (markup/CSS) — Astra.
@@ -736,14 +736,92 @@
   const kanjiRead = k => [k.on.slice(0, 2).join('・'), k.kun.slice(0, 2).map(r => r.replace(/\.(.+)$/, '($1)')).join('・')].filter(Boolean).join(' ／ ');
   const KANJI = (window.KOTO_KANJI || []).map(k => ({
     id: k.id, jp: k.c, mn: k.mn, on: k.on, kun: k.kun, s: k.s, g: k.g, n: k.n, read: kanjiRead(k), kanji: true, noAu: true,
-    exw: k.ex.map((e, i) => ({ id: 'JW:' + k.id + ':' + i, jp: e.jp, kana: e.kana, mn: e.mn, au: e.au || null }))
+    exw: k.ex.map((e, i) => ({ id: 'JW:' + k.id + ':' + i, jp: e.jp, kana: e.kana, mn: e.mn, au: e.au || null })),
+    o: k.o || { t: 'unk' }
   }));
   const kanjiById = Object.fromEntries(KANJI.map(k => [k.id, k]));
+  const KANJI_BY_C = Object.fromEntries(KANJI.map(k => [k.jp, k]));
+  /** Үүслийн тоо (tools/v2_kanji_origin.tsv → kanji.js-ийн `o`): төрөл бүр, хуучин хэлбэр, зураг, эртний бичиг. */
+  function kanjiOriginStats() {
+    const pics = window.KOTO_KANJI_PICS || {}, out = { pic: 0, ind: 0, ic: 0, psc: 0, unk: 0, old: 0, pics: 0, ancient: 0, total: KANJI.length };
+    for (const k of KANJI) {
+      out[k.o.t]++;
+      if (k.o.old) out.old++;
+      if (k.o.pc && pics[k.jp]) out.pics++;
+      if (k.o.a) out.ancient++;
+    }
+    return out;
+  }
+  /* Үүслийн нэмэлт (11-04, эзэн «бүгдийг»): хувьслын шугам — o.a нь ['oracle','bronze','seal']-ийн
+     байгаа нь (Commons, PD); KanjiVG-ийн зурлага/хэсэг — `kanji-vg/<id>.json`, карт гарахад л татна;
+     гэр бүл — o.f [[хэсэг, бусад ханз…]]; галерейн ангилал — o.g. */
+  const KJ_ERA = { oracle: ['Мэргийн ясны бичиг', '~3200 жилийн өмнө'], bronze: ['Хүрэл бичиг', '~3000 жилийн өмнө'], seal: ['Тамга бичиг', '~2200 жилийн өмнө'] };
+  const KJ_CAT = { nature: 'Байгаль', body: 'Хүн ба бие', living: 'Амьтан, ургамал', things: 'Эд зүйл, барилга' };
+  /** Эртний бичгийн файл — id ба үеийг шалгаж (CSS url-д орно). */
+  const kanjiOldSrc = (k, era) => /^J-[0-9A-F]+$/.test(k.id) && KJ_ERA[era] && (k.o.a || []).includes(era) ? `kanji-old/${k.id}-${era}.svg` : '';
+  /** Зурагтай 52 ханз ангиллаар (галерей). */
+  const kanjiGallery = () => Object.keys(KJ_CAT).map(g => ({ g, label: KJ_CAT[g], items: KANJI.filter(k => k.o.g === g && (window.KOTO_KANJI_PICS || {})[k.jp]) }));
+  const kjVgCache = new Map();
+  /** KanjiVG: {vb, ok, s:[[d, хэсгийн №]], n:[[x, y]], c} — алдвал null (зурлагагүйгээр үргэлжилнэ). */
+  function kanjiVG(id) {
+    if (!kanjiById[id]) return Promise.resolve(null);
+    if (!kjVgCache.has(id)) kjVgCache.set(id, fetch(`kanji-vg/${id}.json`).then(r => r.ok ? r.json() : null).catch(() => null));
+    return kjVgCache.get(id);
+  }
+  /** `data-kj-vg="<id>"` бүхий хоосон байрлалыг KanjiVG-ийн зурлагаар дүүргэнэ (kjGlyphMarkup). */
+  function hydrateKanjiVG() {
+    for (const el of document.querySelectorAll('[data-kj-vg]:not([data-kj-vg-done])')) {
+      if (el.closest('details:not([open])')) continue;
+      el.dataset.kjVgDone = '1';
+      const k = kanjiById[el.dataset.kjVg];
+      if (k) kanjiVG(k.id).then(vg => { if (vg && el.isConnected) el.innerHTML = kjGlyphMarkup(k, vg); });
+    }
+  }
+  /* Одоогийн kanjiPlay-ийг орлуулна.
+     Өмнөх хоёр ангийг хамт цэвэрлэх нь ээлжилж тоглуулахад шаардлагатай. */
+  function kanjiPlay(button) {
+    const box = button.closest('[data-kj-anim]');
+    if (!box || box.classList.contains('kj-origin--compact')) return;
+
+    const mode = button.dataset.kjPlay === 'evolve' ? 'evolve' : 'strokes';
+
+    if (mode === 'strokes') {
+      const svg = box.querySelector('.kj-origin-track .kj-vg-svg');
+      const count = svg?.querySelectorAll('.kj-vg-stroke').length || 0;
+      if (!count) return;
+
+      // Нэг зурлага 0.38 секунд; дараагийнх 0.32 секундэд эхэлнэ.
+      // Төгсгөлийн дүрсийг 0.8 секунд барина.
+      box.style.setProperty(
+        '--kj-strokes-total',
+        `${((count - 1) * 0.32 + 0.38 + 0.8).toFixed(2)}s`
+      );
+    }
+
+    box.classList.remove('is-playing-evolve', 'is-playing-strokes');
+    void box.offsetWidth;
+    box.classList.add(`is-playing-${mode}`);
+  }
+  /** Галерейн нүд нээгдэхэд л үүслийн блокийг зурна (toggle — capture-аар; bubble хийдэггүй). */
+  function kanjiGalleryOpen(event) {
+    const d = event.target;
+    if (!(d instanceof HTMLDetailsElement) || !d.open) return;
+    const box = d.matches('[data-kj-gal]') && d.querySelector(':scope > .kj-gal-detail');
+    if (box && !box.firstElementChild) box.innerHTML = kjOriginMarkup(kanjiById[d.dataset.kjGal], { compact: true });
+    hydrateKanjiVG();
+  }
+  /** Танилцуулгын төрлийн таб: `data-kj-tab` — бусад самбарыг нууна (дахин зурахгүй, гүйлгээ хадгалагдана). */
+  function kanjiTab(button) {
+    const box = button.closest('[data-kj-tabs]');
+    if (!box) return;
+    for (const b of box.querySelectorAll('[data-action=kj-tab]')) b.setAttribute('aria-pressed', String(b === button));
+    for (const p of box.querySelectorAll('[data-kj-panel]')) p.hidden = p.dataset.kjPanel !== button.dataset.kjTab;
+  }
   /* Түвшин бүрийг 5 хүртэлх хичээлд ТЭНЦҮҮ хуваана: N5 79 → 15×5+4, N4 166 → 30×5+4×4
      (5-аар тасалбал N4-ийн сүүлийн хичээлд 1 ханз үлдэнэ). */
   const kanjiLessons = (() => {
     const out = [];
-    for (const n of [5, 4]) {
+    for (const n of [5, 4, 3]) {
       const list = KANJI.filter(k => k.n === n), L = Math.ceil(list.length / 5), base = Math.floor(list.length / L), extra = list.length % L;
       let p = 0;
       for (let i = 0; i < L; i++) {
@@ -805,7 +883,7 @@
     const status = k => { const r = state.kana[k.id]; return !r ? 'new' : r.weak ? 'weak' : mastered(r) ? 'strong' : 'learning'; };
     return Object.assign(wordStats(KANJI, state.kana), {
       due: kanjiDue().length,
-      levels: [5, 4].map(n => Object.assign(wordStats(KANJI.filter(k => k.n === n), state.kana), {
+      levels: [5, 4, 3].map(n => Object.assign(wordStats(KANJI.filter(k => k.n === n), state.kana), {
         n, label: 'N' + n,
         lessons: kanjiLessons.map((L, i) => ({ i, n: L.n, k: L.k, title: L.title, chars: L.chars.map(c => c.jp), seen: L.chars.filter(c => state.kana[c.id]).length, total: L.chars.length })).filter(L => L.n === n),
         kanji: KANJI.filter(k => k.n === n).map(k => ({ id: k.id, c: k.jp, mn: k.mn, read: k.read, status: status(k) }))
@@ -832,15 +910,562 @@
     return `${kjEsc(text.slice(0, dot))}<span class="kj-okurigana">${kjEsc(text.slice(dot + 1))}</span>`;
   }
 
+  /* Ханзны үүсэл — блок, танилцуулга: Astra (gpt-6-astra, 2026-11-04); өгөгдөл (`o`,
+     kanjiOriginStats) ба холбоос — Claude. Холбоос шинэ табд (хичээл тасрахгүй) — Claude. */
+  const KJ_ORIGIN_TYPES = {
+    pic: 'Зургаас',
+    ind: 'Тэмдгээр',
+    ic: 'Утга нийлсэн',
+    psc: 'Утга + дуу',
+    unk: 'Үүсэл маргаантай'
+  };
+
+  /* Үүслийн карт — дүрс төвтэй (Astra, gpt-6-astra, 2026-11-04 2-р хувилбар): хувьслын шугам, KanjiVG-ийн
+     өнгөт ханз, «▶» хөдөлгөөн, гэр бүл, details. Claude: холбоос, өгөгдөл, хуучин хэлбэрийн үр дүн (国 → 國). */
+  /* Үүслийн блокийн туслах функцүүд. */
+
+  function kjPartTone(p, index) {
+    if (p?.r === 's') return 'kj-tone-s';
+    if (p?.r === 'p') return 'kj-tone-p';
+    return `kj-tone-${index % 6}`;
+  }
+
+  function kjGlyphFallback(k) {
+    return `<span class="kj-glyph-fallback" lang="ja">${kjEsc(k.jp)}</span>`;
+  }
+
+  /* Зөвхөн репогийн итгэмжлэгдсэн KOTO SVG fragment-д хэрэглэнэ.
+     pathLength=1 нь янз бүрийн урттай дүрсийг нэг хэмнэлээр зурна. */
+  function kjPictureFragment(fragment) {
+    return fragment
+      .replace(/[ ]pathLength[ ]*=[ ]*(?:"[^"]*"|'[^']*')/g, '')
+      .replace(
+        /<(path|circle|ellipse|line|polyline|polygon|rect)(?=[ />])/g,
+        '<$1 pathLength="1"'
+      );
+  }
+
+  function kjOriginSourcesMarkup(character = '') {
+    const wiki = character
+      ? `https://en.wiktionary.org/wiki/${encodeURIComponent(character)}`
+      : 'https://en.wiktionary.org/wiki/Wiktionary:Main_Page';
+
+    return `
+      <p class="kj-origin-sources">
+        <a href="${kjEsc(wiki)}" target="_blank"
+          rel="noopener noreferrer">Wiktionary</a>
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/"
+          target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a>
+        · <a href="https://commons.wikimedia.org/"
+          target="_blank" rel="noopener noreferrer">Commons</a> PD
+        · <a href="https://kanjivg.tagaini.net/"
+          target="_blank" rel="noopener noreferrer">KanjiVG</a>
+        © Ulrich Apel,
+        <a href="https://creativecommons.org/licenses/by-sa/3.0/"
+          target="_blank" rel="noopener noreferrer">CC BY-SA 3.0</a>
+        (өнгө, хөдөлгөөн: KOTO)
+        · зураг: KOTO
+      </p>`;
+  }
+
+  function kjGlyphMarkup(k, vg) {
+    const strokes = Array.isArray(vg?.s) ? vg.s : [];
+
+    // Алдаа гарсан JSON ч энгийн ханзыг алга болгохгүй.
+    if (
+      !strokes.length ||
+      !strokes.every(s =>
+        Array.isArray(s) && typeof s[0] === 'string' && s[0].trim()
+      )
+    ) {
+      return kjGlyphFallback(k);
+    }
+
+    const vb = String(vg.vb || '')
+      .trim()
+      .split(/[ ,]+/)
+      .map(Number);
+
+    if (
+      vb.length !== 4 ||
+      !vb.every(Number.isFinite) ||
+      vb[2] <= 0 ||
+      vb[3] <= 0
+    ) {
+      return kjGlyphFallback(k);
+    }
+
+    const parts = Array.isArray(k.o?.p) ? k.o.p : [];
+    const colored = vg.ok === true;
+    const positions = Array.isArray(vg.n) ? vg.n : [];
+
+    const description = colored
+      ? 'Хэсгүүдийг өнгөөр ялгасан; УТГА, ДУУ, ХЭСЭГ тайлбартай.'
+      : 'Нэг өнгийн зурлага; үүслийн хэсгийг одоогийн дүрсэнд өнгөөр заагаагүй.';
+
+    const paths = strokes.map(([d, partIndex], i) => {
+      const p = Number.isInteger(partIndex) && partIndex >= 0
+        ? parts[partIndex] : null;
+      const tone = colored && p ? ` ${kjPartTone(p, partIndex)}` : '';
+
+      return `
+        <path class="kj-vg-stroke${tone}"
+          d="${kjEsc(d)}" pathLength="1"
+          style="--i:${i}" />`;
+    }).join('');
+
+    const numbers = positions.slice(0, strokes.length).map((pos, i) => {
+      if (!Array.isArray(pos) || pos.length < 2) return '';
+      const x = Number(pos[0]);
+      const y = Number(pos[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return '';
+
+      return `
+        <text class="kj-vg-number" x="${x}" y="${y}"
+          style="--i:${i}">${i + 1}</text>`;
+    }).join('');
+
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg"
+        class="kj-vg-svg ${colored ? 'kj-vg--colored' : 'kj-vg--mono'}"
+        viewBox="${vb.join(' ')}"
+        role="img" focusable="false" lang="ja"
+        aria-label="${kjEsc(`${k.jp}. ${description}`)}">
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          ${paths}
+        </g>
+        <g class="kj-vg-numbers" aria-hidden="true">${numbers}</g>
+      </svg>`;
+  }
+
+  function kjOriginMarkup(k, { compact = false } = {}) {
+    if (!k) return '';
+
+    const o = k.o || {};
+    const type = Object.prototype.hasOwnProperty.call(KJ_ORIGIN_TYPES, o.t)
+      ? o.t : 'unk';
+
+    const summaries = {
+      pic: 'Юмсын дүрсийг бичгийн тэмдэг болгосон төрөл.',
+      ind: 'Байрлал, тэмдгээр санааг илэрхийлсэн төрөл.',
+      ic: 'Хэсгүүдийн утгыг нийлүүлж санааг илэрхийлсэн төрөл.',
+      psc: 'Нэг хэсэг нь утгын чиглэлийг, нөгөө нь дуудлагын холбоог заана.',
+      unk: 'Энэ ханзны үүслийн тухай тайлбарууд нэг мөр болоогүй.'
+    };
+
+    const explanation = typeof o.tx === 'string' && o.tx.trim()
+      ? o.tx.trim() : summaries[type];
+
+    const firstSentence = explanation.match(/^[^.!?。！？]+[.!?。！？]?/);
+    const lead = firstSentence && firstSentence[0].trim().length <= 160
+      ? firstSentence[0].trim() : summaries[type];
+
+    // Индексийг хадгална: KanjiVG-ийн partIndex нь o.p-ийн анхны индекс.
+    const parts = (Array.isArray(o.p) ? o.p : [])
+      .map((p, index) => ({ p, index }))
+      .filter(({ p }) => p && p.c);
+
+    const candidate = o.pc && window.KOTO_KANJI_PICS?.[k.jp];
+    const picture = typeof candidate === 'string' && candidate.trim()
+      ? kjPictureFragment(candidate) : '';
+
+    const eras = [...new Set(Array.isArray(o.a) ? o.a : [])]
+      .filter(era => Object.prototype.hasOwnProperty.call(KJ_ERA, era))
+      .map(era => ({ era, src: kanjiOldSrc(k, era) }))
+      .filter(item => item.src);
+
+    const stages = [];
+
+    if (picture) {
+      stages.push({
+        kind: 'picture',
+        title: 'KOTO зураг',
+        note: 'Сургалтын зураг · түүхэн бичиг биш',
+        art: `
+          <svg class="kj-origin-art kj-origin-picture"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 48 48"
+            fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"
+            role="img" focusable="false"
+            aria-label="${kjEsc(`${o.pc}: KOTO-ийн сургалтын зураг`)}">
+            ${picture}
+          </svg>`
+      });
+    }
+
+    for (const { era, src } of eras) {
+      stages.push({
+        kind: 'ancient',
+        title: KJ_ERA[era][0],
+        note: KJ_ERA[era][1],
+        art: `
+          <span class="kj-origin-art kj-origin-ancient"
+            role="img"
+            aria-label="${kjEsc(`${k.jp}: ${KJ_ERA[era][0]}, ${KJ_ERA[era][1]}`)}"
+            style="--kj-origin-mask:url('${kjEsc(src)}')"></span>`
+      });
+    }
+
+    stages.push({
+      kind: 'current',
+      title: 'Одоо',
+      note: '',
+      art: `
+        <div class="kj-origin-art kj-origin-glyph"
+          data-kj-vg="${kjEsc(k.id)}">
+          ${kjGlyphFallback(k)}
+        </div>`
+    });
+
+    const track = stages.map((stage, i) => {
+      const fromPicture = i > 0 && stages[i - 1].kind === 'picture';
+      const connector = i === 0 ? '' : fromPicture
+        ? '<span class="kj-origin-link kj-origin-link--idea" aria-hidden="true"></span>'
+        : '<span class="kj-origin-link" aria-hidden="true">→</span>';
+
+      return `
+        <figure class="kj-origin-stage kj-stage--${stage.kind}">
+          ${connector}
+          ${stage.art}
+          <figcaption>
+            <span class="kj-origin-stage-name">${kjEsc(stage.title)}</span>
+            ${stage.note ? `<small>${kjEsc(stage.note)}</small>` : ''}
+          </figcaption>
+        </figure>`;
+    }).join('');
+
+    // Давхарга нь зөвхөн товч дарахад үзэгдэнэ.
+    // aria-hidden: хүртээмжийн үндсэн мэдээлэл track-д нэг удаа бий.
+    const film = compact ? '' : `
+      <div class="kj-origin-film" aria-hidden="true">
+        ${stages.map((stage, i) => `
+          <div class="kj-origin-frame kj-frame--${stage.kind}
+            ${i === stages.length - 1 ? 'kj-frame--last' : ''}"
+            style="--stage-i:${i}">
+            ${stage.art}
+            <span class="kj-origin-frame-name">${kjEsc(stage.title)}</span>
+            ${stage.kind === 'picture'
+              ? '<small>Сургалтын зураг · түүхэн бичиг биш</small>'
+              : stage.note ? `<small>${kjEsc(stage.note)}</small>` : ''}
+          </div>`).join('')}
+      </div>`;
+
+    const on = Array.isArray(k.on) ? k.on.filter(Boolean).join('・') : '';
+    const matching = parts.some(({ p }) => p.r === 'p' && p.m === 1);
+
+    const partsMarkup = parts.length ? `
+      <div class="kj-origin-components">
+        <p class="kj-origin-parts-title">Үүслийн хэсгүүд</p>
+        <div class="kj-origin-parts" role="group"
+          aria-label="Хэсгүүдийн утга ба дуудлагын холбоо">
+          ${parts.map(({ p, index }, order) => {
+            const role = p.r === 's'
+              ? 'УТГА' : p.r === 'p' ? 'ДУУ' : `ХЭСЭГ ${order + 1}`;
+
+            return `
+              <div class="kj-origin-part ${kjPartTone(p, index)}">
+                ${order
+                  ? '<span class="kj-origin-plus" aria-hidden="true">+</span>'
+                  : ''}
+                <span class="kj-origin-role">
+                  <i class="kj-origin-swatch" aria-hidden="true"></i>
+                  ${role}
+                </span>
+                <div class="kj-origin-part-main">
+                  <b lang="ja">${kjEsc(p.c)}</b>
+                  ${p.on ? `<span lang="ja">${kjEsc(p.on)}</span>` : ''}
+                </div>
+                ${p.mn
+                  ? `<span class="kj-origin-part-meaning">${kjEsc(p.mn)}</span>`
+                  : ''}
+              </div>`;
+          }).join('')}
+        </div>
+        <div class="kj-origin-result">
+          <span class="kj-origin-down" aria-hidden="true">↓</span>
+          ${o.old ? '<small class="kj-origin-result-old">Хуучин хэлбэр</small>' : ''}
+          <b lang="ja">${kjEsc(o.old || k.jp)}</b>
+          ${on ? `<span lang="ja">${kjEsc(on)}</span>` : ''}
+          ${matching
+            ? '<small class="kj-origin-match">уншлага таарч байна</small>'
+            : ''}
+        </div>
+        <p class="kj-origin-color-note kj-color-note--mapped">
+          Өнгө нь одоогийн дүрсэн дэх хэсгүүдийг заана.
+        </p>
+        <p class="kj-origin-color-note kj-color-note--historical">
+          Үүслийн хэсгүүд одоогийн дүрсэнд шууд ялгарахгүй тул нэг өнгөөр үзүүлэв.
+        </p>
+      </div>` : '';
+
+    const familyRows = (Array.isArray(o.f) ? o.f : [])
+      .filter(row => Array.isArray(row) && row.length > 1)
+      .map(row => {
+        const head = row[0];
+        const relatives = [...new Set(row.slice(1))]
+          .filter(c => typeof c === 'string' && c && c !== k.jp && c !== head)
+          .slice(0, 12);
+        if (!head || !relatives.length) return '';
+
+        return `
+          <p class="kj-origin-family-row">
+            <span lang="ja">${kjEsc(head)}</span>
+            <span aria-hidden="true">→</span>
+            ${relatives.map(c => `<span lang="ja">${kjEsc(c)}</span>`).join(' ')}
+          </p>`;
+      }).join('');
+
+    const evolveDuration = ((stages.length - 1) * 1.1 + 1.8).toFixed(2);
+
+    return `
+      <section class="kj-origin${compact ? ' kj-origin--compact' : ''}"
+        data-kj-anim
+        style="--kj-stage-count:${stages.length};--kj-evolve-total:${evolveDuration}s"
+        aria-label="${kjEsc(`${k.jp} ханзны үүсэл`)}">
+        <div class="kj-origin-head">
+          <strong>Үүсэл</strong>
+          <span class="kj-origin-badge">${kjEsc(KJ_ORIGIN_TYPES[type])}</span>
+        </div>
+
+        ${type === 'unk' ? `
+          <p class="kj-origin-disputed">
+            <strong>Маргаантай:</strong> доорх нь үүслийн нэг тайлбар.
+          </p>` : ''}
+
+        <div class="kj-origin-visual">
+          <div class="kj-origin-track"
+            ${stages.length > 1 ? 'tabindex="0"' : ''}
+            role="group"
+            aria-label="Бичгийн хэлбэрүүд. Багтахгүй үед хэвтээ гүйлгэж үзнэ.">
+            ${track}
+          </div>
+          ${film}
+        </div>
+
+        ${stages.length > 1 ? `
+          <p class="kj-origin-scroll-hint">Хажуу тийш гүйлгэж үе бүрийг үзээрэй →</p>` : ''}
+
+        ${eras.length ? `
+          <p class="kj-origin-caveat">
+            Шууд залгамжийг баталсан гинж биш · огноо ойролцоо.
+          </p>` : ''}
+
+        <p class="kj-origin-text">${kjEsc(lead)}</p>
+
+        ${compact ? '' : `
+          <div class="kj-origin-controls">
+            ${stages.length > 1 ? `
+              <button type="button" class="kj-origin-play"
+                data-action="kj-play" data-kj-play="evolve"
+                aria-label="${kjEsc(`${k.jp}: дүрсүүдийн дарааллыг тоглуулах`)}">
+                <span aria-hidden="true">▶</span> Хувьслыг үзэх
+              </button>` : ''}
+            <button type="button" class="kj-origin-play kj-origin-play--strokes"
+              data-action="kj-play" data-kj-play="strokes"
+              aria-label="${kjEsc(`${k.jp}: зурлагын дарааллыг тоглуулах`)}">
+              <span aria-hidden="true">▶</span> Зурлагын дараалал
+            </button>
+          </div>
+          ${partsMarkup}`}
+
+        <details class="kj-origin-details">
+          <summary>Тайлбар, гэр бүл, эх сурвалж</summary>
+          <div class="kj-origin-detail-body">
+            ${explanation !== lead
+              ? `<p>${kjEsc(explanation)}</p>` : ''}
+
+            ${type === 'psc' ? `
+              <p>
+                Дууны холбоо нь түүхэн холбоо;
+                өнөөгийн япон уншлага заавал яг таарах албагүй.
+              </p>` : ''}
+
+            ${o.old ? `
+              <p class="kj-origin-old">
+                Японд хялбаршуулахаас өмнөх хэлбэр:
+                <span lang="ja">${kjEsc(o.old)}</span>
+                <span aria-hidden="true">→</span>
+                <span lang="ja">${kjEsc(k.jp)}</span>
+              </p>` : ''}
+
+            ${compact ? partsMarkup : ''}
+
+            ${familyRows ? `
+              <div class="kj-origin-family">
+                <p class="kj-origin-parts-title">Ижил хэсэгтэй ханз</p>
+                ${familyRows}
+              </div>` : ''}
+
+            ${kjOriginSourcesMarkup(k.jp)}
+          </div>
+        </details>
+      </section>`;
+  }
+
+  /* Танилцуулга (таб) ба галерей — Claude (Astra-гийн квот 11-04 дууссан; дизайн нь Astra-гийн картын хэв маягаар,
+     Astra хянана). Таб: data-kj-tabs / kj-tab / data-kj-panel (kanjiTab). */
+  const KJ_TYPE_LINE = {
+    pic: 'Бодит юмсын дүрсээс бичгийн тэмдэг үүссэн.',
+    ind: 'Байрлал, тэмдгээр санааг заасан.',
+    ic: 'Хэсгүүдийн утга нийлж шинэ санаа илэрхийлсэн.',
+    psc: 'Нэг хэсэг нь утга, нөгөө нь дуудлагын холбоог заасан.',
+    unk: 'Үүслийн тухай тайлбарууд зөрдөг эсвэл хангалттай тодорхой биш.'
+  };
+
+  function kjOriginIntroMarkup() {
+    const stats = kanjiOriginStats();
+    const preferred = { pic: '日', ind: '上', ic: '休', psc: '語', unk: '意' };
+    const types = Object.keys(KJ_ORIGIN_TYPES);
+
+    return `
+      <details class="p-card kj-origin-intro">
+        <summary>
+          <strong>Ханз хэрхэн үүссэн бэ?</strong>
+          <span class="kj-origin-teaser">Зураг, тэмдэг, утга ба дууны холбоо</span>
+        </summary>
+
+        <div class="kj-origin-intro-body">
+          <p class="kj-intro-lead">
+            Зарим ханз дүрсээс үүссэн. Зарим нь тэмдэг, утга, дуудлагын холбоогоор бүтсэн.
+          </p>
+
+          <div class="kj-intro-tabs" data-kj-tabs>
+            <div class="kj-intro-tablist" role="group" aria-label="Үүслийн төрөл">
+              ${types.map(t => `
+                <button type="button" class="kj-intro-tab" data-action="kj-tab"
+                  data-kj-tab="${t}" aria-pressed="${t === 'pic'}">
+                  <strong>${kjEsc(KJ_ORIGIN_TYPES[t])}</strong>
+                  <span class="kj-intro-tab-count">${kjEsc(stats[t] ?? 0)} ханз</span>
+                  <span class="kj-intro-tab-line">${kjEsc(KJ_TYPE_LINE[t])}</span>
+                </button>`).join('')}
+            </div>
+
+            ${types.map(t => {
+              const pick = KANJI_BY_C[preferred[t]];
+              const example = pick && pick.o.t === t ? pick : KANJI.find(k => k.o.t === t);
+              const others = KANJI.filter(k => k.o.t === t && k !== example).slice(0, 14);
+              return `
+                <section class="kj-intro-panel" data-kj-panel="${t}"${t === 'pic' ? '' : ' hidden'}
+                  aria-label="${kjEsc(KJ_ORIGIN_TYPES[t])}">
+                  ${example ? kjOriginMarkup(example, { compact: true }) : ''}
+                  ${others.length ? `
+                    <p class="kj-intro-more">
+                      <span>Энэ сан дахь бусад жишээ:</span>
+                      <span lang="ja">${others.map(k => kjEsc(k.jp)).join(' ')}</span>
+                    </p>` : ''}
+                </section>`;
+            }).join('')}
+          </div>
+
+          <details class="kj-intro-history">
+            <summary>Товч түүх: мэргийн яснаас өнөөг хүртэл</summary>
+            <ol class="kj-origin-history" aria-label="Ханзны товч түүх">
+              <li>
+                <strong>Мэргийн ясны бичиг <span lang="ja">甲骨文</span></strong>
+                <p>
+                  Хамгийн эртний ханз нь Шан улсын МЭӨ ~1250–1050 оны
+                  бичиг. Яст мэлхийн хясаа, үхрийн далны яс дээр
+                  мэргэ төлгийн бичиг тэмдэглэж байжээ.
+                </p>
+              </li>
+              <li>
+                <strong>Хүрэл бичиг <span lang="ja">金文</span></strong>
+                <p>Шан, Жоу улсын хүрэл сав дээрх бичиг.</p>
+              </li>
+              <li>
+                <strong>Тамга бичиг <span lang="ja">篆書</span></strong>
+                <p>Цинь улс МЭӨ 221 онд бичгийг нэгтгэсэн.</p>
+              </li>
+              <li>
+                <strong>Японд дамжсан нь</strong>
+                <p>
+                  Ханз Хятадаас Японд дамжсан. 1940-өөд оны сүүлээр Япон
+                  зарим ханзыг хялбаршуулсан:
+                  <span lang="ja">國</span>
+                  <span aria-hidden="true">→</span>
+                  <span lang="ja">国</span>.
+                </p>
+              </li>
+            </ol>
+          </details>
+
+          <p class="kj-origin-intro-note">
+            KOTO зургууд бол ойлгоход туслах орчин үеийн тайлбар зураг.
+            Эртний бичиг нь тухайн үеийн хэлбэрийн жишээ;
+            бүх завсрын өөрчлөлтийг харуулаагүй.
+          </p>
+
+          ${kjOriginSourcesMarkup()}
+        </div>
+      </details>`;
+  }
+
+  /** Зургаас үүссэн 52 ханз ангиллаар. Нүдийг НЭЭХЭД л үүслийн блокийг зурна (kanjiGalleryOpen) —
+      52-ын KanjiVG-ийг хуудас бүрт татахгүй. */
+  function kjGalleryMarkup() {
+    const groups = kanjiGallery(), pics = window.KOTO_KANJI_PICS || {};
+    const total = groups.reduce((n, g) => n + g.items.length, 0);
+
+    return `
+      <details class="p-card kj-gallery">
+        <summary>
+          <strong>Зургаас үүссэн ${kjEsc(total)} ханз</strong>
+          <span class="kj-origin-teaser">Зураг · эртний бичиг · ханз — дарж хувьслыг нь үзээрэй</span>
+        </summary>
+
+        <div class="kj-gallery-body">
+          <div class="kj-gallery-game">
+            <p>Зургийг нь хараад ханзыг нь таавал санахад амар.</p>
+            <button type="button" class="p-btn kj-gallery-play" data-action="game" data-game="kjpic">
+              ${icon('play')} «Юуг зурсан бэ?» тоглох
+            </button>
+          </div>
+
+          ${groups.map(g => `
+            <section class="kj-gallery-group" aria-labelledby="kj-gal-${g.g}">
+              <h3 id="kj-gal-${g.g}">${kjEsc(g.label)} <span class="kj-total">${kjEsc(g.items.length)}</span></h3>
+              <div class="kj-gallery-grid">
+                ${g.items.map(k => {
+                  const era = (k.o.a || [])[0], src = era ? kanjiOldSrc(k, era) : '';
+                  return `
+                    <details class="kj-gal-item" data-kj-gal="${kjEsc(k.id)}">
+                      <summary aria-label="${kjEsc(`${k.jp} — ${k.mn}. Зураг: ${k.o.pc}`)}">
+                        <span class="kj-gal-row" aria-hidden="true">
+                          <svg class="kj-gal-pic" viewBox="0 0 48 48" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${pics[k.jp]}</svg>
+                          ${src ? `<span class="kj-gal-old" style="--kj-gal-mask:url('${kjEsc(src)}')"></span>` : ''}
+                          <span class="kj-gal-glyph" lang="ja">${kjEsc(k.jp)}</span>
+                        </span>
+                        <span class="kj-gal-name" aria-hidden="true">${kjEsc(k.o.pc)}</span>
+                        <span class="kj-gal-toggle" aria-hidden="true">
+                          <span class="kj-gal-show">＋ Үүслийг үзэх</span>
+                          <span class="kj-gal-hide">− Хураах</span>
+                        </span>
+                      </summary>
+                      <div class="kj-gal-detail"></div>
+                    </details>`;
+                }).join('')}
+              </div>
+            </section>`).join('')}
+        </div>
+      </details>`;
+  }
+
   function renderKanji() {
     const p = kanjiData();
+    /* Түвшин эвхэгдэнэ: анх N5 нээлттэй, N4/N3 хаалттай; дахин зурахад хэрэглэгчийн нээснийг хадгална (Astra №41). */
+    const previous = [...$('view-kanji').querySelectorAll('details[data-kj-level]')];
+    const openLevels = previous.length
+      ? new Set(previous.filter(el => el.open).map(el => Number(el.dataset.kjLevel)))
+      : new Set([5]);
 
     $('view-kanji').innerHTML = `
       <header class="kj-page-head">
         <div class="eyebrow">ХАНЗ · JLPT</div>
         <h1 class="page-title">Ханзаа нэг нэгээр нь.</h1>
         <p class="page-subtitle">
-          N5, N4 түвшний ${kjEsc(p.total)} ханз.
+          N5, N4, N3 түвшний ${kjEsc(p.total)} ханз.
           Дүрс, утга, уншлагыг жишээ үгтэй нь сураарай.
         </p>
       </header>
@@ -877,25 +1502,27 @@
         </div>
       </section>
 
+      ${kjOriginIntroMarkup()}
+
+      ${kjGalleryMarkup()}
+
       <div class="kj-levels">
         ${p.levels.map(L => `
-          <section class="p-card kj-level"
-            aria-labelledby="kj-level-${kjEsc(L.n)}">
-            <header class="kj-level-head">
+          <details class="p-card kj-level" data-kj-level="${kjEsc(L.n)}"
+            ${openLevels.has(L.n) ? 'open' : ''}>
+            <summary class="kj-level-head" id="kj-level-${kjEsc(L.n)}">
               <span class="kj-level-badge">${kjEsc(L.label)}</span>
-              <div>
-                <h2 id="kj-level-${kjEsc(L.n)}">
-                  ${kjEsc(L.label)} түвшний ханз
-                </h2>
-                <p class="p-muted">
+              <span class="kj-level-meta">
+                <strong>${kjEsc(L.label)} түвшний ханз</strong>
+                <span class="p-muted">
                   ${kjEsc(L.total)} ханз · ${kjEsc(L.lessons.length)} хичээл
-                </p>
-                <p class="p-small">
+                </span>
+                <span class="p-small">
                   ${kjEsc(L.seen)} / ${kjEsc(L.total)} үзсэн ·
                   ${kjEsc(L.strong)} бататгасан · ${kjEsc(L.weak)} сул
-                </p>
-              </div>
-            </header>
+                </span>
+              </span>
+            </summary>
 
             <h3 class="kj-section-title">Хичээлүүд</h3>
             <p class="p-small kj-section-note">
@@ -935,11 +1562,10 @@
               }).join('')}
             </div>
 
-            <section class="kj-inventory"
-              aria-labelledby="kj-all-${kjEsc(L.n)}">
-              <h3 class="kj-section-title" id="kj-all-${kjEsc(L.n)}">
+            <details class="kj-inventory">
+              <summary class="kj-section-title" id="kj-all-${kjEsc(L.n)}">
                 Бүх ханз <span class="kj-total">${kjEsc(L.total)}</span>
-              </h3>
+              </summary>
 
               <ul class="kj-legend" aria-label="Төлөвийн тайлбар">
                 ${Object.entries(kjStatusUI).map(([status, ui]) => `
@@ -971,8 +1597,8 @@
                     </li>`;
                 }).join('')}
               </ul>
-            </section>
-          </section>
+            </details>
+          </details>
         `).join('')}
       </div>`;
   }
@@ -1030,6 +1656,8 @@
             Доогуур зураастай хэсэг нь окуригана:
             ханзны араас канагаар бичигдэх хэсэг.
           </p>` : ''}
+
+        ${kjOriginMarkup(k, { compact: false })}
 
         ${examples.length ? `
           <section class="kj-examples" aria-labelledby="kj-example-title">
@@ -1696,12 +2324,16 @@
   const GAMES = {
     shoot: { title: 'Буудах', text: 'Монгол утгыг уншаад доош унаж буй япон үгсээс зөвийг нь буудна. Гурван амьтай, хурд аажмаар нэмэгдэнэ.' },
     match: { title: 'Хослуулах', text: '6 япон үгийг монгол утгатай нь аль болох хурдан хослуулна. Алдаа бүр +1 секунд.' },
-    tf: { title: 'Хурдан зөв/буруу', text: '60 секундэд үг ба утга таарч байгаа эсэхийг шийднэ. Дараалсан зөв хариулт оноог үржүүлнэ.' }
+    tf: { title: 'Хурдан зөв/буруу', text: '60 секундэд үг ба утга таарч байгаа эсэхийг шийднэ. Дараалсан зөв хариулт оноог үржүүлнэ.' },
+    kjpic: { title: 'Юуг зурсан бэ?', text: 'Зургийг хараад аль ханз болсныг таана. 10 асуулт, цаггүй — хариулсны дараа эртний бичгээр нь хувьслыг харуулна.' }
   };
+  /** Цээжилсэн үгсээс бус — KOTO-ийн 52 зургаас; ахицаас үл хамааран үргэлж нээлттэй. */
+  const GAME_FREE = new Set(['kjpic']);
   const GAME_ART = {
     shoot: '<span class="ga-bubble" lang="ja">みず</span><span class="ga-bubble is-hit" lang="ja">ねこ</span><span class="ga-bubble" lang="ja">ほん</span><span class="ga-prompt">муур</span>',
     match: '<span class="ga-tile is-on" lang="ja">いぬ</span><span class="ga-tile">уул</span><span class="ga-tile" lang="ja">やま</span><span class="ga-tile is-on">нохой</span>',
-    tf: '<span class="ga-card"><b lang="ja">みず</b><i>ус</i></span><span class="ga-chip is-no">✕</span><span class="ga-chip is-yes">✓</span>'
+    tf: '<span class="ga-card"><b lang="ja">みず</b><i>ус</i></span><span class="ga-chip is-no">✕</span><span class="ga-chip is-yes">✓</span>',
+    kjpic: `<span class="ga-card ga-kjpic"><svg viewBox="0 0 48 48">${(window.KOTO_KANJI_PICS || {})['日'] || ''}</svg></span><span class="ga-tile" lang="ja">人</span><span class="ga-tile is-on" lang="ja">日</span><span class="ga-tile" lang="ja">車</span>`
   };
   let game = null, gameRaf = 0, gameLast = 0;
 
@@ -1788,10 +2420,8 @@
   function gameReady(pool) { return gamePick(shuffle(pool), GAME_MIN).length >= GAME_MIN; }
 
   function renderGames() {
-    const pool = gamePool(), need = Math.max(1, GAME_MIN - pool.length);
-    $('view-games').innerHTML = `<div class="eyebrow">ТОГЛООМ</div><h1 class="page-title">Тоглож бататгая.</h1>
-      <p class="page-subtitle">Цээжилсэн ${pool.length} үгээсээ санамсаргүйгээр. Оноо, рекорд зөвхөн энэ хөтөч дээр хадгалагдана — XP, давтлагад нөлөөлөхгүй.</p>
-      ${gameReady(pool) ? `<div class="game-grid">${Object.keys(GAMES).map(k => `
+    const pool = gamePool(), need = Math.max(1, GAME_MIN - pool.length), ready = gameReady(pool);
+    const grid = kinds => `<div class="game-grid">${kinds.map(k => `
         <article class="game-card game-card--${k}">
           <div class="game-art" aria-hidden="true">${GAME_ART[k]}</div>
           <div class="game-card-body">
@@ -1800,14 +2430,19 @@
             <p class="game-record">${icon('trophy')}<span>${recordText(k)}</span></p>
           </div>
           <button type="button" class="primary-btn" data-action="game" data-game="${k}">Тоглох${icon('play')}</button>
-        </article>`).join('')}</div>`
+        </article>`).join('')}</div>`;
+    const free = Object.keys(GAMES).filter(k => GAME_FREE.has(k));
+    $('view-games').innerHTML = `<div class="eyebrow">ТОГЛООМ</div><h1 class="page-title">Тоглож бататгая.</h1>
+      <p class="page-subtitle">Цээжилсэн ${pool.length} үгээсээ санамсаргүйгээр. Оноо, рекорд зөвхөн энэ хөтөч дээр хадгалагдана — XP, давтлагад нөлөөлөхгүй.</p>
+      ${ready ? grid(Object.keys(GAMES))
       : `<section class="empty-state"><div class="empty-icon">${icon('game')}</div><h2>Дахиад ${need} үг цээжилбэл нээгдэнэ.</h2>
         <p>Тоглоом таны өмнө үзсэн үгсээс бүрдэнэ — дор хаяж ${GAME_MIN} үг хэрэгтэй.</p>
-        <button type="button" class="primary-btn" data-action="start" data-lesson="${nextLesson().id}">Хичээл үзэх${icon('arrow')}</button></section>`}`;
+        <button type="button" class="primary-btn" data-action="start" data-lesson="${nextLesson().id}">Хичээл үзэх${icon('arrow')}</button></section>
+        ${grid(free)}`}`;
   }
-
   function openGame(kind) {
     if (!GAMES[kind]) return;
+    if (kind === 'kjpic') { openKjPic(); return; }
     const pool = gamePool();
     if (!gameReady(pool)) return;
     stopGameLoop();
@@ -2056,6 +2691,87 @@
     keepFocus('data-answer', renderTf);
   }
 
+  /* ── «Юуг зурсан бэ?» (11-04): KOTO-ийн зураг → 3 ханзнаас сонгох. Хуурамч хувилбар нь ӨӨР ангиллаас
+     (月/夕, 川/水 шиг ижил зурагтай хос хамт гарахгүй) ба утга нь давхцахгүй (mnOverlap). Цаггүй;
+     хариулсны дараа хувьслыг үзээд «Дараах». Алгасвал оноогүй. state-д юу ч бичихгүй. */
+  const KJPIC_N = 10, KJPIC_OPTS = 3;
+  /** Ангилал өөр ч зураг нь ойролцоо — хамт гаргахгүй (主 дэнлүүний дөл / 火 гал; 木 / 来 буудай / 不 цэцэг). */
+  const KJPIC_LOOKALIKE = ['主火', '木来不'];
+  const kjPicLook = (a, b) => KJPIC_LOOKALIKE.some(g => g.includes(a.jp) && g.includes(b.jp));
+  const kjPicPool = () => KANJI.filter(k => k.o.pc && k.o.g && (window.KOTO_KANJI_PICS || {})[k.jp]);
+  function kjPicRound(n = KJPIC_N) {
+    const pool = kjPicPool();
+    return shuffle(pool).slice(0, n).map(k => {
+      const opts = [];
+      for (const x of shuffle(pool.filter(x => x !== k && x.o.g !== k.o.g && !mnOverlap(x, k) && !kjPicLook(x, k)))) {
+        if (!opts.includes(x)) opts.push(x);
+        if (opts.length === KJPIC_OPTS - 1) break;
+      }
+      return { k, options: shuffle([k, ...opts]).map(x => x.jp), picked: null, state: null };
+    });
+  }
+  function openKjPic() {
+    stopGameLoop();
+    game = { kind: 'kjpic', items: kjPicRound(), pos: 0, score: 0, combo: 0, hits: 0, total: 0, missed: new Map(),
+      wait: 0, after: null, over: false, still: matchMedia('(prefers-reduced-motion: reduce)').matches };
+    if (!$('game-dialog').open) $('game-dialog').showModal();
+    $('game-dialog').scrollTop = 0;
+    renderKjPic();
+  }
+  /** i — сонголтын дугаар; null = алгассан. */
+  function kjPicPick(i) {
+    const g = game;
+    if (!g || g.kind !== 'kjpic' || g.over) return;
+    const it = g.items[g.pos];
+    if (!it || it.state) return;
+    g.total++;
+    if (i !== null && it.options[i] === it.k.jp) { it.state = 'ok'; it.picked = i; g.hits++; g.score += 10; sfx(SFX.ok); }
+    else { it.state = i === null ? 'skip' : 'bad'; it.picked = i; gameMiss(it.k); if (i !== null) sfx(SFX.bad); }
+    keepFocus('data-pick', renderKjPic);
+    const nb = document.querySelector('#game-content [data-action=kjpic-next]'); if (nb) nb.focus({ preventScroll: true });
+  }
+  /* Дэлгэц — Claude (Astra-гийн квот 11-04 дууссан; Astra хянана). Сонголт 3, хариулсны дараа түгжигдэж
+     хувьсал (kjOriginMarkup compact) гарна. Зөв/буруу нь өнгөнөөс гадна текстээр. */
+  function renderKjPic() {
+    const g = game, it = g.items[g.pos], k = it.k, pics = window.KOTO_KANJI_PICS || {}, done = !!it.state;
+    const say = it.state === 'ok' ? 'Зөв!' : it.state === 'bad' ? 'Буруу.' : 'Алгаслаа.';
+    $('game-content').innerHTML = gameFrame(`<section class="kjpic${done ? ' is-' + it.state : ''}">
+      <p class="kjpic-count">${g.pos + 1} / ${g.items.length}</p>
+      <h1 class="kjpic-q" id="kjpic-q" tabindex="-1">Энэ зураг аль ханз болсон бэ?</h1>
+      <figure class="kjpic-frame">
+        <svg class="kjpic-art" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round" role="img"
+          aria-label="${kjEsc(`Зураг: ${k.o.pc}. KOTO-ийн сургалтын зураг`)}">${pics[k.jp]}</svg>
+        <figcaption>KOTO зураг</figcaption>
+      </figure>
+      <div class="kjpic-options" role="group" aria-label="Ханз сонгох">
+        ${it.options.map((c, i) => {
+          const cls = !done ? '' : c === k.jp ? ' is-correct' : i === it.picked ? ' is-wrong' : '';
+          const mark = !done ? '' : c === k.jp ? 'Зөв хариулт' : i === it.picked ? 'Таны сонголт' : '';
+          return `<button type="button" class="kjpic-opt${cls}" data-action="kjpic-pick" data-pick="${i}"${done ? ' aria-disabled="true"' : ''}>
+            <span class="kjpic-glyph" lang="ja">${kjEsc(c)}</span>
+            ${mark ? `<span class="kjpic-mark">${mark}</span>` : !done ? `<span class="game-keys" aria-hidden="true">${i + 1}</span>` : ''}
+          </button>`;
+        }).join('')}
+      </div>
+      ${done ? `
+        <div class="kjpic-reveal">
+          <p class="kjpic-say" role="status" aria-atomic="true"><strong>${say}</strong>
+            <span lang="ja">${kjEsc(k.jp)}</span> — ${kjEsc(k.mn)}.</p>
+          ${kjOriginMarkup(k, { compact: true })}
+        </div>
+        <button type="button" class="primary-btn kjpic-next" data-action="kjpic-next">${g.pos + 1 < g.items.length ? 'Дараах' : 'Дуусгах'}${icon('arrow')}</button>`
+      : '<button type="button" class="secondary-btn kjpic-skip" data-action="kjpic-skip">Алгасах</button>'}
+    </section>`);
+  }
+  function kjPicNext() {
+    const g = game;
+    if (!g || g.kind !== 'kjpic' || g.over || !g.items[g.pos].state) return;
+    if (++g.pos >= g.items.length) { gameOver(); return; }
+    renderKjPic();
+    const h = document.querySelector('#game-content [data-pick="0"]'); if (h) h.focus({ preventScroll: true });
+  }
+
   function renderGameEnd() {
     const g = game, r = g.result, missed = [...g.missed.values()].slice(0, 12);
     const best = r.best === null ? '—' : g.kind === 'match' ? secs(r.best) : r.best;
@@ -2064,6 +2780,7 @@
       : [[g.score, 'ОНОО'], [`${g.hits}/${g.total}`, 'ЗӨВ'], [best, 'РЕКОРД']];
     const said = g.kind === 'match' ? `${g.tiles.length / 2} хосыг ${secs(r.value)} секундэд оллоо${g.mistakes ? ` (${g.mistakes} алдаа, +${g.mistakes} сек)` : ''}.`
       : g.kind === 'shoot' ? `${g.hits} үг онож, ${g.score} оноо авлаа.`
+      : g.kind === 'kjpic' ? `${g.total} зургаас ${g.hits}-ийг нь зөв таалаа.`
       : `60 секундэд ${g.total} үгнээс ${g.hits}-д нь зөв хариуллаа.`;
     $('game-content').innerHTML = `<div class="lesson-frame game-frame">
       <div class="lesson-top game-top"><button type="button" class="icon-button" data-action="game-exit" aria-label="Тоглоом руу буцах">${icon('close')}</button>
@@ -2097,6 +2814,11 @@
     if(action==='game-shoot'){gameShoot(Number(button.dataset.lane));return;}
     if(action==='game-tile'){gameTile(Number(button.dataset.tile));return;}
     if(action==='game-tf'){gameTf(button.dataset.answer==='1');return;}
+    if(action==='kjpic-pick'){kjPicPick(Number(button.dataset.pick));return;}
+    if(action==='kjpic-skip'){kjPicPick(null);return;}
+    if(action==='kjpic-next'){kjPicNext();return;}
+    if(action==='kj-play'){kanjiPlay(button);return;}
+    if(action==='kj-tab'){kanjiTab(button);return;}
     if(action==='game-again'){if(game)openGame(game.kind);return;}
     if(action==='game-exit'){closeGame();return;}
     if(action==='sound'){soundOn=!soundOn;try{localStorage.setItem(SOUND_KEY,soundOn?'1':'0');}catch{}renderSession();if(game&&button.closest('#game-dialog')){button.outerHTML=soundBtn();const nb=document.querySelector('#game-dialog [data-action=sound]');if(nb)nb.focus();}if(soundOn)sfx(SFX.ok);return;}
@@ -2114,6 +2836,9 @@
     else if(action==='resume')renderSession();
     else if(action==='finish'||action==='discard')closeSession();
   });
+  /* KanjiVG-ийн байрлал гарч ирэхэд дүүргэнэ — гурван савыг л ажиглана (тоглоомын кадр бүрт биш). */
+  document.addEventListener('toggle',kanjiGalleryOpen,true);
+  {const obs=new MutationObserver(hydrateKanjiVG);for(const id of['lesson-content','view-kanji','game-content']){const el=$(id);if(el)obs.observe(el,{childList:true,subtree:true});}}
   document.addEventListener('input',event=>{if(event.target.id==='word-search')filterWords();});
   document.addEventListener('change',event=>{if(event.target.id==='word-topic')filterWords();});
   $('lesson-dialog').addEventListener('cancel',event=>{event.preventDefault();exitSession();});
@@ -2123,6 +2848,7 @@
     if(!game||game.over||!$('game-dialog').open||event.altKey||event.ctrlKey||event.metaKey)return;
     if(game.kind==='shoot'&&['1','2','3'].includes(event.key)){event.preventDefault();gameShoot(Number(event.key)-1);}
     else if(game.kind==='tf'&&(event.key==='ArrowLeft'||event.key==='ArrowRight')){event.preventDefault();gameTf(event.key==='ArrowRight');}
+    else if(game.kind==='kjpic'&&['1','2','3'].includes(event.key)){event.preventDefault();kjPicPick(Number(event.key)-1);}
   });
   window.addEventListener('resize',()=>{if(game&&game.kind==='shoot'&&!game.over)shootGeo();});
   document.addEventListener('keydown',event=>{
@@ -2161,7 +2887,7 @@
     words:()=>allWords,say:sayWord,hear:canHear,playing:()=>auNow,
     signedIn:signedIn,user:authUser,signOut:signOut,googleIn:googleIn,
     numTest:{build:buildTest,genDate,genTime,MONTHS,DAYS,HOURS,session:()=>session},
-    kanji:{list:()=>KANJI,lessons:()=>kanjiLessons,data:kanjiData,quizzes:kanjiQuizzes,pick:kanjiPick,start:startKanji,review:startKanjiReview,due:kanjiDue,read:kanjiRead},
+    kanji:{list:()=>KANJI,lessons:()=>kanjiLessons,data:kanjiData,quizzes:kanjiQuizzes,pick:kanjiPick,start:startKanji,review:startKanjiReview,due:kanjiDue,read:kanjiRead,originStats:kanjiOriginStats,originMarkup:kjOriginMarkup,picRound:kjPicRound,picPool:kjPicPool,gallery:kanjiGallery,oldSrc:kanjiOldSrc,vg:kanjiVG},
     games:{pool:gamePool,pick:gamePick,clash:gameClash,short:shortMn,ready:gameReady,start:openGame,close:closeGame,state:()=>game,
       advance:gameStep,tick:gameTick,stop:stopGameLoop,records:gameRecords,min:GAME_MIN},
     profile:{data:profileData,heat:heatWeeks,longest:longestStreak,dev:()=>devId,script:()=>scriptMode,kana:()=>KANA,kanaLessons:()=>kanaLessons,kata:()=>kataWords}};

@@ -87,16 +87,16 @@ function getJSON(p, method) {
     return {nav:document.querySelectorAll('.nav-item').length,navGames:!!document.querySelector('.nav-item[data-view=games][aria-current=page]'),shown:!v.hidden,
       page:document.getElementById('page-name').textContent,cards:v.querySelectorAll('.game-card').length,empty:(v.querySelector('.empty-state h2')||{}).textContent,
       start:!!v.querySelector('.empty-state [data-action=start]'),dialog:document.getElementById('game-dialog').open};`);
-  ok('6 цэс (11-04-нөөс «Ханз»), «Тоглоом» идэвхтэй; 0 үгтэй — «Дахиад 6 үг», хичээлийн товч, тоглоом нээгдэхгүй',
-    hub0.nav === 6 && hub0.navGames && hub0.shown && hub0.page === 'Тоглоом' && hub0.cards === 0 && /Дахиад 6 үг/.test(hub0.empty) && hub0.start && !hub0.dialog, JSON.stringify(hub0));
+  ok('6 цэс (11-04-нөөс «Ханз»), «Тоглоом» идэвхтэй; 0 үгтэй — «Дахиад 6 үг», хичээлийн товч, үгийн тоглоом нээгдэхгүй (зөвхөн «Юуг зурсан бэ?» — 11-04)',
+    hub0.nav === 6 && hub0.navGames && hub0.shown && hub0.page === 'Тоглоом' && hub0.cards === 1 && /Дахиад 6 үг/.test(hub0.empty) && hub0.start && !hub0.dialog, JSON.stringify(hub0));
   await seed(4); await nav();
   const hub4 = await ev(`location.hash='games';await new Promise(r=>setTimeout(r,200));const v=document.getElementById('view-games');return {cards:v.querySelectorAll('.game-card').length,empty:(v.querySelector('.empty-state h2')||{}).textContent};`);
-  ok('4 үгтэй — «Дахиад 2 үг», карт алга', hub4.cards === 0 && /Дахиад 2 үг/.test(hub4.empty), JSON.stringify(hub4));
+  ok('4 үгтэй — «Дахиад 2 үг», үгийн тоглоомын карт алга (зургийнх л)', hub4.cards === 1 && /Дахиад 2 үг/.test(hub4.empty), JSON.stringify(hub4));
   const nSeed = await seed(60); await nav();
   const hub = await ev(`location.hash='games';await new Promise(r=>setTimeout(r,200));const v=document.getElementById('view-games');
     return {cards:[...v.querySelectorAll('.game-card [data-action=game]')].map(b=>b.dataset.game),rec:[...v.querySelectorAll('.game-record')].map(x=>x.textContent.trim()),sub:v.querySelector('.page-subtitle').textContent};`);
-  ok('60 үгтэй — 3 тоглоом (буудах, хослуулах, зөв/буруу), рекорд алга, «60 үгээсээ»',
-    nSeed === 60 && hub.cards.join() === 'shoot,match,tf' && hub.rec.every(t => t === 'Рекорд алга') && /60 үгээсээ/.test(hub.sub), JSON.stringify(hub));
+  ok('60 үгтэй — 4 тоглоом (буудах, хослуулах, зөв/буруу, юуг зурсан бэ), рекорд алга, «60 үгээсээ»',
+    nSeed === 60 && hub.cards.join() === 'shoot,match,tf,kjpic' && hub.rec.every(t => t === 'Рекорд алга') && /60 үгээсээ/.test(hub.sub), JSON.stringify(hub));
   await shot('hub-1400');
   const before = await ev(`return localStorage.getItem('koto-irodori-v1');`);
 
@@ -252,7 +252,7 @@ function getJSON(p, method) {
     const hb = await ev(`location.hash='games';await new Promise(r=>setTimeout(r,250));const SEL='#view-games button, .nav-item';${TAP}
       const clip=[...document.querySelectorAll('.nav-item')].filter(n=>n.offsetParent).flatMap(n=>[...n.querySelectorAll('span:not([data-icon]):not(.nav-count):not(.notification-dot)')].filter(s=>{const r=s.getBoundingClientRect(),b=n.getBoundingClientRect();return r.width&&(r.left<b.left-1||r.right>b.right+1);}).map(s=>s.textContent));
       return {page:document.documentElement.scrollWidth,bad,clip,cards:document.querySelectorAll('.game-card').length};`);
-    ok(tag + ': тоглоомын хуудас — хэвтээ гүйлт 0, товч 44px+, цэсний нэр тасрахгүй', hb.page <= wd && !hb.bad.length && !hb.clip.length && hb.cards === 3, JSON.stringify(hb));
+    ok(tag + ': тоглоомын хуудас — хэвтээ гүйлт 0, товч 44px+, цэсний нэр тасрахгүй', hb.page <= wd && !hb.bad.length && !hb.clip.length && hb.cards === 4, JSON.stringify(hb));
     await shot('hub-' + wd + (dk ? '-dark' : ''));
     for (const kind of ['shoot', 'match', 'tf']) {
       const gd = await ev(`window.KOTO.games.start('${kind}');window.KOTO.games.stop();await new Promise(r=>setTimeout(r,120));
