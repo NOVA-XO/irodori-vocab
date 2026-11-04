@@ -87,8 +87,8 @@ function getJSON(p, method) {
     return {nav:document.querySelectorAll('.nav-item').length,navGames:!!document.querySelector('.nav-item[data-view=games][aria-current=page]'),shown:!v.hidden,
       page:document.getElementById('page-name').textContent,cards:v.querySelectorAll('.game-card').length,empty:(v.querySelector('.empty-state h2')||{}).textContent,
       start:!!v.querySelector('.empty-state [data-action=start]'),dialog:document.getElementById('game-dialog').open};`);
-  ok('5 цэс, «Тоглоом» идэвхтэй; 0 үгтэй — «Дахиад 6 үг», хичээлийн товч, тоглоом нээгдэхгүй',
-    hub0.nav === 5 && hub0.navGames && hub0.shown && hub0.page === 'Тоглоом' && hub0.cards === 0 && /Дахиад 6 үг/.test(hub0.empty) && hub0.start && !hub0.dialog, JSON.stringify(hub0));
+  ok('6 цэс (11-04-нөөс «Ханз»), «Тоглоом» идэвхтэй; 0 үгтэй — «Дахиад 6 үг», хичээлийн товч, тоглоом нээгдэхгүй',
+    hub0.nav === 6 && hub0.navGames && hub0.shown && hub0.page === 'Тоглоом' && hub0.cards === 0 && /Дахиад 6 үг/.test(hub0.empty) && hub0.start && !hub0.dialog, JSON.stringify(hub0));
   await seed(4); await nav();
   const hub4 = await ev(`location.hash='games';await new Promise(r=>setTimeout(r,200));const v=document.getElementById('view-games');return {cards:v.querySelectorAll('.game-card').length,empty:(v.querySelector('.empty-state h2')||{}).textContent};`);
   ok('4 үгтэй — «Дахиад 2 үг», карт алга', hub4.cards === 0 && /Дахиад 2 үг/.test(hub4.empty), JSON.stringify(hub4));
