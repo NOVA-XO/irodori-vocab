@@ -43,7 +43,7 @@ const AUDIT = scope => `
     const s=getComputedStyle(el);if(s.visibility==='hidden'||+s.opacity===0)continue;
     let hid=false;for(let e=el;e;e=e.parentElement){if(e.hidden||getComputedStyle(e).display==='none'||+getComputedStyle(e).opacity===0){hid=true;break;}}if(hid)continue;
     const {bg,img}=bgOf(el);const fg=over(rgba(s.color),bg);const k=ratio(fg,bg);
-    const px=parseFloat(s.fontSize),big=px>=24||(px>=18.66&&+s.fontWeight>=700);const need=big?3:4.5;
+    const px=parseFloat(s.fontSize),big=px>=24||(px>=18.66&&+s.fontWeight>=700);/* <progress>/<meter> доторх бичиг хөтөчид харагддаггүй (нөөц) — харагдах нь зурвас: график 3:1. */const graphic=el.tagName==='PROGRESS'||el.tagName==='METER';const need=big||graphic?3:4.5;
     const cls=(el.className&&el.className.baseVal!==undefined?el.className.baseVal:el.className)||'';
     const key=el.tagName+'.'+cls+'|'+s.color+'|'+bg.map(Math.round).join(',');
     if(seen.has(key))continue;seen.add(key);
