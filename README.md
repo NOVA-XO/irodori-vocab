@@ -502,6 +502,7 @@ node tools/test_v2_ui.js            #  75 — v2 UI: сонсох карт, Goog
 node tools/test_v2_kanji.js         #  33 — v2 ханз (1009): N5–N3 + Irodori-гийн N2/Бусад, номын шошго, v1-ийн утга, уншлага, жишээ үг, үүсэл, эртний бичиг, KanjiVG, зураг (хөтөчгүй)
 node tools/test_v2_kanji_ui.js      #  41 — v2 «Ханз» хуудас: 204 хичээл, номын шүүлтүүр, 4 төрлийн асуулт, давтлага, үүсэл, галерей, «Юуг зурсан бэ?», 320–1400
 node tools/check_v2_kanji_svg.js --old <кэш> --vg <кэш>  # татсны дараа: SVG-г эхтэй нь пикселээр (Commons ≤2%, KanjiVG 0)
+node tools/check_v2_contrast.js      # v2-ийн харагдаж буй бүх бичгийн контраст, гэрэлтэй/бараан (0 = цэвэр)
 node tools/test_v2_games.js         #  57 — v2 тоглоом: буудах, хослуулах, зөв/буруу; үг сонголт, рекорд, ахицад нөлөөгүй, 320–1400
 node tools/test_attack.js           #  24 — халдлагын хувилбарууд
 node tools/test_answers.js          # хариулт шалгагч
