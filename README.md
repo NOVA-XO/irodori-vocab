@@ -496,9 +496,9 @@ python tools/build_audio.py --speaker 2
 python -m http.server 8765          # ЭХЛЭЭД — үүнгүй бол test_ui унана
 node tools/test_ui.js               # 494 шалгуур, бодит Chrome дотор
 node tools/test_sql.js              # 153 — SUPABASE.sql, PGlite дээр
-node tools/test_v2.js               #  59 — v2 (KOTO): 3 түвшин/147 нэгж, ахицын шилжүүлэлт, UI, синк, тооны шалгалт, ахиц/ханз/катакана, өгүүлбэр
+node tools/test_v2.js               #  59 — v2 (KOTO): 3 түвшин/147 нэгж, ахицын шилжүүлэлт, UI, Google-ээр нэвтрэх, тооны шалгалт, ахиц/ханз/катакана, өгүүлбэр
 node tools/test_v2_sentences.js     #  10 — v2-ийн 91 өгүүлбэр тулгуур үгийнхээ хичээлд, заагаагүй үггүй (хөтөчгүй)
-node tools/test_v2_ui.js            #  70 — v2 UI: сонсох карт, Google, бараан сэдэв, 44px, утасны хариултын самбар, ахицын хуудас
+node tools/test_v2_ui.js            #  75 — v2 UI: сонсох карт, Google-ээр нэвтрэх (кодгүй), бараан сэдэв, 44px, утасны хариултын самбар, ахицын хуудас
 node tools/test_v2_kanji.js         #  33 — v2 ханз (1009): N5–N3 + Irodori-гийн N2/Бусад, номын шошго, v1-ийн утга, уншлага, жишээ үг, үүсэл, эртний бичиг, KanjiVG, зураг (хөтөчгүй)
 node tools/test_v2_kanji_ui.js      #  41 — v2 «Ханз» хуудас: 204 хичээл, номын шүүлтүүр, 4 төрлийн асуулт, давтлага, үүсэл, галерей, «Юуг зурсан бэ?», 320–1400
 node tools/check_v2_kanji_svg.js --old <кэш> --vg <кэш>  # татсны дараа: SVG-г эхтэй нь пикселээр (Commons ≤2%, KanjiVG 0)

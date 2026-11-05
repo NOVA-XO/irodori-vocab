@@ -77,22 +77,22 @@
    *
    * `localStorage` нь ЗӨВХӨН тэр хөтөч дээр үлддэг: утас ↔ компьютер
    * хооронд ахиц дамжихгүй, сайтын өгөгдлийг арилгавал XP арилна.
-   * Тиймээс нэг НУУЦ КОДоор Supabase-д нийлүүлнэ.
+   * Тиймээс Google-ээр нэвтэрсэн хэрэглэгчийн ахицыг Supabase-д
+   * бүртгэлд нь уяж нийлүүлнэ.
    *
-   * Код нь v1-ийнхтэй ИЖИЛ байж болно — хоёр апп өөр хүснэгтэд
-   * (`progress` ба `koto`) бичдэг тул хольцолдохгүй, хэрэглэгч нэг л
-   * код санана.
+   * 11-05: НУУЦ КОДын синк v2-оос хасагдсан (эзэн «кодоор утас,
+   * компьютер холбох хэрэггүй, зөвхөн Google бүртгэлээрээ орно»).
+   * Кодын замын SQL функцүүд (`koto_get`, кодтой `koto_put`) клиентээс
+   * дуудагдахаа больсон ч серверт хэвээр (эзний шийдвэр — STATE §4);
+   * хуучин `koto-sync-code` түлхүүрийг үл тооно (устгахгүй).
    *
-   * Уусгалт нь СЕРВЕР дээр ч хийгддэг (`koto_put`) — хоёр төхөөрөмж
+   * Уусгалт нь СЕРВЕР дээр ч хийгддэг (`koto_user_put` → `koto_merge`) — хоёр төхөөрөмж
    * зэрэг түлхэхэд сүүлийнх нь эхнийхийг дарж бичихгүй. Доорх
    * `kotoMerge()` нь тэр SQL-тэй ИЖИЛ дүрэмтэй: хоёр нь салж явбал
    * нэг тал нь алдагдана.
    */
-  const SYNC_KEY = 'koto-sync-code';
   const SYNC = window.SYNC_CONFIG || {};
   const syncOn = () => !!(SYNC.url && SYNC.key);
-  let syncCode = '';
-  try { syncCode = localStorage.getItem(SYNC_KEY) || ''; } catch { syncCode = ''; }
   let pushTimer = null, syncBusy = false;
 
   /* ── Google-ээр нэвтрэх (Supabase Auth, PKCE) ────────────────────
@@ -139,7 +139,7 @@
 
   /** Google руу үсэрнэ. Буцаж ирэхэд `authFinish()` үргэлжлүүлнэ. */
   async function googleIn() {
-    if (!syncOn()) { toast('Синк тохируулагдаагүй.'); return; }
+    if (!syncOn()) { toast('Нэвтрэх үйлчилгээ тохируулагдаагүй.'); return; }
     try {
       const p = await pkcePair();
       // Verifier нь ЭНЭ хөтөч дээр үлдэнэ — сервер түүнийг хэзээ ч
@@ -335,24 +335,18 @@
   /** Серверээс татаад ЛОКАЛТАЙ нийлүүлнэ. Дэлгэцийг шинэчилнэ. */
   /** Аль зам ажиллаж байна вэ.
    *
-   *  `user` — Google-ээр нэвтэрсэн: ахиц нь бүртгэлд уягдана, код
-   *           санах шаардлагагүй, ЭРХЭМ зам.
-   *  `code` — нууц код: Google бүртгэлгүй эсвэл нэвтрэхийг хүсэхгүй хүн.
-   *  ''     — аль нь ч үгүй: ахиц зөвхөн энэ хөтөч дээр.
+   *  `user` — Google-ээр нэвтэрсэн: ахиц нь бүртгэлд уягдана.
+   *  ''     — нэвтрээгүй (эсвэл сервер тохируулаагүй): ахиц зөвхөн энэ хөтөч дээр.
    *
-   *  Хоёулаа ЗЭРЭГ тохируулсан бол Google нь ялна — нэг түлхэлт хоёр
-   *  газар бичвэл аль нь үнэн болох нь тодорхойгүй болно. Хэрэглэгчид
-   *  аль нь ажиллаж байгааг синкийн цонх ил харуулна.
+   *  11-05-аас өмнө `code` (нууц код) гэсэн гурав дахь зам байсан — хасагдсан.
    */
-  const syncMode = () => (!syncOn() ? '' : signedIn() ? 'user' : syncCode ? 'code' : '');
+  const syncMode = () => (syncOn() && signedIn() ? 'user' : '');
 
   async function syncPull(quiet) {
     const mode = syncMode();
     if (!mode) return false;
     try {
-      const remote = mode === 'user'
-        ? await rpc('koto_user_get', {})
-        : await rpc('koto_get', { p_code: syncCode });
+      const remote = await rpc('koto_user_get', {});
       if (!remote) { if (!quiet) toast('Серверт ахиц хараахан алга.'); return false; }
       state = readStateFrom(kotoMerge(remote, state));
       save();
@@ -371,9 +365,7 @@
     if (!mode || syncBusy) return false;
     syncBusy = true;
     try {
-      const saved = mode === 'user'
-        ? await rpc('koto_user_put', { p_data: state })
-        : await rpc('koto_put', { p_code: syncCode, p_data: state });
+      const saved = await rpc('koto_user_put', { p_data: state });
       // Хариуг локалтай НИЙЛҮҮЛНЭ, шууд солихгүй: (1) илгээлт явж байх
       // хооронд дуусгасан хичээл устахгүй; (2) SQL хуучин бол мэдэхгүй
       // талбарыг (`xpd`, `kana`) хаяж буцаадаг — солибол локал ч устана.
@@ -414,132 +406,44 @@
     }
   }
 
-  /* ── Синкийн цонх ──────────────────────────────────────────────── */
-  function syncMarkup() {
+  /* ── Бүртгэлийн карт (Ахиц хуудас) ─────────────────────────────
+     11-05: нууц кодын синк ба тусдаа синкийн цонх хасагдсан (эзэн
+     «зөвхөн Google бүртгэлээрээ орно»). Нэвтрээгүй бол «Нэвтрэх» нь
+     Google руу ШУУД үсэрнэ — цонхонд ганц товч л үлдэх байсан тул.
+     Нэвтэрсэн бол бүртгэл ба «Гарах» энд. Харагдац Astra, логик Claude. */
+  function profileAccountMarkup(p) {
     const on = syncOn();
-    const mode = syncMode();
-    const user = mode === 'user' ? authUser() : null;
+    const user = p.mode === 'user' ? (p.account || {}) : null;
     const name = String((user && (user.name || user.email)) || 'Хэрэглэгч');
     const email = String((user && user.email) || '');
     const initial = (Array.from(name.trim())[0] || 'Х').toLocaleUpperCase();
     const avatar = user && typeof user.avatar === 'string' && user.avatar.indexOf('https://') === 0
       ? user.avatar : '';
-    const codeOff = !on || mode === 'user';
-    return `<div class="lesson-frame sync-frame">
-      <div class="lesson-top">
-        <button type="button" class="icon-button" data-action="sync-close" aria-label="Хаах">${icon('close')}</button>
-        <h1 class="sync-title">Ахицын синк</h1>
+    return `<section class="p-card p-sync p-account${user ? '' : ' p-account-out'}" aria-labelledby="p-sync-title">
+      <div class="p-account-intro">
+        <h2 id="p-sync-title">${user ? 'Миний бүртгэл' : 'Ахицын хадгалалт'}</h2>
+        <p class="p-muted" id="p-account-note">${!on
+          ? 'Нэвтрэх үйлчилгээ тохируулагдаагүй. Ахиц энэ хөтөч дээр хадгалагдана.'
+          : user
+            ? 'Ахиц энэ Google бүртгэлд автоматаар хадгалагдана.'
+            : 'Ахицаа бүртгэлдээ хадгалахын тулд Google бүртгэлээр нэвтэрнэ үү.'}</p>
       </div>
-      <section class="exercise sync-body" aria-label="Нэвтрэлт ба хадгалалт">
-        <p class="page-subtitle">Утас, компьютер дээрээ сурсан үгс болон хичээлийн ахицаа нийлүүлээрэй.</p>
-        ${mode === 'user' ? `
-        <section class="account-card" aria-label="Нэвтэрсэн бүртгэл">
-          <div class="account-avatar" aria-hidden="true">
-            <span class="avatar-fallback">${esc(initial)}</span>
-            ${avatar ? `<img src="${esc(avatar)}" alt="" width="52" height="52" referrerpolicy="no-referrer">` : ''}
-          </div>
-          <div class="account-details">
-            <strong class="account-name">${esc(name)}</strong>
-            ${email ? `<span class="account-email">${esc(email)}</span>` : ''}
-            <span class="sync-status">${icon('check')}Google бүртгэлээр нэвтэрсэн</span>
-          </div>
-          <button type="button" class="secondary-btn sign-out-button" data-action="sign-out">Гарах</button>
-        </section>
-        <p class="sync-hint">Ахиц таны Google бүртгэлтэй холбогдоно. Нууц кодын синк одоогоор идэвхгүй.</p>
-        ` : `
-        <section class="google-panel" aria-label="Google бүртгэлээр нэвтрэх">
-          <h2>Ахицаа хамт авч яваарай.</h2>
-          <p>Төхөөрөмж бүр дээрээ ижил Google бүртгэлээр нэвтрээрэй.</p>
-          <button type="button" class="google-signin" data-action="google-in" ${on ? '' : 'disabled'}>
-            <svg class="google-mark" viewBox="0 0 48 48" aria-hidden="true">
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65Z"/>
-              <path fill="#FBBC05" d="M10.53 28.59A14.41 14.41 0 0 1 9.75 24c0-1.59.27-3.13.78-4.59l-7.98-6.19A23.87 23.87 0 0 0 0 24c0 3.87.93 7.53 2.56 10.78l7.97-6.19Z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.92 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z"/>
-            </svg>
-            <span>Google-ээр нэвтрэх</span>
-          </button>
-        </section>`}
-        ${on ? '' : '<p class="sync-unavailable" role="status">Синк одоогоор боломжгүй (<code>sync-config.js</code> хоосон). Ахиц зөвхөн энэ хөтөч дээр хадгалагдана.</p>'}
-        <details class="sync-code-section" ${mode === 'code' ? 'open' : ''}>
-          <summary><span>Нууц кодоор нийлүүлэх</span>
-            <span class="sync-code-state">${mode === 'user' ? 'Идэвхгүй' : mode === 'code' ? 'Ашиглаж байна' : 'Өөр сонголт'}</span></summary>
-          <div class="sync-code-body">
-            <p class="sync-hint" id="sync-code-help">${mode === 'user'
-              ? 'Кодоор үргэлжлүүлэхийн тулд Google бүртгэлээсээ эхлээд гарна уу.'
-              : 'Хоёр төхөөрөмж дээр ижил код оруулна. Кодыг мэдсэн хүн ахицыг харж, өөрчилж чадна.'}</p>
-            <fieldset class="sync-code-fields" ${codeOff ? 'disabled' : ''}>
-              <legend class="sr-only">Нууц кодын тохиргоо</legend>
-              <label class="sync-label" for="sync-code">Нууц код (8–64 тэмдэгт)</label>
-              <input id="sync-code" class="search-input sync-code-input" type="text" inputmode="latin"
-                     autocomplete="off" spellcheck="false" autocapitalize="none" minlength="8" maxlength="64"
-                     aria-describedby="sync-code-help sync-note" placeholder="жишээ: naran-2026-koto">
-              <div class="sync-actions">
-                <button type="button" class="secondary-btn" data-action="sync-save" ${codeOff ? 'disabled' : ''}>Хадгалах ба нийлүүлэх</button>
-                <button type="button" class="secondary-btn" data-action="sync-pull" ${!codeOff && syncCode ? '' : 'disabled'}>Серверээс татах</button>
-              </div>
-            </fieldset>
-          </div>
-        </details>
-        <p class="sync-hint sync-note" id="sync-note" role="status" aria-live="polite"></p>
-        <p class="sync-summary">Энэ хөтөч дээр: <strong>${state.xp} XP</strong> ·
-          ${state.completed.length} хичээл · ${Object.keys(state.words).length} үг</p>
-      </section>
-    </div>`;
+      ${user ? `
+      <div class="account-card p-account-row">
+        <div class="account-avatar" aria-hidden="true">
+          <span class="avatar-fallback">${esc(initial)}</span>
+          ${avatar ? `<img src="${esc(avatar)}" alt="" width="52" height="52" referrerpolicy="no-referrer">` : ''}
+        </div>
+        <div class="account-details">
+          <strong class="account-name">${esc(name)}</strong>
+          ${email ? `<span class="account-email">${esc(email)}</span>` : ''}
+        </div>
+        <button type="button" class="p-btn" data-action="sign-out" aria-label="Бүртгэлээс гарах">Гарах</button>
+      </div>` : `
+      <button type="button" class="p-btn" data-action="google-in" aria-label="Google бүртгэлээр нэвтрэх"
+              aria-describedby="p-account-note" ${on ? '' : 'disabled'}>Нэвтрэх</button>`}
+    </section>`;
   }
-
-  function openSync() {
-    const dlg = $('sync-dialog');
-    $('sync-content').innerHTML = syncMarkup();
-    initIcons();
-    dlg.showModal();
-    const inp = $('sync-code');
-    // Кодыг HTML-д БИЧИХГҮЙ, JS-ээр тавина: `value="${...}"` нь
-    // хашилт агуулсан кодыг атрибутаас гаргах байв.
-    if (inp) { inp.value = syncCode; inp.focus(); }
-  }
-
-  $('sync-dialog').addEventListener('click', async event => {
-    const btn = event.target.closest('[data-action]');
-    if (!btn) return;
-    const act = btn.dataset.action;
-    if (act === 'sync-close') { $('sync-dialog').close(); return; }
-    if (act === 'google-in') { btn.disabled = true; await googleIn(); return; }
-    if (act === 'sign-out') {
-      await signOut();
-      $('sync-content').innerHTML = syncMarkup();
-      initIcons();
-      if ($('sync-code')) $('sync-code').value = syncCode || '';
-      updateTop();
-      return;
-    }
-    if (act === 'sync-save') {
-      const v = ($('sync-code').value || '').trim();
-      if (v.length < 8 || v.length > 64) {
-        $('sync-note').textContent = 'Код 8–64 тэмдэгт байх ёстой.';
-        return;
-      }
-      syncCode = v;
-      try { localStorage.setItem(SYNC_KEY, syncCode); } catch {}
-      $('sync-note').textContent = 'Нийлүүлж байна…';
-      // Эхлээд ТАТАЖ нийлүүлнэ: нөгөө төхөөрөмжийн ахицыг алдахгүй.
-      await syncPull(true);
-      const okPush = await syncPush(true);
-      $('sync-note').textContent = okPush ? 'Нийлүүллээ.' : 'Нийлүүлж чадсангүй.';
-      $('sync-content').innerHTML = syncMarkup();
-      initIcons();
-      $('sync-code').value = syncCode;
-      return;
-    }
-    if (act === 'sync-pull') {
-      $('sync-note').textContent = 'Татаж байна…';
-      const okPull = await syncPull(true);
-      $('sync-note').textContent = okPull ? 'Татлаа.' : 'Татаж чадсангүй.';
-      $('sync-content').innerHTML = syncMarkup();
-      initIcons();
-      $('sync-code').value = syncCode;
-    }
-  });
 
   // Хуудас хаагдах/нуугдах үед хүлээж байсан түлхэлтийг шууд хийнэ.
   addEventListener('visibilitychange', () => {
@@ -682,10 +586,9 @@
      мөчид түлхэлт хараахан явж амжаагүй тул «нийлүүлэгдэнэ» (ирээдүй). */
   let syncFailed=false;
   const SAVE_TEXT={
-    local:['Ахиц зөвхөн энэ хөтөч дээр хадгалагдана.','Ахиц энэ хөтөч дээр хадгалагдлаа. Бусад төхөөрөмжтэй нийлүүлэх тохиргоо асаагүй байна.'],
-    code:['Ахиц нууц кодоор нийлүүлэгдэнэ.','Ахиц энэ хөтөч дээр хадгалагдлаа. Нууц кодоор бусад төхөөрөмжтэй автоматаар нийлүүлнэ.'],
-    user:['Ахиц Google бүртгэлтэй нийлүүлэгдэнэ.','Ахиц энэ хөтөч дээр хадгалагдлаа. Google бүртгэлтэй автоматаар нийлүүлнэ.'],
-    error:['Нийлүүлэлт амжилтгүй. Дараа дахин оролдоно.','Ахиц энэ хөтөч дээр хадгалагдлаа. Сүүлийн нийлүүлэлт амжилтгүй болсон тул дараа дахин оролдоно.']
+    local:['Ахиц энэ хөтөч дээр хадгалагдана.','Ахиц энэ хөтөч дээр хадгалагдлаа.'],
+    user:['Ахиц Google бүртгэлд автоматаар хадгалагдана.','Ахиц энэ хөтөч дээр хадгалагдлаа. Google бүртгэлд удахгүй автоматаар хадгалагдана.'],
+    error:['Бүртгэлд хадгалж чадсангүй. Ахиц энэ хөтөч дээр бий.','Ахиц энэ хөтөч дээр хадгалагдлаа. Бүртгэлд хадгалах сүүлийн оролдлого амжилтгүй боллоо.']
   };
   function saveKind(){const m=syncMode();return m?(syncFailed?'error':m):'local';}
   function paintSave(){const el=$('save-status');if(el)el.textContent=SAVE_TEXT[saveKind()][0];}
@@ -1759,7 +1662,10 @@
      зургийг дахин дахин үүсгэвэл анивчина. */
   let avatarKey=null;
   function updateAvatar(){const el=$('open-sync-top');if(!el)return;const u=syncMode()==='user'?authUser():null;const name=String((u&&(u.name||u.email))||'Хэрэглэгч');const photo=u&&typeof u.avatar==='string'&&u.avatar.indexOf('https://')===0?u.avatar:'';const key=u?name+'|'+photo:'';if(key===avatarKey)return;avatarKey=key;el.setAttribute('aria-label',u?name+' — миний ахиц':'Миний ахиц');el.innerHTML=u?`<span class="avatar-fallback" aria-hidden="true">${esc((Array.from(name.trim())[0]||'Х').toLocaleUpperCase())}</span>${photo?`<img src="${esc(photo)}" alt="" width="44" height="44" referrerpolicy="no-referrer">`:''}`:'<span class="avatar-fallback" lang="ja" aria-hidden="true">わ</span>';}
-  function updateTop(){$('xp').textContent=state.xp;$('streak').textContent=streak();$('review-dot').hidden=!dueWords().length;updateAvatar();paintSave();}
+  /* Хажуугийн цэсний доод товч (11-05, Astra): нэвтрээгүй бол «Нэвтрэх» → Google; нэвтэрсэн бол «Миний бүртгэл» → ахицын хуудас. */
+  let sideKey=null;
+  function paintSide(){const el=$('open-sync');if(!el)return;const u=syncMode()==='user',on=syncOn(),key=u?'u':on?'o':'x';if(key===sideKey)return;sideKey=key;if(u){el.dataset.view='profile';delete el.dataset.action;el.disabled=false;el.removeAttribute('aria-describedby');el.setAttribute('aria-label','Миний бүртгэлийг нээх');}else{delete el.dataset.view;el.dataset.action='google-in';el.disabled=!on;el.setAttribute('aria-describedby','sidebar-account-note');el.setAttribute('aria-label','Google бүртгэлээр нэвтрэх');}el.innerHTML=`<span class="level-dot" aria-hidden="true"></span><span class="sidebar-account-copy"><strong>${u?'Миний бүртгэл':'Нэвтрэх'}</strong><small${u?'':' id="sidebar-account-note"'}>${u?'Нэвтэрсэн':on?'Google бүртгэлээр':'Нэвтрэх үйлчилгээ тохируулагдаагүй.'}</small></span>`;}
+  function updateTop(){$('xp').textContent=state.xp;$('streak').textContent=streak();$('review-dot').hidden=!dueWords().length;updateAvatar();paintSide();paintSave();}
   function switchView(next){view=['learn','words','review','profile','games','kanji'].includes(next)?next:'learn';document.querySelectorAll('.view').forEach(el=>el.hidden=el.id!==`view-${view}`);document.querySelectorAll('.nav-item').forEach(el=>{el.classList.toggle('active',el.dataset.view===view);if(el.dataset.view===view)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});$('page-name').textContent={learn:'Миний сурах зам',words:'Миний үгийн сан',review:'Давтах цаг',profile:'Миний ахиц',games:'Тоглоом',kanji:'Ханз'}[view];if(view==='learn')renderHome();if(view==='profile')renderProfile();if(view==='words')renderWords();if(view==='review')renderReview();if(view==='games')renderGames();if(view==='kanji')renderKanji();location.hash=view;updateTop();}
   function weekMarkup(){const d=today();const weekday=new Date(d+'T12:00:00Z').getUTCDay();const monday=shiftDate(d,-((weekday+6)%7));return ['Да','Мя','Лх','Пү','Ба','Бя','Ня'].map((label,i)=>{const date=shiftDate(monday,i),done=Array.isArray(state.days[date])&&state.days[date].length;return `<div class="week-day ${date===d?'today':''} ${done?'done':''}" aria-label="${label}${done?' хичээллэсэн':''}"><span>${done?'✓':label.slice(0,1)}</span>${label}</div>`;}).join('');}
   function renderHome(){
@@ -1822,7 +1728,7 @@
   /* Ахицын хуудас — markup ба CSS: Astra (gpt-6-astra, 2026-11-01); GitHub-ийн
      жилийн график, Duolingo-гийн streak, Quizlet-ийн ангиллаас санаа авсан.
      Тоо бүгд `profileData()`-аас. Холболт: data-action script/kana-lesson/
-     kana-review/kata-words/sync-open/review, data-view, .heat-cell[data-level]. */
+     kana-review/kata-words/google-in/sign-out/review, data-view, .heat-cell[data-level]. */
   let profileKeep = null;
   /** Урт ханз/кана мөр хайрцгаасаа халивал (товч дотор биш) Tab-аар хүрч
    *  гүйлгэх боломжтой болгоно. Хэмжээ layout-ын дараа л мэдэгдэнэ. */
@@ -2266,21 +2172,7 @@
           </ul>
         </section>
 
-        <section class="p-card p-sync" aria-labelledby="p-sync-title">
-          <div>
-            <h2 id="p-sync-title">Ахицын хадгалалт</h2>
-            <p class="p-muted">
-              ${p.mode === 'user'
-                ? 'Бүртгэл холбогдсон. Нэвтрэлт болон синкийн тохиргоогоо нээнэ.'
-                : p.mode === 'code'
-                  ? 'Нууц код холбогдсон. Төхөөрөмж хоорондын синкээ тохируулна.'
-                  : 'Ахиц энэ хөтөч дээр хадгалагдана. Өөр төхөөрөмжтэй холбохын тулд синк тохируулаарай.'}
-            </p>
-          </div>
-          <button type="button" class="p-btn" data-action="sync-open">
-            Нэвтрэлт ба синк ${icon('arrow')}
-          </button>
-        </section>
+        ${profileAccountMarkup(p)}
 
         ${infoMarkup()}
       </div>
@@ -2867,7 +2759,9 @@
     if(button.dataset.view){switchView(button.dataset.view);return;}
     const action=button.dataset.action;if(!action)return;
     if(action==='say'){sayId(button.dataset.auFor);return;}
-    if(action==='sync-open'){openSync();return;}
+    if(action==='google-in'){button.disabled=true;googleIn().finally(()=>setTimeout(()=>{button.disabled=!syncOn();},4000));return;}
+    // Карт дахин зурагдахад фокус body руу унадаг байв (Astra-гийн хяналт) — шинэ «Нэвтрэх» дээр тавина.
+    if(action==='sign-out'){button.disabled=true;signOut().then(()=>{updateTop();switchView(view);const b=view==='profile'&&document.querySelector('#view-profile [data-action=google-in]');if(b)b.focus({preventScroll:true});});return;}
     if(action==='script'){const sc=$('profile-heat-scroll');profileKeep={left:sc?sc.scrollLeft:null,focus:button.dataset.script==='kanji'?'kanji':'kana'};setScript(button.dataset.script);switchView(view);return;}
     if(action==='kana-lesson'){startKana(Number(button.dataset.kana));return;}
     if(action==='kana-review'){startKanaReview();return;}
@@ -2924,16 +2818,15 @@
     else if(q.type==='quiz'&&!session.checked&&['1','2','3','4'].includes(event.key)){session.selected=Number(event.key)-1;renderSession();}
   });
   window.addEventListener('hashchange',()=>{const next=location.hash.slice(1);if(next!==view)switchView(next);});
-  const syncBtn=$('open-sync');if(syncBtn)syncBtn.addEventListener('click',openSync);
   initIcons();switchView(location.hash.slice(1)||'learn');
   /* Хоолойн жагсаалт хөтөч дээр ХОЖУУ дүүрдэг тул нэг удаа уншаад
      өнгөрвөл `jaVoice` үргэлж null болно. */
   pickVoice();
   if(canSpeak&&typeof speechSynthesis.addEventListener==='function')
     speechSynthesis.addEventListener('voiceschanged',pickVoice);
-  /* Код хадгалагдсан бол нээгдмэгц ТАТНА: нөгөө төхөөрөмж дээр
-     хийсэн ахиц шууд харагдана. Чимээгүй — холболт байхгүй байж
-     болно, тэр нь алдаа биш. */
+  /* Нэвтэрсэн бол нээгдмэгц ТАТНА: нөгөө төхөөрөмж дээр хийсэн
+     ахиц шууд харагдана. Чимээгүй — холболт байхгүй байж болно,
+     тэр нь алдаа биш. */
   /* Google-ээс буцаж ирсэн бол `?code=`-ийг ЭХЛЭЭД токен болгоно —
      тэгэхгүй бол `syncMode()` нь хуучин төлөвөөр шийдэж, шинэ
      нэвтрэлт анзаарагдахгүй. Локал ахиц байвал татахдаа НЭГДЭНЭ
@@ -2948,7 +2841,7 @@
      Апп нь IIFE тул гаднаас хандах өөр арга алга. Зөвхөн ЛОКАЛ
      өгөгдөл тул нийтэд хортой зүйл нээхгүй. */
   window.KOTO={merge:kotoMerge,state:()=>state,pull:syncPull,push:syncPush,
-    code:()=>syncCode,on:syncOn,mode:syncMode,
+    on:syncOn,mode:syncMode,
     words:()=>allWords,say:sayWord,hear:canHear,playing:()=>auNow,
     signedIn:signedIn,user:authUser,signOut:signOut,googleIn:googleIn,
     numTest:{build:buildTest,genDate,genTime,MONTHS,DAYS,HOURS,session:()=>session},

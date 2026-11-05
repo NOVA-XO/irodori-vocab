@@ -280,37 +280,49 @@ function getJSON(path, method) {
     edge && edge.badXp === 7 && edge.badWords === '{}' && edge.nul.indexOf('"xp":0') > 0,
     JSON.stringify(edge));
 
-  console.log('\n[3] Синкийн цонх');
-  const dlg = await ev(`
-    const btn = document.getElementById('open-sync');
-    if (!btn) return { e: 'товч алга' };
-    btn.click(); await new Promise(r => setTimeout(r, 300));
-    const d = document.getElementById('sync-dialog');
-    const inp = document.getElementById('sync-code');
-    return { open: d ? d.open : null, hasInput: !!inp,
-             min: inp ? inp.getAttribute('minlength') : null,
-             max: inp ? inp.getAttribute('maxlength') : null,
-             btns: document.querySelectorAll('#sync-dialog [data-action]').length };
+  console.log('\n[3] Нэвтрэх — зөвхөн Google (11-05: нууц кодын синк хасагдсан)');
+  const acc = await ev(`
+    const b = document.getElementById('open-sync');
+    return { act: b ? b.dataset.action || '' : null, view: b ? b.dataset.view || '' : null,
+             text: b ? b.textContent.trim() : '', dis: b ? b.disabled : null,
+             dialog: !!document.getElementById('sync-dialog'),
+             input: !!document.querySelector('#sync-code, input[minlength="8"]'),
+             codeApi: 'code' in window.KOTO };
   `);
-  ok('синкийн цонх нээгдэв, код оруулах талбартай',
-    dlg && dlg.open === true && dlg.hasInput === true, JSON.stringify(dlg));
-  ok('кодын урт 8..64 гэж хязгаарлагдсан (сервертэй ижил)',
-    dlg && dlg.min === '8' && dlg.max === '64', JSON.stringify(dlg));
+  ok('хажуугийн цэс «Нэвтрэх» → google-in (идэвхтэй); синкийн цонх, кодын талбар, KOTO.code АЛГА',
+    acc && acc.act === 'google-in' && !acc.view && /Нэвтрэх/.test(acc.text) && acc.dis === false
+      && !acc.dialog && !acc.input && !acc.codeApi, JSON.stringify(acc));
 
-  const short = await ev(`
-    const inp = document.getElementById('sync-code');
-    inp.value = 'abc';
-    document.querySelector('#sync-dialog [data-action="sync-save"]').click();
-    await new Promise(r => setTimeout(r, 300));
-    return { note: (document.getElementById('sync-note') || {}).textContent,
-             saved: localStorage.getItem('koto-sync-code') };
-  `);
-  ok('богино код няцаагдана (сервер хүртэл явахгүй)',
-    short && /8/.test(short.note || '') && !short.saved, JSON.stringify(short));
+  // Хуучин хэрэглэгчийн хадгалсан нууц код ҮЛ ТООГДОНО (устгахгүй, синк хийхгүй).
+  await ev(`localStorage.setItem('koto-sync-code', 'zz-legacy-code-01'); return true;`);
+  await send('Page.reload', {});
+  for (let i = 0; i < 40; i++) { await sleep(150); try { if (await ev('return !!window.KOTO')) break; } catch (e) {} }
+  await sleep(400);
+  const legacy = await ev(`return { mode: window.KOTO.mode(), kept: localStorage.getItem('koto-sync-code'),
+    save: document.getElementById('save-status').textContent };`);
+  await ev(`localStorage.removeItem('koto-sync-code'); return true;`);
+  ok('хуучин `koto-sync-code` байсан ч mode="" (синкгүй), түлхүүр устаагүй, footer «хөтөч дээр»',
+    legacy && legacy.mode === '' && legacy.kept === 'zz-legacy-code-01' && /хөтөч дээр/.test(legacy.save), JSON.stringify(legacy));
+
+  /* «Нэвтрэх» нь Google руу ШУУД (цонхгүй). Жинхэнэ Google руу явуулахгүй:
+     authorize хүсэлтийг CDP Fetch-ээр барьж цуцална — хуудас хэвээр үлдэнэ. */
+  let authUrl = null;
+  await send('Fetch.enable', { patterns: [{ urlPattern: '*/auth/v1/authorize*', requestStage: 'Request' }] });
+  onPaused = p => { authUrl = p.request.url; send('Fetch.failRequest', { requestId: p.requestId, errorReason: 'Aborted' }); };
+  await ev(`localStorage.removeItem('koto-pkce'); document.getElementById('open-sync').click(); return true;`);
+  for (let i = 0; i < 40 && !authUrl; i++) await sleep(100);
+  await sleep(400);
+  onPaused = null;
+  await send('Fetch.disable', {});
+  const go = await ev(`return { pkce: !!localStorage.getItem('koto-pkce'), app: !!window.KOTO,
+    dialog: !!document.querySelector('dialog[open]') };`);
+  await ev(`localStorage.removeItem('koto-pkce'); return true;`);
+  ok('«Нэвтрэх» → шууд Google: authorize?provider=google + PKCE challenge, verifier хөтөч дээр, цонх нээгдээгүй',
+    !!authUrl && /provider=google/.test(authUrl) && /code_challenge=/.test(authUrl) && /code_challenge_method=s256/.test(authUrl)
+      && go.pkce && go.app && !go.dialog, JSON.stringify({ authUrl: authUrl && authUrl.slice(0, 120), go }));
 
   console.log('\n[4] Ахиц хадгалагдана (localStorage)');
   const store = await ev(`
-    document.getElementById('sync-dialog').close();
     const node = document.querySelector('.node-button:not(:disabled)');
     if (!node) return { e: 'хичээл алга' };
     node.click(); await new Promise(r => setTimeout(r, 400));
@@ -579,20 +591,27 @@ function getJSON(path, method) {
   ok('streak 2 (өнөөдөр+өчигдөр), хамгийн урт 3 (-12…-10), хог түлхүүр алгасна, 400 хоногийн өмнөх график гадна',
     hm.streak === 2 && hm.longest === 3 && hm.active === 7 && !hm.old, JSON.stringify({ streak: hm.streak, longest: hm.longest, active: hm.active, old: hm.old }));
 
-  /* Avatar → ахицын хуудас; синкийн цонх хуудсан дээрх товчоор. */
+  /* Avatar → ахицын хуудас; бүртгэлийн карт тэнд (11-05: синкийн цонх хасагдсан). */
   const av = await ev(`const S=ms=>new Promise(r=>setTimeout(r,ms));location.hash='learn';await S(150);
     document.getElementById('open-sync-top').click();await S(200);const prof=location.hash==='#profile'&&!document.getElementById('view-profile').hidden;
-    document.querySelector('#view-profile [data-action=sync-open]').click();await S(250);const open=document.getElementById('sync-dialog').open;
-    document.querySelector('[data-action=sync-close]').click();await S(100);return {prof,open,nav:document.querySelectorAll('.nav-item[data-view=profile]').length};`);
-  ok('avatar ба «Ахиц» цэс → ахицын хуудас; синкийн цонх тэндээс нээгдэнэ', av.prof && av.open && av.nav === 1, JSON.stringify(av));
+    const b=document.querySelector('#view-profile .p-account [data-action=google-in]');
+    return {prof,btn:b?b.textContent.trim():null,dis:b?b.disabled:null,old:!!document.querySelector('[data-action=sync-open]'),nav:document.querySelectorAll('.nav-item[data-view=profile]').length};`);
+  ok('avatar ба «Ахиц» цэс → ахицын хуудас; бүртгэлийн картад «Нэвтрэх» (Google руу шууд), «Нэвтрэлт ба синк» алга',
+    av.prof && av.btn === 'Нэвтрэх' && av.dis === false && !av.old && av.nav === 1, JSON.stringify(av));
 
   /* Хуучин SQL (`xpd`, `kana`-г мэдэхгүй) түлхэлтийн хариунаас тэднийг хаявал
      локал өгөгдөл УСТАХГҮЙ — клиент хариуг локалтай нийлүүлдэг. Серверийн
      хариуг CDP Fetch-ээр дуурайна (жинхэнэ сервер рүү бичихгүй). */
-  await send('Fetch.enable', { patterns: [{ urlPattern: '*rpc/koto_put*', requestStage: 'Request' }] });
+  await send('Fetch.enable', { patterns: [{ urlPattern: '*rpc/koto_user_*', requestStage: 'Request' }] });
   let putSeen = null;
   onPaused = p => {
     if (p.request.method !== 'POST') { send('Fetch.continueRequest', { requestId: p.requestId }); return; }
+    if (p.request.url.includes('koto_user_get')) {   // ачаалах үеийн татлага: серверт ахиц алга
+      send('Fetch.fulfillRequest', { requestId: p.requestId, responseCode: 200,
+        responseHeaders: [{ name: 'Content-Type', value: 'application/json' }, { name: 'Access-Control-Allow-Origin', value: '*' }],
+        body: Buffer.from('null').toString('base64') });
+      return;
+    }
     const body = JSON.parse(p.request.postData || '{}'), old = Object.assign({}, body.p_data);
     putSeen = { xpd: !!(old.xpd && Object.keys(old.xpd).length), kana: !!(old.kana && Object.keys(old.kana).length) };
     delete old.xpd; delete old.kana;
@@ -601,7 +620,7 @@ function getJSON(path, method) {
       body: Buffer.from(JSON.stringify(old)).toString('base64') });
   };
   const sp = await ev(`const s=JSON.parse(localStorage.getItem('koto-irodori-v1'));s.kana={'K-001':{passes:1,weak:false,due:'2099-01-01',last:'2026-11-01'}};
-    localStorage.setItem('koto-irodori-v1',JSON.stringify(s));localStorage.setItem('koto-sync-code','zz-test-xpd-kana-01');location.hash='learn';return true;`);
+    localStorage.setItem('koto-irodori-v1',JSON.stringify(s));localStorage.setItem('koto-auth',JSON.stringify({access_token:'x.y.z',refresh_token:'r',expires_at:Math.floor(Date.now()/1000)+86400,user:{email:'a@b.c',name:'A',avatar:null}}));location.hash='learn';return true;`);
   await reload();
   /* Эерэг XP-ийг (өдөр|төхөөрөмж=xp) жагсааж харьцуулна — сөрөгийг уусгалт зөв хаяна. */
   const sp2 = await ev(`const K=window.KOTO,pos=x=>Object.keys(x).sort().flatMap(d=>Object.keys(x[d]).sort().filter(v=>x[d][v]>0).map(v=>d+'|'+v+'='+x[d][v])).join(',');
@@ -610,9 +629,9 @@ function getJSON(path, method) {
     return {mode:K.mode(),r,before,xpd:pos(st.xpd),kana:Object.keys(st.kana).length,savedXpd:pos(saved.xpd||{}),savedKana:Object.keys(saved.kana||{}).length};`);
   onPaused = null;
   await send('Fetch.disable', {});
-  await ev(`localStorage.removeItem('koto-sync-code');`);
+  await ev(`localStorage.removeItem('koto-auth');`);
   ok('хуучин SQL `xpd`/`kana`-г хаяж буцаасан ч локал хэвээр (түлхэлтийн хариуг нийлүүлнэ)',
-    sp && sp2.mode === 'code' && sp2.r === true && putSeen && putSeen.xpd && putSeen.kana && sp2.before.kana === 1 && sp2.before.xpd.split(',').length === 8
+    sp && sp2.mode === 'user' && sp2.r === true && putSeen && putSeen.xpd && putSeen.kana && sp2.before.kana === 1 && sp2.before.xpd.split(',').length === 8
       && sp2.xpd === sp2.before.xpd && sp2.kana === 1 && sp2.savedXpd === sp2.before.xpd && sp2.savedKana === 1,
     JSON.stringify({ sp2, putSeen }));
 

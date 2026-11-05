@@ -17,20 +17,34 @@
 body:has(.lesson-dialog[open]){overflow:hidden}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 
-/* ── Ахицын синк (v2) ──────────────────────────────────────────────
-   `sidebar-footer` нь ТОВЧ болсон (синкийн цонх нээнэ) тул товчны
-   анхдагч хүрээ, дэвсгэрийг арилгаж, зүүн тийш эгнүүлнэ. Утсан дээр
-   нуугддаг тул `#open-sync`-д тусдаа дүрэм хэрэггүй. */
-.sidebar-footer{background:none;border:0;border-top:1px solid var(--line);
-  text-align:left;align-items:center;width:100%;border-radius:10px;
-  padding-left:4px;padding-right:4px;padding-bottom:4px}
-.sidebar-footer:hover{background:#f3f6ef}
-.sidebar-footer small{color:var(--muted);display:block;margin-top:3px}
-.sync-frame{max-width:620px}
-.sync-label{display:block;font-size:11px;font-weight:650;margin-bottom:8px;color:#5c6b53}
-.sync-hint{font-size:11px;color:var(--muted);line-height:1.8;margin-top:12px}
-.sync-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:20px}
-.sync-actions .primary-btn,.sync-actions .secondary-btn{min-height:45px}
+/* ── Хажуугийн цэсний бүртгэлийн товч (v2) ─────────────────────
+   11-05 (Astra): нэвтрээгүй бол «Нэвтрэх» → Google, нэвтэрсэн бол
+   «Миний бүртгэл» → ахицын хуудас. Утсан дээр нуугдана (700px). */
+.sidebar-footer {
+  background: none;
+  color: var(--ink);
+  border: 0;
+  border-top: 1px solid var(--line);
+  text-align: left;
+  align-items: center;
+  width: 100%;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 10px;
+  padding-left: 4px;
+  padding-right: 4px;
+  padding-bottom: 4px;
+  white-space: normal;
+}
+.sidebar-footer:not(:disabled):hover { background: var(--soft); }
+.sidebar-footer .level-dot { flex-shrink: 0; }
+.sidebar-account-copy { min-width: 0; overflow-wrap: anywhere; }
+.sidebar-footer small {
+  color: var(--muted);
+  display: block;
+  margin-top: 3px;
+}
+.sidebar-footer:disabled { opacity: 1; color: var(--muted); cursor: default; }
 /* Тооны шалгалт — сэдвийн картын доод хэсэг */
 .test-cta{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:6px 22px 22px;padding:16px 18px;border-radius:18px;background:#f3fae6;border:1px solid #d9ebbd}.test-cta strong{display:block;font-size:15px}.test-cta span{font-size:12px;color:#5d6d55}.test-cta .primary-btn{margin:0}
 
@@ -93,7 +107,7 @@ body {
 .unit-progress { font-size: 12px; color: var(--accent-ink); }
 .side-card-title { font-size: 15px; }
 .side-card > p, .small-link, .learn-hint,
-.sync-hint, .bottom-note, .feedback small { font-size: 13px; }
+.bottom-note, .feedback small { font-size: 13px; }
 .page-footer { font-size: 11px; color: var(--muted); }
 .stat-pill, .session-xp, .unit-progress, .result-stat strong {
   font-variant-numeric: tabular-nums;
@@ -447,45 +461,6 @@ select:focus-visible, summary:focus-visible {
   border-radius: inherit;
   object-fit: cover;
 }
-.sync-frame { max-width: 680px; }
-.sync-title { font-size: 21px; line-height: 1.4; }
-.sync-body { padding-top: 8px; }
-.sync-body > .page-subtitle { margin: 0 0 24px; }
-.google-panel {
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--paper);
-  box-shadow: var(--shadow);
-}
-.google-panel h2 { font-size: 21px; line-height: 1.4; }
-.google-panel p { margin: 10px 0 20px; font-size: 14px; color: var(--muted); }
-
-/* Google товчны өнгө, лого, дотоод зайг аппын lime өнгөөр солихгүй.
-   Google Sans төхөөрөмж дээр суусан бол ашиглана.
-   Шинэ фонтын файл болон CDN хориглосон тул бүх төхөөрөмж дээр
-   Google-ийн шаардсан фонтыг баталгаажуулах боломжгүй.
-*/
-.google-signin {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 44px;
-  max-width: 100%;
-  padding: 11px 12px;
-  border: 1px solid #747775;
-  border-radius: 4px;
-  background: #fff;
-  color: #1f1f1f;
-  font-family: "Google Sans", Arial, sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 20px;
-  text-align: center;
-}
-.google-mark { width: 20px; height: 20px; flex: 0 0 20px; }
-.google-signin:disabled { opacity: 1; color: #747775; cursor: default; }
 .account-card {
   display: flex;
   align-items: center;
@@ -511,57 +486,6 @@ select:focus-visible, summary:focus-visible {
 .account-details { flex: 1 1 150px; min-width: 0; }
 .account-name { display: block; font-size: 16px; overflow-wrap: anywhere; }
 .account-email { display: block; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
-.sync-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--success-ink);
-}
-.sync-status .icon { width: 16px; height: 16px; }
-.sync-code-section {
-  margin-top: 28px;
-  border-top: 1px solid var(--line);
-}
-.sync-code-section summary {
-  display: list-item;
-  min-height: 48px;
-  padding: 14px 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-.sync-code-state {
-  display: inline-block;
-  margin-left: 8px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.sync-code-body { padding: 0 4px 20px; }
-.sync-code-body > .sync-hint { margin: 0 0 20px; }
-.sync-code-fields { min-width: 0; padding: 0; margin: 0; border: 0; }
-.sync-code-fields:disabled { opacity: .65; }
-.sync-code-fields:disabled button { opacity: 1; }
-.sync-label { color: var(--ink); font-size: 13px; }
-.sync-code-input { padding-left: 13px; }
-.sync-actions { gap: 12px; }
-.sync-note { min-height: 1.8em; overflow-wrap: anywhere; }
-.sync-summary {
-  margin-top: 24px;
-  padding-top: 20px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 13px;
-}
-.sync-unavailable {
-  margin-top: 20px;
-  padding: 14px 16px;
-  border: 1px solid var(--danger);
-  border-radius: 12px;
-  background: var(--error-surface);
-  color: var(--error-ink);
-  font-size: 13px;
-}
 
 /* 7. Хөдөлгөөн: богино шилжилт; мэдрэгчтэй дэлгэц дээр hover үсрэхгүй. */
 button, a, input, select {
@@ -572,7 +496,6 @@ button, a, input, select {
   .topic-card:hover { border-color: var(--lime-dark); transform: translateY(-2px); }
   .audio-button:hover { background: var(--accent-surface); border-color: var(--lime-dark); }
   .audio-button.playing:hover { background: var(--lime); }
-  .google-signin:hover:not(:disabled) { box-shadow: 0 1px 3px #0003; }
 }
 @media (hover: none) {
   .primary-btn:hover, .topic-card:hover { transform: none; }
@@ -650,11 +573,6 @@ button, a, input, select {
   .result-stats { grid-template-columns: 1fr; }
   .result-stat { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; }
   .result-stat strong { margin: 0; }
-  .google-panel, .account-card { padding: 20px; }
-  .google-signin { width: 100%; }
-  .sign-out-button { width: 100%; }
-  .sync-actions { flex-direction: column; }
-  .sync-actions button { width: 100%; }
   .toast { font-size: 13px; bottom: max(16px, env(safe-area-inset-bottom)); }
 }
 
@@ -803,8 +721,6 @@ button, a, input, select {
   /* Тооны шалгалтын карт (10-24b): хатуу #f3fae6 нь бараан дээр цагаан толбо болдог. */
   .test-cta { background: var(--accent-surface); border-color: var(--line); }
   .test-cta span { color: var(--muted); }
-  /* Google товч цагаан хэвээр; логоны өнгийг өөрчлөхгүй. */
-  .google-signin { color-scheme: light; background: #fff; color: #1f1f1f; border-color: #747775; }
 }
 
 /* ── Хурдан засварын харагдац (Astra, 2026-11-01) ─────────────
@@ -2097,16 +2013,85 @@ button, a, input, select {
   color: var(--accent-ink);
 }
 
-.p-sync {
+/* Бүртгэлийн карт (11-05, Astra): grid нь дээрх `.p-sync` flex-ийг дарна. */
+.p-sync.p-account {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
   background: var(--soft);
 }
-
-.p-sync > div {
-  flex: 1;
+.p-sync.p-account-out {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
+.p-account > *,
+.p-account .account-details {
+  min-width: 0;
+}
+.p-account h2,
+.p-account .p-muted {
+  overflow-wrap: anywhere;
+}
+.p-account .p-muted { margin: 8px 0 0; }
 
-.p-sync .p-btn {
-  flex-shrink: 0;
+.p-account .p-account-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.p-account .account-avatar {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  /* Claude (хяналт): карт `--soft` тул ижил өнгөтэй дугуй харагдахгүй байв. */
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+.p-account .account-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.p-account .p-btn {
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.p-account .p-btn:disabled {
+  opacity: 1;
+  background: var(--paper);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  cursor: default;
+}
+.p-account .p-btn:focus-visible,
+.sidebar-footer:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+@media (max-width: 700px) {
+  .p-sync.p-account-out { grid-template-columns: minmax(0, 1fr); }
+  .p-account-out > .p-btn { width: 100%; }
+}
+@media (max-width: 420px) {
+  .p-account .p-account-row {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+  .p-account-row > .p-btn {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
 }
 
 /* ── Ruby: ханз ба уншлагыг хамтад нь нэг мөрд хадгална ─────── */
