@@ -133,7 +133,7 @@ function getJSON(path, method) {
   ok('сурах карт: кана дээр дарахад тоглоно', !!lt.want && lt.got === lt.want, JSON.stringify(lt));
   /* `.learn-card .speak-button.audio-button` (0,3,0) нь `.audio-button.playing`
      (0,2,0)-ийн лайм дэвсгэрийг дардаг байв — Astra олов. */
-  ok('сурах карт: тоглож байхад дүрс үндсэн өнгө (--lime токен, 11-05g «Кофе» #74512d), карт .playing', lt.btnBg === 'rgb(116, 81, 45)' && lt.card, JSON.stringify(lt));
+  ok('сурах карт: тоглож байхад дүрс ЛАЙМ (--lime, 11-05h анхны ногоон), карт .playing', lt.btnBg === 'rgb(184, 239, 88)' && lt.card, JSON.stringify(lt));
   await ev("if(window.KOTO.playing())document.querySelector('.learn-card').click();");
   ok('хичээл доторх товч бүр 44px+', (await ev(TAP)).length === 0, JSON.stringify(await ev(TAP)).slice(0, 300));
   await shot('lesson-learn-1400');
@@ -205,9 +205,9 @@ function getJSON(path, method) {
   console.log('\n[F] Бараан сэдэв');
   await dark(true); await nav(SITE); await sleep(300);
   const bg = await ev("return getComputedStyle(document.body).backgroundColor");
-  ok('body дэвсгэр бараан (#241a12, «Кофе»)', bg === 'rgb(36, 26, 18)', bg);
-  ok('карт бараан, бичиг цайвар', await ev("const c=document.querySelector('.unit-card');const s=getComputedStyle(c);return s.backgroundColor==='rgb(48, 34, 24)'&&getComputedStyle(document.body).color==='rgb(248, 244, 225)'"), await ev("return getComputedStyle(document.querySelector('.unit-card')).backgroundColor+' / '+getComputedStyle(document.body).color"));
-  ok('mascot-ийн сүүдэр бараан болов', await ev("const e=document.querySelector('.hero-art svg ellipse');return getComputedStyle(e).fill==='rgb(22, 15, 9)'"), await ev("return getComputedStyle(document.querySelector('.hero-art svg ellipse')).fill"));
+  ok('body дэвсгэр бараан (#121a16, ногоон)', bg === 'rgb(18, 26, 22)', bg);
+  ok('карт бараан, бичиг цайвар', await ev("const c=document.querySelector('.unit-card');const s=getComputedStyle(c);return s.backgroundColor==='rgb(27, 39, 32)'&&getComputedStyle(document.body).color==='rgb(237, 243, 233)'"), await ev("return getComputedStyle(document.querySelector('.unit-card')).backgroundColor+' / '+getComputedStyle(document.body).color"));
+  ok('mascot-ийн сүүдэр бараан болов', await ev("const e=document.querySelector('.hero-art svg ellipse');return getComputedStyle(e).fill==='rgb(12, 22, 11)'"), await ev("return getComputedStyle(document.querySelector('.hero-art svg ellipse')).fill"));
   await shot('home-dark-1400');
   await ev("location.hash='words';"); await sleep(300); await shot('words-dark-1400');
   await openAccount();
