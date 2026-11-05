@@ -13,8 +13,12 @@ u"""v2 (KOTO)-ийн үгэнд ханзан бичлэг (`kj`) оноож, к�
 `v2/kana.js` нь `data.js`-ээс ТУСДАА: `build_v2_audio.py` нь `data.js`-ийг
 `window.KOTO_DATA`-аар л дахин бичдэг тул нэг файлд байвал устна.
 
+2026-11-05-аас `v2/data.js`-ийг `build_v2_vocab.py` үүсгэдэг (Irodori 3 ном, `kj`-тэй нь;
+хуучин 432 үгийн `kj` нь `tools/v2_vocab_legacy.tsv`-д хөлдсөн). Шинэ бүтэцтэй data.js-ийг
+энэ скрипт ХӨНДӨХГҮЙ — зөвхөн `kana.js`-ийг бичнэ.
+
 Ажиллуулах:
-    python tools/build_v2_kanji.py          # -> v2/data.js, v2/kana.js
+    python tools/build_v2_kanji.py          # -> v2/kana.js (хуучин бүтэцтэй бол v2/data.js ч)
     python tools/build_v2_kanji.py --dry    # зөвхөн тайлан
 """
 import argparse
@@ -59,6 +63,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dry', action='store_true')
     args = ap.parse_args()
+    raw = io.open(os.path.join(ROOT, 'v2', 'data.js'), encoding='utf-8').read()
+    if 'window.KOTO_DATA = {' in raw:
+        print('v2/data.js: build_v2_vocab.py-iin butets - kj algasav, zovkhon kana.js')
+        write_kana(args.dry)
+        return
     data, v1, manual = load_data(), load_v1(), load_manual()
     n_v1 = n_manual = 0
     errors = []
@@ -91,17 +100,22 @@ def main():
     total = sum(len(t['words']) for t in data)
     print('kj: v1 %d + gar %d = %d / %d' % (n_v1, n_manual, n_v1 + n_manual, total))
 
+    if not args.dry:
+        body = json.dumps(data, ensure_ascii=False, indent=2)
+        io.open(os.path.join(ROOT, 'v2', 'data.js'), 'w', encoding='utf-8', newline='\n').write(
+            u'window.KOTO_DATA = %s;\n' % body)
+    write_kana(args.dry)
+
+
+def write_kana(dry):
     kana = json.load(io.open(os.path.join(ROOT, 'data', 'kana.json'), encoding='utf-8'))['items']
     table = [{'id': k['id'], 'kata': k['kata'], 'hira': k['hira'], 'mn': k['mn'], 'g': k['group']} for k in kana]
     print('kana: %d' % len(table))
-    if args.dry:
+    if dry:
         return
-    body = json.dumps(data, ensure_ascii=False, indent=2)
-    io.open(os.path.join(ROOT, 'v2', 'data.js'), 'w', encoding='utf-8', newline='\n').write(
-        u'window.KOTO_DATA = %s;\n' % body)
     io.open(os.path.join(ROOT, 'v2', 'kana.js'), 'w', encoding='utf-8', newline='\n').write(
         u'window.KOTO_KANA = %s;\n' % json.dumps(table, ensure_ascii=False, indent=1))
-    print('v2/data.js, v2/kana.js bichigdlee')
+    print('v2/kana.js bichigdlee')
 
 
 if __name__ == '__main__':

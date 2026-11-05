@@ -334,9 +334,9 @@ function getJSON(path, method) {
   ok('графикийн фокус хүрээ sticky гарагийн баганын доор орохгүй (offset ≥ 0)', fo.fv && fo.style === 'solid' && fo.offset >= 0, JSON.stringify(fo));
   /* Ханзын горимд 320-д хичээл: ruby гарна, хэвтээ гүйлт 0. */
   await size(320, 640, true); await nav(SITE); await sleep(300);
-  /* 7-р сэдэв: 32 үгийн 25 нь ханзтай (0-р сэдэвт 20-иос 2 л). */
-  await ev(`const s=JSON.parse(localStorage.getItem('koto-irodori-v1'));s.selectedTopic=6;localStorage.setItem('koto-irodori-v1',JSON.stringify(s));`); await nav(SITE); await sleep(300);
-  const kl = await ev(`const S=ms=>new Promise(r=>setTimeout(r,ms));location.hash='learn';await S(200);document.querySelector('[data-action=start][data-lesson="6-0"]').click();await S(400);
+  /* Ханзтай үг ихтэй эхний хичээл (2026-11-05-аас нэгж нь өгөгдлөөс; сонголт `koto-v2-unit`-д). */
+  await ev(`const V=window.KOTO.vocab,L=V.lessons().find(l=>l.chunk===0&&l.words.filter(w=>w.kj).length>=4);localStorage.setItem('koto-v2-unit',V.units()[L.topic].key);localStorage.setItem('koto-test-kl',L.id);`); await nav(SITE); await sleep(300);
+  const kl = await ev(`const S=ms=>new Promise(r=>setTimeout(r,ms));location.hash='learn';await S(200);document.querySelector('[data-action=start][data-lesson="'+localStorage.getItem('koto-test-kl')+'"]').click();await S(400);
     const out=[];for(let i=0;i<5;i++){const c=document.querySelector('.learn-card');if(!c)break;out.push({ruby:!!c.querySelector('ruby.jp-face'),dw:document.getElementById('lesson-dialog').scrollWidth});document.querySelector('[data-action=next]').click();await S(80);}
     return out;`);
   ok('320 ханзын горим: сурах картад ruby, хичээлд хэвтээ гүйлт 0', kl.some(x => x.ruby) && kl.every(x => x.dw <= 320), JSON.stringify(kl));

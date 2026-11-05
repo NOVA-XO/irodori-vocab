@@ -73,6 +73,10 @@ MN_SPLIT = re.compile(u'[\\s;,/·()]+')
 def v2_words():
     u"""`v2/data.js`-ээс (сэдэв, индекс, үг) гурвалыг дарааллаараа гаргана."""
     raw = io.open(os.path.join(ROOT, 'v2', 'data.js'), encoding='utf-8').read()
+    if 'window.KOTO_DATA = {' in raw:
+        # 2026-11-05-аас data.js-ийг build_v2_vocab.py үүсгэдэг: Irodori үг бүр v1-ийн бичлэгтэй
+        # (au = id), хуучин 432 үгийн au нь tools/v2_vocab_legacy.tsv-д. Хуучин бүтцээр бичвэл эвдэнэ.
+        sys.exit('ZOGSOV: v2/data.js shine butetstei (build_v2_vocab.py) - ene script khuuchin butetsend')
     data = json.loads(raw[raw.index('['):raw.rindex(']') + 1])
     out = []
     for t, topic in enumerate(data):

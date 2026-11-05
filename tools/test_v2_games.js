@@ -129,12 +129,15 @@ function getJSON(p, method) {
   const sm = await ev(`const K=window.KOTO.games,ws=window.KOTO.words(),S=K.short,by={},bad=[];
     for(const w of ws){const s=S(w);if(/[\\u3040-\\u30ff\\u3400-\\u9fff～]/.test(s))bad.push('ja '+w.jp+'→'+s);if(!/[\\p{L}\\p{N}]/u.test(s))bad.push('empty '+w.jp+'→'+s);
       if((s.match(/\\(/g)||[]).length!==(s.match(/\\)/g)||[]).length)bad.push('paren '+w.jp+'→'+s);(by[s]=by[s]||new Set()).add(w.jp);}
-    const dup=Object.entries(by).filter(([m,s])=>s.size>1).map(([m,s])=>m+'→'+[...s].join('/'));
+    /* 2026-11-05: 3 номын ~3000 үгэнд ижил утгатай өөр үг (すみません/もうしわけありません «уучлаарай») гарцаагүй —
+       тэднийг нэг тоглолтод оруулахгүй байх нь gameClash-ийн ажил. Давхцал бүр clash-тай байх ёстой. */
+    const groups=Object.entries(by).filter(([m,s])=>s.size>1);
+    const dup=groups.filter(([m,s])=>{const g=ws.filter(w=>S(w)===m);return g.some(a=>g.some(b=>a!==b&&a.jp!==b.jp&&!K.clash(a,b)));}).map(([m,s])=>m+'→'+[...s].join('/'));
     const f=jp=>S(ws.find(w=>w.jp===jp));const ichi=ws.find(w=>w.jp==='いちばん'&&S(w)==='хамгийн');
-    return {n:ws.length,bad,dup,hiki:f('～ひき／びき／ぴき'),goro:f('～ごろ'),nin:f('～にん'),mai:f('～まい'),satsu:f('～さつ'),
+    return {n:ws.length,bad,dup,groups:groups.length,hiki:f('～ひき／びき／ぴき'),goro:f('～ごろ'),nin:f('～にん'),mai:f('～まい'),satsu:f('～さつ'),
       homoUnit:!!ichi&&K.clash(ichi,{jp:'ZZZ',mn:'нэгдүгээр'})&&!K.clash(ichi,{jp:'ZZZ',mn:'ус'})};`);
-  ok('товч утга (' + sm.n + ' үг): япон тэмдэгтгүй, үсэгтэй, хаалт тэнцүү, өөр бичлэгтэй үгстэй давхцахгүй',
-    sm.n === 432 && !sm.bad.length && !sm.dup.length, JSON.stringify({ bad: sm.bad.slice(0, 6), dup: sm.dup.slice(0, 6) }));
+  ok('товч утга (' + sm.n + ' үг): япон тэмдэгтгүй, үсэгтэй, хаалт тэнцүү; ижил утгатай ' + sm.groups + ' бүлэг бүгд андуурлын хамгаалалттай',
+    sm.n === 2994 && !sm.bad.length && !sm.dup.length, JSON.stringify({ bad: sm.bad.slice(0, 6), dup: sm.dup.slice(0, 6) }));
   ok('～ひき «… (жижиг амьтан…)», ～ごろ хариултгүй, ～にん «… хүн», ～まい ≠ ～さつ',
     /жижиг амьтан/.test(sm.hiki) && sm.goro === '… орчим (цаг)' && sm.nin === '… хүн' && sm.mai !== sm.satsu && /ширхэг/.test(sm.mai), JSON.stringify(sm));
   ok('андуурал: いちばん «хамгийн» ба өөр бичлэгтэй «нэгдүгээр» андуурагдана (いちばん-ий 2 дахь утга), «ус» андуурагдахгүй', sm.homoUnit, JSON.stringify(sm.homoUnit));

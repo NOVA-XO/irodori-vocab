@@ -81,20 +81,36 @@ function getJSON(p, method) {
   const pg = await ev(`location.hash='kanji';await new Promise(r=>setTimeout(r,250));const v=document.getElementById('view-kanji'),d=window.KOTO.kanji.data();
     return {shown:!v.hidden,nav:document.querySelectorAll('.nav-item').length,cur:!!document.querySelector('.nav-item[data-view=kanji][aria-current=page]'),page:document.getElementById('page-name').textContent,
       lessons:v.querySelectorAll('[data-action=kanji-lesson]').length,review:(v.querySelector('[data-action=kanji-review]')||{}).disabled,total:d.total,levels:d.levels.map(l=>l.label+':'+l.total)};`);
-  ok('6 дахь цэс «Ханз» идэвхтэй, хуудас: 124 хичээлийн товч (N5 16 + N4 34 + N3 74), давтлага үзээгүй үед хаалттай, 612 ханз',
-    pg.shown && pg.nav === 6 && pg.cur && pg.page === 'Ханз' && pg.lessons === 124 && pg.review === true && pg.total === 612 && pg.levels.join() === 'N5:79,N4:166,N3:367', JSON.stringify(pg));
+  ok('6 дахь цэс «Ханз» идэвхтэй, хуудас: 204 хичээлийн товч (N5 16 + N4 34 + N3 74 + N2 38 + Бусад 42), давтлага үзээгүй үед хаалттай, 1009 ханз',
+    pg.shown && pg.nav === 6 && pg.cur && pg.page === 'Ханз' && pg.lessons === 204 && pg.review === true && pg.total === 1009 && pg.levels.join() === 'N5:79,N4:166,N3:367,N2:189,Бусад:208', JSON.stringify(pg));
   await shot('page-1400');
   /* Astra №41 (11-05): 124 товч + 612 хавтан хэт урт — N5 нээлттэй, N4/N3 хаалттай, «Бүх ханз» хаалттай; нээснийг дахин зурахад хадгална. */
   const lv = await ev(`const v=document.getElementById('view-kanji'),L=[...v.querySelectorAll('details.kj-level')];const out={n:L.length,open:L.map(d=>d.dataset.kjLevel+':'+d.open).join(),inv:[...v.querySelectorAll('details.kj-inventory')].map(d=>d.open).join()};
     L[2].open=true;window.KOTO.kanji.data();location.hash='learn';await new Promise(r=>setTimeout(r,150));location.hash='kanji';await new Promise(r=>setTimeout(r,250));
     out.kept=[...document.querySelectorAll('#view-kanji details.kj-level')].map(d=>d.open).join();return out;`);
-  ok('түвшин эвхэгддэг: N5 нээлттэй, N4/N3 хаалттай, «Бүх ханз» хаалттай; N3-ийг нээгээд цэс солиход нээлттэй хэвээр',
-    lv.n === 3 && lv.open === '5:true,4:false,3:false' && lv.inv === 'false,false,false' && lv.kept === 'true,false,true', JSON.stringify(lv));
+  ok('түвшин эвхэгддэг: N5 нээлттэй, N4…Бусад хаалттай, «Бүх ханз» хаалттай; N3-ийг нээгээд цэс солиход нээлттэй хэвээр',
+    lv.n === 5 && lv.open === '5:true,4:false,3:false,2:false,0:false' && lv.inv === 'false,false,false,false,false' && lv.kept === 'true,false,true,false,false', JSON.stringify(lv));
+  /* Номын шүүлтүүр (11-05, эзэн «JLPT + номын шошго»): тестийн өөрийн тодорхойлолт — ханзны b нь тухайн номыг агуулна. */
+  const bk = await ev(`const S=ms=>new Promise(r=>setTimeout(r,ms)),v=()=>document.getElementById('view-kanji'),K=window.KOTO_KANJI,byC=Object.fromEntries(K.map(k=>[k.c,k]));
+    const vis=()=>[...v().querySelectorAll('[data-action=kanji-lesson]')].filter(b=>!b.hidden);
+    const out={chips:[...v().querySelectorAll('[data-action=kj-book]')].map(b=>b.textContent.trim()+':'+b.getAttribute('aria-pressed')).join('|')};
+    v().querySelector('[data-action=kj-book][data-kj-book=A1]').click();await S(150);
+    const want=window.KOTO.kanji.lessons().filter(l=>l.chars.some(c=>(byC[c.jp].b||[]).includes('A1'))).length;
+    out.a1=vis().length;out.want=want;out.ok=vis().every(b=>[...b.querySelectorAll('.p-kana-chars span')].some(x=>(byC[x.textContent].b||[]).includes('A1')));
+    out.tiles=[...v().querySelectorAll('.kj-grid li')].filter(li=>!li.hidden).every(li=>(byC[li.querySelector('.kj-tile-char').textContent].b||[]).includes('A1'));
+    out.stored=localStorage.getItem('koto-kj-book');out.note=!!v().querySelector('.kj-book-note');out.focus=document.activeElement&&document.activeElement.dataset.kjBook;
+    v().querySelector('[data-action=kj-book][data-kj-book=""]').click();await S(150);
+    out.all=vis().length;out.cleared=localStorage.getItem('koto-kj-book');return out;`);
+  ok('номын шүүлтүүр: 4 чип (Бүгд идэвхтэй); «Суурь шат» → зөвхөн 入門-ийн ханзтай хичээл/ханз, төхөөрөмжид хадгална, фокус хэвээр; «Бүгд» → 204',
+    /^Бүгд:true\|Суурь шат:false\|Анхан шат 1:false\|Анхан шат 2:false$/.test(bk.chips) && bk.a1 === bk.want && bk.a1 > 50 && bk.a1 < 204 && bk.ok && bk.tiles &&
+      bk.stored === 'A1' && bk.note && bk.focus === 'A1' && bk.all === 204 && bk.cleared === null, JSON.stringify(bk));
 
   console.log('\n[2] Хичээлийн хуваалт ба асуулт');
   const sp = await ev(`const L=window.KOTO.kanji.lessons();return {n5:L.filter(l=>l.n===5).map(l=>l.chars.length).join(''),n4:L.filter(l=>l.n===4).map(l=>l.chars.length).join(''),n3:L.filter(l=>l.n===3).map(l=>l.chars.length).join(''),
+    n2:L.filter(l=>l.n===2).map(l=>l.chars.length).join(''),n0:L.filter(l=>l.n===0).map(l=>l.chars.length).join(''),
     seq:L.flatMap(l=>l.chars.map(c=>c.jp)).join('')===window.KOTO_KANJI.map(k=>k.c).join('')};`);
-  ok('N5 16 хичээл (15×5 + 4), N4 34 (30×5 + 4×4), N3 74 (71×5 + 3×4) — 1 ханзтай хичээл үгүй; дараалал jisho-гийнх', sp.n5 === '5'.repeat(15) + '4' && sp.n4 === '5'.repeat(30) + '4444' && sp.n3 === '5'.repeat(71) + '444' && sp.seq, JSON.stringify(sp));
+  ok('N5 16 хичээл (15×5 + 4), N4 34 (30×5 + 4×4), N3 74 (71×5 + 3×4), N2 38 (37×5 + 4), Бусад 42 (40×5 + 2×4) — 1 ханзтай хичээл үгүй; дараалал kanji.js-ийнх',
+    sp.n5 === '5'.repeat(15) + '4' && sp.n4 === '5'.repeat(30) + '4444' && sp.n3 === '5'.repeat(71) + '444' && sp.n2 === '5'.repeat(37) + '4' && sp.n0 === '5'.repeat(40) + '44' && sp.seq, JSON.stringify(sp));
   const qz = await ev(`const J=window.KOTO.kanji,bad=[],dirs={};let n=0;
     for(const k of J.list())for(let r=0;r<8;r++)for(const q of J.quizzes(k)){n++;dirs[q.direction]=(dirs[q.direction]||0)+1;
       if(q.options.length!==4||new Set(q.options).size!==4||q.options.filter(o=>o===q.correct).length!==1)bad.push(k.jp+' '+q.direction+' '+q.options.join('/'));
@@ -105,8 +121,8 @@ function getJSON(p, method) {
       if(q.direction==='kw-read'&&!k.exw.some(e=>e.jp===q.word.jp&&e.kana===q.correct))bad.push(k.jp+' kw');}
     const e=J.list().filter(k=>!k.exw.length).map(k=>J.quizzes(k).map(q=>q.direction).join(','));
     return {n,dirs,bad:bad.slice(0,6),nb:bad.length,noEx:[...new Set(e)],ins:J.list().find(k=>k.jp==='員').read+'|'+J.list().find(k=>k.jp==='院').read};`);
-  ok('612 ханз × 8 удаа (' + qz.n + ' асуулт): 4 өөр хувилбар, зөв нь 1, хувилбар ижил түвшнээс, уншлага/жишээ зөв (жишээгүй 84-д kw-read алга)',
-    qz.nb === 0 && qz.dirs['kj-mn'] === 4896 && qz.dirs['mn-kj'] === 4896 && qz.dirs['kj-read'] === 4896 && qz.dirs['kw-read'] === 4224, JSON.stringify(qz));
+  ok('1009 ханз × 8 удаа (' + qz.n + ' асуулт): 4 өөр хувилбар, зөв нь 1, хувилбар ижил түвшнээс, уншлага/жишээ зөв (жишээгүй 77-д kw-read алга)',
+    qz.nb === 0 && qz.dirs['kj-mn'] === 8072 && qz.dirs['mn-kj'] === 8072 && qz.dirs['kj-read'] === 8072 && qz.dirs['kw-read'] === 7456, JSON.stringify(qz));
   ok('жишээгүй ханзад 3 асуулт (kw-read алга); 員/院 ижил «イン» уншлага давхар зөв болохгүй', qz.noEx.join() === 'kj-mn,mn-kj,kj-read' && qz.ins === 'イン|イン', JSON.stringify(qz));
   /* Давхар утгатай ханз өгөгдөлд ховор (員/院, 曜/洋) — санамсаргүй шалгалт барихгүй байв (mutation 11-04).
      Бүх ханз ижил утгатай гэж тавибал буруу хувилбар нэг л үлдэх ёстой. */
@@ -120,7 +136,7 @@ function getJSON(p, method) {
       for(let r=0;r<300;r++)for(const q of J.quizzes(k)){if(q.direction==='kj-mn'&&q.options.some(o=>o!==k.mn&&mates.some(m=>m.mn===o)))bad.push(k.jp+' kj-mn');
         if(q.direction==='mn-kj'&&q.options.some(o=>mates.some(m=>m.jp===o)))bad.push(k.jp+' mn-kj');}}
     return {pairs:pairs/2,tested,bad:[...new Set(bad)].slice(0,6)};`);
-  ok('утгын хэсэг давхцсан ханз (' + ov.pairs + ' хос, ' + ov.tested + ' ханз × 300) нэг асуултад хамт гарахгүй', ov.pairs === 120 && !ov.bad.length, JSON.stringify(ov));
+  ok('утгын хэсэг давхцсан ханз (' + ov.pairs + ' хос, ' + ov.tested + ' ханз × 300) нэг асуултад хамт гарахгүй', ov.pairs === 155 && !ov.bad.length, JSON.stringify(ov));
 
   console.log('\n[3] Хичээл дуусгах');
   const ls = await ev(`${H}document.querySelector('#view-kanji [data-action=kanji-lesson][data-kanji="0"]').click();await S(200);const s=K.numTest.session(),out={};
@@ -189,7 +205,15 @@ function getJSON(p, method) {
       before:!!(d.compareDocumentPosition(document.querySelector('#view-kanji .kj-levels'))&Node.DOCUMENT_POSITION_FOLLOWING)};
     d.open=true;await new Promise(r=>setTimeout(r,80));d.querySelector('[data-kj-tab=psc]').click();await new Promise(r=>setTimeout(r,60));
     out.tabs1=tabs().map(t=>t[2]).join();out.vis1=vis();
-    out.links=[...d.querySelectorAll('a')].map(a=>a.target+'|'+a.rel);out.src=['Wiktionary','CC BY-SA 4.0','Commons','KanjiVG','CC BY-SA 3.0'].every(s=>d.textContent.includes(s));
+    /* 2026-11-05: эх сурвалж/лиценз «Миний → Мэдээлэл» рүү шилжсэн (эзэн: байнга харуулах шаардлагагүй). */
+    out.introCredit=/CC BY-SA|Ulrich Apel|ойлгоход туслах/.test(d.textContent);
+    location.hash='profile';await new Promise(r=>setTimeout(r,250));
+    const inf=document.querySelector('#view-profile #profile-info');out.info=!!inf;
+    if(inf){const dd=inf.querySelector('details');out.infoClosed=!dd.open;dd.open=true;
+      out.links=[...inf.querySelectorAll('details a')].map(a=>a.target+'|'+a.rel);
+      out.src=['Wiktionary','CC BY-SA 4.0','Commons','KanjiVG','Ulrich Apel','CC BY-SA 3.0','The Japan Foundation','KANJIDIC2','VOICEVOX','ойлгоход туслах'].filter(x=>!inf.textContent.includes(x));
+      out.privacy=(inf.querySelector('a[href="privacy.html"]')||{}).textContent;}
+    location.hash='kanji';await new Promise(r=>setTimeout(r,250));
     const g=document.querySelector('#view-kanji details.kj-gallery');out.gal=!!g;
     if(g){out.galClosed=!g.open;out.groups=[...g.querySelectorAll('.kj-gallery-group')].map(s=>s.querySelectorAll('.kj-gal-item').length).join();
       out.empty=[...g.querySelectorAll('.kj-gal-detail')].every(x=>!x.firstElementChild);out.play=!!g.querySelector('[data-action=game][data-game=kjpic]');
@@ -203,7 +227,9 @@ function getJSON(p, method) {
     !!intro && intro.closed && intro.before && intro.sum === 'Ханз хэрхэн үүссэн бэ?' && JSON.stringify(intro.tabs0) === JSON.stringify(want0) &&
     intro.vis0.join() === 'pic:' + LBL.pic && intro.vg0 === 0, JSON.stringify(intro));
   ok('таб дарахад тэр самбар л харагдана (дахин зурахгүй), aria-pressed шинэчлэгдэнэ', intro && intro.tabs1 === 'false,false,false,true,false' && intro.vis1.join() === 'psc:' + LBL.psc, JSON.stringify(intro && [intro.tabs1, intro.vis1]));
-  ok('эх сурвалж: Wiktionary CC BY-SA 4.0 · Commons · KanjiVG CC BY-SA 3.0; холбоос бүр шинэ табд, noopener', intro && intro.src && intro.links.length >= 5 && intro.links.every(x => /^_blank\|.*noopener/.test(x)), JSON.stringify(intro && intro.links));
+  ok('эх сурвалж ханзны хуудсанд байхгүй; «Миний → Мэдээлэл» (хаалттай): Irodori, KANJIDIC2, Wiktionary, Commons, KanjiVG, VOICEVOX — холбоос бүр шинэ табд, noopener; нууцлал',
+    intro && !intro.introCredit && intro.info && intro.infoClosed && intro.src.length === 0 && intro.links.length >= 8 && intro.links.every(x => /^_blank\|.*noopener/.test(x)) && /Нууцлал/.test(intro.privacy),
+    JSON.stringify(intro && { credit: intro.introCredit, info: intro.info, closed: intro.infoClosed, missing: intro.src, links: intro.links }));
   ok('галерей: хаалттай, 52 зураг 4 ангилалд (11 · 20 · 9 · 12), тоглоомын товчтой; нүд бүр зураг+ханзтай; нээх хүртэл дэлгэрэнгүй зурагдахгүй, 山-г нээхэд л үүсэл + KanjiVG',
     intro && intro.gal && intro.galClosed && intro.groups === '11,20,9,12' && intro.empty && intro.play && intro.bad === 0 && intro.open === LBL.pic && intro.openVg && intro.others === 1 && intro.toggle === 'none,inline', JSON.stringify(intro));
   const all = await ev(`const J=window.KOTO.kanji,L=${JSON.stringify(LBL)},A=${JSON.stringify(ANC)},pics=window.KOTO_KANJI_PICS||{},bad=[],box=document.createElement('div');document.body.appendChild(box);
@@ -225,8 +251,8 @@ function getJSON(p, method) {
       if(!s.querySelector('[data-action=kj-play][data-kj-play=strokes]')||!!s.querySelector('[data-kj-play=evolve]')!==(tr.children.length>1))e.push('play');
       if(e.length)bad.push(k.jp+':'+e.join(','));}
     box.remove();return {n:J.list().length,nb:bad.length,bad:bad.slice(0,8)};`);
-  ok('612 ханз бүрийн карт: шошго, хувьслын бүх үе (файл, нэр), KOTO зураг эхэнд, «Одоо» төгсгөлд KanjiVG-ийн байрлалтай, хэсэг, УТГА/ДУУ, таарц, үр дүн (хуучин хэлбэр 國), тайлбар, гэр бүл, маргаантай, «▶» — өгөгдөлтэй тулгав',
-    all.n === 612 && all.nb === 0, JSON.stringify(all));
+  ok('1009 ханз бүрийн карт: шошго, хувьслын бүх үе (файл, нэр), KOTO зураг эхэнд, «Одоо» төгсгөлд KanjiVG-ийн байрлалтай, хэсэг, УТГА/ДУУ, таарц, үр дүн (хуучин хэлбэр 國), тайлбар, гэр бүл, маргаантай, «▶» — өгөгдөлтэй тулгав',
+    all.n === 1009 && all.nb === 0, JSON.stringify(all));
   const files = await ev(`const list=window.KOTO.kanji.list().filter(k=>k.o.a).flatMap(k=>k.o.a.map(e=>k.id+'-'+e)),bad=[];
     await Promise.all(list.map(async i=>{const r=await fetch('kanji-old/'+i+'.svg'),t=r.headers.get('content-type')||'';if(!r.ok||!t.includes('svg'))bad.push(i+':'+r.status+':'+t);
       if(!(await new Promise(res=>{const im=new Image();im.onload=()=>res(im.naturalWidth>0);im.onerror=()=>res(false);im.src='kanji-old/'+i+'.svg';})))bad.push(i+' img');}));

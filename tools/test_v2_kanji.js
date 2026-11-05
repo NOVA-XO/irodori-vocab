@@ -36,12 +36,31 @@ const n5 = order.N5 || [], n4 = order.N4 || [], n3 = order.N3 || [];
 ok('N5 79, N4 166, N3 367 (11-05), давхардалгүй, огтлолцохгүй',
   n5.length === 79 && n4.length === 166 && n3.length === 367 && new Set([...n5, ...n4, ...n3]).size === 79 + 166 + 367,
   JSON.stringify({ n5: n5.length, n4: n4.length, n3: n3.length }));
-const seq = K.map(k => k.c).join(''), want = n5.join('') + n4.join('') + n3.join('');
-ok('kanji.js нь jisho-гийн дарааллаар (N5 → N4 → N3), түвшин зөв',
-  seq === want && K.every((k, i) => k.n === (i < 79 ? 5 : i < 245 ? 4 : 3)), seq === want ? '' : 'дараалал зөрсөн');
+/* 11-05: Irodori-гийн 3 номын үгсэд гардаг ч N5–N3-т ороогүй 397 — N2 (jisho) ба NX «Бусад» (jisho-д JLPT шошгогүй). */
+const n2 = order.N2 || [], nx = order.NX || [];
+ok('N2 189, Бусад 208 — давхардалгүй, N5–N3-тай огтлолцохгүй',
+  n2.length === 189 && nx.length === 208 && new Set([...n5, ...n4, ...n3, ...n2, ...nx]).size === 612 + 397, JSON.stringify({ n2: n2.length, nx: nx.length }));
+const seq = K.map(k => k.c).join(''), want = n5.join('') + n4.join('') + n3.join('') + n2.join('') + nx.join('');
+ok('kanji.js нь дарааллаар (N5 → N4 → N3 → N2 → Бусад), түвшин зөв (n 5·4·3·2·0)',
+  seq === want && K.every((k, i) => k.n === (i < 79 ? 5 : i < 245 ? 4 : i < 612 ? 3 : i < 801 ? 2 : 0)), seq === want ? '' : 'дараалал зөрсөн');
+/* Irodori-гийн бүлгийн дараалал = ҮГИЙН САНГИЙН замд анх гарах (тестийн өөрийн тооцоо, §2.91): нэгжийн дарааллаар
+   үгсийг гүйж, kj-д нь ханз анх гарсан байрлал; замд гараагүй бол нэмэлт (extra) үгсийн дараа. */
+const vctx = { window: {} }; vm.createContext(vctx);
+vm.runInContext(fs.readFileSync(path.join(ROOT, 'v2/data.js'), 'utf8'), vctx, { filename: 'v2/data.js' });
+const VW = vctx.window.KOTO_DATA.units.flatMap(u => u.words).concat(vctx.window.KOTO_DATA.extra);
+const firstAt = c => { const i = VW.findIndex(w => (w.kj || '').includes(c)); return i < 0 ? Infinity : i; };
+const mono = list => list.every((c, i) => !i || firstAt(list[i - 1]) <= firstAt(c));
+ok('N2 ба Бусад — үгийн сангийн замд анх гарах дарааллаар; бүгд замд эсвэл нэмэлт үгэнд гардаг',
+  mono(n2) && mono(nx) && [...n2, ...nx].every(c => firstAt(c) < Infinity), [...n2, ...nx].filter(c => firstAt(c) === Infinity).join(''));
+/* Номын шошго b: v1-ийн хичээлийн жагсаалт (l 入門, l1 初級1, l2 初級2) — тестийн өөрийн тодорхойлолтоор. */
+const BK = [['l', 'A1'], ['l1', 'A2a'], ['l2', 'A2b']];
+const bbad = K.filter(k => { const x = V1[k.c] || {}; const want = BK.filter(([f]) => (x[f] || []).length).map(([, b]) => b);
+  return JSON.stringify(k.b || []) !== JSON.stringify(want); }).map(k => k.c);
+ok('номын шошго (b) = v1-ийн Irodori-гийн хичээлийн жагсаалт; N2 ба Бусад бүгд шошготой (' + K.filter(k => k.b).length + ' ханз)',
+  !bbad.length && K.filter(k => k.n <= 2).every(k => k.b && k.b.length), bbad.slice(0, 20).join(''));
 
 console.log('\n[2] v1-тэй тулгалт');
-const drift = K.filter(k => !V1[k.c] || V1[k.c].mn.trim() !== k.mn || V1[k.c].n !== k.n || V1[k.c].id !== k.id).map(k => k.c);
+const drift = K.filter(k => !V1[k.c] || V1[k.c].mn.trim() !== k.mn || (V1[k.c].n || 0) !== k.n || V1[k.c].id !== k.id).map(k => k.c);
 ok('утга, түвшин, id нь v1-ийн data/kanji.json-тай ижил', !drift.length, drift.join(''));
 ok('бүх ханзанд монгол утга, зурлагын тоо', K.every(k => k.mn && k.s > 0), K.filter(k => !k.mn || !(k.s > 0)).map(k => k.c).join(''));
 
@@ -57,18 +76,25 @@ const ebad = ex.filter(({ k, e }) => !e.jp.includes(k.c) || !KANA.test(e.kana) |
 ok('жишээ бүр тухайн ханзтай, уншлага зөвхөн кана, хог тэмдэгтгүй, утгатай (' + ex.length + ')', !ebad.length, ebad.slice(0, 5).map(({ k, e }) => k.c + ':' + e.jp + '/' + e.kana).join(' | '));
 const au = ex.filter(({ e }) => !e.au || !fs.existsSync(path.join(ROOT, 'audio', e.au + '.mp3')));
 ok('жишээ бүр бичлэгтэй (audio/<au>.mp3 байна)', !au.length, au.slice(0, 5).map(({ e }) => e.jp).join(' '));
+/* 11-05: жишээ үгийн сан 432 → 2994 (Irodori 3 ном) ба «簡単（な）», «～区 （南区）» хэлбэрийг задалдаг болсон —
+   万 ба N3-ийн 6 ханз жишээтэй болов. Үлдсэнд эх сурвалжид жишээ алга (эзэн «жишээгүй үлдээ»). */
 const noEx = K.filter(k => k.n >= 4 && !k.ex.length).map(k => k.c).join(''), noEx3 = K.filter(k => k.n === 3 && !k.ex.length).length;
-ok('ханз бүрт ≤3 жишээ; жишээгүй нь N5/N4-т 6 (六万答研究洋), N3-т 78 (v1-д жишээгүй — эзэн «жишээгүй үлдээ», 11-05)',
-  K.every(k => k.ex.length <= 3) && noEx === '六万答研究洋' && noEx3 === 78, noEx + ' / N3 ' + noEx3);
+const noExI = K.filter(k => k.n <= 2 && !k.ex.length).map(k => k.c).join('');
+ok('ханз бүрт ≤3 жишээ; жишээгүй нь N5/N4-т 5 (六答研究洋), N3-т 72, N2 ба Бусадт 0 (бүгд Irodori-гийн үгэнд гардаг)',
+  K.every(k => k.ex.length <= 3) && noEx === '六答研究洋' && noEx3 === 72 && noExI === '', noEx + ' / N3 ' + noEx3 + ' / ' + noExI);
+const short3 = K.filter(k => k.ex.length && k.ex[0].jp.length > 3 && k.ex.some(e => e.jp.length <= 3)).map(k => k.c);
+ok('эхний жишээ богино үг (≤ 3 тэмдэгт байвал түрүүнд — «生年月日» биш «年»)', !short3.length, short3.join(''));
 
 console.log('\n[5] Үүсэл (tools/v2_kanji_origin.tsv → o)');
 const TYPES = ['pic', 'ind', 'ic', 'psc', 'unk'];
 const URO = /^[一-鿿〇]$/;
 const cntOf = f => Object.fromEntries(TYPES.map(t => [t, K.filter(k => k.o && k.o.t === t && f(k)).length]));
-const cnt = cntOf(k => k.n >= 4), cnt3 = cntOf(k => k.n === 3);
+const cnt = cntOf(k => k.n >= 4), cnt3 = cntOf(k => k.n === 3), cntI = cntOf(k => k.n <= 2);
 ok('ханз бүрт үүсэл, төрөл 5-ын нэг: N5+N4 — зургаас 56 · тэмдгээр 15 · нийлсэн 50 · утга+дуу 107 · маргаантай 17 (青 — Astra 11-04); N3 — 35 · 5 · 69 · 246 · 12 (盗 — эх сурвалжаар өөр үг)',
   K.every(k => k.o && TYPES.includes(k.o.t)) && cnt.pic === 56 && cnt.ind === 15 && cnt.ic === 50 && cnt.psc === 107 && cnt.unk === 17 &&
   cnt3.pic === 35 && cnt3.ind === 5 && cnt3.ic === 69 && cnt3.psc === 246 && cnt3.unk === 12, JSON.stringify([cnt, cnt3]));
+ok('Irodori-гийн N2 ба Бусад 397: зургаас 36 · тэмдгээр 7 · нийлсэн 52 · утга+дуу 284 · маргаантай 18 (Wiktionary-гаас автомат + агентын тайлбар)',
+  cntI.pic === 36 && cntI.ind === 7 && cntI.ic === 52 && cntI.psc === 284 && cntI.unk === 18, JSON.stringify(cntI));
 const parts = K.flatMap(k => (k.o.p || []).map(p => ({ k, p })));
 const pbad = parts.filter(({ p }) => !URO.test(p.c) || (p.r && !['s', 'p'].includes(p.r)) || (p.on && (p.r !== 'p' || !KATA.test(p.on))));
 ok('хэсэг бүр нэг тэмдэгт, CJK үндсэн хүрээнд (бүх фонтод), роль s/p, уншлага зөвхөн дууны хэсэгт ба катакана (' + parts.length + ')',
@@ -122,9 +148,10 @@ ok('SVG цэвэр: viewBox-той, дүрстэй, script/холбоос/url а
 console.log('\n[7] KanjiVG — зурлага ба хэсэг (v2/kanji-vg)');
 const VG = Object.fromEntries(K.map(k => { const p = path.join(ROOT, 'v2/kanji-vg', k.id + '.json'); return [k.c, fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : null]; }));
 const vgFiles = fs.existsSync(path.join(ROOT, 'v2/kanji-vg')) ? fs.readdirSync(path.join(ROOT, 'v2/kanji-vg')).filter(f => f.endsWith('.json')) : [];
-ok('612 ханз бүрт kanji-vg/<id>.json, илүү файл алга', K.every(k => VG[k.c]) && vgFiles.length === 612, vgFiles.length);
-const sbad = K.filter(k => VG[k.c] && VG[k.c].s.length !== k.s).map(k => k.c + VG[k.c].s.length + '/' + k.s);
-ok('зурлагын тоо KANJIDIC-ийн тоотой ИЖИЛ (бие даасан хоёр эх)', !sbad.length, sbad.join(' '));
+ok('1009 ханз бүрт kanji-vg/<id>.json, илүү файл алга', K.every(k => VG[k.c]) && vgFiles.length === 1009, vgFiles.length);
+/* 餅: 2010 оны жоёо-д 食-хэсэгтэй 15 зурлага (KanjiVG), KANJIDIC2 хуучин 飠-хэлбэрийн 14 — хоёр эх өөр хэлбэр. */
+const sbad = K.filter(k => VG[k.c] && VG[k.c].s.length !== k.s && !(k.c === '餅' && VG[k.c].s.length === 15 && k.s === 14)).map(k => k.c + VG[k.c].s.length + '/' + k.s);
+ok('зурлагын тоо KANJIDIC-ийн тоотой ИЖИЛ (бие даасан хоёр эх; 餅 — жоёо 2010-ын хэлбэр)', !sbad.length, sbad.join(' '));
 const pbad2 = K.filter(k => { const v = VG[k.c]; if (!v) return true; const np = (k.o.p || []).length;
   return !/^0 0 109 109$/.test(v.vb) || v.s.some(([d, p]) => !pathOk(d) || !Number.isInteger(p) || p < -1 || p >= np) || (v.ok && (!np || [...Array(np).keys()].some(i => !v.s.some(s => s[1] === i)))) || (!v.ok && v.s.some(s => s[1] !== -1)) || v.n.length !== v.s.length; }).map(k => k.c);
 ok('зам бүрийн тоо зөв, хэсгийн дугаар o.p-д, будах (ok) үед хэсэг бүр зурлагатай, бусад үед будалтгүй, дугаарын байрлал зурлага бүрт', !pbad2.length, pbad2.join(''));

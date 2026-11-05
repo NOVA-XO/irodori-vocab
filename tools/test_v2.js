@@ -85,67 +85,106 @@ function getJSON(path, method) {
     if (!up) await sleep(250);
   }
   ok('v2 ачаалагдав, тестийн гарц бий', up);
-  ok('432 үг / 17 сэдэв',
-    await ev('const d=window.KOTO_DATA; return d.length===17 && d.reduce((s,t)=>s+t.words.length,0)===432;'));
-  /* 17-р сэдэв ТӨГСГӨЛД нэмэгдсэн: үгийн id нь `сэдэв:дугаар` тул дунд нь
-     оруулбал сурагчдын хадгалсан ахиц өөр үг рүү шилжинэ. */
-  const t17 = await ev(`
-    const d = window.KOTO_DATA, t = d[16];
-    const jp = t.words.map(w => w.jp);
-    return { title: t.title, n: t.words.length, uniq: new Set(jp).size,
-             first80: jp[0] + '|' + jp[79], first15: d[15].title,
-             has: ['きょう','あした','らいしゅう','カレンダー','ついたち','はつか','しがつ','よじ',
-                   'げつようび','かようび','すいようび','もくようび','きんようび','どようび','にちようび',
-                   'いちがつ','はちがつ','じゅういちがつ','ひとり','ふたり','よにん','はたち','～まい','～ほん／ぼん／ぽん'].every(x => jp.includes(x)),
-             lessons: document.querySelectorAll('.topic-card').length,
+  /* Үгийн сан (2026-11-05): Irodori 3 ном → 3 түвшин → утгын нэгж → 5 үгийн хичээл (tools/build_v2_vocab.py).
+     Тоог өгөгдлөөс биш, тестийн өөрийн тодорхойлолтоор (§2.91): нэгж бүр 12–40, хичээл ≤ 5, үг давхардахгүй. */
+  const vs = await ev(`
+    const V = window.KOTO.vocab, U = V.units(), L = V.lessons(), W = window.KOTO.words();
+    const ids = W.map(w => w.id), lv = V.levels().map(l => l.key);
+    return { levels: lv.join(), units: U.length, words: W.length, uniq: new Set(ids).size, lessons: L.length,
+             perLevel: lv.map(k => U.filter(u => u.level === k).length).join(),
+             sizes: U.every(u => u.words.length >= 12 && u.words.length <= 40), five: L.every(l => l.words.length >= 1 && l.words.length <= 5),
+             keys: U.every((u, i) => /^A(1|2a|2b)-\\d\\d$/.test(u.key) && (i === 0 || U[i - 1].level === u.level || lv.indexOf(U[i - 1].level) < lv.indexOf(u.level))),
+             first: U[0].title, firstTheme: U[0].theme, au: W.filter(w => w.au).length,
+             extra: V.extra().length, extraOnPath: V.extra().filter(x => ids.includes(x.id)).length,
+             legacy: Object.keys(V.legacy()).length, legacyTargets: [...new Set(Object.values(V.legacy()))].filter(id => !W.some(w => w.id === id && w.level === 'A1')).length,
              navCount: document.querySelector('.nav-count').textContent,
-             heroTopics: [...document.querySelectorAll('.hero-mini strong')].map(x => x.textContent)[1] };
+             heroUnits: [...document.querySelectorAll('.hero-mini strong')].map(x => x.textContent)[1] };
   `);
-  ok('17-р сэдэв «Тоо, цаг, хуанли» — 120 давхардалгүй үг (7 гараг, 12 сар, тоолох нэр бүгд)',
-    t17 && /Тоо, цаг, хуанли/.test(t17.title) && t17.n === 120 && t17.uniq === 120 && t17.has, JSON.stringify(t17));
-  ok('анхны 80 үгийн байрлал хэвээр (хадгалсан ахиц хөдлөхгүй): ゼロ／れい … ～ねん',
-    t17 && t17.first80 === 'ゼロ／れい|～ねん', JSON.stringify(t17 && t17.first80));
-  ok('өмнөх 16 сэдвийн дараалал хэвээр (16-р нь «Тоо болон материалд…»)',
-    t17 && /^16 /.test(t17.first15), JSON.stringify(t17 && t17.first15));
-  const l17 = await ev(`
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    document.querySelector('.topic-card[data-topic="16"]').click(); await wait(100);
-    const unit = document.querySelector('#current-unit');
-    const out = { unit: unit.querySelector('.unit-title').textContent,
-                  nodes: unit.querySelectorAll('.node-button').length };
-    unit.querySelector('.node-button[data-lesson="16-0"]').click(); await wait(150);
-    out.first = (document.querySelector('#lesson-content .learn-kana') || {}).textContent;
-    out.open = document.getElementById('lesson-dialog').open;
-    document.getElementById('lesson-dialog').close();
-    document.querySelector('.topic-card[data-topic="0"]').click(); await wait(100);
-    return out;
+  ok('3 түвшин A1 → A2a → A2b, 147 нэгж (55 · 39 · 53), 2994 үг давхардалгүй, 664 хичээл',
+    vs && vs.levels === 'A1,A2a,A2b' && vs.units === 147 && vs.perLevel === '55,39,53' && vs.words === 2994 && vs.uniq === 2994 && vs.lessons === 664,
+    JSON.stringify(vs));
+  ok('нэгж бүр 12–40 үг, хичээл бүр 1–5 үг, нэгжийн түлхүүр түвшнээрээ дараалсан (A1-01 …)',
+    vs && vs.sizes && vs.five && vs.keys, JSON.stringify(vs && { s: vs.sizes, f: vs.five, k: vs.keys }));
+  ok('эхний нэгж — мэндчилгээ (суурь эхэнд); үг бүр бичлэгтэй; 参考 707 нь замд ороогүй (販売中 засвараар 1 нь замын үгтэй нийлэв)',
+    vs && vs.firstTheme === 'greet' && vs.au === vs.words && vs.extra === 707 && vs.extraOnPath === 0, JSON.stringify(vs));
+  ok('хуучин 432 байрлалын id бүгд A1-ийн үгэнд очно (ахиц алдагдахгүй)',
+    vs && vs.legacy === 432 && vs.legacyTargets === 0, JSON.stringify(vs && { n: vs.legacy, lost: vs.legacyTargets }));
+  ok('цэсний тоо = нийт үг, нүүрэнд «147 нэгж»',
+    vs && vs.navCount === String(vs.words) && vs.heroUnits === '147', JSON.stringify(vs && { nav: vs.navCount, hero: vs.heroUnits }));
+
+  /* Ахицын шилжүүлэлт: хуучин `сэдэв:дугаар` түлхүүр → тогтвортой id. 6:25 ба 16:80 (げつようび) нэг үгэнд
+     нийлнэ — СҮҮЛД үзсэн нь `weak` тул тэр ялна (kotoMerge-ийн дүрэм). Серверээс ирсэн ч (readFrom) ижил. */
+  const mg = await ev(`
+    const V = window.KOTO.vocab, legacy = V.legacy();
+    const raw = { version:1, xp:40, selectedTopic:3, completed:['0-0','1-2'],
+      words:{ '0:0':{passes:2,due:'2026-01-05',last:'2026-01-02'}, '6:25':{passes:3,due:'2026-02-01',last:'2026-01-10'},
+              '16:80':{passes:0,weak:true,due:'2026-01-20',last:'2026-01-20'}, 'J-65E5':{passes:1,due:'2026-01-03',last:'2026-01-01'} },
+      days:{ '2026-01-20':['0:0','16:80','6:25'] }, kana:{}, xpd:{} };
+    /* Бүх үг нь хуучин 432-оос гаралтай нэг хичээлийн үгсийг ХУУЧИН түлхүүрээр → тэр хичээл «дууссан» болох ёстой. */
+    const back = {}; for (const [o, n] of Object.entries(legacy)) if (!back[n]) back[n] = o;
+    const full = V.lessons().find(l => l.words.length === 5 && l.words.every(w => back[w.id] && !['0:0','6:25','16:80'].includes(back[w.id])));
+    full.words.forEach(w => { raw.words[back[w.id]] = {passes:1,due:'2026-01-06',last:'2026-01-05'}; });
+    const keep = localStorage.getItem('koto-irodori-v1');
+    const s = V.readFrom(raw), again = V.readFrom(JSON.parse(JSON.stringify(s)));
+    if (keep === null) localStorage.removeItem('koto-irodori-v1'); else localStorage.setItem('koto-irodori-v1', keep);
+    const w0 = legacy['0:0'], wm = legacy['6:25'];
+    const L = V.lessons(), done = L.filter(l => l.words.every(w => s.words[w.id])).map(l => l.id);
+    return { w0, wm, full: full.id, same: legacy['16:80'] === wm, keys: Object.keys(s.words).sort().join(), old: Object.keys(s.words).filter(k => /^\\d+:\\d+$/.test(k)).length,
+             merged: s.words[wm], first: s.words[w0], kanji: !!s.words['J-65E5'],
+             days: s.days['2026-01-20'].join(), completed: s.completed.join(), done: done.join(),
+             idem: JSON.stringify(again.words) === JSON.stringify(s.words) && again.completed.join() === s.completed.join() };
   `);
-  ok('17-р сэдэв сонгоход 24 хичээл, эхний хичээл «ゼロ／れい»-гээр эхэлнэ',
-    l17 && /Тоо, цаг, хуанли/.test(l17.unit) && l17.nodes === 24 && l17.open && l17.first === 'ゼロ／れい',
-    JSON.stringify(l17));
-  /* Өгүүлбэр хичээлээр (v2/sentences.js): өмнө сэдэвт 1 өгүүлбэр бүх хичээлд давтагддаг байв. */
+  ok('шилжүүлэлт: 0:0 → ' + (mg && mg.w0) + ', хуучин түлхүүр 0, ханзны J- id хэвээр',
+    mg && mg.old === 0 && mg.first && mg.first.passes === 2 && mg.kanji && mg.keys.split(',').length === 8, JSON.stringify(mg));
+  ok('6:25 + 16:80 (げつようび) нэг үгэнд — сүүлд үзсэн weak ялна',
+    mg && mg.same && mg.merged && mg.merged.weak === true && mg.merged.last === '2026-01-20', JSON.stringify(mg && mg.merged));
+  ok('өдрийн ахиц шилжинэ, давхардалгүй (3 → 2 үг); хуучин дууссан хичээл (0-0) алга, бүх үг нь үзэгдсэн хичээл л «дууссан»',
+    mg && mg.days === [mg.w0, mg.wm].join() && mg.completed === mg.done && mg.completed.split(',').includes(mg.full), JSON.stringify(mg && { d: mg.days, c: mg.completed, done: mg.done, full: mg.full }));
+  ok('дахин уншихад (серверээс татах бүрд) үр дүн хэвээр — идэмпотент', mg && mg.idem, JSON.stringify(mg && mg.idem));
+
+  /* Нүүр: түвшний таб ба зөвхөн тухайн түвшний нэгжүүд; сонголт энэ төхөөрөмжид (koto-v2-unit). */
+  const ht = await ev(`
+    const wait = ms => new Promise(r => setTimeout(r, ms)), U = window.KOTO.vocab.units();
+    const grid = () => [...document.querySelectorAll('#view-learn .topic-card')].map(b => U[+b.dataset.topic].level);
+    const out = { tabs: [...document.querySelectorAll('#view-learn .level-tab')].map(b => b.textContent).join('|'), a1: grid() };
+    document.querySelectorAll('#view-learn .level-tab')[2].click(); await wait(100);
+    out.a2b = grid(); out.pressed = [...document.querySelectorAll('#view-learn .level-tab')].map(b => b.getAttribute('aria-pressed')).join();
+    const card = document.querySelectorAll('#view-learn .topic-card')[3]; const t = +card.dataset.topic; card.click(); await wait(100);
+    out.title = document.querySelector('#current-unit .unit-title').textContent; out.want = U[t].title;
+    out.stored = localStorage.getItem('koto-v2-unit') === U[t].key; out.sel = window.KOTO.vocab.selected() === t;
+    document.querySelectorAll('#view-learn .level-tab')[0].click(); await wait(100);
+    return out;`);
+  ok('нүүр: 3 түвшний таб, зөвхөн сонгосон түвшний нэгж (A1 55, A2b 53); нэгж сонгоход гарчиг солигдож, төхөөрөмжид хадгална',
+    ht && /Суурь шат/.test(ht.tabs) && ht.a1.length === 55 && ht.a1.every(l => l === 'A1') && ht.a2b.length === 53 && ht.a2b.every(l => l === 'A2b') &&
+      ht.pressed === 'false,false,true' && ht.title === ht.want && ht.stored && ht.sel, JSON.stringify(ht));
+
+  /* Өгүүлбэр: тулгуур үгийн хичээлийн төгсгөлд (v2/sentences.js `w`). */
   const sq = await ev(`
-    const wait = ms => new Promise(r => setTimeout(r, ms));
-    const pick = async (topic, id) => {
-      document.querySelector('.topic-card[data-topic="' + topic + '"]').click(); await wait(100);
+    const wait = ms => new Promise(r => setTimeout(r, ms)), V = window.KOTO.vocab, U = V.units();
+    const run = async w => { const id = V.lessonOf(w), l = V.lessons().find(x => x.id === id);
+      document.querySelector('#view-learn .level-tab').click(); await wait(50);
+      document.querySelector('#view-learn .topic-card[data-topic="' + l.topic + '"]').click(); await wait(100);
       document.querySelector('#current-unit .node-button[data-lesson="' + id + '"]').click(); await wait(150);
       const s = window.KOTO.numTest.session(), q = s.queue, last = q[q.length - 1];
-      const r = { id: s.lesson && s.lesson.id, last: last.type, sentences: q.filter(x => x.type === 'sentence').length,
+      const r = { id: s.lesson && s.lesson.id, want: id, last: last.type, n: q.filter(x => x.type === 'sentence').length,
                   tokens: last.sentence ? last.sentence.tokens.join(' ') : null, mn: last.sentence ? last.sentence.mn : null };
       document.getElementById('lesson-dialog').close(); return r; };
-    const out = { a: await pick(16, '16-0'), b: await pick(16, '16-15'), c: await pick(0, '0-0') };
-    document.querySelector('.topic-card[data-topic="0"]').click(); await wait(100);
-    return out;
-  `);
-  ok('хичээл бүр ӨӨРИЙН өгүүлбэртэй: 16-0 «…せんえん…», 0-0 «だれ です か» — сүүлийн дасгал, ганц',
-    sq && sq.a.id === '16-0' && sq.a.last === 'sentence' && sq.a.sentences === 1 && /せんえん/.test(sq.a.tokens) &&
-    sq.c.id === '0-0' && sq.c.tokens === 'だれ です か', JSON.stringify(sq && { a: sq.a, c: sq.c }));
-  ok('16-15: эзний төрсөн өдөр «わたし は にせんよねん くがつ はつか に うまれました»',
-    sq && sq.b.id === '16-15' && sq.b.tokens === 'わたし は にせんよねん くがつ はつか に うまれました' && /2004/.test(sq.b.mn),
-    JSON.stringify(sq && sq.b));
-  /* Тооны шалгалт: дуудлага өөрчлөгддөг тоо (хүснэгт) + үүсгэсэн огноо/цаг. */
+    const dare = window.KOTO_SENTENCES.find(x => x.tokens.join(' ') === 'だれ です か');
+    const birth = window.KOTO_SENTENCES.find(x => x.tokens.join(' ') === 'わたし は にせんよねん くがつ はつか に うまれました');
+    const noSent = V.lessons().find(l => !V.sentences()[l.id]);
+    const out = { a: await run(dare.w), b: await run(birth.w), lessonsWith: Object.keys(V.sentences()).length };
+    out.c = await run(noSent.words[0].id);
+    return out;`);
+  ok('өгүүлбэр тулгуур үгийнхээ хичээлд: «だれ です か» — сүүлийн дасгал, ганц',
+    sq && sq.a.id === sq.a.want && sq.a.last === 'sentence' && sq.a.n === 1 && sq.a.tokens === 'だれ です か', JSON.stringify(sq && sq.a));
+  ok('эзний төрсөн өдөр «わたし は にせんよねん くがつ はつか に うまれました» өөрийн хичээлд',
+    sq && sq.b.id === sq.b.want && sq.b.tokens === 'わたし は にせんよねん くがつ はつか に うまれました' && /2004/.test(sq.b.mn), JSON.stringify(sq && sq.b));
+  ok('өгүүлбэргүй хичээлд өгүүлбэрийн алхам алгасагдана (91 өгүүлбэр → ' + (sq && sq.lessonsWith) + ' хичээл)',
+    sq && sq.c.n === 0 && sq.c.last === 'quiz' && sq.lessonsWith >= 60, JSON.stringify(sq && sq.c));
+
+  /* Тооны шалгалт: дуудлага өөрчлөгддөг тоо (хүснэгт) + үүсгэсэн огноо/цаг. Үг нь A1-ийн тоо/цагийн нэгжээс. */
   const nt = await ev(`
-    const T = window.KOTO.numTest, wait = ms => new Promise(r => setTimeout(r, ms));
+    const T = window.KOTO.numTest, V = window.KOTO.vocab, U = V.units(), wait = ms => new Promise(r => setTimeout(r, ms));
     const out = { months: T.MONTHS.length, days: T.DAYS.length, hours: T.HOURS.length,
                   m4: T.MONTHS[3], m7: T.MONTHS[6], m9: T.MONTHS[8], d1: T.DAYS[0], d14: T.DAYS[13],
                   d20: T.DAYS[19], d24: T.DAYS[23], h4: T.HOURS[3], h9: T.HOURS[8] };
@@ -157,12 +196,14 @@ function getJSON(path, method) {
       if (!h || !t.jp.startsWith(T.HOURS[h[1] - 1])) okTime = false;
     }
     out.okDate = okDate; out.okTime = okTime;
+    const num = V.num(); out.numUnits = num.map(i => U[i].level + ':' + U[i].theme).join();
     const b = T.build();
     out.qn = b.queue.length; out.gen = b.queue.filter(q => q.word.gen).length;
     out.opts = b.queue.every(q => q.options.length === 4 && new Set(q.options).size === 4 && q.options.includes(q.correct));
-    out.numOnly = b.words.every(w => w.topic === 15 || w.topic === 16);
-    // UI: 17-р сэдвийн картаас эхлүүлж, бүгдийг зөв хариулаад дуусгана.
-    document.querySelector('.topic-card[data-topic="16"]').click(); await wait(100);
+    out.numOnly = b.words.every(w => num.includes(w.topic));
+    // UI: тооны нэгжийн картаас эхлүүлж, бүгдийг зөв хариулаад дуусгана.
+    document.querySelector('#view-learn .level-tab').click(); await wait(50);
+    document.querySelector('#view-learn .topic-card[data-topic="' + num[0] + '"]').click(); await wait(100);
     const btn = document.querySelector('#current-unit [data-action="test"]');
     out.btn = !!btn; btn.click(); await wait(150);
     out.meta = document.querySelector('#lesson-content .lesson-meta span').textContent;
@@ -176,7 +217,7 @@ function getJSON(path, method) {
     out.done = S.completed; out.title = (document.querySelector('#lesson-content .completion h1') || {}).textContent;
     out.genSaved = Object.keys(window.KOTO.state().words).some(k => k.startsWith('gen-'));
     document.getElementById('lesson-dialog').close();
-    document.querySelector('.topic-card[data-topic="0"]').click(); await wait(100);
+    document.querySelector('#view-learn .topic-card[data-topic="0"]').click(); await wait(100);
     out.noBtn0 = !document.querySelector('#current-unit [data-action="test"]');
     return out;
   `);
@@ -186,14 +227,12 @@ function getJSON(path, method) {
       && nt.h4 === 'よじ' && nt.h9 === 'くじ', JSON.stringify(nt));
   ok('үүсгэсэн огноо/цаг 300 удаа — монгол ба япон нь таарна, байхгүй өдөр (2/30) гарахгүй',
     nt && nt.okDate && nt.okTime, JSON.stringify(nt && { d: nt.okDate, t: nt.okTime }));
-  ok('шалгалт 20 асуулт (огноо/цаг 6), асуулт бүр 4 давхардалгүй сонголт, үг нь зөвхөн тооны сэдвээс',
-    nt && nt.qn === 20 && nt.gen === 6 && nt.opts && nt.numOnly, JSON.stringify(nt));
+  ok('шалгалт 20 асуулт (огноо/цаг 6), асуулт бүр 4 давхардалгүй сонголт, үг нь зөвхөн A1-ийн тоо/цагийн нэгжээс',
+    nt && nt.qn === 20 && nt.gen === 6 && nt.opts && nt.numOnly && nt.numUnits && nt.numUnits.split(',').every(x => /^A1:(num|time)$/.test(x)), JSON.stringify(nt));
   ok('«Тооны шалгалт» товчоор эхэлж, бүгдийг зөв хариулахад «Шалгалт дууслаа!»; үүсгэсэн асуулт ахицад бичигдэхгүй',
     nt && nt.btn && /Тооны шалгалт/.test(nt.meta) && nt.done && nt.title === 'Шалгалт дууслаа!' && !nt.genSaved,
     JSON.stringify(nt));
-  ok('тооны бус сэдэвт шалгалтын товч гарахгүй', nt && nt.noBtn0, JSON.stringify(nt && nt.noBtn0));
-  ok('нүүрэнд 17 сэдвийн карт, цэсний тоо 432, «17 сэдэв»',
-    t17 && t17.lessons === 17 && t17.navCount === '432' && t17.heroTopics === '17', JSON.stringify(t17));
+  ok('тооны бус нэгжид (мэндчилгээ) шалгалтын товч гарахгүй', nt && nt.noBtn0, JSON.stringify(nt && nt.noBtn0));
   ok('синкийн тохиргоо v1-ээс ачаалагдав (../sync-config.js)',
     await ev('return !!(window.SYNC_CONFIG && window.SYNC_CONFIG.url) && window.KOTO.on() === true;'));
 
@@ -441,6 +480,7 @@ function getJSON(path, method) {
     location.hash = 'words'; await S(200);
     out.ruby = document.querySelectorAll('#word-results ruby.jp-face').length;
     out.first = document.querySelector('.word-card .word-kana ruby') ? document.querySelector('.word-card .word-kana ruby').firstChild.textContent : '';
+    out.kjAll = K.words().filter(w => w.kj).length; out.firstKj = (K.words().find(w => w.kj) || {}).kj;
     const inp = document.getElementById('word-search'); inp.value = '何'; inp.dispatchEvent(new Event('input', { bubbles: true })); await S(60);
     out.searchKj = document.querySelectorAll('#word-results .word-card').length;
     inp.value = ''; inp.dispatchEvent(new Event('input', { bubbles: true }));
@@ -450,16 +490,20 @@ function getJSON(path, method) {
     out.kataAll = P.kata().length;
     sel.value = 'all'; sel.dispatchEvent(new Event('change', { bubbles: true }));
     return out;`);
-  ok('ханзын горим: тохиргоо хадгалагдана, үгийн карт ruby (なに → 何), кана горимд ruby-гүй',
-    sc.profileShown && sc.script === 'kanji' && sc.stored === 'kanji' && sc.ruby === 289 && sc.first === '何' && !/ruby/.test(sc.kanaFirst),
+  /* 2026-11-05: 3 номын үг — ханзтай үгийн тоог өгөгдлөөс (өмнө 289/432). */
+  ok('ханзын горим: тохиргоо хадгалагдана, ханзтай үг бүр ruby-тай, эхнийх нь kj-ээрээ; кана горимд ruby-гүй',
+    sc.profileShown && sc.script === 'kanji' && sc.stored === 'kanji' && sc.ruby === sc.kjAll && sc.kjAll > 1500 && sc.first === sc.firstKj && !/ruby/.test(sc.kanaFirst),
     JSON.stringify(sc));
-  ok('үгийн сан: ханзаар хайна (何), «Катакана үгс» шүүлтүүр 34 / бүгд .is-kata',
-    sc.searchKj > 5 && sc.kata === 34 && sc.kataMarked === 34 && sc.kataAll === 34, JSON.stringify(sc));
+  ok('үгийн сан: ханзаар хайна (何), «Катакана үгс» шүүлтүүр = бүх катакана үг (' + sc.kataAll + ') / бүгд .is-kata',
+    sc.searchKj > 5 && sc.kataAll > 34 && sc.kata === sc.kataAll && sc.kataMarked === sc.kataAll, JSON.stringify(sc));
 
   const ls = await ev(`
     const S = ms => new Promise(r => setTimeout(r, ms)), K = window.KOTO;
     location.hash = 'learn'; await S(200);
-    document.querySelector('[data-action=start]').click(); await S(300);
+    /* Эхний нэгж (мэндчилгээ) кана үгтэй — ханзтай үг агуулсан эхний хичээлийг эхлүүлнэ. */
+    const KL = K.vocab.lessons().find(l => l.words.filter(w => w.kj).length >= 2);
+    document.querySelector('#view-learn .topic-card[data-topic="' + KL.topic + '"]').click(); await S(100);
+    document.querySelector('#current-unit .node-button[data-lesson="' + KL.id + '"]').click(); await S(300);
     const s = K.numTest.session(), kq = s.queue.filter(q => q.direction === 'kj-jp');
     const out = { kjq: kq.length, kjWords: s.words.filter(w => w.kj).length,
       kjOk: kq.every(q => q.options.length === 4 && new Set(q.options).size === 4 && q.options.includes(q.correct) && q.correct === q.word.jp) };
