@@ -91,6 +91,10 @@ const AUDIT = scope => `
       await ev(`location.hash='${v}';return true;`); await sleep(450);
       report(theme + ' ' + v, await ev(AUDIT(`#view-${v} *, .sidebar *, .topbar *, .page-footer *, .skip`)));
     }
+    /* Хэл сонгогч (11-05f): нээлттэй жагсаалт. */
+    await ev(`location.hash='learn';document.getElementById('language-trigger').click();await new Promise(r=>setTimeout(r,200));return true;`);
+    report(theme + ' хэл сонгогч', await ev(AUDIT('#language-popover *, #language-trigger *')));
+    await ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;`);
     /* Хичээл: эхний карт, дараа нь асуулт бүрд санамсаргүй хариулт — «зөв», «буруу» хоёуланг үзтэл. */
     await ev(`location.hash='learn';return true;`); await sleep(300);
     await ev(`document.querySelector('.node-button:not(:disabled)').click();return true;`); await sleep(500);

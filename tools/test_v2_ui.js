@@ -354,6 +354,61 @@ function getJSON(path, method) {
   await ev(LEAVE);
   await ev(`localStorage.removeItem('koto-script');`);
 
+  console.log('\n[J] Хэл сонгогч (11-05f: туг → Япон; Хятад/Солонгос/Англи «Тун удахгүй»)');
+  const LANG = `const b=document.getElementById('language-trigger'),p=document.getElementById('language-popover');const r=b.getBoundingClientRect();
+    const o=[...p.querySelectorAll('.language-option')];const pr=p.hidden?null:p.getBoundingClientRect();const ae=document.activeElement;
+    return {exp:b.getAttribute('aria-expanded'),hidden:p.hidden,bw:Math.round(r.width),bh:Math.round(r.height),
+      label:getComputedStyle(b.querySelector('.language-trigger-label')).display,n:o.length,
+      cur:o.filter(x=>x.getAttribute('aria-current')==='true').map(x=>x.dataset.language).join(),
+      soon:o.filter(x=>x.getAttribute('aria-disabled')==='true'&&/Тун удахгүй/.test(x.textContent)).map(x=>x.dataset.language).join(),
+      flags:o.filter(x=>{const s=x.querySelector('svg.language-flag');return s&&s.getBoundingClientRect().width>=20;}).length,
+      rows:o.map(x=>Math.round(x.getBoundingClientRect().height)),
+      box:pr?[Math.round(pr.left),Math.round(pr.top),Math.round(pr.right),Math.round(pr.bottom)]:null,vw:innerWidth,vh:innerHeight,
+      page:document.documentElement.scrollWidth,below:pr?pr.top>=r.bottom:null,
+      focus:ae===b?'trigger':(ae&&ae.dataset&&ae.dataset.language)||''};`;
+  const lclick = sel => ev(`document.querySelector(${JSON.stringify(sel)}).click();await new Promise(r=>setTimeout(r,150));return true;`);
+  const lesc = () => ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await new Promise(r=>setTimeout(r,100));return true;`);
+  for (const [w, h, dk, tag] of [[1400, 900, false, '1400'], [1400, 900, true, '1400-dark'], [390, 844, false, '390'], [320, 640, false, '320']]) {
+    await size(w, h, w < 700); await dark(dk); await nav(SITE); await sleep(200);
+    const a = await ev(LANG);
+    ok(tag + ': туг товч ≥44px, хаалттай, ' + (w < 700 ? '«Япон хэл» бичиг нуугдсан' : '«Япон хэл» бичигтэй'),
+      a.bw >= 44 && a.bh >= 44 && a.exp === 'false' && a.hidden && (w < 700 ? a.label === 'none' : a.label !== 'none'), JSON.stringify(a));
+    await lclick('#language-trigger');
+    const o = await ev(LANG);
+    ok(tag + ': нээгдэнэ — 4 хэл, 4 туг, Япон идэвхтэй ба фокустай, бусад 3 «Тун удахгүй», мөр ≥44px, товчны доор, дэлгэцэнд багтана',
+      o.exp === 'true' && !o.hidden && o.n === 4 && o.flags === 4 && o.cur === 'ja' && o.soon === 'zh,ko,en' && o.focus === 'ja'
+        && o.rows.every(x => x >= 44) && o.below && o.box[0] >= 0 && o.box[2] <= o.vw && o.box[3] <= o.vh && o.page <= o.vw, JSON.stringify(o));
+    const cs = [await ev(CONTRAST('.language-option[data-language="zh"]')), await ev(CONTRAST('.language-soon')), await ev(CONTRAST('.language-option[data-language="ja"]'))];
+    ok(tag + ': контраст ≥ 4.5 («Тун удахгүй» мөр, шошго, идэвхтэй мөр)', cs.every(x => x >= 4.5), cs.join(' / '));
+    await shot('lang-' + tag);
+    if (tag === '1400') {
+      await lclick('.language-option[data-language="zh"]');
+      const z = await ev(LANG);
+      ok('«Тун удахгүй» дарахад юу ч болохгүй (нээлттэй, Япон идэвхтэй хэвээр)', z.exp === 'true' && !z.hidden && z.cur === 'ja', JSON.stringify(z));
+      await lesc();
+      const e = await ev(LANG);
+      ok('Esc → хаагдана, фокус туг товч руу буцна', e.exp === 'false' && e.hidden && e.focus === 'trigger', JSON.stringify(e));
+      await lclick('#language-trigger');
+      await ev(`document.querySelector('.page-title').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));await new Promise(r=>setTimeout(r,100));return true;`);
+      const g = await ev(LANG);
+      ok('гадна дарвал хаагдана', g.exp === 'false' && g.hidden, JSON.stringify(g));
+      await lclick('#language-trigger');
+      await lclick('.language-option[data-language="ja"]');
+      const j = await ev(LANG);
+      ok('Япон дээр дарвал хаагдана, фокус туг товч руу', j.exp === 'false' && j.hidden && j.focus === 'trigger', JSON.stringify(j));
+      await lclick('#language-trigger');
+      const ft = await ev(`document.getElementById('language-trigger').focus();await new Promise(r=>setTimeout(r,50));const a=!document.getElementById('language-popover').hidden;
+        document.querySelector('.nav-item').focus();await new Promise(r=>setTimeout(r,80));return {openOnTrigger:a,closed:document.getElementById('language-popover').hidden};`);
+      ok('фокус товч руу шилжихэд нээлттэй, цэс рүү гарахад хаагдана (Shift+Tab ×2 — Astra-гийн хяналт)', ft.openOnTrigger && ft.closed, JSON.stringify(ft));
+      await lclick('#language-trigger'); await lclick('#language-trigger');
+      const t = await ev(LANG);
+      ok('туг товчийг дахин дарвал хаагдана', t.exp === 'false' && t.hidden, JSON.stringify(t));
+    } else {
+      await lesc();
+    }
+  }
+  await size(1400, 900, false); await dark(false);
+
   console.log('\n[H] Консол');
   ok('барьсангүй уналт гараагүй (' + errs.length + ')', errs.length === 0, errs.join(' | ').slice(0, 400));
   console.log('\n──────────────\ntsever: ' + good + '   unasan: ' + bad + '\nzurag: ' + OUT);

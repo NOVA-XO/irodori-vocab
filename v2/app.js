@@ -2818,6 +2818,26 @@
     else if(q.type==='quiz'&&!session.checked&&['1','2','3','4'].includes(event.key)){session.selected=Number(event.key)-1;renderSession();}
   });
   window.addEventListener('hashchange',()=>{const next=location.hash.slice(1);if(next!==view)switchView(next);});
+  /* ── Хэл сонгогч (11-05f) ─────────────────────────────────────────
+     Харагдац Astra, логик Claude. Зөвхөн япон; Хятад/Солонгос/Англи нь
+     «Тун удахгүй» (aria-disabled — фокус авна, уншигдана, дарахад юу ч
+     хийхгүй). Native `popover` БИШ: iOS 16 ба хуучин хөтөч мэдэхгүй тул
+     жагсаалт байнга ил гарах байв — `hidden` + fixed байрлал. */
+  const langBtn=$('language-trigger'),langPop=$('language-popover');
+  function langPlace(){const r=langBtn.getBoundingClientRect(),w=langPop.offsetWidth;langPop.style.top=Math.round(r.bottom+8)+'px';langPop.style.left=Math.round(Math.max(16,Math.min(r.left,innerWidth-16-w)))+'px';}
+  function langShow(open,back){langPop.hidden=!open;langBtn.setAttribute('aria-expanded',String(open));if(open){langPlace();const cur=langPop.querySelector('[aria-current="true"]');if(cur)cur.focus({preventScroll:true});}else if(back)langBtn.focus({preventScroll:true});}
+  if(langBtn&&langPop){
+    langBtn.addEventListener('click',()=>langShow(langPop.hidden));
+    langPop.addEventListener('click',e=>{const o=e.target.closest('.language-option');if(!o||o.getAttribute('aria-disabled')==='true')return;langShow(false,true);});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!langPop.hidden){e.preventDefault();langShow(false,true);}});
+    // Гадна дарвал хаана; фокус тэр дарсан зүйл дээрээ үлдэнэ (Astra).
+    document.addEventListener('pointerdown',e=>{if(!langPop.hidden&&!langPop.contains(e.target)&&!langBtn.contains(e.target))langShow(false);});
+    // Фокус товч ба жагсаалтаас өөр газар орвол хаана. Өмнө нь зөвхөн жагсаалтаас гарахыг ажигладаг байсан тул
+    // Япон → Shift+Tab (товч) → Shift+Tab (цэс) үед нээлттэй үлддэг байв (Astra-гийн хяналт).
+    document.addEventListener('focusin',e=>{if(!langPop.hidden&&!langPop.contains(e.target)&&e.target!==langBtn)langShow(false);});
+    addEventListener('resize',()=>{if(!langPop.hidden)langPlace();});
+    addEventListener('scroll',()=>{if(!langPop.hidden)langPlace();},{passive:true});
+  }
   initIcons();switchView(location.hash.slice(1)||'learn');
   /* Хоолойн жагсаалт хөтөч дээр ХОЖУУ дүүрдэг тул нэг удаа уншаад
      өнгөрвөл `jaVoice` үргэлж null болно. */

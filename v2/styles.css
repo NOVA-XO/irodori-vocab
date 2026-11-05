@@ -4719,3 +4719,169 @@ ruby.jp-face rt {
 @media (prefers-color-scheme: dark) {
   .hero .primary-btn { background: #f4ce14; color: #112d4e; border-color: #95b1d3; border-bottom-color: #95b1d3; }
 }
+
+/* ── Хэл сонгогч (11-05f, Astra) ─────────────────────────────────
+   Топбарын туг → Япон хэл (идэвхтэй); Хятад, Солонгос, Англи —
+   «Тун удахгүй». Логик app.js-д (Claude). */
+.breadcrumb {
+  min-width: 0;
+}
+.breadcrumb > #page-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.language-trigger,
+.language-option {
+  box-sizing: border-box;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 1;
+  appearance: none;
+}
+
+.language-trigger {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 44px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.language-trigger:hover,
+.language-trigger[aria-expanded="true"] {
+  background: var(--soft);
+}
+.language-trigger-label {
+  white-space: nowrap;
+}
+
+[data-language-flag] {
+  display: inline-flex;
+  width: 24px;
+  height: 18px;
+  flex: 0 0 24px;
+}
+.language-flag {
+  display: block;
+  box-sizing: border-box;
+  width: 24px;
+  height: 18px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  /* Artwork inside the border is 22 × 16px. */
+}
+.language-chevron,
+.language-check {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.language-trigger[aria-expanded="true"] .language-chevron {
+  transform: rotate(180deg);
+}
+
+.language-popover {
+  position: fixed;
+  inset: auto;
+  /* Claude: top/left-ийг JS товчны байрлалаас тавина (native popover биш — хуучин хөтөч). */
+  top: 0;
+  left: 16px;
+  z-index: 1000;
+  box-sizing: border-box;
+  width: min(288px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  white-space: normal;
+}
+.language-popover[hidden] { display: none; }
+.language-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.language-option {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 8px;
+  border-color: transparent;
+  border-radius: 8px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.language-option[aria-current="true"] {
+  background: var(--accent-surface);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+.language-option[aria-disabled="true"] {
+  background: var(--paper);
+  color: var(--ink);
+  cursor: default;
+}
+.language-soon {
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.language-trigger:focus-visible,
+.language-option:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .language-trigger {
+    width: 48px;
+    min-width: 48px;
+    gap: 4px;
+    padding: 8px 4px;
+  }
+  .language-trigger-label {
+    display: none;
+  }
+  .language-trigger .language-chevron {
+    width: 12px;
+    height: 12px;
+    flex-basis: 12px;
+  }
+  .breadcrumb > .slash {
+    display: none;
+  }
+}
