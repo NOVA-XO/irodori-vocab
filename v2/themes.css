@@ -945,6 +945,9 @@
   --p-m-spark-dk: #e8a6c7;
 }
 
+/* Сэдэв солих мөч (theme.js): 2994 картын хөдөлгөөн дэлгэцийг гацаадаг тул хөдөлгөөнгүй. */
+.theme-switching, .theme-switching *, .theme-switching *::before, .theme-switching *::after { transition: none !important; }
+
 /* Цэнхэр, Кофед л байсан дүрэм (11-05e/g, Astra): нүүрний гол товч шар, лого цайвар. Тухайн сэдэвт хязгаарлав;
    `:where()` — өвөрмөц байдал (specificity) анхных шигээ, styles.css-ийн ДАРАА ачаалагдана. */
 :where(:root[data-palette="blue"]) .hero .primary-btn { background: #f4ce14; color: #112d4e; border-color: #112d4e; border-bottom-color: #112d4e; }

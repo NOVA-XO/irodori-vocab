@@ -569,6 +569,48 @@ function getJSON(path, method) {
   await ev(`localStorage.removeItem('koto-theme');return true;`);
   await size(1400, 900, false); await dark(false);
 
+  console.log('\n[W] Үгийн карт: давтсан өдрийн зураас (11-06, эзэн B; загвар — Astra)');
+  /* Хүлээлт тест дотроо. 8 үг: 12 өдөр бататгасан · 12 өдөр алдсан · 5 өдөр бататгасан · 3 өдөр · 1 өдөр (нэг өдөрт давхар) ·
+     бүртгэлтэй түүхгүй · бүртгэлгүй түүхтэй · шинэ. */
+  await dark(false); await nav(SITE);
+  const W_SEED = `const W=window.KOTO.words().slice(0,8),d=n=>{const t=new Date();t.setDate(t.getDate()-n);return t.toISOString().slice(0,10);},t=d(0),rec=(p,weak)=>({passes:p,weak,due:t,last:t,attempts:3,misses:weak?1:0});
+    const words={[W[0].id]:rec(9,false),[W[1].id]:rec(0,true),[W[2].id]:rec(3,false),[W[3].id]:rec(2,false),[W[4].id]:rec(1,false),[W[5].id]:rec(1,false)},days={};
+    const add=(n,id)=>{(days[d(n)]=days[d(n)]||[]).push(id);};
+    for(let i=1;i<=12;i++){add(i,W[0].id);add(i,W[1].id);}for(let i=1;i<=5;i++)add(i,W[2].id);for(let i=1;i<=3;i++)add(i,W[3].id);add(1,W[4].id);add(1,W[4].id);add(2,W[6].id);
+    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:0,completed:[],words,kana:{},days,xpd:{},selectedTopic:0}));localStorage.removeItem('koto-word-pos');return true;`;
+  await ev(W_SEED); await nav(SITE);
+  const wc = await ev(`location.hash='words';await new Promise(r=>setTimeout(r,500));
+    return [...document.querySelectorAll('#view-words .word-card')].slice(0,8).map(c=>{const b=c.querySelector('.word-days-bar'),s=c.querySelector('.word-status'),d=c.querySelector('.word-days');
+      return {days:d?d.textContent.trim():null,level:b?b.dataset.level:null,w:b?b.getBoundingClientRect().width:0,bg:b?getComputedStyle(b).backgroundColor:null,hid:b?b.getAttribute('aria-hidden'):null,st:s.textContent.trim(),cls:[...s.classList].filter(x=>x!=='word-status').join()};});`);
+  const wx = [['12 өдөр давтсан', '4', 'Бататгасан', 'is-strong'], ['12 өдөр давтсан', '4', 'Дахин бататгана', 'is-weak'], ['5 өдөр давтсан', '3', 'Бататгасан', 'is-strong'], ['3 өдөр давтсан', '2', 'Үзсэн үг', ''],
+    ['1 өдөр давтсан', '1', 'Үзсэн үг', ''], ['1 өдөр давтсан', '1', 'Үзсэн үг', ''], [null, null, 'Шинэ үг', ''], [null, null, 'Шинэ үг', '']];
+  const wbad = wx.map((x, i) => [i, wc[i].days === x[0] && wc[i].level === x[1] && wc[i].st === x[2] && wc[i].cls === x[3]]).filter(([, g]) => !g).map(([i]) => i);
+  ok('Бичиг ба шат: 12/5/3/1 өдөр → шат 4/3/2/1; нэг өдөрт давхар → 1; түүхгүй бүртгэлтэй → 1; бүртгэлгүй → «Шинэ үг», зураасгүй', wbad.length === 0, JSON.stringify({ wbad, wc: wc.map(c => [c.days, c.level, c.st]) }));
+  ok('Зураасны урт шатаар өснө (12 < 24 < 36 < 48), уншигчид нуугдсан — тоо нь бичгээр', wc[4].w === 12 && wc[3].w === 24 && wc[2].w === 36 && wc[0].w === 48 && wc[0].hid === 'true', JSON.stringify(wc.map(c => c.w)));
+  ok('Нэг алдсанаас өнгө унахгүй: 12 өдөр зөв ба 12 өдөр алдсан үгийн зураас ИЖИЛ; ногоон шат 1 лайм, шат 4 бараан', wc[0].bg === wc[1].bg && wc[0].bg === 'rgb(42, 87, 68)' && wc[4].bg === 'rgb(184, 239, 88)', JSON.stringify([wc[0].bg, wc[1].bg, wc[4].bg]));
+  const wk = await ev(`const num=c=>(c.match(/[0-9.]+/g)||[]).map(Number),lin=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);},L=c=>{const n=num(c);return 0.2126*lin(n[0])+0.7152*lin(n[1])+0.0722*lin(n[2]);},cr=(a,b)=>{const x=L(a),y=L(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
+    const c=document.querySelector('#view-words .word-card'),b=c.querySelector('.word-days-bar'),sw=[];let min=99,at='';
+    for(const palette of ['green','pink','coffee','blue'])for(const mode of ['light','dark']){KOTO_THEME.set({palette,mode});await new Promise(r=>setTimeout(r,300));const v=cr(getComputedStyle(b).borderTopColor,getComputedStyle(c).backgroundColor);if(v<min){min=v;at=palette+' '+mode;}if(palette==='pink'&&mode==='light')sw.push(getComputedStyle(b).backgroundColor);}
+    KOTO_THEME.set({palette:'green',mode:'auto'});return {min:+min.toFixed(2),at,pink:sw[0]};`);
+  ok('Зураасны хүрээ ≥ 3:1 — 4 өнгө × гэрэлтэй/бараан; ягаанд шат 4 ягаан сэдвийн өнгөтэй', wk.min >= 3 && wk.pink === 'rgb(77, 32, 54)', JSON.stringify(wk));
+  /* 11-06: 2994 карт зэрэг transition хийж дэлгэц 1.4–3.6 сек гацдаг байв (0.2 сек болов) — хугацаа биш, шалтгааныг шалгана. */
+  const wn = await ev(`const c=document.querySelector('#view-words .word-card'),raf=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+    KOTO_THEME.set({palette:'green',mode:'light'});await raf();await new Promise(r=>setTimeout(r,300));
+    KOTO_THEME.set({palette:'pink',mode:'dark'});const now=getComputedStyle(c).backgroundColor,anim=document.getAnimations().length,on=document.documentElement.classList.contains('theme-switching');
+    await raf();const off=document.documentElement.classList.contains('theme-switching'),anim2=document.getAnimations().length;KOTO_THEME.set({palette:'green',mode:'auto'});await raf();return {now,anim,on,off,anim2};`);
+  ok('Өнгө солих мөчид карт хөдөлгөөн хийхгүй: шууд эцсийн өнгө, анги дараагийн кадрт авагдана, дараа нь ч хөдөлгөөн эхлэхгүй',
+    wn.now === 'rgb(44, 30, 39)' && wn.anim === 0 && wn.on && !wn.off && wn.anim2 === 0, JSON.stringify(wn));
+  await shot('word-days-1400');
+  for (const [wd, ht] of [[390, 844], [320, 700]]) {
+    await size(wd, ht, true); await nav(SITE);
+    const wm = await ev(`location.hash='words';await new Promise(r=>setTimeout(r,500));const c=[...document.querySelectorAll('#view-words .word-card')].slice(0,8),out=c.filter(x=>[...x.querySelectorAll('.word-days,.word-status')].some(e=>e.getBoundingClientRect().right>x.getBoundingClientRect().right+0.5)).length;
+      return {page:document.documentElement.scrollWidth,vw:innerWidth,out,cards:c.length};`);
+    ok(wd + ': зураас ба шошго карт дотор, хэвтээ гүйлтгүй', wm.page <= wm.vw && wm.out === 0 && wm.cards === 8, JSON.stringify(wm));
+    if (wd === 390) await shot('word-days-390');
+  }
+  await size(1400, 900, false);
+  await ev(`localStorage.removeItem('koto-irodori-v1');localStorage.removeItem('koto-theme');return true;`);
+
   console.log('\n[H] Консол');
   ok('барьсангүй уналт гараагүй (' + errs.length + ')', errs.length === 0, errs.join(' | ').slice(0, 400));
   console.log('\n──────────────\ntsever: ' + good + '   unasan: ' + bad + '\nzurag: ' + OUT);

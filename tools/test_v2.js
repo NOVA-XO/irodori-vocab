@@ -656,6 +656,14 @@ function getJSON(path, method) {
     return exp.map(([j,k,p])=>[j,find(j,k),p]).filter(([,g,p])=>g!==p).map(([j,g,p])=>j+':'+g+'≠'+p);`);
   ok('Codex-ийн тулгалтаас (11-05) гарсан алдааны төрөл бүрийн 15 үг: асуух үг, тоотой ижил бичлэг, дайвар хэллэг, ганц үйл үг ≠ Хэллэг',
     pa.length === 0, pa.join(' | '));
+  /* №52 (11-06): хуучин v2-ийн «せん = мянга» дуудлагаар эх номын 線 (шугам)-д холбогдож, «Галт тэрэг ба шугам» нэгжид орсон байв. */
+  const wf = await ev(`const U=window.KOTO_DATA.units,W=U.flatMap(u=>u.words),f=i=>W.find(x=>x.id===i),unitOf=i=>U.find(u=>u.words.some(x=>x.id===i)).title;
+    const train=U.find(u=>u.title==='Галт тэрэг ба шугам'),K=window.KOTO_KANJI,ex=c=>(K.find(k=>k.c===c).ex||[]);
+    return {sen:f('E1-12-050'),senUnit:unitOf('E1-12-050'),trainThousand:train.words.filter(x=>/мянга/.test(x.mn)).length,nansatsu:f('E2-13-060').mn,
+      sen1:ex('千')[0]&&ex('千')[0].jp+'='+ex('千')[0].mn,satsu:ex('冊').filter(e=>e.jp==='何冊').map(e=>e.mn).join(),sen3:ex('線').filter(e=>/мянга/.test(e.mn)).length};`);
+  ok('№52: せん = 千 «мянга» тоон нэгжид (галт тэрэгний нэгжид биш), なんさつ «хэдэн ширхэг (ном)»; ханзны жишээ ч зөв',
+    wf.sen.kj === '千' && wf.sen.mn === 'мянга (1 000)' && wf.senUnit === 'Зуу, мянга, түм' && wf.trainThousand === 0 && wf.nansatsu === 'хэдэн ширхэг (ном)' &&
+    wf.sen1 === '千=мянга (1 000)' && wf.satsu === 'хэдэн ширхэг (ном)' && wf.sen3 === 0, JSON.stringify(wf));
 
   const pp = await ev(`const K=window.KOTO,W=K.words(),S=ms=>new Promise(r=>setTimeout(r,ms));
     const verbs=W.filter(w=>w.p==='verb').slice(0,8),nouns=W.filter(w=>w.p==='noun').slice(0,6),d=new Date().toISOString().slice(0,10),words={};

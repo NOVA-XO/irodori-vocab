@@ -803,7 +803,6 @@ L13-024	ride
 L13-020	ride
 L13-022	ride
 L13-023	lines
-E1-12-050	lines
 L13-012	lines
 L13-018	lines
 L13-013	lines
@@ -1005,6 +1004,7 @@ L16-010	hundreds
 L16-011	hundreds
 L16-012	hundreds
 L16-013	hundreds
+E1-12-050	thousands
 L16-014	thousands
 L16-015	thousands
 L16-016	thousands

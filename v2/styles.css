@@ -180,7 +180,16 @@ body {
 }
 .word-meaning { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
 .word-status { margin-top: auto; padding-top: 4px; }
-.word-status.learned { color: var(--success-ink); }
+/* Давтсан өдөр (11-06, загвар — Astra): урт ба өнгө нь шат, тоо нь нарийвчлал — өнгөөр дангаар биш. */
+.word-progress { display: grid; justify-items: start; gap: 6px; margin-top: auto; padding-top: 4px; }
+.word-progress .word-status { margin: 0; padding: 0; }
+.word-days { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.word-days-bar { display: block; flex: none; width: 12px; height: 7px; border: 1px solid var(--ink); border-radius: 4px; background: var(--heat-1); }
+.word-days-bar[data-level="2"] { width: 24px; background: var(--heat-2); }
+.word-days-bar[data-level="3"] { width: 36px; background: var(--heat-3); }
+.word-days-bar[data-level="4"] { width: 48px; background: var(--heat-4); }
+.word-progress .word-status.is-strong { padding: 2px 8px; border-radius: 7px; background: var(--success-surface); color: var(--success-ink); }
+.word-progress .word-status.is-weak { padding: 2px 8px; border-radius: 7px; background: var(--warm-surface); color: var(--warm-ink); }
 .empty-state {
   padding: clamp(32px, 7vw, 72px) 24px;
   border-radius: 24px;

@@ -49,6 +49,9 @@
   }
 
   function apply() {
+    /* Солих мөчид хөдөлгөөнгүй: Үгийн сангийн 2994 карт зэрэг `transition` хийвэл дэлгэц 1.4–3.5 сек гацдаг байв (хэмжив, 11-06).
+       Хэв маягийг ангитай байх үед нь бодуулж (getComputedStyle), дараагийн кадрт ангийг авна — эс бөгөөс хөдөлгөөн эхэлнэ. */
+    root.classList.add('theme-switching');
     root.setAttribute('data-palette', cur.palette);
     if (cur.mode === 'auto') root.removeAttribute('data-theme');
     else root.setAttribute('data-theme', cur.mode);
@@ -62,6 +65,8 @@
       var dark = /dark/.test(metas[j].getAttribute('media') || '');
       metas[j].setAttribute('content', cur.mode === 'auto' ? bar[dark ? 1 : 0] : bar[cur.mode === 'dark' ? 1 : 0]);
     }
+    void getComputedStyle(root).color;
+    requestAnimationFrame(function () { root.classList.remove('theme-switching'); });
   }
 
   function set(next) {
