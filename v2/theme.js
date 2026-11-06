@@ -10,7 +10,7 @@
   var PALETTES = ['green', 'pink', 'coffee', 'blue'];
   var MODES = ['auto', 'light', 'dark'];
   /* Хөтчийн мөрний өнгө [гэрэлтэй, бараан] — хуудасны дэвсгэр (Цэнхэр, Кофе 11-05e/g; Ягаан — Astra 11-05j), ногоон анхных шигээ лайм. */
-  var BAR = { green: ['#b8ef58', '#b8ef58'], pink: ['#fbf7f9', '#21171e'], coffee: ['#f8f4e1', '#241a12'], blue: ['#f9f7f7', '#131e2a'] };
+  var BAR = { green: ['#b8ef58', '#b8ef58'], pink: ['#f4eff2', '#281d25'], coffee: ['#f1edda', '#2b2018'], blue: ['#eff0f2', '#1a2532'] };
   var root = document.documentElement;
   var rules = null;
   var cur = read();

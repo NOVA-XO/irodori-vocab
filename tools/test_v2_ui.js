@@ -205,8 +205,8 @@ function getJSON(path, method) {
   console.log('\n[F] Бараан сэдэв');
   await dark(true); await nav(SITE); await sleep(300);
   const bg = await ev("return getComputedStyle(document.body).backgroundColor");
-  ok('body дэвсгэр бараан (#121a16, ногоон)', bg === 'rgb(18, 26, 22)', bg);
-  ok('карт бараан, бичиг цайвар', await ev("const c=document.querySelector('.unit-card');const s=getComputedStyle(c);return s.backgroundColor==='rgb(27, 39, 32)'&&getComputedStyle(document.body).color==='rgb(237, 243, 233)'"), await ev("return getComputedStyle(document.querySelector('.unit-card')).backgroundColor+' / '+getComputedStyle(document.body).color"));
+  ok('body дэвсгэр бараан (#18221d, ногоон)', bg === 'rgb(24, 34, 29)', bg);
+  ok('карт бараан, бичиг цайвар', await ev("const c=document.querySelector('.unit-card');const s=getComputedStyle(c);return s.backgroundColor==='rgb(33, 47, 39)'&&getComputedStyle(document.body).color==='rgb(237, 243, 233)'"), await ev("return getComputedStyle(document.querySelector('.unit-card')).backgroundColor+' / '+getComputedStyle(document.body).color"));
   ok('mascot-ийн сүүдэр бараан болов', await ev("const e=document.querySelector('.hero-art svg ellipse');return getComputedStyle(e).fill==='rgb(12, 22, 11)'"), await ev("return getComputedStyle(document.querySelector('.hero-art svg ellipse')).fill"));
   await shot('home-dark-1400');
   await ev("location.hash='words';"); await sleep(300); await shot('words-dark-1400');
@@ -479,7 +479,7 @@ function getJSON(path, method) {
     tb.green.size >= 200 && !tmiss.length && !undef.length, JSON.stringify({ tmiss, undef: undef.slice(0, 5) }));
   /* Сэдэв солигдсоны дараа 300 мс хүлээнэ: `.primary-btn`-д `transition: background .15s` — шууд уншвал хуучин өнгө.
      Хүлээгдэх утга тест дотроо (themes.css-ээс уншихгүй): ногоон лайм b8ef58, ягаан fab2d6 (эзэн), ягааны дэвсгэр
-     fbf7f9 / 21171e, кофегийн шар товч e3b35e, цэнхэр бараан дэвсгэр 131e2a, кофегийн бараан номын хуудас 302218. */
+     f4eff2 / 281d25 (11-06: хурц цагаанаас бүдэг), кофегийн шар товч e3b35e, цэнхэр бараан дэвсгэр 1a2532, кофегийн бараан номын хуудас 302218. */
   await dark(false); await nav(SITE);
   await ev(`localStorage.removeItem('koto-theme');return true;`); await nav(SITE);
   const T_STYLE = `const cs=s=>getComputedStyle(document.querySelector(s));
@@ -510,24 +510,24 @@ function getJSON(path, method) {
   ok('Сонгогч: нээгдэнэ (aria-expanded), «Өнгө» 4 · «Горим» 3 радио, одоогийнх тэмдэглэгдсэн, фокус сонгосон өнгөн дээр',
     t1.open && t1.exp === 'true' && t1.pal === 'green*,pink,coffee,blue' && t1.mode === 'light,dark,auto*' && t1.legends === 'Өнгө/Горим' && t1.focus === 'green', JSON.stringify(t1));
   const t2 = await ev(`document.querySelector('#theme-popover input[value=pink]').closest('label').click();await new Promise(r=>setTimeout(r,200));` + T_STYLE + `return {...S(),open:!document.getElementById('theme-popover').hidden};`);
-  ok('Ягаан: тэр дор нь солигдоно — лого fab2d6, дэвсгэр fbf7f9, маскот ягаан, хадгалагдсан, поповер нээлттэй хэвээр',
-    t2.pal === 'pink' && t2.mark === 'rgb(250, 178, 214)' && t2.body === 'rgb(251, 247, 249)' && t2.body2 === 'rgb(250, 178, 214)' && t2.open &&
-    t2.saved === '{"palette":"pink","mode":"auto"}' && t2.meta === '#fbf7f9 #21171e', JSON.stringify(t2));
+  ok('Ягаан: тэр дор нь солигдоно — лого fab2d6, дэвсгэр f4eff2, маскот ягаан, хадгалагдсан, поповер нээлттэй хэвээр',
+    t2.pal === 'pink' && t2.mark === 'rgb(250, 178, 214)' && t2.body === 'rgb(244, 239, 242)' && t2.body2 === 'rgb(250, 178, 214)' && t2.open &&
+    t2.saved === '{"palette":"pink","mode":"auto"}' && t2.meta === '#f4eff2 #281d25', JSON.stringify(t2));
   const t3 = await ev(`document.querySelector('#theme-popover input[value=dark]').closest('label').click();await new Promise(r=>setTimeout(r,200));` + T_STYLE + `return S();`);
-  ok('Бараан (төхөөрөмж гэрэлтэй байхад): data-theme="dark", дэвсгэр 21171e, color-scheme dark, маскотын сүүдэр 140c11',
-    t3.th === 'dark' && t3.body === 'rgb(33, 23, 30)' && t3.scheme === 'dark' && t3.shadow === 'rgb(20, 12, 17)' && t3.meta === '#21171e #21171e', JSON.stringify(t3));
+  ok('Бараан (төхөөрөмж гэрэлтэй байхад): data-theme="dark", дэвсгэр 281d25, color-scheme dark, маскотын сүүдэр 140c11',
+    t3.th === 'dark' && t3.body === 'rgb(40, 29, 37)' && t3.scheme === 'dark' && t3.shadow === 'rgb(20, 12, 17)' && t3.meta === '#281d25 #281d25', JSON.stringify(t3));
   await nav(SITE);
   const t4 = await ev(T_STYLE + `return S();`);
-  ok('Дахин ачаалахад Ягаан · Бараан хэвээр', t4.pal === 'pink' && t4.th === 'dark' && t4.body === 'rgb(33, 23, 30)', JSON.stringify(t4));
+  ok('Дахин ачаалахад Ягаан · Бараан хэвээр', t4.pal === 'pink' && t4.th === 'dark' && t4.body === 'rgb(40, 29, 37)', JSON.stringify(t4));
   const t4b = await ev(`return document.getElementById('theme-trigger').getAttribute('aria-label');`);
   ok('Дахин ачаалахад уншигчийн нэр анхнаасаа одоогийн өнгөтэй', t4b === 'Өнгө солих. Одоо: Ягаан.', t4b);
   await dark(true);
   const t5 = await ev(`KOTO_THEME.set({mode:'light'});` + T_STYLE + `const a=S();KOTO_THEME.set({mode:'auto'});const b=S();KOTO_THEME.set({mode:'light'});KOTO_THEME.set({mode:'auto'});return {light:a,auto:b,again:S().body};`);
-  ok('Төхөөрөмж бараан: «Гэрэлтэй» → fbf7f9, «Автомат» → 21171e (media нөхцөл анхных руугаа сэргэнэ, давтахад ч)',
-    t5.light.body === 'rgb(251, 247, 249)' && t5.light.scheme === 'light' && t5.auto.body === 'rgb(33, 23, 30)' && t5.auto.th === null && t5.again === 'rgb(33, 23, 30)', JSON.stringify(t5));
+  ok('Төхөөрөмж бараан: «Гэрэлтэй» → f4eff2, «Автомат» → 281d25 (media нөхцөл анхных руугаа сэргэнэ, давтахад ч)',
+    t5.light.body === 'rgb(244, 239, 242)' && t5.light.scheme === 'light' && t5.auto.body === 'rgb(40, 29, 37)' && t5.auto.th === null && t5.again === 'rgb(40, 29, 37)', JSON.stringify(t5));
   const t6 = await ev(`const W=()=>new Promise(r=>setTimeout(r,300));KOTO_THEME.set({palette:'blue'});await W();` + T_STYLE + `const b=S();KOTO_THEME.set({palette:'coffee'});await W();const c=S();KOTO_THEME.set({palette:'green'});await W();const g=S();return {b,c,g};`);
-  ok('Цэнхэр бараан 131e2a · Кофе бараан: номын хуудас 302218, шар товч e3b35e · Ногоон бараан: маскотын сүүдэр 0c160b',
-    t6.b.body === 'rgb(19, 30, 42)' && t6.c.page1 === 'rgb(48, 34, 24)' && t6.c.hero === 'rgb(227, 179, 94)' && t6.g.shadow === 'rgb(12, 22, 11)' && t6.g.body === 'rgb(18, 26, 22)', JSON.stringify(t6));
+  ok('Цэнхэр бараан 1a2532 · Кофе бараан: номын хуудас 302218, шар товч e3b35e · Ногоон бараан: маскотын сүүдэр 0c160b',
+    t6.b.body === 'rgb(26, 37, 50)' && t6.c.page1 === 'rgb(48, 34, 24)' && t6.c.hero === 'rgb(227, 179, 94)' && t6.g.shadow === 'rgb(12, 22, 11)' && t6.g.body === 'rgb(24, 34, 29)', JSON.stringify(t6));
   await dark(false);
   const t7 = await ev(`const W=()=>new Promise(r=>setTimeout(r,300));KOTO_THEME.set({palette:'coffee'});await W();` + T_STYLE + `const c=S();KOTO_THEME.set({palette:'green'});await W();const g=S();return {c:c.hero,g:g.hero};`);
   ok('Гэрэлтэй: кофегийн гол товч шар e3b35e, ногоонд бараан 22352c (тусгай дүрэм зөвхөн тухайн сэдэвт)',
@@ -563,6 +563,15 @@ function getJSON(path, method) {
     localStorage.clear();window.dispatchEvent(new StorageEvent('storage',{key:null}));
     return {before,after:document.documentElement.dataset.palette,th:document.documentElement.getAttribute('data-theme'),get:JSON.stringify(KOTO_THEME.get())};`);
   ok('Өөр табад localStorage.clear() (storage event key=null) → энд ч Ногоон · Автомат', tc.before === 'pink' && tc.after === 'green' && tc.th === null && tc.get === '{"palette":"green","mode":"auto"}', JSON.stringify(tc));
+  /* 11-06 (эзэн): гэрэлтэйн хурц цагааныг бүдгэрүүлж, бараан дэвсгэрийг цайруулав. Хуудас + карт (өмнө `background:white` шууд бичигдсэн .topic-card, .kana-sticker ч) — 8 хувилбар бүгд. */
+  await size(1400, 900, false); await nav(SITE);
+  const tsurf = await ev(`const X={'green-light':['rgb(241, 244, 239)','rgb(250, 251, 248)'],'green-dark':['rgb(24, 34, 29)','rgb(33, 47, 39)'],'pink-light':['rgb(244, 239, 242)','rgb(251, 248, 250)'],'pink-dark':['rgb(40, 29, 37)','rgb(51, 36, 46)'],
+      'coffee-light':['rgb(241, 237, 218)','rgb(249, 246, 236)'],'coffee-dark':['rgb(43, 32, 24)','rgb(55, 41, 30)'],'blue-light':['rgb(239, 240, 242)','rgb(245, 245, 246)'],'blue-dark':['rgb(26, 37, 50)','rgb(35, 50, 70)']},bad=[];
+    const bgOf=s=>getComputedStyle(document.querySelector(s)).backgroundColor;
+    for(const k in X){const [palette,mode]=k.split('-');KOTO_THEME.set({palette,mode});await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      if(bgOf('body')!==X[k][0])bad.push(k+' body '+bgOf('body'));for(const s of ['.unit-card','.topic-card:not(.selected)','.kana-sticker','.side-card'])if(bgOf(s)!==X[k][1])bad.push(k+' '+s+' '+bgOf(s));}
+    KOTO_THEME.set({palette:'green',mode:'auto'});return bad;`);
+  ok('Гадарга 4 өнгө × 2 горим: цэвэр цагаан алга, бараан цайвардсан; шууд бичигдсэн white үлдээгүй (.topic-card, .kana-sticker)', tsurf.length === 0, tsurf.join(' | '));
   await size(320, 700, true); await nav(SITE);
   const t320 = await ev(`const r=document.getElementById('theme-trigger').getBoundingClientRect(),top=document.querySelector('.topbar').getBoundingClientRect();return {w:r.width,h:r.height,right:r.right,vw:innerWidth,page:document.documentElement.scrollWidth,top:top.height};`);
   ok('320: дээжтэй товч ≥ 44×44, дэлгэц дотор, дээд мөр нэг эгнээ (< 90px), хэвтээ гүйлтгүй', t320.w >= 44 && t320.h >= 44 && t320.right <= t320.vw && t320.page <= t320.vw && t320.top < 90, JSON.stringify(t320));
@@ -599,7 +608,7 @@ function getJSON(path, method) {
     KOTO_THEME.set({palette:'pink',mode:'dark'});const now=getComputedStyle(c).backgroundColor,anim=document.getAnimations().length,on=document.documentElement.classList.contains('theme-switching');
     await raf();const off=document.documentElement.classList.contains('theme-switching'),anim2=document.getAnimations().length;KOTO_THEME.set({palette:'green',mode:'auto'});await raf();return {now,anim,on,off,anim2};`);
   ok('Өнгө солих мөчид карт хөдөлгөөн хийхгүй: шууд эцсийн өнгө, анги дараагийн кадрт авагдана, дараа нь ч хөдөлгөөн эхлэхгүй',
-    wn.now === 'rgb(44, 30, 39)' && wn.anim === 0 && wn.on && !wn.off && wn.anim2 === 0, JSON.stringify(wn));
+    wn.now === 'rgb(51, 36, 46)' && wn.anim === 0 && wn.on && !wn.off && wn.anim2 === 0, JSON.stringify(wn));
   await shot('word-days-1400');
   for (const [wd, ht] of [[390, 844], [320, 700]]) {
     await size(wd, ht, true); await nav(SITE);

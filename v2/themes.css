@@ -6,18 +6,18 @@
    үеийн Astra-гийн утга; Ягаан — Astra (11-05j, эзний #fab2d6). Шинэ өнгө нэмэхдээ 4 сэдэвт бүгдэд нь утга өг. */
 
 :root {
-  --p-bg: #f8faf7;
-  --p-paper: #fff;
+  --p-bg: #f1f4ef;
+  --p-paper: #fafbf8;
   --p-ink: #22352c;
   --p-muted: #78837b;
   --p-line: #e4eae1;
   --p-lime: #b8ef58;
   --p-lime-dark: #8dbd38;
-  --p-soft: #f0f6e9;
+  --p-soft: #e9f0e1;
   --p-green: #2a5744;
   --p-orange: #ef9569;
   --p-danger: #bf514b;
-  --p-shadow: #e1e8dc;
+  --p-shadow: #d9e1d3;
   --p-button-focus-visible-ol: #76a334;
   --p-sidebar-caption-fg: #6c7763;
   --p-nav-item-fg: #666f67;
@@ -107,7 +107,7 @@
   --p-icon-button-fg: #a3ad9b;
   --p-icon-button-hover-bg: #f0f3eb;
   --p-progress-track-bg: #e9eee2;
-  --p-session-xp-fg: #637a34;
+  --p-session-xp-fg: #607632;
   --p-lesson-meta-fg: #a0ab96;
   --p-exercise-type-fg: #92a37f;
   --p-learn-card-bd-b: #e1e8d7;
@@ -131,7 +131,7 @@
   --p-lesson-bottom-primary-btn-disabled-bg: #e9ede3;
   --p-lesson-bottom-primary-btn-disabled-bd: #dce3d2;
   --p-lesson-bottom-primary-btn-disabled-fg: #aeb7a2;
-  --p-bottom-note-fg: #67755c;
+  --p-bottom-note-fg: #65735b;
   --p-feedback-icon-bg: #e7f5d5;
   --p-feedback-icon-fg: #7baa3d;
   --p-feedback-incorrect-feedback-icon-bg: #fbe8df;
@@ -160,14 +160,14 @@
   --p-edge: #dce5d5;
   --p-focus: #527d24;
   --p-choice-correct-bd-2: var(--lime-dark);
-  --p-bg-dk: #121a16;
-  --p-paper-dk: #1b2720;
+  --p-bg-dk: #18221d;
+  --p-paper-dk: #212f27;
   --p-ink-dk: #edf3e9;
   --p-muted-dk: #adbcad;
   --p-line-dk: #394c3d;
   --p-lime-dk: #b8ef58;
   --p-lime-dark-dk: #91bb4c;
-  --p-soft-dk: #253629;
+  --p-soft-dk: #293b2d;
   --p-green-dk: #9fd1b7;
   --p-danger-dk: #ed9b8b;
   --p-shadow-dk: #0a110d;
@@ -241,8 +241,8 @@
 }
 
 :root[data-palette="blue"] {
-  --p-bg: #f9f7f7;
-  --p-paper: #f9f7f7;
+  --p-bg: #eff0f2;
+  --p-paper: #f5f5f6;
   --p-ink: #112d4e;
   --p-muted: #2e4663;
   --p-line: #7b7f86;
@@ -395,22 +395,22 @@
   --p-edge: #7b7f86;
   --p-focus: #325b8c;
   --p-choice-correct-bd-2: var(--success-ink);
-  --p-bg-dk: #131e2a;
-  --p-paper-dk: #1c2b3e;
+  --p-bg-dk: #1a2532;
+  --p-paper-dk: #233246;
   --p-ink-dk: #f9f7f7;
   --p-muted-dk: #c4cbd3;
   --p-line-dk: #799cc7;
   --p-lime-dk: #95b1d3;
   --p-lime-dark-dk: #799cc7;
-  --p-soft-dk: #23364d;
+  --p-soft-dk: #2a3d54;
   --p-green-dk: #95b1d3;
   --p-danger-dk: #f07b3f;
   --p-shadow-dk: #0b1420;
-  --p-accent-surface-dk: #23364d;
+  --p-accent-surface-dk: #2a3d54;
   --p-accent-ink-dk: #dbe2ef;
   --p-warm-surface-dk: #332c21;
   --p-warm-ink-dk: #e0c291;
-  --p-cool-surface-dk: #23364d;
+  --p-cool-surface-dk: #2a3d54;
   --p-cool-ink-dk: #dbe2ef;
   --p-success-surface-dk: #19382b;
   --p-success-ink-dk: #8cdaad;
@@ -442,8 +442,8 @@
   --p-ga-bubble-is-hit-bg: var(--success-surface);
   --p-ga-bubble-is-hit-fg: var(--success-ink);
   --p-kj-rule: #7b7f86;
-  --p-kj-paper: #1c2b3e;
-  --p-kj-paper-dk: #1c2b3e;
+  --p-kj-paper: #233246;
+  --p-kj-paper-dk: #233246;
   --p-brand-dot-fg: var(--lime-dark);
   --p-m-shadow: #c4cddb;
   --p-m-shadow-dk: #0b1420;
@@ -476,18 +476,18 @@
 }
 
 :root[data-palette="coffee"] {
-  --p-bg: #f8f4e1;
-  --p-paper: #fffcf3;
+  --p-bg: #f1edda;
+  --p-paper: #f9f6ec;
   --p-ink: #543310;
   --p-muted: #74512d;
   --p-line: #957456;
   --p-lime: #74512d;
   --p-lime-dark: #543310;
-  --p-soft: #f0e7d2;
+  --p-soft: #e9e0cb;
   --p-green: #74512d;
   --p-orange: #a35b24;
   --p-danger: #982c38;
-  --p-shadow: #e8d8bf;
+  --p-shadow: #e0d0b7;
   --p-button-focus-visible-ol: #74512d;
   --p-sidebar-caption-fg: #74512d;
   --p-nav-item-fg: #74512d;
@@ -575,7 +575,7 @@
   --p-lesson-dialog-bg: #fffcf3;
   --p-lesson-dialog-backdrop-bg: #543310aa;
   --p-icon-button-fg: #74512d;
-  --p-icon-button-hover-bg: #f0e7d2;
+  --p-icon-button-hover-bg: #e9e0cb;
   --p-progress-track-bg: #f0e7d2;
   --p-session-xp-fg: #74512d;
   --p-lesson-meta-fg: #74512d;
@@ -586,7 +586,7 @@
   --p-choice-bd: #957456;
   --p-choice-choice-index-bd: #957456;
   --p-choice-choice-index-fg: #74512d;
-  --p-choice-hover-not-disabled-bg: #f0e7d2;
+  --p-choice-hover-not-disabled-bg: #e9e0cb;
   --p-choice-hover-not-disabled-bd: #74512d;
   --p-choice-selected-bg: #e8d8bf;
   --p-choice-selected-bd: #74512d;
@@ -609,7 +609,7 @@
   --p-feedback-small-fg: #74512d;
   --p-feedback-incorrect-small-fg: #982c38;
   --p-sentence-placeholder-fg: #74512d;
-  --p-token-hover-bg: #f0e7d2;
+  --p-token-hover-bg: #e9e0cb;
   --p-hint-btn-fg: #74512d;
   --p-sentence-hint-fg: #74512d;
   --p-result-stat-strong-fg: #74512d;
@@ -630,14 +630,14 @@
   --p-edge: #957456;
   --p-focus: #74512d;
   --p-choice-correct-bd-2: var(--success-ink);
-  --p-bg-dk: #241a12;
-  --p-paper-dk: #302218;
+  --p-bg-dk: #2b2018;
+  --p-paper-dk: #37291e;
   --p-ink-dk: #f8f4e1;
   --p-muted-dk: #cfb89a;
   --p-line-dk: #977b60;
   --p-lime-dk: #af8f6f;
   --p-lime-dark-dk: #74512d;
-  --p-soft-dk: #3b291c;
+  --p-soft-dk: #3e2d20;
   --p-green-dk: #af8f6f;
   --p-danger-dk: #ffb9ba;
   --p-shadow-dk: #160f09;
@@ -677,8 +677,8 @@
   --p-ga-bubble-is-hit-bg: var(--success-surface);
   --p-ga-bubble-is-hit-fg: var(--success-ink);
   --p-kj-rule: #957456;
-  --p-kj-paper: #302218;
-  --p-kj-paper-dk: #302218;
+  --p-kj-paper: #37291e;
+  --p-kj-paper-dk: #37291e;
   --p-brand-dot-fg: var(--lime-dark);
   --p-m-shadow: #e8d8bf;
   --p-m-shadow-dk: #160f09;
@@ -711,18 +711,18 @@
 }
 
 :root[data-palette="pink"] {
-  --p-bg: #fbf7f9;
-  --p-paper: #ffffff;
+  --p-bg: #f4eff2;
+  --p-paper: #fbf8fa;
   --p-ink: #402335;
   --p-muted: #725365;
   --p-line: #eadbe3;
   --p-lime: #fab2d6;
   --p-lime-dark: #a34674;
-  --p-soft: #f7eaf1;
+  --p-soft: #f0e3ea;
   --p-green: #733653;
   --p-orange: var(--warm-ink);
   --p-danger: #9b3218;
-  --p-shadow: #ead7e2;
+  --p-shadow: #e2cfda;
   --p-button-focus-visible-ol: #9c3c6a;
   --p-sidebar-caption-fg: #725365;
   --p-nav-item-fg: #725365;
@@ -786,7 +786,7 @@
   --p-goal-ring-bg: #965475;
   --p-goal-ring-small-fg: #725365;
   --p-week-day-fg: #725365;
-  --p-week-day-span-bg: #f7eaf1;
+  --p-week-day-span-bg: #f0e3ea;
   --p-week-day-span-fg: #725365;
   --p-week-day-today-span-ol: #965475;
   --p-week-day-done-span-fg: #402335;
@@ -795,7 +795,7 @@
   --p-note-kana-fg: #765b37;
   --p-side-card-p-fg: #725365;
   --p-small-link-fg: #8b3f65;
-  --p-method-span-bg: #f7eaf1;
+  --p-method-span-bg: #f0e3ea;
   --p-method-span-fg: #63334c;
   --p-page-footer-fg: #725365;
   --p-page-footer-span-fg: #725365;
@@ -804,7 +804,7 @@
   --p-word-topic-fg: #725365;
   --p-word-status-fg: #725365;
   --p-word-status-learned-fg: #246b45;
-  --p-speak-button-bg: #f7eaf1;
+  --p-speak-button-bg: #f0e3ea;
   --p-speak-button-fg: #8b3f65;
   --p-empty-icon-fg: #8b3f65;
   --p-lesson-dialog-bg: #fffbfd;
@@ -865,14 +865,14 @@
   --p-edge: #965475;
   --p-focus: #9c3c6a;
   --p-choice-correct-bd-2: var(--success-ink);
-  --p-bg-dk: #21171e;
-  --p-paper-dk: #2c1e27;
+  --p-bg-dk: #281d25;
+  --p-paper-dk: #33242e;
   --p-ink-dk: #f9edf3;
   --p-muted-dk: #c9adbd;
   --p-line-dk: #58404e;
   --p-lime-dk: #fab2d6;
   --p-lime-dark-dk: #c780a5;
-  --p-soft-dk: #3b2833;
+  --p-soft-dk: #422e3a;
   --p-green-dk: #e8a6c7;
   --p-danger-dk: #ff9b72;
   --p-shadow-dk: #140c11;
@@ -912,8 +912,8 @@
   --p-ga-bubble-is-hit-bg: var(--success-surface);
   --p-ga-bubble-is-hit-fg: var(--success-ink);
   --p-kj-rule: #965475;
-  --p-kj-paper: #2c1e27;
-  --p-kj-paper-dk: #2c1e27;
+  --p-kj-paper: #33242e;
+  --p-kj-paper-dk: #33242e;
   --p-brand-dot-fg: #8b3f65;
   --p-m-shadow: #e9cddd;
   --p-m-shadow-dk: #140c11;
