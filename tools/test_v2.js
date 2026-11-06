@@ -635,6 +635,60 @@ function getJSON(path, method) {
       && sp2.xpd === sp2.before.xpd && sp2.kana === 1 && sp2.savedXpd === sp2.before.xpd && sp2.savedKana === 1,
     JSON.stringify({ sp2, putSeen }));
 
+  console.log('\n[P] Үгийн аймаг (11-05): өгөгдөл, ангиллаар дасгал, тоглоомын сан');
+  const pd = await ev(`const D=window.KOTO_DATA,W=D.units.flatMap(u=>u.words),K=['noun','verb','adj','adv','exp','other'];
+    const bad=W.filter(w=>!K.includes(w.p)).map(w=>w.id),c={};W.forEach(w=>c[w.p]=(c[w.p]||0)+1);
+    const find=(jp,kj)=>{const w=W.find(x=>x.jp===jp&&(kj===undefined||x.kj===kj));return w?w.p:'алга';};
+    const exp={'たべます':'verb','いきます':'verb','わかります':'verb','べんきょうする':'verb','おおきい':'adj','たかい':'adj','きれい':'adj',
+      'ほん':'noun','べんきょう':'noun','りょうり':'noun','ゆっくり':'adv','とても':'adv','おはようございます':'exp','すみません':'exp','ありがとうございます':'exp',
+      'これ':'other','わたし':'other','さんじ':'other'};
+    const got={};for(const j in exp)got[j]=find(j);
+    return {n:W.length,nb:bad.length,bad:bad.slice(0,5),c,wrong:Object.keys(exp).filter(j=>got[j]!==exp[j]).map(j=>j+':'+got[j]+'≠'+exp[j])};`);
+  ok('замын 2994 үг бүгд 6 ангиллын нэгтэй, ангилал бүрт ≥ 50 үг',
+    pd.n === 2994 && pd.nb === 0 && Object.keys(pd.c).length === 6 && Object.values(pd.c).every(x => x >= 50), JSON.stringify({ n: pd.n, nb: pd.nb, bad: pd.bad, c: pd.c }));
+  ok('гараар заасан 18 үг зөв ангилалтай (～ます үйл үг, する, い/な тэмдэг нэр, тоо+цаг → Бусад, мэндчилгээ → Хэллэг)',
+    pd.wrong.length === 0, pd.wrong.join(' | '));
+  const pa = await ev(`const W=window.KOTO_DATA.units.flatMap(u=>u.words);
+    const find=(jp,kj)=>{const m=W.filter(x=>x.jp===jp&&(kj===undefined||x.kj===kj));return m.length===1?m[0].p:'олдсон '+m.length;};
+    const exp=[['だれ',,'other'],['なんにん','何人','other'],['いくら',,'other'],['ろく',,'other'],['かん','缶','noun'],['やま','山','noun'],['ひゃくえんショップ','100円ショップ','noun'],
+      ['あとで',,'adv'],['もうすぐ',,'adv'],['いちばん',,'adv'],['しりませんでした','知りませんでした','verb'],['しつれいします','失礼します','exp'],
+      ['おとこのこ','男の子','noun'],['おおきな','大きな','adj'],['おねがい','お願い','noun']];
+    return exp.map(([j,k,p])=>[j,find(j,k),p]).filter(([,g,p])=>g!==p).map(([j,g,p])=>j+':'+g+'≠'+p);`);
+  ok('Codex-ийн тулгалтаас (11-05) гарсан алдааны төрөл бүрийн 15 үг: асуух үг, тоотой ижил бичлэг, дайвар хэллэг, ганц үйл үг ≠ Хэллэг',
+    pa.length === 0, pa.join(' | '));
+
+  const pp = await ev(`const K=window.KOTO,W=K.words(),S=ms=>new Promise(r=>setTimeout(r,ms));
+    const verbs=W.filter(w=>w.p==='verb').slice(0,8),nouns=W.filter(w=>w.p==='noun').slice(0,6),d=new Date().toISOString().slice(0,10),words={};
+    verbs.forEach((w,i)=>words[w.id]={passes:1,weak:i<2,due:d,last:d,attempts:2,misses:i<2?1:0});
+    nouns.forEach(w=>words[w.id]={passes:1,weak:false,due:d,last:d,attempts:1,misses:0});
+    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:0,completed:[],words,kana:{},days:{},xpd:{},selectedTopic:0}));return true;`);
+  await reload();
+  const ps = await ev(`const K=window.KOTO,S=ms=>new Promise(r=>setTimeout(r,ms)),st=K.state();
+    const weakIds=Object.keys(st.words).filter(id=>st.words[id].weak);
+    K.pos.start('verb');await S(300);const s=K.numTest.session();
+    const r={open:document.getElementById('lesson-dialog').open,n:s.words.length,kinds:[...new Set(s.words.map(w=>w.p))].join(),
+      learned:s.words.every(w=>st.words[w.id]),weakFirst:s.words.slice(0,2).every(w=>weakIds.includes(w.id)),title:s.title,review:s.review};
+    document.getElementById('lesson-dialog').close();
+    const before=K.numTest.session();K.pos.start('adv');K.pos.start('xyz');K.pos.start('all');await S(150);
+    r.noAdv=K.numTest.session()===before&&!document.getElementById('lesson-dialog').open;
+    return r;`);
+  ok('ангиллаар дасгал: зөвхөн «Үйл үг», зөвхөн үзсэн, 5 үг, алдсан нь түрүүнд, гарчиг «Үйл үг · давтлага»',
+    ps.open && ps.n === 5 && ps.kinds === 'verb' && ps.learned && ps.weakFirst && ps.title === 'Үйл үг · давтлага' && ps.review, JSON.stringify(ps));
+  ok('үзсэн үггүй ангилал (Дайвар үг), буруу/«all» түлхүүр — дасгал ЭХЛЭХГҮЙ', ps.noAdv, JSON.stringify(ps));
+
+  const pg = await ev(`const K=window.KOTO;localStorage.removeItem('koto-game-pos');
+    const all=K.pos.pool('all').length,v=K.pos.pool('verb'),n=K.pos.pool('noun');
+    K.pos.setGame('noun');const saved=localStorage.getItem('koto-game-pos'),cur=K.pos.game(),def=K.pos.pool().every(w=>w.p==='noun');
+    K.pos.setGame('xyz');const kept=K.pos.game();
+    return {all,v:v.length,vk:v.every(w=>w.p==='verb'),n:n.length,saved,cur,def,kept};`);
+  await reload();
+  const pg2 = await ev(`const K=window.KOTO,g=K.pos.game();K.pos.setGame('all');return {g,after:localStorage.getItem('koto-game-pos')};`);
+  ok('тоглоомын сан: ангиллаар шүүнэ (8 үйл үг, 6 нэр үг), сонголт төхөөрөмж дээр хадгалагдаж дахин ачаалахад хэвээр, буруу түлхүүрийг үл тооно',
+    pg.all === 14 && pg.v === 8 && pg.vk && pg.n === 6 && pg.saved === 'noun' && pg.cur === 'noun' && pg.def && pg.kept === 'noun' && pg2.g === 'noun' && pg2.after === 'all',
+    JSON.stringify({ pg, pg2 }));
+  await ev(`localStorage.removeItem('koto-irodori-v1');localStorage.removeItem('koto-game-pos');return true;`);
+  await reload();
+
   console.log('\n[5] Консол');
   ok('барьсангүй уналт гараагүй', errs.length === 0, errs.slice(0, 3).join(' | '));
 

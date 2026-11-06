@@ -20,6 +20,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LEVELS = [('A1', u'Суурь шат', u'A1 · 入門'), ('A2a', u'Анхан шат 1', u'A2 · 初級1'), ('A2b', u'Анхан шат 2', u'A2 · 初級2')]
 BOOK = {'vocab.json': 'A1', 'vocab-el1.json': 'A2a', 'vocab-el2.json': 'A2b'}
 THEMES = set('greet ask self people num time daily food home town travel shop work hobby nature health event media public safety feel desc verb gram'.split())
+# Үгийн аймаг (11-05): tools/v2_vocab_pos.tsv (`build_v2_pos.py` — JMdict + дүрэм + гар засвар) → үг бүрд `p`.
+POS = ('noun', 'verb', 'adj', 'adv', 'exp', 'other')
 # Нэгжийг 15–40 үгээр гаргасан; давхар мөрийг нэгтгэхэд (v2_vocab_merge.tsv) 4 нь 14 болсон — 12 хүртэл зөвшөөрнө.
 UNIT_MIN, UNIT_MAX, TITLE_MAX = 12, 40, 28
 CJK = re.compile(u'[㐀-鿿豈-﫿々〆]')
@@ -119,6 +121,13 @@ def word_of(wid):
     return out
 
 
+POS_OF = {}
+for line in read_tsv('v2_vocab_pos.tsv'):
+    i, p = line.split('\t')[:2]
+    if p not in POS:
+        problem('%s: үгийн аймаг «%s» буруу' % (i, p))
+    POS_OF[i] = p
+
 # ── Нэгжүүд ──
 units, seen, dropped = [], {}, []
 level = None
@@ -147,7 +156,15 @@ for line in read_tsv('v2_vocab_units.tsv'):
     seen[wid] = units[-1]['key']
     w = word_of(wid)
     if w:
+        if wid in POS_OF:
+            w['p'] = POS_OF[wid]
+        else:
+            problem('%s: үгийн аймаг алга (python -I tools/build_v2_pos.py <jmdict.json>)' % wid)
         units[-1]['words'].append(w)
+
+stale = sorted(set(POS_OF) - set(seen))
+if stale:
+    problem('v2_vocab_pos.tsv-д замд байхгүй %d үг: %s — build_v2_pos.py-г дахин' % (len(stale), ' '.join(stale[:8])))
 
 titles = set()
 for u in units:

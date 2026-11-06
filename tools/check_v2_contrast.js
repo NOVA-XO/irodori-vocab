@@ -11,6 +11,7 @@
  *
  * Хуудас: Сурах зам, Үгийн сан, Давтлага, Тоглоом, Ханз, Ахиц, хичээлийн
  * эхний карт, хариултын «зөв» ба «буруу» төлөв — гэрэлтэй ба бараан.
+ * 11-05j-ээс 4 өнгөний сэдэв тус бүрээр (`PALETTES=pink` — нэгийг л), хэл ба сэдэв сонгогч нээлттэй.
  *
  *     python -m http.server 8765 --bind 127.0.0.1     (репогийн үндсээс)
  *     node tools/check_v2_contrast.js                  → 0 бол цэвэр
@@ -83,10 +84,11 @@ const AUDIT = scope => `
       else { imgs++; if (process.env.SHOW_IMG) console.log(`  img  ${where}  ${x.k}  ${x.el}  «${x.text}»`); }
     }
   };
-  for (const dark of [false, true]) {
-    const theme = dark ? 'бараан' : 'гэрэлтэй';
+  const PALETTES = (process.env.PALETTES || 'green,pink,coffee,blue').split(',');
+  for (const pal of PALETTES) for (const dark of [false, true]) {
+    const theme = pal + ' ' + (dark ? 'бараан' : 'гэрэлтэй');
     await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: dark ? 'dark' : 'light' }] });
-    await nav(); await ev(SEED); await nav();
+    await nav(); await ev(SEED.replace(/return true;$/, `localStorage.setItem('koto-theme',JSON.stringify({palette:'${pal}',mode:'auto'}));return true;`)); await nav();
     for (const v of ['learn', 'words', 'review', 'games', 'kanji', 'profile']) {
       await ev(`location.hash='${v}';return true;`); await sleep(450);
       report(theme + ' ' + v, await ev(AUDIT(`#view-${v} *, .sidebar *, .topbar *, .page-footer *, .skip`)));
@@ -94,6 +96,10 @@ const AUDIT = scope => `
     /* Хэл сонгогч (11-05f): нээлттэй жагсаалт. */
     await ev(`location.hash='learn';document.getElementById('language-trigger').click();await new Promise(r=>setTimeout(r,200));return true;`);
     report(theme + ' хэл сонгогч', await ev(AUDIT('#language-popover *, #language-trigger *')));
+    await ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;`);
+    /* Сэдэв сонгогч (11-05j): нээлттэй, одоогийн сэдэв сонгогдсон. */
+    await ev(`document.getElementById('theme-trigger').click();await new Promise(r=>setTimeout(r,200));return true;`);
+    report(theme + ' сэдэв сонгогч', await ev(AUDIT('#theme-popover *, #theme-trigger *')));
     await ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;`);
     /* Хичээл: эхний карт, дараа нь асуулт бүрд санамсаргүй хариулт — «зөв», «буруу» хоёуланг үзтэл. */
     await ev(`location.hash='learn';return true;`); await sleep(300);

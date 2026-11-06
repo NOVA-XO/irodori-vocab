@@ -496,13 +496,13 @@ python tools/build_audio.py --speaker 2
 python -m http.server 8765          # ЭХЛЭЭД — үүнгүй бол test_ui унана
 node tools/test_ui.js               # 494 шалгуур, бодит Chrome дотор
 node tools/test_sql.js              # 153 — SUPABASE.sql, PGlite дээр
-node tools/test_v2.js               #  59 — v2 (KOTO): 3 түвшин/147 нэгж, ахицын шилжүүлэлт, UI, Google-ээр нэвтрэх, тооны шалгалт, ахиц/ханз/катакана, өгүүлбэр
+node tools/test_v2.js               #  65 — v2 (KOTO): 3 түвшин/147 нэгж, ахицын шилжүүлэлт, UI, Google-ээр нэвтрэх, тооны шалгалт, ахиц/ханз/катакана, өгүүлбэр
 node tools/test_v2_sentences.js     #  10 — v2-ийн 91 өгүүлбэр тулгуур үгийнхээ хичээлд, заагаагүй үггүй (хөтөчгүй)
-node tools/test_v2_ui.js            #  93 — v2 UI (хэл сонгогч): сонсох карт, Google-ээр нэвтрэх (кодгүй), бараан сэдэв, 44px, утасны хариултын самбар, ахицын хуудас
+node tools/test_v2_ui.js            # 112 — v2 UI (хэл ба сэдэв сонгогч, үгийн аймаг): сонсох карт, Google-ээр нэвтрэх (кодгүй), бараан сэдэв, 44px, утасны хариултын самбар, ахицын хуудас
 node tools/test_v2_kanji.js         #  33 — v2 ханз (1009): N5–N3 + Irodori-гийн N2/Бусад, номын шошго, v1-ийн утга, уншлага, жишээ үг, үүсэл, эртний бичиг, KanjiVG, зураг (хөтөчгүй)
 node tools/test_v2_kanji_ui.js      #  41 — v2 «Ханз» хуудас: 204 хичээл, номын шүүлтүүр, 4 төрлийн асуулт, давтлага, үүсэл, галерей, «Юуг зурсан бэ?», 320–1400
 node tools/check_v2_kanji_svg.js --old <кэш> --vg <кэш>  # татсны дараа: SVG-г эхтэй нь пикселээр (Commons ≤2%, KanjiVG 0)
-node tools/check_v2_contrast.js      # v2-ийн харагдаж буй бүх бичгийн контраст, гэрэлтэй/бараан (0 = цэвэр)
+node tools/check_v2_contrast.js      # v2-ийн харагдаж буй бүх бичгийн контраст, 4 сэдэв × гэрэлтэй/бараан (0 = цэвэр; PALETTES=pink — нэгийг л)
 node tools/test_v2_games.js         #  57 — v2 тоглоом: буудах, хослуулах, зөв/буруу; үг сонголт, рекорд, ахицад нөлөөгүй, 320–1400
 node tools/test_attack.js           #  24 — халдлагын хувилбарууд
 node tools/test_answers.js          # хариулт шалгагч
@@ -551,6 +551,7 @@ tools/build_exam.py                入門 шалгалтын асуулт -> dat
 tools/build_exam_el1.py            初級1 шалгалт -> data/exam-el1.json (ruby-г эхнийхээс зээлнэ)
 tools/kanji_mn*.json               ханзны монгол утга (гараар, түвшин тус бүрээр)
 tools/build_audio.py               VOICEVOX -> audio/*.mp3 (өргөлтийг номоор)
+tools/build_v2_pos.py              tools/v2_vocab_pos.tsv — үгийн аймаг (JMdict + дүрэм + v2_vocab_pos_fix.tsv; `python -I … <jmdict.json>`)
 tools/build_v2_vocab.py            v2/data.js — Irodori 3 ном, утгын нэгж (v2_vocab_units/legacy/fix/merge.tsv)
 tools/build_v2_kanji.py            v2/kana.js (11-05-аас data.js-ийг хөндөхгүй — kj нь build_v2_vocab.py-д)
 tools/test_answers.js              хариулт шалгагчийн тест (node)

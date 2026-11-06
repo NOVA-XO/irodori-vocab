@@ -1,5 +1,5 @@
 /* v2 (KOTO) — ШИНЭ UI-ийн тест: дуудлагын товч, Google-ийн нэвтрэлтийн
- * төлөвүүд, бараан сэдэв, 44px дарах талбай, утасны өргөн.
+ * төлөвүүд, бараан сэдэв, 44px дарах талбай, утасны өргөн, өнгөний сэдэв ба горим ([T]).
  *
  * `test_v2.js`-ээс ТУСДАА: тэр нь синкийн уусгалт ба хадгалалтыг шалгана,
  * энэ нь Astra (gpt-6-astra)-ийн гаргасан UI-г Claude хянах дүрмийн
@@ -407,6 +407,149 @@ function getJSON(path, method) {
       await lesc();
     }
   }
+  await size(1400, 900, false); await dark(false);
+
+  console.log('\n[K] Үгийн аймгийн товчнууд (11-05, загвар — Astra)');
+  await size(1400, 900, false); await dark(false); await nav(SITE);
+  await ev(`const W=window.KOTO.words(),d=new Date().toISOString().slice(0,10),words={};
+    W.filter(w=>w.p==='verb').slice(0,7).forEach(w=>words[w.id]={passes:1,weak:false,due:d,last:d,attempts:1,misses:0});
+    W.filter(w=>w.p==='adj').slice(0,3).forEach(w=>words[w.id]={passes:1,weak:false,due:d,last:d,attempts:1,misses:0});
+    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:0,completed:[],words,kana:{},days:{},xpd:{},selectedTopic:0}));
+    localStorage.removeItem('koto-game-pos');return true;`);
+  await nav(SITE);
+  const kw = await ev(`location.hash='words';await new Promise(r=>setTimeout(r,300));const v=document.getElementById('view-words');
+    const W=window.KOTO_DATA.units.flatMap(u=>u.words),nVerb=W.filter(w=>w.p==='verb').length;
+    const chips=[...v.querySelectorAll('[data-action=word-pos]')];const verb=chips.find(b=>b.dataset.pos==='verb');
+    const nums=chips.filter(b=>b.dataset.pos!=='all').map(b=>+b.querySelector('.pos-n').textContent);
+    verb.click();await new Promise(r=>setTimeout(r,200));const t1=document.getElementById('word-result-count').textContent,cards=v.querySelectorAll('#word-results .word-card').length;
+    const pressed=chips.filter(b=>b.getAttribute('aria-pressed')==='true').map(b=>b.dataset.pos).join();
+    const chk=chips.filter(b=>getComputedStyle(b.querySelector('.pos-check')).display!=='none').map(b=>b.dataset.pos).join(),lab=verb.getAttribute('aria-label');
+    chips[0].click();await new Promise(r=>setTimeout(r,200));const t2=document.getElementById('word-result-count').textContent;
+    const small=chips.filter(b=>{const r=b.getBoundingClientRect();return r.height<44;}).length;
+    return {n:chips.length,sum:nums.reduce((a,b)=>a+b,0),nVerb,t1,cards,pressed,chk,lab,t2,small};`);
+  ok('Үгийн сан: «Бүгд» + 6 ангилал, тоо нийлбэр 2994; «Үйл үг» → зөвхөн үйл үг (тоо өгөгдөлтэй тэнцүү), «Бүгд» → буцна; ≥44px',
+    kw.n === 7 && kw.sum === 2994 && kw.t1 === kw.nVerb + ' үг, хэллэг' && kw.cards === kw.nVerb && kw.pressed === 'verb' && kw.t2 === '2994 үг, хэллэг' && kw.small === 0, JSON.stringify(kw));
+  ok('Үгийн сан: ✓ зөвхөн сонгосон товчинд; уншигчийн нэр «Үйл үг. Нийт N үг, хэллэг.»',
+    kw.chk === 'verb' && kw.lab === 'Үйл үг. Нийт ' + kw.nVerb + ' үг, хэллэг.', JSON.stringify({ chk: kw.chk, lab: kw.lab }));
+  await shot('pos-words-1400');
+  const kr = await ev(`location.hash='review';await new Promise(r=>setTimeout(r,300));const v=document.getElementById('view-review');
+    const b=[...v.querySelectorAll('[data-action=pos-practice]')];const st=k=>{const x=b.find(y=>y.dataset.pos===k);return x?{d:x.disabled,n:x.querySelector('.pos-n').textContent,p:x.hasAttribute('aria-pressed'),go:x.querySelector('.pos-verb').textContent,lab:x.getAttribute('aria-label')}:null;};
+    const r={n:b.length,verb:st('verb'),adj:st('adj'),noun:st('noun'),heading:/Ангиллаар давтах/.test(v.textContent)};
+    b.find(y=>y.dataset.pos==='adj').click();await new Promise(r=>setTimeout(r,400));
+    const s=window.KOTO.numTest.session();r.open=document.getElementById('lesson-dialog').open;r.kinds=[...new Set(s.words.map(w=>w.p))].join();r.n2=s.words.length;
+    r.meta=(document.querySelector('#lesson-dialog .lesson-meta')||{}).textContent||'';
+    document.getElementById('lesson-dialog').close();return r;`);
+  ok('Давтлага: «Ангиллаар давтах» 6 товч (сонголт биш — aria-pressed-гүй), үзсэн тоотой (үйл 7, тэмдэг 3), үзээгүй нь идэвхгүй; «Тэмдэг нэр» → 3 тэмдэг нэрээр дасгал',
+    kr.n === 6 && kr.heading && kr.verb.n === '7' && !kr.verb.d && !kr.verb.p && kr.adj.n === '3' && kr.noun.d && kr.open && kr.kinds === 'adj' && kr.n2 === 3 && /Тэмдэг нэр/.test(kr.meta), JSON.stringify(kr));
+  ok('Давтлага: хавтан бүр «Давтах», үзээгүй нь «Үзээгүй»; уншигчийн нэр «Үйл үг. Үзсэн 7 үг, хэллэг. Давтах. 5 үгтэй…»',
+    kr.verb.go === 'Давтах' && kr.noun.go === 'Үзээгүй' && kr.verb.lab === 'Үйл үг. Үзсэн 7 үг, хэллэг. Давтах. 5 үгтэй давтлага эхлүүлэх.' && /Үзээгүй\.$/.test(kr.noun.lab),
+    JSON.stringify({ verb: kr.verb, noun: kr.noun }));
+  await nav(SITE);
+  const kg = await ev(`location.hash='games';await new Promise(r=>setTimeout(r,300));const v=()=>document.getElementById('view-games');
+    const pick=async k=>{v().querySelector('[data-action=game-pos][data-pos="'+k+'"]').click();await new Promise(r=>setTimeout(r,250));};
+    const allReady=!!v().querySelector('[data-action=game][data-game=shoot]');
+    await pick('adj');const adjMsg=(v().querySelector('.empty-state h2')||{}).textContent||'',adjLocked=!v().querySelector('[data-action=game][data-game=shoot]');
+    const focus=document.activeElement&&document.activeElement.dataset.pos;
+    await pick('verb');const verbReady=!!v().querySelector('[data-action=game][data-game=shoot]');
+    const saved=localStorage.getItem('koto-game-pos');await pick('all');
+    return {allReady,adjMsg,adjLocked,focus,verbReady,saved};`);
+  ok('Тоглоом: «Тэмдэг нэр» (3 үг) → «Дахиад 3 «Тэмдэг нэр» үг…», «Үйл үг» (7) → нээлттэй, сонголт хадгалагдана, дарсны дараа фокус товч дээрээ',
+    kg.allReady && kg.adjLocked && /Дахиад 3 «Тэмдэг нэр» үг/.test(kg.adjMsg) && kg.focus === 'adj' && kg.verbReady && kg.saved === 'verb', JSON.stringify(kg));
+  await shot('pos-games-1400');
+  await size(390, 844, true); await nav(SITE);
+  const k3 = await ev(`location.hash='words';await new Promise(r=>setTimeout(r,300));const c=[...document.querySelectorAll('#view-words [data-action=word-pos]')];
+    const page1=document.documentElement.scrollWidth,small=c.filter(b=>b.getBoundingClientRect().height<44).length;location.hash='review';await new Promise(r=>setTimeout(r,300));
+    const t=[...document.querySelectorAll('#view-review [data-action=pos-practice]')],cols=new Set(t.map(b=>Math.round(b.getBoundingClientRect().left))).size;
+    return {page:Math.max(page1,document.documentElement.scrollWidth),vw:innerWidth,small,tiles:t.length,cols,tsmall:t.filter(b=>b.getBoundingClientRect().height<44).length};`);
+  ok('390: ангиллын товчнууд хэвтээ гүйлтгүй, ≥44px; Давтлагын 6 хавтан 2 баганаар', k3.page <= k3.vw && k3.small === 0 && k3.tiles === 6 && k3.cols === 2 && k3.tsmall === 0, JSON.stringify(k3));
+  await shot('pos-words-390');
+  await ev(`localStorage.removeItem('koto-irodori-v1');localStorage.removeItem('koto-game-pos');return true;`);
+  await size(1400, 900, false);
+
+  console.log('\n[T] Сэдэв: өнгө × горим (11-05j)');
+  /* Статик: styles.css-ийн var(--p-*) бүр :root-д тодорхойлогдсон, 4 сэдвийн блок ИЖИЛ токентой — шинэ өнгө нэмээд
+     нэг сэдэвт мартвал тэр сэдэвт тухайн дүрэм чимээгүй алга болно (CSS хувьсагч тодорхойгүй = unset). */
+  const TCSS = fs.readFileSync(__dirname + '/../v2/themes.css', 'utf8'), SCSS = fs.readFileSync(__dirname + '/../v2/styles.css', 'utf8');
+  const tblock = sel => { const i = TCSS.indexOf(sel + ' {'); return i < 0 ? null : new Set(TCSS.slice(i, TCSS.indexOf('}', i)).match(/--p-[\w-]+(?=:)/g) || []); };
+  const tb = { green: tblock(':root'), pink: tblock(':root[data-palette="pink"]'), coffee: tblock(':root[data-palette="coffee"]'), blue: tblock(':root[data-palette="blue"]') };
+  const used = new Set((SCSS.match(/var\(--p-[\w-]+\)/g) || []).map(v => v.slice(4, -1)));
+  const tmiss = Object.entries(tb).map(([k, s]) => [k, s ? [...tb.green].filter(n => !s.has(n)).length + [...s].filter(n => !tb.green.has(n)).length : -1]).filter(([, n]) => n);
+  const undef = [...used].filter(n => !tb.green.has(n));
+  ok('Статик: 4 сэдвийн блок ижил ' + tb.green.size + ' токентой, styles.css-ийн ' + used.size + ' var(--p-*) бүгд тодорхойлогдсон',
+    tb.green.size >= 200 && !tmiss.length && !undef.length, JSON.stringify({ tmiss, undef: undef.slice(0, 5) }));
+  /* Сэдэв солигдсоны дараа 300 мс хүлээнэ: `.primary-btn`-д `transition: background .15s` — шууд уншвал хуучин өнгө.
+     Хүлээгдэх утга тест дотроо (themes.css-ээс уншихгүй): ногоон лайм b8ef58, ягаан fab2d6 (эзэн), ягааны дэвсгэр
+     fbf7f9 / 21171e, кофегийн шар товч e3b35e, цэнхэр бараан дэвсгэр 131e2a, кофегийн бараан номын хуудас 302218. */
+  await dark(false); await nav(SITE);
+  await ev(`localStorage.removeItem('koto-theme');return true;`); await nav(SITE);
+  const T_STYLE = `const cs=s=>getComputedStyle(document.querySelector(s));
+    const S=()=>({pal:document.documentElement.dataset.palette,th:document.documentElement.getAttribute('data-theme'),
+      body:cs('body').backgroundColor,mark:cs('.brand-mark').backgroundColor,scheme:cs(':root').colorScheme,
+      shadow:cs('.hero-art .m-shadow').fill,page1:cs('.hero-art .m-page1').fill,body2:cs('.hero-art .m-body').fill,
+      hero:cs('.hero .primary-btn').backgroundColor,meta:[...document.querySelectorAll('meta[name=theme-color]')].map(m=>m.content).join(' '),
+      saved:localStorage.getItem('koto-theme')});`;
+  const t0 = await ev(T_STYLE + `const b=document.getElementById('theme-trigger');return {...S(),exp:b.getAttribute('aria-expanded'),api:!!window.KOTO_THEME};`);
+  ok('Анхдагч: Ногоон · Автомат (data-palette="green", data-theme алга), лого лайм, хөтчийн мөр лайм',
+    t0.api && t0.pal === 'green' && t0.th === null && t0.mark === 'rgb(184, 239, 88)' && t0.meta === '#b8ef58 #b8ef58' && t0.exp === 'false' && t0.saved === null, JSON.stringify(t0));
+  const t1 = await ev(`document.getElementById('theme-trigger').click();await new Promise(r=>setTimeout(r,200));const p=document.getElementById('theme-popover');
+    const r=n=>[...p.querySelectorAll('input[name='+n+']')].map(i=>i.value+(i.checked?'*':'')).join(',');
+    return {open:!p.hidden,exp:document.getElementById('theme-trigger').getAttribute('aria-expanded'),pal:r('koto-palette'),mode:r('koto-mode'),
+      legends:[...p.querySelectorAll('legend')].map(l=>l.textContent).join('/'),focus:document.activeElement&&document.activeElement.value};`);
+  ok('Сонгогч: нээгдэнэ (aria-expanded), «Өнгө» 4 · «Горим» 3 радио, одоогийнх тэмдэглэгдсэн, фокус сонгосон өнгөн дээр',
+    t1.open && t1.exp === 'true' && t1.pal === 'green*,pink,coffee,blue' && t1.mode === 'light,dark,auto*' && t1.legends === 'Өнгө/Горим' && t1.focus === 'green', JSON.stringify(t1));
+  const t2 = await ev(`document.querySelector('#theme-popover input[value=pink]').closest('label').click();await new Promise(r=>setTimeout(r,200));` + T_STYLE + `return {...S(),open:!document.getElementById('theme-popover').hidden};`);
+  ok('Ягаан: тэр дор нь солигдоно — лого fab2d6, дэвсгэр fbf7f9, маскот ягаан, хадгалагдсан, поповер нээлттэй хэвээр',
+    t2.pal === 'pink' && t2.mark === 'rgb(250, 178, 214)' && t2.body === 'rgb(251, 247, 249)' && t2.body2 === 'rgb(250, 178, 214)' && t2.open &&
+    t2.saved === '{"palette":"pink","mode":"auto"}' && t2.meta === '#fbf7f9 #21171e', JSON.stringify(t2));
+  const t3 = await ev(`document.querySelector('#theme-popover input[value=dark]').closest('label').click();await new Promise(r=>setTimeout(r,200));` + T_STYLE + `return S();`);
+  ok('Бараан (төхөөрөмж гэрэлтэй байхад): data-theme="dark", дэвсгэр 21171e, color-scheme dark, маскотын сүүдэр 140c11',
+    t3.th === 'dark' && t3.body === 'rgb(33, 23, 30)' && t3.scheme === 'dark' && t3.shadow === 'rgb(20, 12, 17)' && t3.meta === '#21171e #21171e', JSON.stringify(t3));
+  await nav(SITE);
+  const t4 = await ev(T_STYLE + `return S();`);
+  ok('Дахин ачаалахад Ягаан · Бараан хэвээр', t4.pal === 'pink' && t4.th === 'dark' && t4.body === 'rgb(33, 23, 30)', JSON.stringify(t4));
+  await dark(true);
+  const t5 = await ev(`KOTO_THEME.set({mode:'light'});` + T_STYLE + `const a=S();KOTO_THEME.set({mode:'auto'});const b=S();KOTO_THEME.set({mode:'light'});KOTO_THEME.set({mode:'auto'});return {light:a,auto:b,again:S().body};`);
+  ok('Төхөөрөмж бараан: «Гэрэлтэй» → fbf7f9, «Автомат» → 21171e (media нөхцөл анхных руугаа сэргэнэ, давтахад ч)',
+    t5.light.body === 'rgb(251, 247, 249)' && t5.light.scheme === 'light' && t5.auto.body === 'rgb(33, 23, 30)' && t5.auto.th === null && t5.again === 'rgb(33, 23, 30)', JSON.stringify(t5));
+  const t6 = await ev(`const W=()=>new Promise(r=>setTimeout(r,300));KOTO_THEME.set({palette:'blue'});await W();` + T_STYLE + `const b=S();KOTO_THEME.set({palette:'coffee'});await W();const c=S();KOTO_THEME.set({palette:'green'});await W();const g=S();return {b,c,g};`);
+  ok('Цэнхэр бараан 131e2a · Кофе бараан: номын хуудас 302218, шар товч e3b35e · Ногоон бараан: маскотын сүүдэр 0c160b',
+    t6.b.body === 'rgb(19, 30, 42)' && t6.c.page1 === 'rgb(48, 34, 24)' && t6.c.hero === 'rgb(227, 179, 94)' && t6.g.shadow === 'rgb(12, 22, 11)' && t6.g.body === 'rgb(18, 26, 22)', JSON.stringify(t6));
+  await dark(false);
+  const t7 = await ev(`const W=()=>new Promise(r=>setTimeout(r,300));KOTO_THEME.set({palette:'coffee'});await W();` + T_STYLE + `const c=S();KOTO_THEME.set({palette:'green'});await W();const g=S();return {c:c.hero,g:g.hero};`);
+  ok('Гэрэлтэй: кофегийн гол товч шар e3b35e, ногоонд бараан 22352c (тусгай дүрэм зөвхөн тухайн сэдэвт)',
+    t7.c === 'rgb(227, 179, 94)' && t7.g === 'rgb(34, 53, 44)', JSON.stringify(t7));
+  await nav(SITE);
+  const t8 = await ev(`const b=document.getElementById('theme-trigger'),p=document.getElementById('theme-popover'),lb=document.getElementById('language-trigger'),lp=document.getElementById('language-popover');
+    const W=ms=>new Promise(r=>setTimeout(r,ms));b.click();await W(150);
+    document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await W(100);const esc=p.hidden&&document.activeElement===b;
+    b.click();await W(150);lb.click();await W(150);const swap=p.hidden&&!lp.hidden&&b.getAttribute('aria-expanded')==='false';
+    b.click();await W(150);const swap2=lp.hidden&&!p.hidden;
+    document.querySelector('.nav-item[data-view=words]').focus();await W(100);const tab=p.hidden;return {esc,swap,swap2,tab};`);
+  ok('Escape → хаагдаж фокус товч руу; хэл ↔ сэдэв сонгогч зэрэг нээгдэхгүй; фокус гадагш гарвал хаагдана',
+    t8.esc && t8.swap && t8.swap2 && t8.tab, JSON.stringify(t8));
+  await size(390, 844, true); await nav(SITE);
+  const t9 = await ev(`const b=document.getElementById('theme-trigger');const r=b.getBoundingClientRect();b.click();await new Promise(r=>setTimeout(r,200));
+    const p=document.getElementById('theme-popover').getBoundingClientRect(),small=[...document.querySelectorAll('#theme-popover .theme-choice')].filter(c=>c.getBoundingClientRect().height<44).length;
+    return {w:r.width,h:r.height,in:p.left>=0&&p.right<=innerWidth&&p.top>=0&&p.bottom<=innerHeight,page:document.documentElement.scrollWidth,vw:innerWidth,small};`);
+  ok('390: товч ≥ 44×44, поповер дэлгэц дотор, сонголт бүр ≥ 44px, хэвтээ гүйлтгүй',
+    t9.w >= 44 && t9.h >= 44 && t9.in && t9.small === 0 && t9.page <= t9.vw, JSON.stringify(t9));
+  await shot('theme-390-picker');
+  /* Astra-гийн хяналт (11-05j): хуруугаар 2× томруулахад поповер ХАРАГДАХ талбай (visualViewport) дотор, өнгө 1 баганаар
+     (2 баганаар 163px-д үсэг бүр мөр болж байв). */
+  await ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;`);
+  await send('Emulation.setPageScaleFactor', { pageScaleFactor: 2 }); await sleep(300);
+  const tz = await ev(`document.getElementById('theme-trigger').click();await new Promise(r=>setTimeout(r,300));const v=visualViewport,p=document.getElementById('theme-popover').getBoundingClientRect();
+    const ch=[...document.querySelectorAll('#theme-popover .theme-palette-choice')];
+    return {scale:v.scale,in:p.left>=v.offsetLeft-1&&p.right<=v.offsetLeft+v.width+1&&p.top>=v.offsetTop-1&&p.bottom<=v.offsetTop+v.height+1,
+      tall:ch.filter(c=>c.getBoundingClientRect().height>46).length,pop:[p.left,p.top,p.width,p.height].map(Math.round),vv:[v.offsetLeft,v.offsetTop,v.width,v.height].map(Math.round)};`);
+  ok('390, 2× томруулсан: поповер харагдах талбай дотор, өнгөний сонголт бүр нэг мөр', tz.scale === 2 && tz.in && tz.tall === 0, JSON.stringify(tz));
+  await ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true;`);
+  await send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 });
+  const tc = await ev(`KOTO_THEME.set({palette:'pink',mode:'dark'});const before=document.documentElement.dataset.palette;
+    localStorage.clear();window.dispatchEvent(new StorageEvent('storage',{key:null}));
+    return {before,after:document.documentElement.dataset.palette,th:document.documentElement.getAttribute('data-theme'),get:JSON.stringify(KOTO_THEME.get())};`);
+  ok('Өөр табад localStorage.clear() (storage event key=null) → энд ч Ногоон · Автомат', tc.before === 'pink' && tc.after === 'green' && tc.th === null && tc.get === '{"palette":"green","mode":"auto"}', JSON.stringify(tc));
+  await ev(`localStorage.removeItem('koto-theme');return true;`);
   await size(1400, 900, false); await dark(false);
 
   console.log('\n[H] Консол');
