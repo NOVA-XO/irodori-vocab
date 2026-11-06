@@ -4767,6 +4767,7 @@ ruby.jp-face rt {
   /* Artwork inside the border is 22 × 16px. */
 }
 .language-chevron,
+.theme-chevron,
 .language-check {
   display: block;
   width: 16px;
@@ -4778,7 +4779,8 @@ ruby.jp-face rt {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.language-trigger[aria-expanded="true"] .language-chevron {
+.language-trigger[aria-expanded="true"] .language-chevron,
+.theme-trigger[aria-expanded="true"] .theme-chevron {
   transform: rotate(180deg);
 }
 
@@ -5040,6 +5042,8 @@ ruby.jp-face rt {
 /* ── Сэдэв сонгогч (11-05j, загвар — Astra; холболт — Claude) ─────────
    Дээд мөрөнд аватарын өмнө; поповер нь хэл сонгогчийнх шиг `hidden` + fixed. Native radio +
    fieldset/legend. Дээж (4) л тогтмол hex — бусад нь токен, тул сэдэв бүрт өөрөө өнгөө авна.
+   11-06a: товч нь бичиг/дүрсний оронд ОДООГИЙН өнгөний дээж + chevron (эзэн; Astra). Дээж CSS-ээр
+   `:root[data-palette]`-аас — theme.js анхны зурахаас өмнө тавьдаг тул ногоон гялсхийхгүй.
    Astra-гийн 390px-ийн дээд мөрийг grid болгох дүрмийг АВААГҮЙ — одоогийн ороолт хангалттай (хэмжив). */
 
 .theme-trigger,
@@ -5053,11 +5057,11 @@ ruby.jp-face rt {
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-width: 44px;
+  gap: 6px;
+  min-width: 64px;
   min-height: 44px;
   margin: 0;
-  padding: 8px 10px;
+  padding: 8px;
   border: 1px solid var(--muted);
   border-radius: 10px;
   background: var(--paper);
@@ -5075,20 +5079,8 @@ ruby.jp-face rt {
   background: var(--soft);
 }
 
-.theme-trigger-label {
-  white-space: nowrap;
-}
-
-.theme-trigger .theme-icon {
-  display: block;
-  flex: 0 0 20px;
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.theme-trigger .theme-swatch {
+  flex: 0 0 24px;
 }
 
 .theme-trigger:focus-visible {
@@ -5250,11 +5242,12 @@ ruby.jp-face rt {
 }
 
 /* Зөвхөн дээжид тогтмол өнгө хэрэглэнэ. */
+.theme-trigger .theme-swatch,
 #theme-popover .theme-swatch {
   display: block;
   width: 24px;
   height: 24px;
-  border: 1px solid var(--muted);
+  border: 1px solid var(--ink);
   border-radius: 50%;
   background: linear-gradient(
     135deg,
@@ -5263,21 +5256,25 @@ ruby.jp-face rt {
   );
 }
 
+:root[data-palette="green"],
 #theme-popover [data-swatch="green"] {
   --sample-light: #b8ef58;
   --sample-dark: #2a5744;
 }
 
+:root[data-palette="pink"],
 #theme-popover [data-swatch="pink"] {
   --sample-light: #fab2d6;
   --sample-dark: #733653;
 }
 
+:root[data-palette="coffee"],
 #theme-popover [data-swatch="coffee"] {
   --sample-light: #f8f4e1;
   --sample-dark: #74512d;
 }
 
+:root[data-palette="blue"],
 #theme-popover [data-swatch="blue"] {
   --sample-light: #dbe2ef;
   --sample-dark: #325b8c;
@@ -5285,12 +5282,8 @@ ruby.jp-face rt {
 
 @media (max-width: 700px) {
   .theme-trigger {
-    width: 44px;
-    min-width: 44px;
+    width: 64px;
+    min-width: 64px;
     padding: 0;
-  }
-
-  .theme-trigger-label {
-    display: none;
   }
 }

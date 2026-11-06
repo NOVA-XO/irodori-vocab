@@ -2864,13 +2864,13 @@
      тэр дор нь KOTO_THEME.set (theme.js — хадгалах, горимыг хэрэгжүүлэх); поповер нээлттэй, фокус радио дээрээ үлдэнэ.
      Доор багтахгүй бол товчны дээр нээгдэнэ. Хуруугаар томруулсан үед ХАРАГДАХ талбай (visualViewport) дотор шахна —
      2×-д поповер 195px талбайгаас гарч байв (Astra-гийн хяналт; хэмжив). */
-  function themeSync(){const t=THEME.get();themePop.querySelectorAll('.theme-radio').forEach(i=>{i.checked=i.value===(i.name==='koto-palette'?t.palette:t.mode);});}
+  function themeSync(){const t=THEME.get(),say=`Өнгө солих. Одоо: ${{green:'Ногоон',pink:'Ягаан',coffee:'Кофе',blue:'Цэнхэр'}[t.palette]}.`;themeBtn.setAttribute('aria-label',say);themeBtn.title=say;themePop.querySelectorAll('.theme-radio').forEach(i=>{i.checked=i.value===(i.name==='koto-palette'?t.palette:t.mode);});}
   function themePlace(){const v=window.visualViewport,x=v?v.offsetLeft:0,y=v?v.offsetTop:0,vw=v?v.width:innerWidth,vh=v?v.height:innerHeight,c=(n,lo,hi)=>Math.max(lo,Math.min(n,hi));themePop.style.width=Math.max(1,Math.min(288,vw-32))+'px';themePop.style.maxHeight=Math.max(1,vh-32)+'px';const r=themeBtn.getBoundingClientRect(),w=themePop.offsetWidth,h=themePop.offsetHeight;let top=r.bottom+8;if(top+h>y+vh-16)top=r.top-8-h;themePop.style.top=Math.round(c(top,y+16,y+vh-16-h))+'px';themePop.style.left=Math.round(c(r.right-w,x+16,x+vw-16-w))+'px';}
   function themeShow(open,back){if(open&&langPop&&!langPop.hidden)langShow(false);themePop.hidden=!open;themeBtn.setAttribute('aria-expanded',String(open));if(open){themeSync();themePlace();const c=themePop.querySelector('.theme-radio:checked');if(c)c.focus({preventScroll:true});}else if(back)themeBtn.focus({preventScroll:true});}
   if(themeBtn&&themePop&&THEME){
     themeBtn.addEventListener('click',()=>themeShow(themePop.hidden));
     themePop.addEventListener('change',e=>{const i=e.target;if(!i.classList.contains('theme-radio')||!i.checked)return;THEME.set(i.name==='koto-palette'?{palette:i.value}:{mode:i.value});});
-    document.addEventListener('koto-theme',themeSync);
+    themeSync();document.addEventListener('koto-theme',themeSync);
     document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!themePop.hidden){e.preventDefault();themeShow(false,true);}});
     document.addEventListener('pointerdown',e=>{if(!themePop.hidden&&!themePop.contains(e.target)&&!themeBtn.contains(e.target))themeShow(false);});
     document.addEventListener('focusin',e=>{if(!themePop.hidden&&!themePop.contains(e.target)&&!themeBtn.contains(e.target))themeShow(false);});

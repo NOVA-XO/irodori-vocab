@@ -491,6 +491,18 @@ function getJSON(path, method) {
   const t0 = await ev(T_STYLE + `const b=document.getElementById('theme-trigger');return {...S(),exp:b.getAttribute('aria-expanded'),api:!!window.KOTO_THEME};`);
   ok('Анхдагч: Ногоон · Автомат (data-palette="green", data-theme алга), лого лайм, хөтчийн мөр лайм',
     t0.api && t0.pal === 'green' && t0.th === null && t0.mark === 'rgb(184, 239, 88)' && t0.meta === '#b8ef58 #b8ef58' && t0.exp === 'false' && t0.saved === null, JSON.stringify(t0));
+  /* 11-06a (эзэн): товч дээр бичиг/палитрын дүрс биш ОДООГИЙН өнгөний дээж. Дээж CSS-ээс — JS хүлээвэл ачаалахад ногоон гялсхийнэ. */
+  const ts = await ev(`const b=document.getElementById('theme-trigger'),g=()=>getComputedStyle(b.querySelector('.theme-swatch')).backgroundImage,W=()=>new Promise(r=>setTimeout(r,60)),out={text:b.textContent.trim(),old:!!b.querySelector('.theme-icon,.theme-trigger-label'),chev:!!b.querySelector('.theme-chevron'),pal:{}};
+    for(const [p,c,n] of [['pink','rgb(250, 178, 214)','Ягаан'],['coffee','rgb(248, 244, 225)','Кофе'],['blue','rgb(219, 226, 239)','Цэнхэр'],['green','rgb(184, 239, 88)','Ногоон']]){KOTO_THEME.set({palette:p});await W();out.pal[p]=g().includes(c)&&b.getAttribute('aria-label')==='Өнгө солих. Одоо: '+n+'.'&&b.title===b.getAttribute('aria-label');}
+    document.documentElement.dataset.palette='coffee';out.cssOnly=g().includes('rgb(248, 244, 225)');document.documentElement.dataset.palette='green';
+    out.region=document.getElementById('theme-popover').getAttribute('aria-label');return out;`);
+  ok('Товч: бичиггүй, chevron-той; дээж ба уншигчийн нэр 4 өнгө бүрд зөв («Өнгө солих. Одоо: Ягаан.»); дээж зөвхөн CSS-ээр; «Сэдэв» үг алга',
+    ts.text === '' && !ts.old && ts.chev && ts.pal.pink && ts.pal.coffee && ts.pal.blue && ts.pal.green && ts.cssOnly && ts.region === 'Өнгө солих', JSON.stringify(ts));
+  const tk = await ev(`const num=c=>(c.match(/[0-9.]+/g)||[]).map(Number),lin=v=>{v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);},L=c=>{const n=num(c);return 0.2126*lin(n[0])+0.7152*lin(n[1])+0.0722*lin(n[2]);},cr=(a,b)=>{const x=L(a),y=L(b);return (Math.max(x,y)+0.05)/(Math.min(x,y)+0.05);};
+    const b=document.getElementById('theme-trigger'),sw=b.querySelector('.theme-swatch'),ch=b.querySelector('.theme-chevron'),W=()=>new Promise(r=>setTimeout(r,300));let min=99,at='';
+    for(const palette of ['green','pink','coffee','blue'])for(const mode of ['light','dark'])for(const open of ['false','true']){KOTO_THEME.set({palette,mode});b.setAttribute('aria-expanded',open);await W();const bg=getComputedStyle(b).backgroundColor,v=Math.min(cr(getComputedStyle(sw).borderTopColor,bg),cr(getComputedStyle(ch).stroke,bg));if(v<min){min=v;at=palette+' '+mode+' '+open;}}
+    b.setAttribute('aria-expanded','false');KOTO_THEME.set({palette:'green',mode:'auto'});await W();return {min:+min.toFixed(2),at};`);
+  ok('Дээжийн хүрээ ба chevron ≥ 3:1 — 4 өнгө × гэрэлтэй/бараан, хаалттай/нээлттэй (кофены цайвар дээж цайвар дэвсгэрт)', tk.min >= 3, JSON.stringify(tk));
   const t1 = await ev(`document.getElementById('theme-trigger').click();await new Promise(r=>setTimeout(r,200));const p=document.getElementById('theme-popover');
     const r=n=>[...p.querySelectorAll('input[name='+n+']')].map(i=>i.value+(i.checked?'*':'')).join(',');
     return {open:!p.hidden,exp:document.getElementById('theme-trigger').getAttribute('aria-expanded'),pal:r('koto-palette'),mode:r('koto-mode'),
@@ -507,6 +519,8 @@ function getJSON(path, method) {
   await nav(SITE);
   const t4 = await ev(T_STYLE + `return S();`);
   ok('Дахин ачаалахад Ягаан · Бараан хэвээр', t4.pal === 'pink' && t4.th === 'dark' && t4.body === 'rgb(33, 23, 30)', JSON.stringify(t4));
+  const t4b = await ev(`return document.getElementById('theme-trigger').getAttribute('aria-label');`);
+  ok('Дахин ачаалахад уншигчийн нэр анхнаасаа одоогийн өнгөтэй', t4b === 'Өнгө солих. Одоо: Ягаан.', t4b);
   await dark(true);
   const t5 = await ev(`KOTO_THEME.set({mode:'light'});` + T_STYLE + `const a=S();KOTO_THEME.set({mode:'auto'});const b=S();KOTO_THEME.set({mode:'light'});KOTO_THEME.set({mode:'auto'});return {light:a,auto:b,again:S().body};`);
   ok('Төхөөрөмж бараан: «Гэрэлтэй» → fbf7f9, «Автомат» → 21171e (media нөхцөл анхных руугаа сэргэнэ, давтахад ч)',
@@ -549,6 +563,9 @@ function getJSON(path, method) {
     localStorage.clear();window.dispatchEvent(new StorageEvent('storage',{key:null}));
     return {before,after:document.documentElement.dataset.palette,th:document.documentElement.getAttribute('data-theme'),get:JSON.stringify(KOTO_THEME.get())};`);
   ok('Өөр табад localStorage.clear() (storage event key=null) → энд ч Ногоон · Автомат', tc.before === 'pink' && tc.after === 'green' && tc.th === null && tc.get === '{"palette":"green","mode":"auto"}', JSON.stringify(tc));
+  await size(320, 700, true); await nav(SITE);
+  const t320 = await ev(`const r=document.getElementById('theme-trigger').getBoundingClientRect(),top=document.querySelector('.topbar').getBoundingClientRect();return {w:r.width,h:r.height,right:r.right,vw:innerWidth,page:document.documentElement.scrollWidth,top:top.height};`);
+  ok('320: дээжтэй товч ≥ 44×44, дэлгэц дотор, дээд мөр нэг эгнээ (< 90px), хэвтээ гүйлтгүй', t320.w >= 44 && t320.h >= 44 && t320.right <= t320.vw && t320.page <= t320.vw && t320.top < 90, JSON.stringify(t320));
   await ev(`localStorage.removeItem('koto-theme');return true;`);
   await size(1400, 900, false); await dark(false);
 
