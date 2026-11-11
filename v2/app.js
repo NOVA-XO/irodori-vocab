@@ -2275,9 +2275,23 @@
     renderSession();
   }
   function nextQuestion(){if(!session||session.completed)return;const q=session.queue[session.pos];if(q.type!=='learn'&&!session.checked)return;session.pos++;if(session.pos>=session.queue.length){finishLesson();return;}session.selected=null;session.selectedTokens=[];session.checked=false;session.showHint=false;renderSession();$('lesson-dialog').scrollTop=0;const h=$('exercise-title');if(h)h.focus({preventScroll:true});markOverflowSoon($('lesson-content'));}
+  /* Хэрэглээний НЭРГҮЙ тоо (эзэн 11-07): нээгдэхэд өдөрт нэг удаа, дасгалын дараа тоог л (нээлт нэмэхгүй). Серверийн `ping`-ийг v1-тэй хамт ашиглана;
+     id нь `v2-`-ээр эхэлдэг тул `devices.dev like 'v2-%'`-ээр салгана. Илгээх нь: санамсаргүй id, ХЭДЭН үг, хэдэн хариулт, хэдэн бататгасан — АЛЬ үг, имэйл биш.
+     Хоёр зүйлийг зориуд тусгаарлав: id нь xpd-ийн `devId`-ээс ТУСДАА (тэр нь Google бүртгэлийн өгөгдөлд ордог); `rpc()`-ээр БИШ (нэвтэрсэн хэрэглэгчийн токен явуулдаг,
+     `ping` нь зөвхөн anon-д нээлттэй). Локал хаяг дээр бүртгэхгүй (STATE §2.13). Өдрийг зөвхөн амжилттай бол тэмдэглэнэ — сүлжээгүй үед дараа дахин оролдоно. */
+  const USAGE_ID='koto-usage-id',USAGE_DAY='koto-usage-day';
+  let usageHost=location.hostname,lastStatsPing=0;
+  const usageIsDev=h=>location.protocol==='file:'||!h||h==='localhost'||h==='127.0.0.1'||h==='[::1]'||h.endsWith('.local');
+  /* Хадгалж чадахгүй бол null: нээлт бүр «шинэ төхөөрөмж» болж тоог хөөргөхгүйн тулд бүртгэхгүй. */
+  function usageId(){try{let id=localStorage.getItem(USAGE_ID);if(!/^v2-[0-9a-f]{32}$/.test(id||'')){id='v2-'+[...crypto.getRandomValues(new Uint8Array(16))].map(b=>b.toString(16).padStart(2,'0')).join('');localStorage.setItem(USAGE_ID,id);}return localStorage.getItem(USAGE_ID)===id?id:null;}catch(e){return null;}}
+  function usageTotals(){const s=wordStats(allWords);let answers=0;for(const w of allWords){const r=state.words[w.id];if(r)answers+=Number(r.attempts)||0;}return {p_cards:s.seen,p_answers:answers,p_learned:s.strong};}
+  function usagePost(extra){if(!syncOn()||usageIsDev(usageHost))return null;const id=usageId();if(!id)return null;const headers={'Content-Type':'application/json',apikey:SYNC.key};if(/^eyJ/.test(SYNC.key))headers.Authorization='Bearer '+SYNC.key;return fetch(SYNC.url.replace(/\/+$/,'')+'/rest/v1/rpc/ping',{method:'POST',headers,keepalive:true,body:JSON.stringify(Object.assign({p_dev:id},usageTotals(),extra))});}
+  async function pingUsage(){try{const t=today();if(localStorage.getItem(USAGE_DAY)===t)return;const r=await usagePost({});if(r&&r.ok)localStorage.setItem(USAGE_DAY,t);}catch(e){/* хэрэглээний тоо аппад нөлөөлөх ёсгүй */}}
+  /* 2 минутад нэгээс олонгүй: богино дасгал дараалан хийхэд сүлжээ дэмий ачаалахгүй. */
+  async function statsPing(now=Date.now()){if(now-lastStatsPing<120000)return;lastStatsPing=now;try{await usagePost({p_bump:false});}catch(e){/* дээрхтэй адил */}}
   function finishLesson(){if(session.completed)return;session.completed=true;state.xp+=session.xp;addDayXp(session.xp);if(!session.review&&!state.completed.includes(session.lesson.id))state.completed.push(session.lesson.id);const date=today();const daySet=new Set(Array.isArray(state.days[date])?state.days[date]:[]);
     const store=session.kana?state.kana:state.words;for(const word of session.words){const result=session.results[word.id]||{attempts:0,misses:0,correct:0},prior=store[word.id]||{},passes=result.misses?0:(Number(prior.passes)||0)+1;store[word.id]={passes,weak:result.misses>0,due:shiftDate(date,result.misses?1:passes>=3?7:passes===2?3:1),last:date,attempts:(Number(prior.attempts)||0)+result.attempts,misses:(Number(prior.misses)||0)+result.misses};daySet.add(word.id);}
-    state.days[date]=[...daySet];save();updateTop();sfx(SFX.done);renderCompletion();
+    state.days[date]=[...daySet];save();statsPing();updateTop();sfx(SFX.done);renderCompletion();
   }
   function renderCompletion(){const accuracy=session.firstAnswers?Math.round(session.firstCorrect/session.firstAnswers*100):100;const minutes=Math.max(1,Math.round((Date.now()-session.started)/60000));const missed=Object.values(session.results).filter(r=>r.misses).length;
     $('lesson-content').innerHTML=`<div class="lesson-frame"><div class="lesson-top"><button class="icon-button" data-action="finish" aria-label="Сурах зам руу буцах">${icon('close')}</button><div class="progress-track"><div class="progress-fill" style="width:100%"></div></div><span class="session-xp">${session.xp} XP</span>${soundBtn()}</div><section class="completion"><div class="completion-mascot">${mascot()}</div><div class="eyebrow">ӨНӨӨДРИЙН НЭГ АЛХАМ</div><h1>${session.test?'Шалгалт дууслаа!':session.kanji?'Ханзаа бататгалаа!':session.kana?'Катаканаа бататгалаа!':session.review?'Үгсээ бататгалаа!':'Хичээлээ дуусгалаа!'}</h1><p>${session.test?`${session.firstAnswers} асуултад хариуллаа.`:session.kanji?`${session.words.length} ханз дээр ажиллалаа.`:session.kana?`${session.words.length} катакана үсэг дээр ажиллалаа.`:`${session.words.length} үг, хэллэг дээр ажиллалаа.`}<br>${missed?`${missed} алдсан ${session.kanji?'ханзаа':session.kana?'үсгээ':'үгээ'} давтлагад дахин бататгаарай.`:'Дараа нь харахгүйгээр санаж хэлж үзээрэй.'}</p><div class="result-stats"><div class="result-stat"><strong>+${session.xp}</strong><span>ХУРИМТЛУУЛСАН XP</span></div><div class="result-stat"><strong>${accuracy}%</strong><span>ЭХНИЙ ОРОЛДЛОГО</span></div><div class="result-stat"><strong>${minutes}</strong><span>МИНУТ</span></div></div><button class="primary-btn" data-action="finish">Сурах зам руу буцах${icon('arrow')}</button><p class="save-note">${storageWorks?SAVE_TEXT[saveKind()][1]:'Ахиц энэ хөтөч дээр хадгалагдсангүй.'}</p></section></div>`;
@@ -2887,6 +2901,7 @@
   /* Хоолойн жагсаалт хөтөч дээр ХОЖУУ дүүрдэг тул нэг удаа уншаад
      өнгөрвөл `jaVoice` үргэлж null болно. */
   pickVoice();
+  pingUsage();
   if(canSpeak&&typeof speechSynthesis.addEventListener==='function')
     speechSynthesis.addEventListener('voiceschanged',pickVoice);
   /* Нэвтэрсэн бол нээгдмэгц ТАТНА: нөгөө төхөөрөмж дээр хийсэн
@@ -2910,6 +2925,7 @@
     words:()=>allWords,say:sayWord,hear:canHear,playing:()=>auNow,
     signedIn:signedIn,user:authUser,signOut:signOut,googleIn:googleIn,
     numTest:{build:buildTest,genDate,genTime,MONTHS,DAYS,HOURS,session:()=>session},
+    usage:{ping:pingUsage,stats:statsPing,totals:usageTotals,id:usageId,host:h=>{usageHost=h;}},
     vocab:{units:()=>UNITS,levels:()=>LEVELS,lessons:()=>lessons,legacy:()=>DATA.legacy,extra:()=>DATA.extra,num:()=>NUM_TOPICS,selected:selectedUnit,lessonOf:id=>lessonOfWord[id],sentences:()=>SENTENCES,readFrom:readStateFrom},
     kanji:{list:()=>KANJI,lessons:()=>kanjiLessons,data:kanjiData,quizzes:kanjiQuizzes,pick:kanjiPick,start:startKanji,review:startKanjiReview,due:kanjiDue,read:kanjiRead,originStats:kanjiOriginStats,originMarkup:kjOriginMarkup,picRound:kjPicRound,picPool:kjPicPool,gallery:kanjiGallery,oldSrc:kanjiOldSrc,vg:kanjiVG},
     games:{pool:gamePool,pick:gamePick,clash:gameClash,short:shortMn,ready:gameReady,start:openGame,close:closeGame,state:()=>game,

@@ -68,6 +68,9 @@ function getJSON(path, method) {
     ws.send(JSON.stringify({ id: i, method, params: params || {} }));
   });
   await send('Runtime.enable');
+  /* §2.116: локал хамгаалалт эвдэрвэл хуудас ачаалахад `ping` БОДИТ сервер рүү явдаг (мутацаас 2 мөр орсон) — тестийн явцад сүлжээнд хаана. */
+  await send('Network.enable');
+  await send('Network.setBlockedURLs', { urls: ['*/rest/v1/rpc/ping*'] });
   const ev = async expr => {
     const r = await send('Runtime.evaluate', {
       expression: '(async()=>{' + expr + '})()',
@@ -696,6 +699,38 @@ function getJSON(path, method) {
     JSON.stringify({ pg, pg2 }));
   await ev(`localStorage.removeItem('koto-irodori-v1');localStorage.removeItem('koto-game-pos');return true;`);
   await reload();
+
+  console.log('\n[U] Хэрэглээний нэргүй тоо (11-07; v1-ийн ping, id «v2-»)');
+  /* Бодит сервер рүү юу ч явахгүй: `fetch`-ийг орлуулна. Тоо нь тест дотроо: 3 үг, 7+2+4 = 13 хариулт, 1 бататгасан. */
+  await ev(`const W=window.KOTO.words().slice(0,3),t='2026-11-07',r=(passes,weak,attempts)=>({passes,weak,due:t,last:t,attempts,misses:weak?1:0});
+    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:0,completed:[],words:{[W[0].id]:r(3,false,7),[W[1].id]:r(1,false,2),[W[2].id]:r(0,true,4)},kana:{},days:{},xpd:{},selectedTopic:0}));
+    localStorage.removeItem('koto-usage-id');localStorage.removeItem('koto-usage-day');return true;`);
+  const U_RESET = `window.__real=window.__real||window.fetch;window.__calls=[];window.__mode=200;window.fetch=async(u,o)=>{if(String(u).includes('/rpc/ping')){window.__calls.push({u:String(u),h:(o||{}).headers,b:JSON.parse((o||{}).body||'{}')});if(window.__mode==='throw')throw new TypeError('сүлжээгүй');return new Response(null,{status:window.__mode});}return new Response('null',{status:401});};`;
+  await reload();
+  const uDev = await ev(U_RESET + `const U=window.KOTO.usage,started=performance.getEntriesByType('resource').filter(e=>e.name.includes('/rpc/ping')).length,idEarly=localStorage.getItem('koto-usage-id');
+    for(const h of ['127.0.0.1','localhost','[::1]','pc.local','']){U.host(h);await U.ping();await U.stats(Date.now()+1e9*(h.length+1));}
+    return {started,idEarly,calls:window.__calls.length,idAfter:localStorage.getItem('koto-usage-id')};`);
+  ok('Локал хаяг дээр бүртгэхгүй: нээгдэхэд ч, 5 локал нэр дээр ч ping алга, id ч үүсэхгүй', uDev.started === 0 && uDev.idEarly === null && uDev.calls === 0 && uDev.idAfter === null, JSON.stringify(uDev));
+  const uRun = await ev(U_RESET + `const U=window.KOTO.usage;U.host('nova-xo.github.io');localStorage.setItem('koto-auth',JSON.stringify({access_token:'USER-TOKEN',refresh_token:'r',expires_at:Math.floor(Date.now()/1000)+86400,user:{email:'a@b.c',name:'A',avatar:null}}));
+    const out={};await U.ping();const c=window.__calls[0]||{};out.n1=window.__calls.length;out.u=c.u;out.h=c.h;out.b=c.b;out.day=localStorage.getItem('koto-usage-day');
+    await U.ping();out.n2=window.__calls.length;
+    localStorage.removeItem('koto-usage-day');window.__mode=500;await U.ping();out.n3=window.__calls.length;out.day500=localStorage.getItem('koto-usage-day');
+    window.__mode='throw';await U.ping();out.n4=window.__calls.length;out.dayThrow=localStorage.getItem('koto-usage-day');
+    window.__mode=200;await U.ping();out.n5=window.__calls.length;out.dayOk=!!localStorage.getItem('koto-usage-day');
+    const T=Date.now()+1e11,n=window.__calls.length;await U.stats(T);out.st1=window.__calls.length-n;out.stB=(window.__calls[n]||{}).b;await U.stats(T+1000);out.st2=window.__calls.length-n;await U.stats(T+121000);out.st3=window.__calls.length-n;
+    out.id=U.id();out.dev=window.KOTO.profile.dev();out.inState=JSON.stringify(window.KOTO.state()).includes(out.id);localStorage.removeItem('koto-auth');return out;`);
+  ok('Илгээх зүйл: зөвхөн id + 3 тоо (3 үг, 13 хариулт, 1 бататгасан); /rest/v1/rpc/ping; хэрэглэгчийн токен ЯВАХГҮЙ',
+    uRun.n1 === 1 && /\/rest\/v1\/rpc\/ping$/.test(uRun.u) && Object.keys(uRun.b).sort().join() === 'p_answers,p_cards,p_dev,p_learned' && uRun.b.p_cards === 3 && uRun.b.p_answers === 13 && uRun.b.p_learned === 1 &&
+    !JSON.stringify(uRun.h).includes('USER-TOKEN') && !!uRun.h.apikey, JSON.stringify({ b: uRun.b, u: uRun.u, h: Object.keys(uRun.h || {}) }));
+  ok('Өдөрт нэг удаа; сервер алдаа ба сүлжээгүйд өдөр тэмдэглэхгүй, дахин оролдоно; апп уналгүй', uRun.day && uRun.n2 === 1 && uRun.n3 === 2 && uRun.day500 === null && uRun.n4 === 3 && uRun.dayThrow === null && uRun.n5 === 4 && uRun.dayOk, JSON.stringify(uRun));
+  ok('Дасгалын дараах тоо: p_bump:false (нээлт нэмэхгүй), 2 минутад нэг', uRun.st1 === 1 && uRun.stB.p_bump === false && uRun.st2 === 1 && uRun.st3 === 2, JSON.stringify([uRun.st1, uRun.st2, uRun.st3]));
+  ok('id нэргүй: v2- + 32 hex, xpd-ийн devId-ээс ялгаатай, Google-д синк хийгддэг төлөвт ороогүй', /^v2-[0-9a-f]{32}$/.test(uRun.id) && uRun.id !== uRun.dev && !uRun.inState, JSON.stringify({ id: uRun.id, dev: uRun.dev }));
+  await reload();
+  await ev(U_RESET + `const U=window.KOTO.usage;U.host('nova-xo.github.io');window.__id0=U.id();document.querySelector('.node-button:not(:disabled)').click();await new Promise(r=>setTimeout(r,300));return true;`);
+  const uDone = await ev(RUN);
+  const uLes = await ev(`await new Promise(r=>setTimeout(r,100));const c=window.__calls,id=localStorage.getItem('koto-usage-id');const d=document.getElementById('lesson-dialog');if(d.open)d.close();return {n:c.length,b:c[0]&&c[0].b,id};`);
+  ok('Бодит хичээл дуусахад тоо шинэчлэгдэнэ (p_bump:false), id дахин ачаалсны дараа ижил', uDone && uLes.n === 1 && uLes.b.p_bump === false && uLes.b.p_cards > 3 && uLes.id === uRun.id && uLes.b.p_dev === uRun.id, JSON.stringify(uLes));
+  await ev(`localStorage.removeItem('koto-irodori-v1');localStorage.removeItem('koto-usage-id');localStorage.removeItem('koto-usage-day');localStorage.removeItem('koto-auth');return true;`);
 
   console.log('\n[5] Консол');
   ok('барьсангүй уналт гараагүй', errs.length === 0, errs.slice(0, 3).join(' | '));
