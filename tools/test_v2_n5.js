@@ -136,7 +136,7 @@ const getJSON = (p, m) => new Promise((res, rej) => { const q = http.request({ h
     const at={sec:m.sec,part:q.part,label:btn()&&btn().textContent};btn().click();await W(200);
     const after={played:q.played,off:btn().disabled};q.pick=null;c().querySelector('[data-n5=next]').click();await W(80);c().querySelector('[data-n5=prev]').click();await W(80);
     return {status:r.status,type:r.headers.get('content-type'),prac,at,after,back:{off:btn().disabled,label:btn().textContent,played:q.played}};`);
-  ok('Дуу сервер дээр (200, audio/mpeg); дасгалд дахин сонсож болно (2 удаа)', au.status === 200 && /audio\/mpeg/.test(au.type || '') && au.prac.played === 2 && !au.prac.off, JSON.stringify(au).slice(0, 200));
+  ok('Дуу сервер дээр (200, audio/mpeg эсвэл Pages-ийн audio/mp3); дасгалд дахин сонсож болно (2 удаа)', au.status === 200 && /audio\/(mpeg|mp3)/.test(au.type || '') && au.prac.played === 2 && !au.prac.off, JSON.stringify(au).slice(0, 200));
   ok('Бүтэн шалгалт: сонсгол (聴解) 課題理解-ээр эхэлж, нэг дармагц товч хаагдана, буцаж ирэхэд «Сонссон»', au.at.sec === 2 && au.at.part === 'task' && /Сонсох/.test(au.at.label) && au.after.played === 1 && au.after.off && au.back.off && /Сонссон/.test(au.back.label) && au.back.played === 1, JSON.stringify([au.at, au.after, au.back]));
   const ex = await ev(`const W=ms=>new Promise(r=>setTimeout(r,ms)),d=document.getElementById('n5-dialog');document.querySelector('#n5-content [data-n5=exit]').click();await W(80);
     const first={open:d.open,warn:!!document.querySelector('#n5-content .is-warn')};document.querySelector('#n5-content [data-n5=exit]').click();await W(80);return {first,second:d.open};`);
