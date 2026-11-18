@@ -81,8 +81,8 @@ function getJSON(p, method) {
   const pg = await ev(`location.hash='kanji';await new Promise(r=>setTimeout(r,250));const v=document.getElementById('view-kanji'),d=window.KOTO.kanji.data();
     return {shown:!v.hidden,nav:document.querySelectorAll('.nav-item').length,cur:!!document.querySelector('.nav-item[data-view=kanji][aria-current=page]'),page:document.getElementById('page-name').textContent,
       lessons:v.querySelectorAll('[data-action=kanji-lesson]').length,review:(v.querySelector('[data-action=kanji-review]')||{}).disabled,total:d.total,levels:d.levels.map(l=>l.label+':'+l.total)};`);
-  ok('6 дахь цэс «Ханз» идэвхтэй, хуудас: 204 хичээлийн товч (N5 16 + N4 34 + N3 74 + N2 38 + Бусад 42), давтлага үзээгүй үед хаалттай, 1009 ханз',
-    pg.shown && pg.nav === 6 && pg.cur && pg.page === 'Ханз' && pg.lessons === 204 && pg.review === true && pg.total === 1009 && pg.levels.join() === 'N5:79,N4:166,N3:367,N2:189,Бусад:208', JSON.stringify(pg));
+  ok('7 цэсийн нэг «Ханз» идэвхтэй (11-18-аас «Сорих»), хуудас: 204 хичээлийн товч (N5 16 + N4 34 + N3 74 + N2 38 + Бусад 42), давтлага үзээгүй үед хаалттай, 1009 ханз',
+    pg.shown && pg.nav === 7 && pg.cur && pg.page === 'Ханз' && pg.lessons === 204 && pg.review === true && pg.total === 1009 && pg.levels.join() === 'N5:79,N4:166,N3:367,N2:189,Бусад:208', JSON.stringify(pg));
   await shot('page-1400');
   /* Astra №41 (11-05): 124 товч + 612 хавтан хэт урт — N5 нээлттэй, N4/N3 хаалттай, «Бүх ханз» хаалттай; нээснийг дахин зурахад хадгална. */
   const lv = await ev(`const v=document.getElementById('view-kanji'),L=[...v.querySelectorAll('details.kj-level')];const out={n:L.length,open:L.map(d=>d.dataset.kjLevel+':'+d.open).join(),inv:[...v.querySelectorAll('details.kj-inventory')].map(d=>d.open).join()};
@@ -177,7 +177,7 @@ function getJSON(p, method) {
       const split=[];for(const s of document.querySelectorAll('.nav-item span:not([data-icon]):not(.nav-count):not(.notification-dot)')){const t=s.firstChild;if(!t||t.nodeType!==3||!s.offsetParent)continue;
         let i=0;for(const wd of t.textContent.split(' ')){const r=document.createRange();r.setStart(t,i);r.setEnd(t,i+wd.length);if(wd&&r.getClientRects().length>1)split.push(wd);i+=wd.length+1;}}
       return {page:document.documentElement.scrollWidth,bad,clip,split};`);
-    ok(tag + ': «Ханз» хуудас — хэвтээ гүйлт 0, товч 44px+, 6 цэсийн нэр хальдаггүй, үгийн дундуур тасардаггүй', hp.page <= wd && !hp.bad.length && !hp.clip.length && !hp.split.length, JSON.stringify(hp));
+    ok(tag + ': «Ханз» хуудас — хэвтээ гүйлт 0, товч 44px+, 7 цэсийн нэр хальдаггүй, үгийн дундуур тасардаггүй', hp.page <= wd && !hp.bad.length && !hp.clip.length && !hp.split.length, JSON.stringify(hp));
     await shot('page-' + wd + (dk ? '-dark' : ''));
     const steps = await ev(`${H}document.querySelector('#view-kanji [data-action=kanji-lesson][data-kanji="1"]').click();await S(200);const out=[];const SEL='#lesson-dialog button';
       const m=t=>{${TAP}out.push([t,document.getElementById('lesson-dialog').scrollWidth,bad]);};m('learn');

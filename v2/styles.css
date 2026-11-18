@@ -5296,3 +5296,136 @@ ruby.jp-face rt {
     padding: 0;
   }
 }
+
+/* ── «Өөрийгөө сорих» — JLPT N5 (11-18, Claude; Astra хянаагүй — Codex ажиллахгүй, STATE №56) ──
+   Хичээлийн цонх, сонголтын товч, дүнгийн картыг дахин ашиглана; энд зөвхөн шалгалтын онцлог хэсэг. Зөвхөн токен. */
+.n5-mock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--accent-surface);
+}
+.n5-mock-body { min-width: 0; flex: 1 1 320px; }
+.n5-mock h2 { margin: 0 0 8px; font-size: 20px; }
+.n5-mock p { margin: 6px 0 0; }
+.n5-sec { display: inline-block; margin: 0 14px 4px 0; font-size: 13px; color: var(--ink); }
+.n5-mock-meta, .n5-last { font-size: 13px; color: var(--muted); }
+.n5-last strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+.n5-group { margin-top: 8px; }
+.n5-parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); gap: 12px; }
+.n5-part {
+  display: grid;
+  gap: 4px;
+  min-height: 88px;
+  padding: 14px 16px;
+  border: 1px solid var(--muted);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.n5-part:disabled { background: var(--bg); color: var(--muted); cursor: default; }
+.n5-part-jp { font-size: 16px; font-weight: 700; }
+.n5-part-mn { font-size: 13px; }
+.n5-part-n { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.n5-part:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .n5-part:not(:disabled):hover { background: var(--accent-surface); color: var(--accent-ink); border-color: var(--focus); }
+}
+.n5-credit { margin-top: 28px; font-size: 12px; color: var(--muted); }
+.n5-credit a { color: inherit; }
+.n5-clock {
+  flex: none;
+  min-width: 64px;
+  padding: 6px 10px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.n5-clock.is-low { background: var(--error-surface); color: var(--error-ink); border-color: var(--error-ink); }
+.n5-exercise h1 { display: grid; gap: 4px; }
+.n5-exercise h1 small { font-size: 13px; font-weight: 500; color: var(--muted); }
+.n5-sentence { margin: 20px 0 4px; font-size: 22px; line-height: 1.9; overflow-wrap: anywhere; }
+.n5-sentence u, .n5-passage u { text-decoration-thickness: 2px; text-underline-offset: 5px; }
+.n5-blank { white-space: nowrap; }
+.n5-order { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 8px; }
+.n5-slot {
+  display: inline-grid;
+  place-items: center;
+  width: 64px;
+  height: 34px;
+  border-bottom: 2px solid var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+}
+.n5-slot.is-star { color: var(--accent-ink); }
+.n5-title { margin: 18px 0 8px; font-size: 17px; }
+.n5-passage {
+  max-height: 46vh;
+  overflow: auto;
+  margin-top: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--muted);
+  border-radius: 14px;
+  background: var(--paper);
+  font-size: 17px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+.n5-passage.is-info { white-space: normal; font-variant-numeric: tabular-nums; }
+.n5-gap {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  margin: 0 2px;
+  padding: 0 6px;
+  border: 1px solid var(--muted);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.n5-gap.is-now { background: var(--accent-surface); color: var(--accent-ink); border-color: var(--focus); box-shadow: inset 0 0 0 1px var(--focus); }
+.n5-q { margin: 16px 0 0; font-size: 18px; font-weight: 600; }
+.n5-scene { display: grid; gap: 4px; margin: 18px 0 0; padding: 14px 16px; border-radius: 14px; background: var(--soft); font-size: 17px; }
+.n5-scene small { font-size: 13px; color: var(--muted); }
+.n5-play { display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; min-height: 48px; }
+.n5-play.is-playing { background: var(--accent-surface); color: var(--accent-ink); border-color: var(--focus); }
+.n5-note { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+.n5-why { margin-top: 12px; font-size: 14px; }
+.n5-why p { margin: 6px 0; }
+.n5-tr { margin-top: 8px; }
+.n5-tr summary { cursor: pointer; font-weight: 600; }
+.n5-result { padding-top: 24px; }
+.n5-total { margin: 4px 0 16px; font-size: 18px; }
+.n5-total strong { font-size: 48px; font-variant-numeric: tabular-nums; }
+/* Ногоон гэрэлтэйд --p-result-stat-strong-fg (#7d9f42) нь цаасан дээр 2.93 < 3 — N5-ийн дүнд бэхийн өнгө. */
+.n5-result .result-stat strong { color: var(--ink); }
+@media (min-width: 481px) { .n5-result .result-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 560px; } }
+.n5-table { width: 100%; margin-top: 18px; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.n5-table th, .n5-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; }
+.n5-table th { font-size: 12px; color: var(--muted); }
+.n5-table td small { color: var(--muted); }
+.n5-sub { margin: 26px 0 8px; font-size: 18px; }
+.n5-miss { margin-top: 8px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.n5-miss summary { cursor: pointer; }
+.n5-miss .n5-sentence { font-size: 18px; }
+.n5-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 32px; }
+.icon-button.is-warn { background: var(--error-surface); color: var(--error-ink); }
+@media (max-width: 600px) {
+  .n5-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .n5-sentence { font-size: 19px; }
+  .n5-passage { font-size: 16px; max-height: 40vh; }
+  .n5-slot { width: 52px; }
+}

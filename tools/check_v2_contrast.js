@@ -89,7 +89,7 @@ const AUDIT = scope => `
     const theme = pal + ' ' + (dark ? 'бараан' : 'гэрэлтэй');
     await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: dark ? 'dark' : 'light' }] });
     await nav(); await ev(SEED.replace(/return true;$/, `localStorage.setItem('koto-theme',JSON.stringify({palette:'${pal}',mode:'auto'}));return true;`)); await nav();
-    for (const v of ['learn', 'words', 'review', 'games', 'kanji', 'profile']) {
+    for (const v of ['learn', 'words', 'review', 'games', 'kanji', 'profile', 'test']) {
       await ev(`location.hash='${v}';return true;`); await sleep(450);
       report(theme + ' ' + v, await ev(AUDIT(`#view-${v} *, .sidebar *, .topbar *, .page-footer *, .skip`)));
     }
@@ -117,6 +117,18 @@ const AUDIT = scope => `
     }
     if (!seen.ok || !seen.bad) console.log(`  анхаар: ${theme} — хариултын төлөв бүрэн үзэгдсэнгүй (${JSON.stringify(seen)})`);
     await ev(`const d=document.getElementById('lesson-dialog');if(d.open)d.close();return true;`);
+    /* «Өөрийгөө сорих» (11-18): дасгал — буруу хариулт + тайлбар (нээлттэй); эх + зөв; бүтэн шалгалт (цаг); дүн (алдсан асуулт нээлттэй). */
+    const W = "const W=ms=>new Promise(r=>setTimeout(r,ms)),U=window.KOTO_N5UI,c=()=>document.getElementById('n5-content');";
+    await ev(`location.hash='test';return true;`); await sleep(300);
+    await ev(W + `U.startPractice('kanji');await W(150);const q=U.state().qs[0];c().querySelector('[data-n5=pick][data-i="'+((q.ans+1)%4)+'"]').click();await W(60);c().querySelector('[data-n5=check]').click();await W(250);c().querySelectorAll('details').forEach(d=>d.open=true);return true;`);
+    report(theme + ' N5 дасгал-буруу', await ev(AUDIT('#n5-dialog *')));
+    await ev(W + `c().querySelector('[data-n5=exit]').click();await W(80);U.startPractice('info');await W(150);const q=U.state().qs[0];c().querySelector('[data-n5=pick][data-i="'+q.ans+'"]').click();await W(60);c().querySelector('[data-n5=check]').click();await W(250);return true;`);
+    report(theme + ' N5 эх-зөв', await ev(AUDIT('#n5-dialog *')));
+    await ev(W + `c().querySelector('[data-n5=exit]').click();await W(80);U.startMock();await W(200);U.state().qs[0].pick=0;c().querySelector('[data-n5=pick][data-i="1"]').click();await W(150);return true;`);
+    report(theme + ' N5 шалгалт', await ev(AUDIT('#n5-dialog *')));
+    await ev(W + `U.state().qs.forEach((q,i)=>q.pick=i%3?q.ans:(q.ans+1)%q.opts.length);U.expire();await W(60);U.expire();await W(60);U.expire();await W(250);c().querySelectorAll('details').forEach(d=>d.open=true);return true;`);
+    report(theme + ' N5 дүн', await ev(AUDIT('#n5-dialog *')));
+    await ev(W + `c().querySelector('[data-n5=exit]').click();await W(80);return true;`);
   }
   console.log(`\nконтраст: унасан ${fails} · градиент/зурагтай дэвсгэр ${imgs} (SHOW_IMG=1 — жагсаана, нүдээр)`);
   try { ws.close(); } catch (e) {}
