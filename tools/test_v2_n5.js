@@ -32,8 +32,10 @@ const getJSON = (p, m) => new Promise((res, rej) => { const q = http.request({ h
   const window = {}; eval(src);
   const P = window.KOTO_N5.pools;
   const NEED = { kanji: 12, hyouki: 8, bunmyaku: 10, iikae: 5, form: 16, order: 5, text: 1, short: 3, mid: 1, info: 1, task: 7, point: 6, speech: 5, resp: 6 };
-  const small = Object.keys(NEED).filter(k => !P[k] || P[k].length < NEED[k] * 2);
-  ok('14 сан бүгд бүтэн шалгалтад хэрэгтэйгээс 2-оос доошгүй дахин их (давталт цөөн)', small.length === 0, small.map(k => k + ':' + (P[k] || []).length).join(' ') || Object.keys(P).map(k => k + ' ' + P[k].length).join(' · '));
+  /* 11-19a: ≥ 9 дахин — дараалсан 2 шалгалтын давхцал ~10%-иас бага (漢字読み-д ӨӨР ҮГээр тоолно). */
+  const uniq = k => k === 'kanji' ? new Set(P[k].map(q => q.w)).size : (P[k] || []).length;
+  const small = Object.keys(NEED).filter(k => !P[k] || uniq(k) < NEED[k] * 9);
+  ok('14 сан бүгд бүтэн шалгалтад хэрэгтэйгээс 9-өөс доошгүй дахин их (давталт цөөн)', small.length === 0, small.map(k => k + ':' + (P[k] || []).length).join(' ') || Object.keys(P).map(k => k + ' ' + P[k].length).join(' · '));
   const WHITE = new Set('日一人国年大十二本中出三見月長生五時上行四後金前九入学間円子東八六下今気小七高山女外百先名川千来水男話校北土午木車書半白天西電火語右左聞休食何南万毎雨母読友父');
   const japanese = JSON.stringify(P).replace(/"(mn|tr|sceneMn|exMn|id|audio|g)":"(?:[^"\\]|\\.)*"/g, '');
   const outside = [...new Set([...japanese].filter(c => /[\u4e00-\u9fff]/.test(c) && !WHITE.has(c)))];
@@ -126,6 +128,18 @@ const getJSON = (p, m) => new Promise((res, rej) => { const q = http.request({ h
     return {a:U.score(mk(60,66,24,24)),b:U.score(mk(20,66,24,24)),c:U.score(mk(50,66,7,24)),d:U.score(mk(0,66,0,24))};`);
   ok('Оноо: 120+60; нийт ≥ 80 ч «хэлний мэдлэг» < 38 эсвэл «сонсгол» < 19 бол тэнцэхгүй', sc.a.total === 169 && sc.a.pass && sc.b.lang === 36 && !sc.b.pass && sc.c.listen === 18 && sc.c.total === 109 && !sc.c.pass && sc.d.total === 0, JSON.stringify(sc));
   await ev(`document.querySelector('#n5-content [data-n5=exit]').click();return true;`);
+  const sn = await ev(`const W=ms=>new Promise(r=>setTimeout(r,ms)),U=window.KOTO_N5UI,c=()=>document.getElementById('n5-content');
+    localStorage.removeItem('koto-n5-seen');U.startMock();await W(80);const mock=Object.keys(U.seen()).length;
+    c().querySelector('[data-n5=exit]').click();await W(40);c().querySelector('[data-n5=exit]').click();await W(40);localStorage.removeItem('koto-n5-seen');
+    U.startPractice('task');await W(80);const s=U.state(),A=s.qs.map(q=>q.src.id);
+    for(let i=0;i<s.qs.length;i++){if(i){c().querySelector('[data-n5=next]').click();await W(15);}const q=s.qs[i];c().querySelector('[data-n5=pick][data-i="'+q.ans+'"]').click();await W(10);c().querySelector('[data-n5=check]').click();await W(10);}
+    c().querySelector('[data-n5=finish]').click();await W(40);const marked=A.filter(id=>U.seen()[id]).length;
+    c().querySelector('[data-n5=practice]').click();await W(80);const B=U.state().qs.map(q=>q.src.id),P=window.KOTO_N5.pools.task.length;
+    c().querySelector('[data-n5=exit]').click();await W(40);
+    const ids=window.KOTO_N5.pools.task.map(q=>q.id),m={};ids.forEach((id,i)=>m[id]=1000+i);localStorage.setItem('koto-n5-seen',JSON.stringify(m));
+    const old7=new Set(ids.slice(0,7)),d=U.draw('task',7).map(q=>q.src.id),oldest=d.every(id=>old7.has(id));localStorage.removeItem('koto-n5-seen');
+    return {mock,marked,again:B.filter(id=>A.includes(id)).length,expect:Math.max(0,20-P),P,oldest};`);
+  ok('Саяхан гарсныг хойш тавина: харагдсан асуулт л тэмдэглэгдэж (шалгалт эхлэхэд 1), «Дахиад 10»-д өмнөх 10 сангаас хүрэлцэх хэрээр гарахгүй, бүгдийг харсан бол хамгийн эртнийх нь түрүүнд', sn.mock === 1 && sn.marked === 10 && sn.again === sn.expect && sn.oldest, JSON.stringify(sn));
 
   console.log('\n[E] Сонсгол ба гарах');
   const au = await ev(`const W=ms=>new Promise(r=>setTimeout(r,ms)),U=window.KOTO_N5UI,c=()=>document.getElementById('n5-content'),btn=()=>c().querySelector('[data-n5=play]');

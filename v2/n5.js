@@ -7,7 +7,8 @@
  * хувиар ОЙРОЛЦОО: «Хэлний мэдлэг · Уншлага» 0–120 (босго 38), «Сонсгол» 0–60 (19), нийт 180, тэнцэх 80.
  *
  * Хоёр горим: бүтэн шалгалт (хэсэг бүр цагтай, хариу шууд хэлэхгүй, төгсгөлд дүн ба тайлбар) ба хэсгээр дасгал
- * (10 асуулт, хариулах бүрд тайлбар). Асуулт бүр сангаас санамсаргүй, сонголтын дараалал ч санамсаргүй.
+ * (10 асуулт, хариулах бүрд тайлбар). Асуулт бүр сангаас санамсаргүй, сонголтын дараалал ч санамсаргүй; саяхан
+ * гарсан асуултыг хойш тавина (`koto-n5-seen`).
  * Түүх зөвхөн энэ хөтөч дээр (`koto-n5`), синк хийгдэхгүй, XP-д нөлөөлөхгүй.
  */
 (function () {
@@ -67,11 +68,24 @@
     if (k === 'bunmyaku') return 'b:' + it.o[0];
     return null;
   }
+  /* Саяхан гарсныг хойш тавина (11-19a): асуулт дэлгэцэнд гарах бүрд хугацааг нь тэмдэглэж (`koto-n5-seen`, энэ хөтөч),
+     сугалахдаа хамгийн удаан хараагүйгээс эхэлнэ — огт хараагүй нь түрүүнд. Ижил хугацаатай нь санамсаргүй хэвээр
+     (shuffle → тогтвортой sort). Үгтэй төрөлд (漢字読み/表記/文脈規定) id биш ҮГЭЭР — өөр өгүүлбэртэй ижил үг ч хойшилно. */
+  const SEEN = 'koto-n5-seen';
+  const seenKey = (k, it) => wordKey(k, it) || it.id;
+  function seenMap() { try { const m = JSON.parse(localStorage.getItem(SEEN) || '{}'); return m && typeof m === 'object' && !Array.isArray(m) ? m : {}; } catch (e) { return {}; } }
+  function markSeen(q) {
+    if (q.seenAt) return;
+    q.seenAt = Math.floor(Date.now() / 1000);
+    const m = seenMap();
+    m[seenKey(q.part, q.src)] = q.seenAt;
+    try { localStorage.setItem(SEEN, JSON.stringify(m)); } catch (e) { /* хувийн цонх — санамсаргүй хэвээр */ }
+  }
   /* n асуулт. Эхтэй хэсэгт эхийг БҮТНЭЭР нь авна — n-ээс хэтрэх эхийг алгасна (эхний эх л үл хамаарна). */
   function draw(k, n, seen) {
-    const out = [];
+    const out = [], when = seenMap(), at = it => when[seenKey(k, it)] || 0;
     seen = seen || new Set();
-    for (const item of shuffle(pool(k))) {
+    for (const item of shuffle(pool(k)).sort((a, b) => at(a) - at(b))) {
       const wk = wordKey(k, item);
       if (wk && seen.has(wk)) continue;
       const qs = questionsOf(k, item);
@@ -106,7 +120,7 @@
     const last = history()[0];
     const total = SECTIONS.reduce((s, x) => s + x.parts.reduce((t, k) => t + PARTS[k].n, 0), 0), minutes = SECTIONS.reduce((s, x) => s + x.min, 0);
     view.innerHTML = `<div class="eyebrow">JLPT N5</div><h1 class="page-title">Өөрийгөө сорих</h1>
-      <p class="page-subtitle">Японы хэлний түвшин тогтоох шалгалтын N5 хэлбэрээр. Асуулт бүр сангаас санамсаргүй сонгогдоно — албан ёсны шалгалтын асуулт биш.</p>
+      <p class="page-subtitle">Японы хэлний түвшин тогтоох шалгалтын N5 хэлбэрээр. Асуулт бүр сангаас санамсаргүй, саяхан гарсныг хойш тавьж сонгогдоно — албан ёсны шалгалтын асуулт биш.</p>
       <section class="n5-mock" aria-labelledby="n5-mock-title">
         <div class="n5-mock-body"><h2 id="n5-mock-title">Бүтэн шалгалт</h2>
           <p>${SECTIONS.map(s => `<span class="n5-sec"><span lang="ja">${esc(s.jp)}</span> · ${s.min} мин</span>`).join('')}</p>
@@ -236,6 +250,7 @@
     if (!run) return;
     if (run.done) { box().innerHTML = run.mode === 'mock' ? resultMock() : resultPractice(); return; }
     const q = run.qs[run.i], P = PARTS[q.part], mock = run.mode === 'mock';
+    markSeen(q);
     const inSec = mock ? run.qs.filter(x => x.sec === run.sec) : run.qs, pos = inSec.indexOf(q) + 1;
     const last = mock ? run.i === run.qs.length - 1 || run.qs[run.i + 1].sec !== run.sec : run.i === run.qs.length - 1;
     const head = mock ? `${esc(SECTIONS[run.sec].mn)} · ${pos} / ${inSec.length}` : `${esc(P.mn)} · ${pos} / ${inSec.length}`;
@@ -326,7 +341,7 @@
   });
 
   window.KOTO_N5UI = {
-    render, startMock, startPractice, score, draw, parts: PARTS, sections: SECTIONS, state: () => run,
+    render, startMock, startPractice, score, draw, parts: PARTS, sections: SECTIONS, state: () => run, seen: seenMap,
     /* Тестэд: цагийг урагшлуулах (хэсгийн хугацаа дуусгах). */
     expire: () => { if (run && run.mode === 'mock') { run.ends = Date.now() - 1; tick(); } },
   };

@@ -24,6 +24,10 @@ problems = []
 
 # ── Эх өгөгдөл ──
 vocab = [x for x in json.load(io.open(os.path.join(ROOT, 'data', 'vocab-n5.json'), encoding='utf-8'))['items'] if x['lesson'] <= 25]
+# Нэмэлт N5 үг (11-19a): 1–25-р хичээлд ханзаар бичигдээгүй/жишээгүй N5 үгс — зөвхөн 漢字読み · 表記-д. Уншлагыг JMdict-ээр
+# шалгана; буруу сонголтыг эхлээд дүрмээр, хүрэхгүй бол `d`-ээс (JMdict-ийн жинхэнэ уншлага биш бол) авна.
+_xp = os.path.join(ROOT, 'data', 'n5', 'kanji_words.json')
+extra = [dict(x, lesson=0) for x in json.load(io.open(_xp, encoding='utf-8'))['items']] if os.path.exists(_xp) else []
 kjs = io.open(os.path.join(ROOT, 'v2', 'kanji.js'), encoding='utf-8').read()
 N5K = {k['c'] for k in json.loads(re.search(r'=\s*(\[.*\])', kjs, re.S).group(1)) if k.get('n') == 5}
 jm = json.load(io.open(sys.argv[1], encoding='utf-8'))['words']
@@ -170,8 +174,13 @@ def pick_kana(rng, variants, real, n=3):
 VERB_END = {u'き': u'く', u'ぎ': u'ぐ', u'し': u'す', u'ち': u'つ', u'に': u'ぬ', u'び': u'ぶ', u'み': u'む', u'り': u'る', u'い': u'う'}
 
 
+IRREG = {u'来ます': [(u'来る', u'くる')]}  # дүрмийн бус: ます-ийн угаас толь бичгийн хэлбэр гарахгүй
+
+
 def dict_forms(jp, kana):
     """«行きます/いきます» → JMdict-д байгаа толь бичгийн хэлбэр [(行く, いく, 'き'→'く')]. Олдохгүй бол []."""
+    if jp in IRREG and kana == u'きます':
+        return [(dj, dr) for dj, dr in IRREG[jp] if dr in READ.get(dj, set())]
     if not (jp.endswith(u'ます') and kana.endswith(u'ます')):
         return []
     j, r, out = jp[:-2], kana[:-2], []
@@ -182,6 +191,17 @@ def dict_forms(jp, kana):
         if dr in READ.get(dj, set()):
             out.append((dj, dr))
     return out
+
+
+def mixed_forms(jp, kana):
+    """交ぜ書き «本や/ほんや», «月よう日/げつようび» → JMdict-ийн «本屋», «月曜日»: кана хэсэг бүр ханз (+ үлдсэн кана)-аар
+    солигдсон, ИЖИЛ уншлагатай бичлэг. N5-ийн 79-д ороогүй ханзыг канагаар бичсэн үгийг ингэж баталгаажуулна."""
+    runs = re.findall(u'[一-鿿々]+|[^一-鿿々]+', jp)
+    if len(runs) < 2 or not any(CJK.match(r[0]) for r in runs):
+        return []
+    pat = ''.join(re.escape(r) if CJK.match(r[0]) else u'(?:%s|[一-鿿々]+(?:%s))' % (re.escape(r), '|'.join(re.escape(r[i:]) for i in range(1, len(r) + 1)))
+                  for r in runs)
+    return sorted(k for k in WRITE.get(kana, ()) if k != jp and re.fullmatch(pat, k))
 
 
 # ── Ханзны төстэй хэлбэр (бичлэгийн буруу сонголт) — N5-ийн 79 ханзанд ──
@@ -258,7 +278,7 @@ def klass(x):
 
 clean = [x for x in vocab if not BAD.search(x['jp'] + x['kana']) and x.get('ex')]
 seen_jp = {}
-for x in vocab:
+for x in vocab + extra:
     seen_jp.setdefault(x['jp'], set()).add(x['kana'])
 
 
@@ -269,23 +289,31 @@ def pick(rng, cands, n=3):
 
 
 kanji, hyouki, bunmyaku = [], [], []
-for x in clean:
+extra_clean = [x for x in extra if not BAD.search(x['jp'] + x['kana']) and x.get('ex')]
+for x in clean + extra_clean:
     rng = random.Random(x['id'])
     sp = split_at(x['ex'], x['kana'])
     is_k = CJK.search(x['jp']) and all((not CJK.match(c)) or c in N5K for c in x['jp'])
+    if 'd' in x and x['jp'] in {q['w'] for q in kanji}:
+        problems.append('нэмэлт үг хичээлийнхтэй давхардсан: %s %s' % (x['id'], x['jp']))
+        continue
     if sp and is_k and len(seen_jp.get(x['jp'], ())) == 1:
         df = dict_forms(x['jp'], x['kana'])
-        real = READ.get(x['jp'], set()) | seen_jp[x['jp']]
+        mf = mixed_forms(x['jp'], x['kana']) if 'd' in x and x['kana'] not in READ.get(x['jp'], set()) and not df else []
+        real = READ.get(x['jp'], set()) | seen_jp[x['jp']] | {r for f in mf for r in READ.get(f, ())}
         for dj, dr in df:  # «いきます»-ийн хувилбар нь «行く»-ийн өөр уншлагын ます-хэлбэр байж болохгүй
             stem_j = x['jp'][:-2]
             real |= {rr[:-1] + x['kana'][len(dr) - 1:] for rr in READ.get(dj, set()) if len(rr) >= 1}
-        if x['kana'] not in READ.get(x['jp'], set()) and not df:
+        if x['kana'] not in READ.get(x['jp'], set()) and not df and not mf:
             problems.append('JMdict-д алга: %s %s %s' % (x['id'], x['jp'], x['kana']))
         else:
             sp_k = kanji_spans(x['jp'], x['kana'])
             vv = {v: t for v, t in kana_variants(x['kana']).items() if in_spans(x['kana'], v, sp_k)}
             vv.update({v: t for v, t in alt_readings(x['jp'], x['kana']).items() if in_spans(x['kana'], v, sp_k)})
             ds = pick_kana(rng, vv, real)
+            for v in x.get('d', []):  # нэмэлт үгийн бичсэн буруу сонголт — жинхэнэ уншлага биш, кана хэсэг хэвээр бол
+                if len(ds) < 3 and v not in ds and v not in real and v != x['kana'] and in_spans(x['kana'], v, sp_k):
+                    ds.append(v)
             if len(ds) == 3:
                 kanji.append(dict(id='K-' + x['id'], pre=sp[0], w=x['jp'], post=sp[1], o=[x['kana']] + ds, mn=x['mn'], r=x['kana']))
             vs = {v for v in kanji_variants(x['jp']) if x['kana'] not in READ.get(v, set())} - WRITE.get(x['kana'], set())

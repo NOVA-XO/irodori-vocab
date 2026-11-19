@@ -506,7 +506,7 @@ node tools/test_v2_kanji_ui.js      #  41 — v2 «Ханз» хуудас: 204 
 node tools/check_v2_kanji_svg.js --old <кэш> --vg <кэш>  # татсны дараа: SVG-г эхтэй нь пикселээр (Commons ≤2%, KanjiVG 0)
 node tools/check_v2_contrast.js      # v2-ийн харагдаж буй бүх бичгийн контраст, 4 сэдэв × гэрэлтэй/бараан (0 = цэвэр; PALETTES=pink — нэгийг л)
 node tools/test_v2_games.js         #  57 — v2 тоглоом: буудах, хослуулах, зөв/буруу; үг сонголт, рекорд, ахицад нөлөөгүй, 320–1400
-node tools/test_v2_n5.js            #  19 — v2 «Өөрийгөө сорих» (JLPT N5): 1182 асуулт, 14 төрөл, 90 асуултын шалгалт, цаг, оноо, сонсгол, 390
+node tools/test_v2_n5.js            #  20 — v2 «Өөрийгөө сорих» (JLPT N5): 1676 асуулт, 14 төрөл, 90 асуултын шалгалт, саяхан гарсныг хойш тавих, цаг, оноо, сонсгол, 390
 node tools/test_attack.js           #  24 — халдлагын хувилбарууд
 node tools/test_answers.js          # хариулт шалгагч
 node tools/test_judge.js --local    # ярианы үнэлгээний чанар (сүлжээгүй)
