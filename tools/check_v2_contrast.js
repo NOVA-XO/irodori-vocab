@@ -75,7 +75,7 @@ const AUDIT = scope => `
   const SEED = `const d=n=>{const t=new Date();t.setDate(t.getDate()+n);return t.toISOString().slice(0,10);};const ws=window.KOTO.words();const words={},days={},xpd={};
     for(let n=-40;n<=0;n++){if(n%3){days[d(n)]=[ws[-n].id];xpd[d(n)]={a1:[60,180,320,540][(-n)%4]};}}
     ws.slice(0,60).forEach((w,i)=>{words[w.id]={passes:i%4,weak:i%7===0,due:d(i%3-1),last:d(-1),attempts:3,misses:i%7===0?1:0};});
-    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:2400,completed:['A1-01-0','A1-01-1','A1-01-2'],words,kana:{},days,xpd,selectedTopic:0}));return true;`;
+    localStorage.setItem('koto-irodori-v1',JSON.stringify({version:1,xp:2400,completed:['A1-L01-0','A1-L01-1','A1-L01-2'],words,kana:{},days,xpd,selectedTopic:0}));return true;`;
 
   let fails = 0, imgs = 0;
   const report = (where, list) => {

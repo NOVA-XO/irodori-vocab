@@ -339,6 +339,43 @@ function getJSON(p, method) {
       lay.q[0] <= 1 && lay.a[0] <= 1 && lay.q[1] <= wd && lay.a[1] <= wd && lay.inside && lay.keys === 0 && lay.status === 'kjpic-say', JSON.stringify(lay));
   }
 
+  /* 11-25c (эзэн: «ханзыг хэрэглэгч өөрөө хайж болдог болго»): ханз, уншлага (хирагана/катакана), монгол утга, жишээ үгээр. */
+  console.log('\n[7b] Ханз хайх');
+  await size(1400, 900); await media(false); await nav();
+  const fd = await ev(`const f=window.KOTO.kanji.find,K=window.KOTO.kanji.list(),top=(q,n)=>f(q).slice(0,n||1).join('');
+    return {ch:top('日'),multi:top('日本語',3),hira:top('にち'),kata:top('ニチ'),same:f('にち').join()===f('ニチ').join(),stem:f('い').includes('行')&&top('いく')==='行',kun:top('みず'),
+      mn:top('ус'),mn2:top('гурав'),mid:f('галт').includes('験'),ex:f('галт').includes('車'),none:f('xyzq').length,empty:f('').length+f('   ').length,
+      all:f('日').every(c=>K.some(k=>k.jp===c)),uniq:new Set(f('ひ')).size===f('ひ').length,n5first:K.find(k=>k.jp===f('ひ')[0]).n};`);
+  ok('хайлт: ханзаар (日; «日本語» → 日·本·語 дарааллаар), уншлагаар (にち = ニチ; い.く-ийн い, いく), монгол утгаар (ус → 水, гурав → 三)',
+    fd.ch === '日' && fd.multi === '日本語' && fd.hira === '日' && fd.kata === '日' && fd.same && fd.stem && fd.kun === '水' && fd.mn === '水' && fd.mn2 === '三', JSON.stringify(fd));
+  ok('хайлт: үгийн ДУНДАХ таарал тооцохгүй («галт» ≠ шалгалт 験), жишээ үгээр олно (галт тэрэг → 車); олдоогүй/хоосон → 0; үр дүн давхардалгүй, N5 эхэнд',
+    !fd.mid && fd.ex && fd.none === 0 && fd.empty === 0 && fd.all && fd.uniq && fd.n5first === 5, JSON.stringify(fd));
+  const fu = await ev(`${H}location.hash='kanji';await S(300);const inp=document.getElementById('kanji-search'),R=()=>document.getElementById('kanji-results');
+    const before={box:!!inp,hits:R().querySelectorAll('.kj-hit').length,levels:document.querySelectorAll('#view-kanji details[data-kj-level]').length};
+    inp.focus();inp.value='みず';inp.dispatchEvent(new Event('input',{bubbles:true}));await S(120);
+    const hit=R().querySelector('.kj-hit'),btn=hit.querySelector('[data-action=kanji-lesson]'),L=J.lessons()[+btn.dataset.kanji];
+    const r={before,n:R().querySelectorAll('.kj-hit').length,count:R().querySelector('.kj-find-count').textContent,role:R().querySelector('.kj-find-count').getAttribute('role'),
+      ch:hit.querySelector('.kj-hit-char').textContent,mn:hit.querySelector('.kj-hit-body strong').textContent,where:hit.querySelector('.kj-hit-body').textContent,
+      inLesson:L.chars.some(c=>c.jp==='水'),focus:document.activeElement===inp,levels:document.querySelectorAll('#view-kanji details[data-kj-level]').length};
+    btn.click();await S(250);r.open=document.getElementById('lesson-dialog').open;r.title=K.numTest.session().title;document.getElementById('lesson-dialog').close();await S(300);
+    r.kept=document.getElementById('kanji-search').value;r.keptHits=R().querySelectorAll('.kj-hit').length;
+    const i2=document.getElementById('kanji-search');i2.value='xyzq';i2.dispatchEvent(new Event('input',{bubbles:true}));await S(100);r.noneText=R().textContent.trim();r.noneHits=R().querySelectorAll('.kj-hit').length;
+    i2.value='';i2.dispatchEvent(new Event('input',{bubbles:true}));await S(100);r.cleared=R().textContent.trim();return r;`);
+  ok('хуудас: хайх талбар бий, хоосон үед үр дүнгүй; «みず» → 水 (ус) түвшин ба хичээлтэйгээ, тоо нь role=status, бичих үед фокус алдагдахгүй, түвшний жагсаалт хэвээр',
+    fu.before.box && fu.before.hits === 0 && fu.n >= 1 && /ханз олдлоо/.test(fu.count) && fu.role === 'status' && fu.ch === '水' && /ус/.test(fu.mn) && /N5 · \d+-р хичээл/.test(fu.where) && fu.focus && fu.levels === 5 && fu.before.levels === 5, JSON.stringify(fu).slice(0, 400));
+  ok('«Хичээл» товч тэр ханзыг агуулсан хичээлийг нээнэ; хаахад хайлт ба үр дүн хэвээр; олдоогүй бол мэдэгдэнэ, арилгахад үр дүн алга',
+    fu.inLesson && fu.open && /^Ханз N5 · \d+-р хичээл$/.test(fu.title) && fu.kept === 'みず' && fu.keptHits === fu.n && /олдсонгүй/.test(fu.noneText) && fu.noneHits === 0 && fu.cleared === '', JSON.stringify({ t: fu.title, k: fu.kept, n: fu.noneText }));
+  await size(390, 844, true); await nav();
+  const fm = await ev(`${H}location.hash='kanji';await S(300);const inp=document.getElementById('kanji-search');inp.value='ひ';inp.dispatchEvent(new Event('input',{bubbles:true}));await S(150);
+    const hits=[...document.querySelectorAll('#kanji-results .kj-hit')];
+    return {n:hits.length,count:document.querySelector('.kj-find-count').textContent,over:document.documentElement.scrollWidth-innerWidth,
+      small:[...document.querySelectorAll('#kanji-search, #kanji-results button')].filter(b=>b.getBoundingClientRect().height<44).length,
+      out:hits.filter(h=>h.getBoundingClientRect().right>innerWidth+1||[...h.querySelectorAll('*')].some(e=>e.getBoundingClientRect().right>h.getBoundingClientRect().right+1)).length};`);
+  ok('390: олон үр дүн (ひ) эхний 30-аар хязгаарлагдаж тоо нь хэлэгдэнэ; хэвтээ гүйлтгүй, талбар ба товч ≥ 44px, карт дотроо багтана',
+    fm.n === 30 && /эхний 30/.test(fm.count) && fm.over <= 0 && fm.small === 0 && fm.out === 0, JSON.stringify(fm));
+  await shot('kanji-find-390');
+  await size(1400, 900);
+
   console.log('\n[8] Консол');
   ok('барьсангүй уналт гараагүй', errs.length === 0, errs.slice(0, 3).join(' | '));
 

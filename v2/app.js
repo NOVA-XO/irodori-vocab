@@ -2,8 +2,8 @@
 (() => {
   const $ = id => document.getElementById(id);
   const DATA = window.KOTO_DATA;
-  /* Үгийн сан: түвшин → утгаар холбоотой нэгж → 5 үгийн хичээл (tools/build_v2_vocab.py).
-     Код дотор «topic» = нэгжийн дугаар (UNITS-ийн индекс). */
+  /* Үгийн сан (11-25c): түвшин (ном) → НОМЫН ХИЧЭЭЛ (`n` 1–18; 0 = «хичээлээс гадуур») → 5 үгийн АЛХАМ (tools/build_v2_vocab.py).
+     Код дотор «topic» = нэгжийн (номын хичээлийн) индекс (UNITS), «lesson» = 5 үгийн алхам. Дэлгэцэнд: «N-р хичээл» = ном, «N-р алхам» = 5 үг. */
   const UNITS = DATA.units, LEVELS = DATA.levels;
   const LEVEL_BY_KEY = Object.fromEntries(LEVELS.map(l => [l.key, l]));
   /* Сэдвийн ангилал (нэгжийн `theme`) — шүүлтүүрийн нэр ба чимэг үсэг. */
@@ -808,6 +808,46 @@
     session = newSession({ kana: true, kanji: true, title: 'Ханзны давтлага', words: chars, queue: kanjiQueue(chars, false) });
     openSession();
   }
+  /* Ханз хайх (11-25c — эзэн: «ханзыг хэрэглэгч өөрөө хайж болдог болго»). Юугаар: ханз өөрөө (хэд хэдэн ханз, үг ч болно), уншлага
+     (хирагана/катакана аль нь ч; «い.く» → いく ба い), монгол утга, жишээ үг. Эрэмбэ: ханз таарсан → уншлага яг → уншлага эхэлсэн →
+     утгын үг эхэлсэн → жишээ үгийн утга → жишээ үгийн уншлага (үгийн ДУНДАХ таарлыг тооцохгүй: «галт» ≠ шалгалт); тэнцвэл түвшин (N5 эхэнд), жагсаалтын дараалал. Хуудсыг дахин ЗУРАХГҮЙ (оролтын фокус). */
+  const kjHira = s => String(s).replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/[.\-‐－・~～\s]/g, '').toLocaleLowerCase();
+  const KJ_FIND = KANJI.map((k, i) => ({ k, i, lv: KJ_LEVELS.indexOf(k.n),
+    reads: [...new Set([...k.on, ...k.kun].flatMap(r => [kjHira(r), kjHira(r.split('.')[0])]))].filter(Boolean),
+    mn: k.mn.toLocaleLowerCase(), ex: k.exw.map(e => [e.jp, kjHira(e.kana), e.mn.toLocaleLowerCase()]) }));
+  const KJ_FIND_MAX = 30;
+  let kanjiQuery = '';
+  function kanjiSearch(raw) {
+    const text = String(raw || '').trim(), q = kjHira(text);
+    if (!q) return [];
+    const chars = [...text].filter(c => /[\u3400-\u9fff々]/.test(c)), out = [];
+    for (const f of KJ_FIND) {
+      let r = -1;
+      if (chars.length) r = chars.includes(f.k.jp) ? chars.indexOf(f.k.jp) / 100 : f.ex.some(e => e[0].includes(text)) ? 5 : -1;
+      else if (f.reads.includes(q)) r = 1;
+      else if (f.reads.some(x => x.startsWith(q))) r = 2;
+      else if (f.mn.split(/[^\p{L}]+/u).some(w => w.startsWith(q))) r = 3;
+      else if (q.length >= 2 && f.ex.some(e => e[2].split(/[^\p{L}]+/u).some(w => w.startsWith(q)))) r = 4;
+      else if (q.length >= 2 && f.ex.some(e => e[1].includes(q))) r = 5;
+      if (r >= 0) out.push([r, f.lv, f.i, f.k]);
+    }
+    return out.sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]).map(x => x[3]);
+  }
+  function kanjiFindMarkup() {
+    const hits = kanjiSearch(kanjiQuery), st = k => { const r = state.kana[k.id]; return !r ? 'new' : r.weak ? 'weak' : mastered(r) ? 'strong' : 'learning'; };
+    if (!kanjiQuery.trim()) return '';
+    if (!hits.length) return `<p class="p-small kj-find-count" role="status">«${kjEsc(kanjiQuery.trim())}» — ханз олдсонгүй. Ханз, уншлага (にち) эсвэл монгол утгаар хайна уу.</p>`;
+    return `<p class="p-small kj-find-count" role="status">${hits.length} ханз олдлоо${hits.length > KJ_FIND_MAX ? ` — эхний ${KJ_FIND_MAX}` : ''}</p>
+      <ul class="kj-find-list" aria-label="Хайлтын үр дүн">${hits.slice(0, KJ_FIND_MAX).map(k => {
+        const li = kanjiLessons.findIndex(L => L.chars.includes(k)), L = kanjiLessons[li], where = `${kjLevelLabel(k.n)} · ${L.k + 1}-р хичээл`, ui = kjStatusUI[st(k)];
+        return `<li class="kj-hit kj-state-${st(k)}"><span class="kj-hit-char" lang="ja" aria-hidden="true">${kjEsc(k.jp)}</span>
+          <div class="kj-hit-body"><strong><span class="sr-only" lang="ja">${kjEsc(k.jp)} — </span>${kjEsc(k.mn)}</strong><span class="kj-hit-read" lang="ja">${kjEsc(k.read)}</span>
+            ${k.exw.length ? `<span class="kj-hit-ex">${k.exw.slice(0, 2).map(e => `<span lang="ja">${kjEsc(e.jp)}</span> ${kjEsc(e.mn)}`).join(' · ')}</span>` : ''}
+            <span class="p-small">${kjEsc(where)} · ${ui.label}</span></div>
+          <button type="button" class="p-btn kj-hit-open" data-action="kanji-lesson" data-kanji="${li}" aria-label="${kjEsc(k.jp)}: ${kjEsc(where)}-ийг нээх">Хичээл${icon('arrow')}</button></li>`;
+      }).join('')}</ul>`;
+  }
+  function paintKanjiFind() { const el = $('kanji-results'); if (el) el.innerHTML = kanjiFindMarkup(); }
   /** «Ханз» хуудасны бүх тоо — markup үүнээс л уншина. */
   function kanjiData() {
     const status = k => { const r = state.kana[k.id]; return !r ? 'new' : r.weak ? 'weak' : mastered(r) ? 'strong' : 'learning'; };
@@ -1385,6 +1425,11 @@
         </p>
       </header>
 
+      <section class="kj-find" aria-label="Ханз хайх">
+        <label class="search-wrap kj-find-box"><span class="sr-only">Ханз хайх</span>${icon('search')}<input id="kanji-search" class="search-input" type="search" placeholder="Ханз, уншлага эсвэл утга: 日 · にち · өдөр" autocomplete="off" value="${kjEsc(kanjiQuery)}"></label>
+        <div id="kanji-results">${kanjiFindMarkup()}</div>
+      </section>
+
       <section class="p-card kj-overview" aria-label="Ханзны ахиц">
         <dl class="kj-stats">
           <div>
@@ -1681,9 +1726,9 @@
        Өмнө 27%-тай хичээл ч зорилгыг биелүүлдэг байв. `days` (идэвх, streak) хэвээр. */
     const count=dayWords().filter(id=>state.words[id]&&!state.words[id].weak).length;
     $('view-learn').innerHTML=`<div class="eyebrow">ТАНЫ СУРАХ ЗАМ</div><h1 class="page-title">Өнөөдөр юу сурах вэ?</h1><p class="page-subtitle">Канагаа мэднэ. Одоо үгсээ утгатай нь холбож, яриандаа ашиглая.</p>
-    <div class="home-layout"><div class="primary-column"><section class="hero" aria-label="Өнөөдрийн хичээл"><div><span class="tag"><span class="tag-dot"></span>IRODORI A1–A2 · МОНГОЛ ТАЙЛБАРТАЙ</span><h2>Өдөр бүр<br>10 үгээ тогтооё.</h2><p>Богино хичээл. Жаахан дасгал.<br>Өөрийн хурдаар ахих сурах зам.</p><button class="primary-btn" data-action="start" data-lesson="${nextLesson().id}">${state.completed.length?'Үргэлжлүүлэн сурах':'Эхний хичээлээ эхэлье'}${icon('arrow')}</button><div class="hero-mini"><span><strong>${allWords.length}</strong> үг, хэллэг</span><span><strong>${UNITS.length}</strong> нэгж</span><span><strong>5 үг</strong> / хичээл</span></div></div><div class="hero-art">${mascot()}<span class="kana-sticker" lang="ja">いっしょに！</span></div></section>
-    <div class="section-heading"><h2>Таны дараагийн алхам</h2><span class="meta">Жижиг хичээл, өдөр бүр</span></div><section class="unit-card" id="current-unit"><div class="unit-header"><div class="unit-number">${U.key.split('-')[1]}</div><div><h3 class="unit-title">${esc(U.title)}</h3><p class="unit-subtitle">${esc(LEVEL_BY_KEY[U.level].title)} · ${U.words.length} үг, хэллэг</p></div><span class="unit-progress">${completed} / ${group.length}</span></div><div class="lesson-path">${group.map((l,i)=>{const done=state.completed.includes(l.id),isCurrent=l.id===current.id;return `<div class="lesson-node">${isCurrent&&!done?'<span class="start-label">ЭНДЭЭС ЭХЭЛ</span>':''}<button class="node-button ${done?'completed':isCurrent?'available current':'available'}" data-action="start" data-lesson="${l.id}" aria-label="${i+1}-р хичээл, ${l.words.length} үг${done?', дууссан':''}">${icon(done?'check':i===group.length-1?'flag':isCurrent?'play':'star')}</button><span class="node-label"><strong>${i+1}-р хичээл</strong>${l.words.length} үг · 3–5 мин</span></div>`;}).join('')}</div>${NUM_TOPICS.includes(t)?`<div class="test-cta"><div><strong>🧮 Тооны шалгалт</strong><span>Тоо, тоолох нэр, цаг, гараг, сар, өдөр, огноо · ${TEST_WORDS+TEST_GEN*2} асуулт</span></div><button class="primary-btn" data-action="test">Шалгалт өгөх${icon('target')}</button></div>`:''}</section>
-    <div class="section-heading"><h2>Сурах сэдвүүд</h2><span class="meta">${state.completed.length} / ${lessons.length} хичээл дууссан</span></div><div class="level-tabs" role="group" aria-label="Түвшин">${LEVELS.map(L=>{const first=UNITS.findIndex(u=>u.level===L.key);return `<button type="button" class="level-tab" data-action="topic" data-topic="${first}" aria-pressed="${L.key===U.level}">${esc(L.title)}<small>${esc(L.sub)}</small></button>`;}).join('')}</div><div class="topic-grid">${UNITS.map((topic,i)=>topic.level!==U.level?'':`<button class="topic-card ${i===t?'selected':''}" data-action="topic" data-topic="${i}" aria-pressed="${i===t}"><span class="topic-icon" aria-hidden="true">${unitIcon(topic)}</span><span class="topic-info"><span class="topic-name">${esc(topic.title)}</span><span class="topic-meta" style="display:block">${topicLearned(i)} / ${topic.words.length} үг · ${topicLessons(i).length} хичээл</span></span>${icon('arrow')}</button>`).join('')}</div></div>
+    <div class="home-layout"><div class="primary-column"><section class="hero" aria-label="Өнөөдрийн хичээл"><div><span class="tag"><span class="tag-dot"></span>IRODORI A1–A2 · МОНГОЛ ТАЙЛБАРТАЙ</span><h2>Өдөр бүр<br>10 үгээ тогтооё.</h2><p>Богино хичээл. Жаахан дасгал.<br>Өөрийн хурдаар ахих сурах зам.</p><button class="primary-btn" data-action="start" data-lesson="${nextLesson().id}">${state.completed.length?'Үргэлжлүүлэн сурах':'Эхний хичээлээ эхэлье'}${icon('arrow')}</button><div class="hero-mini"><span><strong>${allWords.length}</strong> үг, хэллэг</span><span><strong>${UNITS.filter(u=>u.n).length}</strong> хичээл</span><span><strong>5 үг</strong> / алхам</span></div></div><div class="hero-art">${mascot()}<span class="kana-sticker" lang="ja">いっしょに！</span></div></section>
+    <div class="section-heading"><h2>Таны дараагийн алхам</h2><span class="meta">${U.n?U.n+'-р хичээл':'Нэмэлт'} · 5 үгийн алхмууд</span></div><section class="unit-card" id="current-unit"><div class="unit-header"><div class="unit-number">${U.n||'+'}</div><div><h3 class="unit-title">${esc(U.title)}</h3><p class="unit-subtitle">${esc(LEVEL_BY_KEY[U.level].title)} · ${U.words.length} үг, хэллэг</p></div><span class="unit-progress">${completed} / ${group.length}</span></div><div class="lesson-path">${group.map((l,i)=>{const done=state.completed.includes(l.id),isCurrent=l.id===current.id;return `<div class="lesson-node">${isCurrent&&!done?'<span class="start-label">ЭНДЭЭС ЭХЭЛ</span>':''}<button class="node-button ${done?'completed':isCurrent?'available current':'available'}" data-action="start" data-lesson="${l.id}" aria-label="${i+1}-р алхам, ${l.words.length} үг${done?', дууссан':''}">${icon(done?'check':i===group.length-1?'flag':isCurrent?'play':'star')}</button><span class="node-label"><strong>${i+1}-р алхам</strong>${l.words.length} үг · 3–5 мин</span></div>`;}).join('')}</div>${NUM_TOPICS.includes(t)?`<div class="test-cta"><div><strong>🧮 Тооны шалгалт</strong><span>Тоо, тоолох нэр, цаг, гараг, сар, өдөр, огноо · ${TEST_WORDS+TEST_GEN*2} асуулт</span></div><button class="primary-btn" data-action="test">Шалгалт өгөх${icon('target')}</button></div>`:''}</section>
+    <div class="section-heading"><h2>Номын хичээлүүд</h2><span class="meta">${state.completed.length} / ${lessons.length} алхам дууссан</span></div><div class="level-tabs" role="group" aria-label="Түвшин">${LEVELS.map(L=>{const first=UNITS.findIndex(u=>u.level===L.key);return `<button type="button" class="level-tab" data-action="topic" data-topic="${first}" aria-pressed="${L.key===U.level}">${esc(L.title)}<small>${esc(L.sub)}</small></button>`;}).join('')}</div><div class="topic-grid">${UNITS.map((topic,i)=>topic.level!==U.level?'':`<button class="topic-card ${i===t?'selected':''}" data-action="topic" data-topic="${i}" aria-pressed="${i===t}"><span class="topic-icon topic-num" aria-hidden="true">${topic.n||'+'}</span><span class="topic-info"><span class="topic-name"><span class="sr-only">${topic.n?topic.n+'-р хичээл. ':'Нэмэлт. '}</span>${esc(topic.title)}</span><span class="topic-meta" style="display:block">${topicLearned(i)} / ${topic.words.length} үг · ${topicLessons(i).length} алхам</span></span>${icon('arrow')}</button>`).join('')}</div></div>
     <aside class="right-column" aria-label="Сурах ахиц"><section class="side-card"><h2 class="side-card-title">Өнөөдрийн зорилго${icon('target')}</h2><div class="goal"><div class="goal-ring" style="--progress:${Math.min(count*10,100)}" aria-label="Өнөөдөр ${count}, зорилго 10 үг"><div>${count}<small> / 10</small></div></div><div class="goal-label"><strong>${count>=10?'Зорилгодоо хүрлээ!':'10 үг бататгая'}</strong><span>${count>=10?'Сайхан ажиллалаа.':'Хоёр богино хичээлээс<br>эхлээрэй.'}</span></div></div><div class="week-days">${weekMarkup()}</div></section>
     <section class="side-card note-card"><h2 class="side-card-title">Таны түвшинд тохируулсан${icon('leaf')}</h2><div class="note-illustration"><span class="note-kana" lang="ja">あ</span><p>Кана уншиж чадна.<br>Латин уншлага хэрэггүй.</p></div><p>Япон бичлэгээс нь шууд уншиж, монгол утгаас нь санаж хэлж хэвшээрэй.</p><button class="small-link" data-view="words">Үгийн сангаа харах${icon('arrow')}</button></section>
     <section class="side-card"><h2 class="side-card-title">Нэг хичээлд</h2><div class="method-list"><div class="method"><span>01</span><div><strong>5 шинэ үгтэй танилцана</strong><small>Кана бичлэг + монгол утга</small></div></div><div class="method"><span>02</span><div><strong>Хоёр чиглэлд шалгана</strong><small>Утга болон япон үгийг сонгоно</small></div></div><div class="method"><span>03</span><div><strong>Өгүүлбэр эвлүүлнэ</strong><small>Үгсээ яриандаа ашиглана</small></div></div></div></section></aside></div>`;
@@ -1713,7 +1758,7 @@
   function posChips(cur,action,counts,label,all=true){const practice=cur===null;return `<div class="kj-book-filter pos-filter${practice?' pos-filter--practice':''}" role="group" aria-label="${esc(label)}">${(all?[{k:'all',name:'Бүгд'}]:[]).concat(POS).map(p=>{const n=counts&&p.k!=='all'?counts[p.k]||0:null,cnt=n===null?'':action==='word-pos'?` Нийт ${n} үг, хэллэг.`:` Үзсэн ${n} үг, хэллэг.`,say=practice?`${p.name}.${cnt} ${n===0?'Үзээгүй.':`Давтах. ${Math.min(n,5)} үгтэй давтлага эхлүүлэх.`}`:`${p.name}.${cnt}${n===0?' Үг алга.':''}`;return `<button type="button" class="kj-book-chip" data-action="${action}" data-pos="${p.k}" aria-label="${esc(say)}"${practice?'':` aria-pressed="${cur===p.k}"`}${n===0?' disabled':''}>${practice?'':`<span class="pos-check" aria-hidden="true">${icon('check')}</span>`}<span class="pos-label">${p.name}</span>${n!==null?`<span class="pos-n">${n}</span>`:''}${practice?`<span class="pos-verb">${n===0?'Үзээгүй':`Давтах${icon('arrow')}`}</span>`:''}</button>`;}).join('')}</div>`;}
   const posCount=list=>list.reduce((m,w)=>(m[w.p]=(m[w.p]||0)+1,m),{});
   function renderWords(){
-    $('view-words').innerHTML=`<div class="eyebrow">ТАНЫ ҮГИЙН САН</div><h1 class="page-title">Үг бүр нэг алхам.</h1><p class="page-subtitle">${allWords.length} үг, хэллэг · ${Object.keys(state.words).filter(id=>wordById[id]).length} үг үзсэн · Латин уншлагагүй</p><div class="word-toolbar"><label class="search-wrap"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Япон эсвэл монгол үгээр хайх</span>${icon('search')}<input id="word-search" class="search-input" placeholder="Япон эсвэл монгол үгээр хайх…" autocomplete="off"></label><select id="word-topic" class="topic-select" aria-label="Сэдэв сонгох"><option value="all">Бүх сэдэв</option><option value="kata">Катакана үгс (${kataWords.length})</option>${LEVELS.map(L=>`<optgroup label="${esc(L.title+' · '+L.sub)}">${UNITS.map((u,i)=>u.level===L.key?`<option value="${i}">${esc(u.title)}</option>`:'').join('')}</optgroup>`).join('')}</select></div>${posChips(wordPos,'word-pos',posCount(allWords),'Үгийн аймгаар шүүх')}<p id="word-result-count" class="page-subtitle" role="status" style="margin:0 0 18px"></p><div id="word-results" class="word-grid"></div>`;
+    $('view-words').innerHTML=`<div class="eyebrow">ТАНЫ ҮГИЙН САН</div><h1 class="page-title">Үг бүр нэг алхам.</h1><p class="page-subtitle">${allWords.length} үг, хэллэг · ${Object.keys(state.words).filter(id=>wordById[id]).length} үг үзсэн · Латин уншлагагүй</p><div class="word-toolbar"><label class="search-wrap"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Япон эсвэл монгол үгээр хайх</span>${icon('search')}<input id="word-search" class="search-input" placeholder="Япон эсвэл монгол үгээр хайх…" autocomplete="off"></label><select id="word-topic" class="topic-select" aria-label="Номын хичээл сонгох"><option value="all">Бүх хичээл</option><option value="kata">Катакана үгс (${kataWords.length})</option>${LEVELS.map(L=>`<optgroup label="${esc(L.title+' · '+L.sub)}">${UNITS.map((u,i)=>u.level===L.key?`<option value="${i}">${u.n?u.n+'. ':''}${esc(u.title)}</option>`:'').join('')}</optgroup>`).join('')}</select></div>${posChips(wordPos,'word-pos',posCount(allWords),'Үгийн аймгаар шүүх')}<p id="word-result-count" class="page-subtitle" role="status" style="margin:0 0 18px"></p><div id="word-results" class="word-grid"></div>`;
     $('word-search').value=wordQuery;$('word-topic').value=wordTopic;
     filterWords();
   }
@@ -1726,7 +1771,9 @@
      14 асуулт + огноо 3 + цаг 3 = 20. Огноо, цагийг ҮҮСГЭДЭГ тул сурагч
      «しがつ ようか» гэх мэт хослолыг цээжээр биш бодож хэлж сурна.
      Дуудлага өөрчлөгддөг тоонуудыг (しがつ, よじ, ついたち, はつか…) хүснэгтээр. */
-  const NUM_TOPICS=UNITS.map((u,i)=>u.level==='A1'&&(u.theme==='num'||u.theme==='time')?i:-1).filter(i=>i>=0), TEST_WORDS=14, TEST_GEN=3;
+  /* Тооны шалгалт: сан = тоо/цагийн үгс (DATA.num — id-аар; номын хичээлд тоо бусад үгтэй холилдсон). Товч нь тийм үг ≥ 20-той хичээл дээр (A1-ийн 4, 9, 12, 13, 16, 17). */
+  const NUM_WORDS=new Set(DATA.num||[]);
+  const NUM_TOPICS=UNITS.map((u,i)=>u.words.filter(w=>NUM_WORDS.has(w.id)).length>=20?i:-1).filter(i=>i>=0), TEST_WORDS=14, TEST_GEN=3;
   const MONTHS=['いちがつ','にがつ','さんがつ','しがつ','ごがつ','ろくがつ','しちがつ','はちがつ','くがつ','じゅうがつ','じゅういちがつ','じゅうにがつ'];
   const DAYS=['ついたち','ふつか','みっか','よっか','いつか','むいか','なのか','ようか','ここのか','とおか','じゅういちにち','じゅうににち','じゅうさんにち','じゅうよっか','じゅうごにち','じゅうろくにち','じゅうしちにち','じゅうはちにち','じゅうくにち','はつか','にじゅういちにち','にじゅうににち','にじゅうさんにち','にじゅうよっか','にじゅうごにち','にじゅうろくにち','にじゅうしちにち','にじゅうはちにち','にじゅうくにち','さんじゅうにち','さんじゅういちにち'];
   const MDAYS=[31,29,31,30,31,30,31,31,30,31,30,31];
@@ -1740,7 +1787,7 @@
     const direction=Math.random()<.5?'jp-mn':'mn-jp',val=x=>direction==='jp-mn'?x.mn:x.jp;
     const word={id:'gen-'+i+'-'+a.key,jp:a.jp,mn:a.mn,topic:16,gen:true};
     return {type:'quiz',word,direction,correct:val(a),options:shuffle([val(a),...wrong.map(val)]),retry:false};}
-  function buildTest(){const pool=shuffle(allWords.filter(w=>NUM_TOPICS.includes(w.topic))).slice(0,TEST_WORDS);
+  function buildTest(){const pool=shuffle(allWords.filter(w=>NUM_WORDS.has(w.id))).slice(0,TEST_WORDS);
     const qs=pool.map(w=>quiz(w,Math.random()<.5?'jp-mn':'mn-jp'));
     for(let i=0;i<TEST_GEN;i++){qs.push(genQuiz(genDate,'d'+i));qs.push(genQuiz(genTime,'t'+i));}
     return {words:pool,queue:shuffle(qs)};}
@@ -2846,7 +2893,7 @@
   /* KanjiVG-ийн байрлал гарч ирэхэд дүүргэнэ — гурван савыг л ажиглана (тоглоомын кадр бүрт биш). */
   document.addEventListener('toggle',kanjiGalleryOpen,true);
   {const obs=new MutationObserver(hydrateKanjiVG);for(const id of['lesson-content','view-kanji','game-content']){const el=$(id);if(el)obs.observe(el,{childList:true,subtree:true});}}
-  document.addEventListener('input',event=>{if(event.target.id==='word-search')filterWords();});
+  document.addEventListener('input',event=>{if(event.target.id==='word-search')filterWords();if(event.target.id==='kanji-search'){kanjiQuery=event.target.value;paintKanjiFind();}});
   document.addEventListener('change',event=>{if(event.target.id==='word-topic')filterWords();});
   $('lesson-dialog').addEventListener('cancel',event=>{event.preventDefault();exitSession();});
   $('game-dialog').addEventListener('cancel',event=>{event.preventDefault();closeGame();});
@@ -2933,8 +2980,8 @@
     signedIn:signedIn,user:authUser,signOut:signOut,googleIn:googleIn,
     numTest:{build:buildTest,genDate,genTime,MONTHS,DAYS,HOURS,session:()=>session},
     usage:{ping:pingUsage,stats:statsPing,totals:usageTotals,id:usageId,host:h=>{usageHost=h;}},
-    vocab:{units:()=>UNITS,levels:()=>LEVELS,lessons:()=>lessons,legacy:()=>DATA.legacy,extra:()=>DATA.extra,num:()=>NUM_TOPICS,selected:selectedUnit,lessonOf:id=>lessonOfWord[id],sentences:()=>SENTENCES,readFrom:readStateFrom},
-    kanji:{list:()=>KANJI,lessons:()=>kanjiLessons,data:kanjiData,quizzes:kanjiQuizzes,pick:kanjiPick,start:startKanji,review:startKanjiReview,due:kanjiDue,read:kanjiRead,originStats:kanjiOriginStats,originMarkup:kjOriginMarkup,picRound:kjPicRound,picPool:kjPicPool,gallery:kanjiGallery,oldSrc:kanjiOldSrc,vg:kanjiVG},
+    vocab:{units:()=>UNITS,levels:()=>LEVELS,lessons:()=>lessons,legacy:()=>DATA.legacy,extra:()=>DATA.extra,num:()=>NUM_TOPICS,numWords:()=>[...NUM_WORDS],selected:selectedUnit,lessonOf:id=>lessonOfWord[id],sentences:()=>SENTENCES,readFrom:readStateFrom},
+    kanji:{list:()=>KANJI,lessons:()=>kanjiLessons,data:kanjiData,find:q=>kanjiSearch(q).map(k=>k.jp),quizzes:kanjiQuizzes,pick:kanjiPick,start:startKanji,review:startKanjiReview,due:kanjiDue,read:kanjiRead,originStats:kanjiOriginStats,originMarkup:kjOriginMarkup,picRound:kjPicRound,picPool:kjPicPool,gallery:kanjiGallery,oldSrc:kanjiOldSrc,vg:kanjiVG},
     games:{pool:gamePool,pick:gamePick,clash:gameClash,short:shortMn,ready:gameReady,start:openGame,close:closeGame,state:()=>game,
       advance:gameStep,tick:gameTick,stop:stopGameLoop,records:gameRecords,min:GAME_MIN},
     pos:{list:()=>POS,learned:posLearned,start:startPosPractice,game:()=>gamePos,setGame:setGamePos,pool:gamePool,word:()=>wordPos},

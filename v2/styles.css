@@ -6053,3 +6053,75 @@ ruby.jp-face rt {
 
   .toast { bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
+
+/* ══ Ханз хайх (11-25c) — логик ба суурь загвар Claude; Astra хянана (STATE §4 №59) ══ */
+.kj-find { margin: 20px 0 0; }
+
+.kj-find-box {
+  display: flex;
+  width: 100%;
+  max-width: 560px;
+}
+
+.kj-find-count { margin: 12px 0 0; }
+
+.kj-find-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kj-hit {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+
+.kj-hit-char {
+  flex: 0 0 56px;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--soft);
+  color: var(--ink);
+  font-family: "Noto Sans JP", sans-serif;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.kj-hit-body {
+  display: grid;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.kj-hit-read,
+.kj-hit-ex {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.kj-hit-open {
+  flex: 0 0 auto;
+  min-height: 44px;
+}
+
+@media (max-width: 480px) {
+  .kj-hit { flex-wrap: wrap; }
+  .kj-hit-body { flex-basis: calc(100% - 70px); }
+  .kj-hit-open { width: 100%; }
+}

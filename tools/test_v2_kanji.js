@@ -47,7 +47,11 @@ ok('kanji.js нь дарааллаар (N5 → N4 → N3 → N2 → Бусад),
    үгсийг гүйж, kj-д нь ханз анх гарсан байрлал; замд гараагүй бол нэмэлт (extra) үгсийн дараа. */
 const vctx = { window: {} }; vm.createContext(vctx);
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'v2/data.js'), 'utf8'), vctx, { filename: 'v2/data.js' });
-const VW = vctx.window.KOTO_DATA.units.flatMap(u => u.words).concat(vctx.window.KOTO_DATA.extra);
+/* 11-25c: data.js-ийн нэгж номын хичээл болсон. N2/«Бусад»-ын дараалал нь 11-05-нд УТГЫН НЭГЖИЙН замаар (tools/v2_vocab_units.tsv)
+   хөлдөөсөн (v2_kanji_order.txt) — ханзны хичээлийн бүрэлдэхүүн хэрэглэгчид тогтвортой байх ёстой. Тиймээс замыг TSV-ийн дарааллаар сэргээнэ. */
+const byId = Object.fromEntries(vctx.window.KOTO_DATA.units.flatMap(u => u.words).map(w => [w.id, w]));
+const tsvIds = fs.readFileSync(path.join(ROOT, 'tools/v2_vocab_units.tsv'), 'utf8').split(/\r?\n/).filter(l => l.trim() && !/^[#@]/.test(l)).map(l => l.split(/\t/)[0]);
+const VW = tsvIds.filter(i => byId[i]).map(i => byId[i]).concat(vctx.window.KOTO_DATA.extra);
 const firstAt = c => { const i = VW.findIndex(w => (w.kj || '').includes(c)); return i < 0 ? Infinity : i; };
 const mono = list => list.every((c, i) => !i || firstAt(list[i - 1]) <= firstAt(c));
 ok('N2 ба Бусад — үгийн сангийн замд анх гарах дарааллаар; бүгд замд эсвэл нэмэлт үгэнд гардаг',

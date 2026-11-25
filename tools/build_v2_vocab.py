@@ -13,7 +13,7 @@
 
     python -I tools/build_v2_vocab.py
 """
-import io, json, os, re, sys
+import collections, io, json, os, re, sys
 sys.stdout.reconfigure(encoding='utf-8')
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -220,24 +220,123 @@ for key, ids in groups.items():
             w['level'] = irodori[head]['level']
             extra.append(w)
 
+# ── Номын хичээлээр бүлэглэх (2026-11-25c — эзэн: «сурах замыг номын сэдвийн дагуу: хичээл 1, хичээл 2 …») ──
+# Дээрх утгын нэгжүүд (v2_vocab_units.tsv) нь үгийн ЖАГСААЛТ, бичвэр, шалгалтын эх хэвээр; ГАРАЛТЫН `units` нь
+# Irodori-гийн 3 ном × 18 хичээл. Үгийн хичээл:
+#   1. id-ийн угтвар (L07-…, E1-12-…);
+#   2. нэгтгэсэн үг (KT-… ← L02-015, v2_vocab_merge.tsv) — хасагдсан номын id-ийнхээр, түүний байранд;
+#   3. номд огт байхгүй хуучин v2-ийн үг (KT-…, N5-…) — утгын нэгжийнхээ (ижил түвшний) ихэнх үгийн хичээлд, төгсгөлд;
+#   4. хуучин v2-ийн 432 үг үргэлж 1-р номд (id нь 2, 3-р номынх байсан ч) — доорх тайлбар.
+# Хичээл доторх дараалал = номын дараалал (id). «Хичээлээс гадуур» (L00) нь 1-р номын төгсгөлд (n = 0).
+# Нэгжийн түлхүүр «A1-L07» — хуучин «A1-07»-оос ӨӨР: хичээлийн id (түлхүүр-хэсэг) давхцвал хуучин `completed` буруу тооцогдоно.
+# Гарчиг: tools/v2_vocab_lessons.tsv (албан ёсны хичээлийн нэр эх өгөгдөлд алга — хэсгийн гарчгаас Claude бичсэн).
+BOOK_OF = {'L': 'A1', 'E1': 'A2a', 'E2': 'A2b'}
+
+
+def book_home(i):
+    m = re.match(r'^(?:(L)(\d\d)|(E[12])-(\d\d))-', i)
+    return (BOOK_OF[m.group(1) or m.group(3)], int(m.group(2) or m.group(4)), i) if m else None
+
+
+KEPT = {}
+for drop, keep in DROP.items():
+    KEPT.setdefault(keep, []).append(drop)
+home, theme_of = {}, {}
+for u in units:
+    for w in u['words']:
+        theme_of[w['id']] = (u['title'], u['theme'])
+        wid = w['id']
+        if wid in legacy_word:
+            # Хуучин v2-ийн үг (ахицтай): id нь 2, 3-р номын бичлэгтэй (эсвэл №52 шиг өөр үгтэй) холбогдсон байж болно —
+            # id-д итгэхгүй. 1-р номд ҮЛДЭЭНЭ: өөрийн L-id → ижил бичлэг+уншлагатай 1-р номын бичлэг → нэгтгэсэн L-id;
+            # аль нь ч үгүй бол доорх утгын нэгжийн дүрэм (3).
+            lw = legacy_word[wid]
+            same = [i for i in groups.get((norm(lw['kj'] or lw['jp']), norm(lw['jp'])), []) if i.startswith('L')]
+            cands = ([wid] if wid.startswith('L') else []) or same or [d for d in KEPT.get(wid, []) if d.startswith('L')]
+            hs = sorted((book_home(i) for i in cands), key=lambda x: (x[1] == 0, irodori[x[2]]['ref'], x[1], x[2]))
+            h = hs[0] if hs else None
+        else:
+            h = book_home(wid) or (sorted(filter(None, (book_home(d) for d in KEPT.get(wid, []))))[:1] or [None])[0]
+        if h:
+            home[wid] = h
+n_merged = sum(1 for i in home if home[i][2] != i)
+n_fallback = 0
+LESSON_FIX, fix_used = {}, set()
+for line in read_tsv('v2_vocab_lesson_fix.tsv'):
+    k, n, _why = line.split('	')
+    if not 1 <= int(n) <= 18:
+        problem('v2_vocab_lesson_fix.tsv: %s хичээл %s буруу' % (k, n))
+    LESSON_FIX[k] = int(n)
+for u in units:
+    known = [home[w['id']][:2] for w in u['words'] if w['id'] in home]
+    same = [k for k in known if k[0] == u['level']] or known
+    for k, w in enumerate(u['words']):
+        if w['id'] in home:
+            continue
+        if not same:
+            problem('%s: номын хичээл тодорхойгүй (нэгж %s-д номын үг алга)' % (w['id'], u['key']))
+            continue
+        best = sorted(set(same), key=lambda x: (-same.count(x), x))[0]
+        fixed = LESSON_FIX.get(w['id'], LESSON_FIX.get(u['key']))
+        if fixed is not None:
+            best = ('A1', fixed)
+            fix_used.update(k for k in (w['id'], u['key']) if k in LESSON_FIX)
+        home[w['id']] = (best[0], best[1], '~%s-%03d' % (u['key'], k))
+        n_fallback += 1
+for k in sorted(set(LESSON_FIX) - fix_used):
+    problem('v2_vocab_lesson_fix.tsv: %s хэрэглэгдээгүй (номд байхгүй үг/нэгж биш)' % k)
+by_lesson = {}
+for u in units:
+    for w in u['words']:
+        if w['id'] in home:
+            lv, n, key = home[w['id']]
+            by_lesson.setdefault((lv, n), []).append((key, w))
+LESSON_TITLE = {}
+for line in read_tsv('v2_vocab_lessons.tsv'):
+    lv, n, title = line.split('	')
+    LESSON_TITLE[(lv, int(n))] = title
+book_units = []
+for lv, _t, _s in LEVELS:
+    used = set()
+    for n in sorted((n for (l, n) in by_lesson if l == lv), key=lambda n: (n == 0, n)):
+        ws = [w for _k, w in sorted(by_lesson[(lv, n)], key=lambda x: x[0])]
+        title = LESSON_TITLE.get((lv, n), '')
+        if not title.strip() or len(title) > TITLE_MAX or title in used:
+            problem('%s-L%02d: гарчиг «%s» (v2_vocab_lessons.tsv — хоосон, > %d эсвэл давхар)' % (lv, n, title, TITLE_MAX))
+        used.add(title)
+        theme = collections.Counter(theme_of[w['id']][1] for w in ws).most_common(1)[0][0]
+        book_units.append(dict(key='%s-L%02d' % (lv, n), level=lv, n=n, theme=theme, title=title, words=ws))
+for nid in set(legacy.values()):
+    if home.get(nid, ('?',))[0] != 'A1':
+        problem('v2-ийн үг %s 1-р номд биш (%s)' % (nid, home.get(nid)))
+for lv, _t, _s in LEVELS:
+    got = [u['n'] for u in book_units if u['level'] == lv and u['n']]
+    if got != list(range(1, 19)):
+        problem('%s: 1–18-р хичээл бүрэн биш: %s' % (lv, got))
+if sum(len(u['words']) for u in book_units) != sum(len(u['words']) for u in units):
+    problem('номын хичээлээр бүлэглэхэд үг алдагдсан')
+
 if problems:
     print('АСУУДАЛ %d:' % len(problems))
     for p in problems[:80]:
         print('  ' + p)
     sys.exit(1)
 
-data = dict(levels=[dict(key=k, title=t, sub=s) for k, t, s in LEVELS], units=units, extra=extra, legacy=legacy)
+# Тооны шалгалтын сан: утгын нэгжийн A1-ийн «тоо»/«цаг» сэдвийн үгс (номын хичээлд тоо бусад үгтэй холилдсон тул id-аар).
+num = [w['id'] for u in units if u['level'] == 'A1' and u['theme'] in ('num', 'time') for w in u['words']]
+data = dict(levels=[dict(key=k, title=t, sub=s) for k, t, s in LEVELS], units=book_units, extra=extra, legacy=legacy, num=num)
 out = os.path.join(ROOT, 'v2', 'data.js')
 with io.open(out, 'w', encoding='utf-8', newline='\n') as fh:
     fh.write(u'/* ҮҮСГЭСЭН ФАЙЛ — гараар бүү засаарай: `python -I tools/build_v2_vocab.py`.\n'
-             u'   Эрэмбэ: tools/v2_vocab_units.tsv · хуучин 432 үг: tools/v2_vocab_legacy.tsv\n'
+             u'   Нэгж = Irodori-гийн номын хичээл (3 ном × 18 + «хичээлээс гадуур»); үгийн жагсаалт: tools/v2_vocab_units.tsv · хуучин 432 үг: tools/v2_vocab_legacy.tsv\n'
              u'   Үгийн сан: Irodori ことばリスト (монгол) © The Japan Foundation. */\n')
     fh.write('window.KOTO_DATA = ')
     fh.write(json.dumps(data, ensure_ascii=False, separators=(',', ':')).replace('{"key":"', '\n{"key":"'))
     fh.write(';\n')
-n_words = sum(len(u['words']) for u in units)
-print('ok: %d нэгж, %d үг, %d хичээл, нэмэлт %d, засвар %d, нэгтгэл %d, %d КБ' % (
-    len(units), n_words, sum((len(u['words']) + 4) // 5 for u in units), len(extra), n_fix, len(dropped), os.path.getsize(out) // 1024))
+n_words = sum(len(u['words']) for u in book_units)
+print('ok: %d номын хичээл (утгын нэгж %d), %d үг, %d алхам, нэмэлт %d, засвар %d, нэгтгэл %d, %d КБ' % (
+    len(book_units), len(units), n_words, sum((len(u['words']) + 4) // 5 for u in book_units), len(extra), n_fix, len(dropped), os.path.getsize(out) // 1024))
+print('  хичээлийг: id-аар %d · нэгтгэлээр %d · утгын нэгжээр (номд байхгүй) %d' % (n_words - n_merged - n_fallback, n_merged, n_fallback))
 for k, t, _ in LEVELS:
-    us = [u for u in units if u['level'] == k]
-    print('  %s %s: %d нэгж, %d үг' % (k, t, len(us), sum(len(u['words']) for u in us)))
+    us = [u for u in book_units if u['level'] == k]
+    print('  %s %s: %d хичээл, %d үг (%s)' % (k, t, len(us), sum(len(u['words']) for u in us), ' '.join(str(len(u['words'])) for u in us)))
