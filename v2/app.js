@@ -541,7 +541,7 @@
     auSet(null);speak(w.jp);
   }
   /** id-аар дуудна. Хичээлд үүсгэсэн үг `wordById`-д байхгүй тул одоогийн асуултын үгээр нөхнө. */
-  function sayId(id){const cur=session&&session.queue[session.pos];sayWord(wordById[id]||(cur&&cur.word?[cur.word,...(cur.word.exw||[])].find(w=>w.id===id):null)||null);}
+  function sayId(id){const cur=session&&session.queue[session.pos];sayWord(wordById[id]||(cur&&cur.word?[cur.word,...(cur.word.exw||[]),...(cur.word.rd||[])].find(w=>w.id===id):null)||null);}
   /** Сонсох боломж бий юу — бичлэг ЭСВЭЛ хоолой. */
   const canHear=w=>!!(w&&!w.noAu&&(w.au||canSpeak));
 
@@ -650,9 +650,16 @@
      → уншлага (жишээгүй 6 ханзад гурав). */
   /** Уншлагын шошго: он (2 хүртэл) ／ кун (2 хүртэл), окуриганаг хаалтад — ひと.つ → ひと(つ). */
   const kanjiRead = k => [k.on.slice(0, 2).join('・'), k.kun.slice(0, 2).map(r => r.replace(/\.(.+)$/, '($1)')).join('・')].filter(Boolean).join(' ／ ');
+  /** Уншлагын бичлэгийн id (11-25e) — өгөгдөлгүйгээр, дүрмээр: ОН `kr/o-<кана бүрийн (код − 0x30A0) 36-тын 2 орон>` (ханзнаас хамаарахгүй),
+      КУН `kr/k-<ханзны код>-<дугаар>` (ижил кана өөр өргөлттэй: 橋 · 箸). Файлыг tools/build_v2_kanji_readings.py ЯГ энэ дүрмээр нэрлэнэ. */
+  const kjReadAu = (k, kind, i) => 'kr/' + (kind === 'on'
+    ? 'o-' + [...k.on[i]].map(c => (c.charCodeAt(0) - 0x30A0).toString(36).padStart(2, '0')).join('')
+    : 'k-' + k.id.split('-')[1] + '-' + i);
   const KANJI = (window.KOTO_KANJI || []).map(k => ({
     id: k.id, jp: k.c, mn: k.mn, on: k.on, kun: k.kun, s: k.s, g: k.g, n: k.n, b: k.b || [], read: kanjiRead(k), kanji: true, noAu: true,
     exw: k.ex.map((e, i) => ({ id: 'JW:' + k.id + ':' + i, jp: e.jp, kana: e.kana, mn: e.mn, au: e.au || null })),
+    rd: [...k.on.map((r, i) => ({ id: 'JR:' + k.id + ':o' + i, jp: r, au: kjReadAu(k, 'on', i) })),
+      ...k.kun.map((r, i) => ({ id: 'JR:' + k.id + ':k' + i, jp: r.replace('.', ''), au: kjReadAu(k, 'kun', i) }))],
     o: k.o || { t: 'unk' }
   }));
   const kanjiById = Object.fromEntries(KANJI.map(k => [k.id, k]));
@@ -720,11 +727,11 @@
       const count = svg?.querySelectorAll('.kj-vg-stroke').length || 0;
       if (!count) return;
 
-      // Нэг зурлага 0.38 секунд; дараагийнх 0.32 секундэд эхэлнэ.
-      // Төгсгөлийн дүрсийг 0.8 секунд барина.
+      // Нэг зурлага 0.6 секунд; дараагийнх 0.55 секундэд эхэлнэ (11-25d: эзэн «арай удаан» — өмнө 0.38 / 0.32).
+      // Төгсгөлийн дүрсийг 1 секунд барина. styles.css-ийн .kj-vg-stroke / .kj-vg-number-тэй ижил байх ёстой.
       box.style.setProperty(
         '--kj-strokes-total',
-        `${((count - 1) * 0.32 + 0.38 + 0.8).toFixed(2)}s`
+        `${((count - 1) * 0.55 + 0.6 + 1).toFixed(2)}s`
       );
     }
 
@@ -1571,6 +1578,14 @@
       </div>`;
   }
 
+  /** Уншлага = товч: дарахад тэр уншлагын бичлэг (11-25e). Бичлэг ч, хөтөчийн хоолой ч байхгүй бол энгийн бичвэр. */
+  /* Тоглож байхад чанга яригч → зогсоох дөрвөлжин, «сонсох» → «зогсоох» (Astra-гийн хяналт: төлөв зөвхөн өнгөөр ялгагдаж, зогсоох үйлдэл нуугдаж байсан). CSS `.playing`-ээр солино. */
+  function kjReadButton(k, slot, inner) {
+    const w = (k.rd || []).find(x => x.id === 'JR:' + k.id + ':' + slot);
+    if (!canHear(w)) return inner;
+    return `<button type="button" class="kj-read-say" data-action="say" data-au-for="${kjEsc(w.id)}"><span class="kj-read-text">${inner}</span><svg class="icon kj-read-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15 8a6 6 0 0 1 0 8"/></svg><svg class="icon kj-read-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6z"/></svg><span class="sr-only kj-read-on" lang="mn">— сонсох</span><span class="sr-only kj-read-off" lang="mn">— зогсоох</span></button>`;
+  }
+
   function kanjiLearnMarkup(q) {
     const k = q.word;
     const on = k.on || [];
@@ -1603,7 +1618,7 @@
             <dd>
               ${on.length
                 ? `<ul class="kj-reading-list" lang="ja">
-                    ${on.map(r => `<li>${kjEsc(r)}</li>`).join('')}
+                    ${on.map((r, i) => `<li>${kjReadButton(k, 'o' + i, kjEsc(r))}</li>`).join('')}
                   </ul>`
                 : '<span class="kj-reading-empty">Байхгүй</span>'}
             </dd>
@@ -1613,7 +1628,7 @@
             <dd>
               ${kun.length
                 ? `<ul class="kj-reading-list" lang="ja">
-                    ${kun.map(r => `<li>${kjKunMarkup(r)}</li>`).join('')}
+                    ${kun.map((r, i) => `<li>${kjReadButton(k, 'k' + i, kjKunMarkup(r))}</li>`).join('')}
                   </ul>`
                 : '<span class="kj-reading-empty">Байхгүй</span>'}
             </dd>

@@ -4055,8 +4055,8 @@ ruby.jp-face rt {
 }
 
 .kj-origin.is-playing-strokes .kj-vg-stroke {
-  animation: kj-stroke-draw .38s ease-out both;
-  animation-delay: calc(var(--i) * .32s);
+  animation: kj-stroke-draw .6s ease-out both;
+  animation-delay: calc(var(--i) * .55s);
 }
 
 .kj-origin.is-playing-strokes .kj-vg-numbers {
@@ -4064,8 +4064,8 @@ ruby.jp-face rt {
 }
 
 .kj-origin.is-playing-strokes .kj-vg-number {
-  animation: kj-number-appear .38s steps(1, end) both;
-  animation-delay: calc(var(--i) * .32s);
+  animation: kj-number-appear .6s steps(1, end) both;
+  animation-delay: calc(var(--i) * .55s);
 }
 
 @keyframes kj-player-window {
@@ -6124,4 +6124,70 @@ ruby.jp-face rt {
   .kj-hit { flex-wrap: wrap; }
   .kj-hit-body { flex-basis: calc(100% - 70px); }
   .kj-hit-open { width: 100%; }
+}
+
+/* ══ Уншлагыг сонсох (11-25e) — уншлага бүр товч; логик ба суурь загвар Claude, Astra хянасан (тоглох төлөвийн дүрс) ══ */
+#lesson-dialog .kanji-learn .kj-reading-list { gap: 8px; }
+
+#lesson-dialog .kanji-learn .kj-read-say {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 2px 12px;
+  border: 1px solid var(--line);
+  border-bottom: 3px solid var(--edge);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  line-height: 1.5;
+  text-align: left;
+  cursor: pointer;
+}
+
+#lesson-dialog .kanji-learn .kj-read-say .icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--accent-ink);
+}
+
+#lesson-dialog .kanji-learn .kj-read-say .kj-read-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#lesson-dialog .kanji-learn .kj-read-say.playing {
+  border-color: var(--lime-dark);
+  background: var(--lime);
+  color: var(--button-ink);
+}
+
+/* Тоглож байхад: чанга яригч → зогсоох тэмдэг (өнгөнөөс гадна дүрсээр — Astra). */
+#lesson-dialog .kanji-learn .kj-read-say .kj-read-off,
+#lesson-dialog .kanji-learn .kj-read-say.playing .kj-read-on {
+  display: none;
+}
+
+#lesson-dialog .kanji-learn .kj-read-say.playing .kj-read-off {
+  display: block;
+}
+
+#lesson-dialog .kanji-learn .kj-read-say.playing svg.kj-read-off {
+  fill: currentColor;
+}
+
+#lesson-dialog .kanji-learn .kj-read-say.playing .icon,
+#lesson-dialog .kanji-learn .kj-read-say.playing .kj-okurigana {
+  color: var(--button-ink);
+  text-decoration-color: currentColor;
+}
+
+@media (hover: hover) {
+  #lesson-dialog .kanji-learn .kj-read-say:hover:not(.playing) {
+    border-color: var(--lime-dark);
+    background: var(--accent-surface);
+  }
 }

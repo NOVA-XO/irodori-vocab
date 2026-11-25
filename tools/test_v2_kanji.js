@@ -80,6 +80,45 @@ const ebad = ex.filter(({ k, e }) => !e.jp.includes(k.c) || !KANA.test(e.kana) |
 ok('жишээ бүр тухайн ханзтай, уншлага зөвхөн кана, хог тэмдэгтгүй, утгатай (' + ex.length + ')', !ebad.length, ebad.slice(0, 5).map(({ k, e }) => k.c + ':' + e.jp + '/' + e.kana).join(' | '));
 const au = ex.filter(({ e }) => !e.au || !fs.existsSync(path.join(ROOT, 'audio', e.au + '.mp3')));
 ok('жишээ бүр бичлэгтэй (audio/<au>.mp3 байна)', !au.length, au.slice(0, 5).map(({ e }) => e.jp).join(' '));
+
+/* 11-25e — уншлага бүрийн бичлэг (audio/kr/, tools/build_v2_kanji_readings.py). Файлын нэрийг ЭНД бие даан гаргана (аппын `kjReadAu`-тай ижил дүрэм),
+   бичигдсэн фонемийг канагаас БИЕ ДААН ромажилж тулгана — хөдөлгүүрийн толь は-г «wa», 上-г «ue» гэж уншсан бол эндээс баригдана. */
+console.log('\n[4b] Уншлагын бичлэг');
+{
+  const KR = path.join(ROOT, 'audio', 'kr'), man = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools', 'v2_kanji_readings.json'), 'utf8'));
+  const need = new Map();
+  for (const k of K) {
+    k.on.forEach(r => need.set('o-' + [...r].map(c => (c.charCodeAt(0) - 0x30A0).toString(36).padStart(2, '0')).join(''), r));
+    k.kun.forEach((r, i) => need.set('k-' + k.id.split('-')[1] + '-' + i, r));
+  }
+  const files = fs.existsSync(KR) ? fs.readdirSync(KR).filter(f => f.endsWith('.mp3')).map(f => f.slice(0, -4)) : [];
+  const miss = [...need.keys()].filter(n => !files.includes(n) || fs.statSync(path.join(KR, n + '.mp3')).size < 600), extra = files.filter(f => !need.has(f));
+  const stale = [...need].filter(([n, r]) => !man[n] || man[n].r !== r).map(([n, r]) => n + ':' + r);
+  ok('уншлага бүр бичлэгтэй (' + need.size + ' файл: ОН ' + [...need.keys()].filter(n => n[0] === 'o').length + ' ялгаатай кана, КУН ханз бүрд), илүү файлгүй, бүртгэл таарна',
+    need.size === 2087 && !miss.length && !extra.length && !stale.length && Object.keys(man).length === need.size, JSON.stringify({ n: need.size, miss: miss.slice(0, 5), extra: extra.slice(0, 5), stale: stale.slice(0, 5) }));
+  const V = { ア: 'a', イ: 'i', ウ: 'u', エ: 'e', オ: 'o' }, C = { カ: 'k', サ: 's', タ: 't', ナ: 'n', ハ: 'h', マ: 'm', ラ: 'r', ガ: 'g', ザ: 'z', ダ: 'd', バ: 'b', パ: 'p' };
+  const ROW = { カ: 'カキクケコ', サ: 'サシスセソ', タ: 'タチツテト', ナ: 'ナニヌネノ', ハ: 'ハヒフヘホ', マ: 'マミムメモ', ラ: 'ラリルレロ', ガ: 'ガギグゲゴ', ザ: 'ザジズゼゾ', ダ: 'ダヂヅデド', バ: 'バビブベボ', パ: 'パピプペポ' };
+  const R = { ン: 'n', ッ: 'cl', ヤ: 'ya', ユ: 'yu', ヨ: 'yo', ワ: 'wa', ヲ: 'o' };
+  for (const [v, r] of Object.entries(V)) R[v] = r;
+  for (const [h, row] of Object.entries(ROW)) [...row].forEach((c, i) => { R[c] = C[h] + 'aiueo'[i]; });
+  Object.assign(R, { シ: 'shi', チ: 'chi', ツ: 'tsu', フ: 'fu', ジ: 'ji', ヂ: 'ji', ヅ: 'zu' });
+  const Y = { キ: 'ky', シ: 'sh', チ: 'ch', ニ: 'ny', ヒ: 'hy', ミ: 'my', リ: 'ry', ギ: 'gy', ジ: 'j', ヂ: 'j', ビ: 'by', ピ: 'py' }, YV = { ャ: 'a', ュ: 'u', ョ: 'o' };
+  const kata = s => [...s].map(c => c >= 'ぁ' && c <= 'ゖ' ? String.fromCharCode(c.charCodeAt(0) + 0x60) : c).join('');
+  const roma = s => { const out = []; const cs = [...kata(s)];
+    for (let i = 0; i < cs.length; i++) { const c = cs[i], nx = cs[i + 1];
+      if (YV[nx] && Y[c]) { out.push(Y[c] + YV[nx]); i++; } else if (c === 'ー') out.push(out[out.length - 1].slice(-1)); else out.push(R[c] || '?' + c); }
+    return out; };
+  const bad = [];
+  for (const [n, r] of need) {
+    const m = man[n]; if (!m) continue;
+    const [stem, oku] = r.split('.'), exp = roma(stem + (oku || '')), got = m.ph.split(' '), edge = oku ? roma(stem).length : -1;
+    const same = exp.length === got.length && exp.every((e, i) => e === got[i] || (i > 0 && i !== edge && ((e === 'u' && got[i] === 'o' && exp[i - 1].endsWith('o')) || (e === 'i' && got[i] === 'e' && exp[i - 1].endsWith('e')))));
+    if (!same) bad.push(m.c + ' ' + r + ' → ' + m.ph + ' (' + m.via + ')');
+  }
+  ok('бичигдсэн фонем канатайгаа таарна — бие даасан ромажлалаар (уртатгал オ段+ウ/エ段+イ зөвшөөрнө, окуриганы «う» ЗААВАЛ «u»)', !bad.length, bad.length + ': ' + bad.slice(0, 8).join(' | '));
+  const via = Object.values(man).reduce((a, m) => (a[m.via] = (a[m.via] || 0) + 1, a), {});
+  ok('замын тоо: ОН 296 (үсгээр, 頭高) · КУН толиос (ханз/хирагана) ба үсгээр — нийлбэр 2087', via.on === 296 && (via.kanji || 0) + (via.hira || 0) + (via.literal || 0) === 1791, JSON.stringify(via));
+}
 /* 11-05: жишээ үгийн сан 432 → 2994 (Irodori 3 ном) ба «簡単（な）», «～区 （南区）» хэлбэрийг задалдаг болсон —
    万 ба N3-ийн 6 ханз жишээтэй болов. Үлдсэнд эх сурвалжид жишээ алга (эзэн «жишээгүй үлдээ»). */
 const noEx = K.filter(k => k.n >= 4 && !k.ex.length).map(k => k.c).join(''), noEx3 = K.filter(k => k.n === 3 && !k.ex.length).length;

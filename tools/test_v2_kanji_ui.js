@@ -56,7 +56,8 @@ function getJSON(p, method) {
   const send = (method, params) => new Promise((res, rej) => { const i = ++id; w.set(i, { res, rej }); ws.send(JSON.stringify({ id: i, method, params: params || {} })); });
   await send('Runtime.enable');
   const ev = async expr => {
-    const r = await send('Runtime.evaluate', { expression: '(async()=>{' + expr + '})()', awaitPromise: true, returnByValue: true });
+    /* userGesture: үүнгүй бол хөтөч `play()`-г NotAllowedError-оор татгалзана — апп түүнийг зориуд үл тоодог тул «тоглож байна» төлөв үүрд үлдэнэ (11-25e). */
+    const r = await send('Runtime.evaluate', { expression: '(async()=>{' + expr + '})()', awaitPromise: true, returnByValue: true, userGesture: true });
     if (r.exceptionDetails) throw new Error(JSON.stringify(r.exceptionDetails).slice(0, 300));
     return r.result.value;
   };
@@ -142,6 +143,14 @@ function getJSON(p, method) {
   const ls = await ev(`${H}document.querySelector('#view-kanji [data-action=kanji-lesson][data-kanji="0"]').click();await S(200);const s=K.numTest.session(),out={};
     out.title=s.title;out.types=s.queue.map(q=>q.type==='learn'?'L':q.direction[0]).join('');out.learn=$q('.learn-kana, [lang=ja]')&&document.getElementById('exercise-title').textContent;
     out.mainAudio=!!$q('[data-au-for="'+s.queue[0].word.id+'"]');out.exAudio=document.querySelectorAll('#lesson-content [data-au-for^="JW:"]').length;
+    {const w0=s.queue[0].word,bs=[...document.querySelectorAll('#lesson-content .kj-read-say[data-au-for^="JR:"]')],b=bs[0];
+      out.rd={n:bs.length,need:w0.on.length+w0.kun.length,text:bs.map(x=>x.querySelector('.kj-read-text').textContent).join(' '),small:bs.filter(x=>x.getBoundingClientRect().height<44).length};
+      const vis=c=>[...b.querySelectorAll(c)].filter(x=>getComputedStyle(x).display!=='none').map(x=>x.tagName==='svg'?'svg':x.textContent).join('');
+      out.rd.idle=vis('.kj-read-on')+'/'+vis('.kj-read-off');
+      b.click();await S(150);out.rd.play=K.playing()===b.dataset.auFor&&b.classList.contains('playing');out.rd.busy=vis('.kj-read-on')+'/'+vis('.kj-read-off');
+      for(let i=0;i<40&&K.playing();i++)await S(100);out.rd.end=K.playing()===null&&!b.classList.contains('playing');
+      bs[bs.length-1].click();await S(150);out.rd.second=K.playing()===bs[bs.length-1].dataset.auFor;bs[bs.length-1].click();await S(80);out.rd.stop=K.playing()===null;
+      out.rd.net=performance.getEntriesByType('resource').filter(e=>e.name.includes('/audio/kr/')).map(e=>e.name.split('/audio/')[1]+':'+e.responseStatus).join(' ');}
     for(let i=0;i<5;i++)await answer(true);
     const kw=cur().direction==='kw-read'?cur():s.queue.slice(s.pos).find(q=>q.direction==='kw-read');
     while(!s.completed){const q=cur();if(q.direction==='kj-mn'&&out.kjAudio===undefined)out.kjAudio=!!$q('.quiz-prompt-card [data-au-for]');await answer(q!==kw);if(q===kw)out.kwRid=Object.keys(s.results).includes(kw.rid);}
@@ -153,6 +162,19 @@ function getJSON(p, method) {
   ok('эхний хичээл «Ханз N5 · 1-р хичээл»: 5 танилцах карт + 5×4 асуулт', ls.title === 'Ханз N5 · 1-р хичээл' && /^LLLLL/.test(ls.types) && ls.types.length === 25, JSON.stringify(ls));
   ok('ханз өөрөө хоолойгүй — танилцах карт ба «ханз → утга» асуултад (TTS ганц ханзыг буруу уншина), жишээ үгс бичлэгтэй',
     !ls.mainAudio && ls.kjAudio === false && ls.exAudio >= 1, JSON.stringify({ main: ls.mainAudio, kj: ls.kjAudio, ex: ls.exAudio }));
+  /* 11-25e (эзэн: «уншлагуудыг сонсдог байх хэрэгтэй»): 日 = ニチ ジツ ひ — уншлага бүр товч, өөрийн бичлэгтэй (audio/kr/). */
+  ok('уншлага бүр сонсох товч (日: ニチ ジツ ひ), ≥ 44px', ls.rd.n === 3 && ls.rd.n === ls.rd.need && ls.rd.text === 'ニチ ジツ ひ' && ls.rd.small === 0, JSON.stringify(ls.rd));
+  ok('уншлагыг дарахад тоглоно → дуусахад төлөв арилна; дахин дарвал зогсоно; бичлэг серверээс 200 (kr/o-170x, kr/k-65E5-0)',
+    ls.rd.play && ls.rd.end && ls.rd.second && ls.rd.stop && ls.rd.net === 'kr/o-170x.mp3:200 kr/k-65E5-0.mp3:200', JSON.stringify(ls.rd));
+  ok('тоглож байхад чанга яригч → зогсоох дүрс, «сонсох» → «зогсоох» (төлөв өнгөнөөс гадна дүрсээр — Astra)', ls.rd.idle === 'svg— сонсох/' && ls.rd.busy === '/svg— зогсоох', JSON.stringify({ idle: ls.rd.idle, busy: ls.rd.busy }));
+  /* Аппын гаргасан бичлэгийн id (kjReadAu) ↔ үүсгэгчийн бүртгэл: БҮХ ханзны БҮХ уншлага — нэр нэг тэмдэгтээр зөрвөл тэр уншлага чимээгүй хөтөчийн хоолой руу унана. */
+  {
+    const man = JSON.parse(fs.readFileSync(path.join(__dirname, 'v2_kanji_readings.json'), 'utf8'));
+    const slots = await ev(`return window.KOTO.kanji.list().flatMap(k=>k.rd.map(r=>r.id+'|'+r.au+'|'+r.jp));`);
+    const off = slots.filter(x => { const [, au, jp] = x.split('|'), m = man[au.replace('kr/', '')]; return !au.startsWith('kr/') || !m || m.r.replace('.', '') !== jp; });
+    ok('аппын уншлагын бичлэгийн id бүгд бүртгэлтэй, канатайгаа таарна (' + slots.length + ' уншлага → ' + new Set(slots.map(x => x.split('|')[1])).size + ' файл)',
+      slots.length === 3205 && new Set(slots.map(x => x.split('|')[1])).size === 2087 && !off.length, off.length + ': ' + off.slice(0, 4).join(' '));
+  }
   ok('дуусгалт: «Ханзаа бататгалаа!», 5 ханз state.kana-д (хуваарь, өнөөдөр), өдрийн бүртгэлд, үгийн ахиц хөндөгдөөгүй',
     ls.h1 === 'Ханзаа бататгалаа!' && /^5 ханз дээр/.test(ls.p) && ls.store && ls.day && ls.wordsUntouched === 0, JSON.stringify(ls));
   ok('жишээ үгэнд алдвал ТЭР ханз сул болно (' + ls.kwK + ')', ls.kwRid && ls.weak.length === 1 && ls.weak[0] === ls.kwK, JSON.stringify({ weak: ls.weak, kw: ls.kwK }));
