@@ -84,11 +84,11 @@ function getJSON(p, method) {
   await seed(0); await nav();
   const hub0 = await ev(`location.hash='games';await new Promise(r=>setTimeout(r,200));const v=document.getElementById('view-games');
     window.KOTO.games.start('shoot');
-    return {nav:document.querySelectorAll('.nav-item').length,navGames:!!document.querySelector('.nav-item[data-view=games][aria-current=page]'),shown:!v.hidden,
+    return {nav:document.querySelectorAll('.nav-item').length,navGames:!!document.querySelector('.subnav-item[data-view=games][aria-current=page]')&&!!document.querySelector('.nav-item[data-group=practice][aria-current=page]'),shown:!v.hidden,
       page:document.getElementById('page-name').textContent,cards:v.querySelectorAll('.game-card').length,empty:(v.querySelector('.empty-state h2')||{}).textContent,
       start:!!v.querySelector('.empty-state [data-action=start]'),dialog:document.getElementById('game-dialog').open};`);
-  ok('7 цэс (11-04-нөөс «Ханз», 11-18-аас «Сорих»), «Тоглоом» идэвхтэй; 0 үгтэй — «Дахиад 6 үг», хичээлийн товч, үгийн тоглоом нээгдэхгүй (зөвхөн «Юуг зурсан бэ?» — 11-04)',
-    hub0.nav === 7 && hub0.navGames && hub0.shown && hub0.page === 'Тоглоом' && hub0.cards === 1 && /Дахиад 6 үг/.test(hub0.empty) && hub0.start && !hub0.dialog, JSON.stringify(hub0));
+  ok('4 цэс (11-25b: Өнөөдөр · Сурах · Дадлага · Би), «Дадлага» ба дэд таб «Тоглоом» идэвхтэй; 0 үгтэй — «Дахиад 6 үг», хичээлийн товч, үгийн тоглоом нээгдэхгүй (зөвхөн «Юуг зурсан бэ?» — 11-04)',
+    hub0.nav === 4 && hub0.navGames && hub0.shown && hub0.page === 'Тоглоом' && hub0.cards === 1 && /Дахиад 6 үг/.test(hub0.empty) && hub0.start && !hub0.dialog, JSON.stringify(hub0));
   await seed(4); await nav();
   const hub4 = await ev(`location.hash='games';await new Promise(r=>setTimeout(r,200));const v=document.getElementById('view-games');return {cards:v.querySelectorAll('.game-card').length,empty:(v.querySelector('.empty-state h2')||{}).textContent};`);
   ok('4 үгтэй — «Дахиад 2 үг», үгийн тоглоомын карт алга (зургийнх л)', hub4.cards === 1 && /Дахиад 2 үг/.test(hub4.empty), JSON.stringify(hub4));

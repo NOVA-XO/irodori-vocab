@@ -3374,7 +3374,7 @@ ruby.jp-face rt {
   text-align: center;
 }
 
-/* Долоон цэс: өргөн дэлгэцэд нэг мөр, утсанд 4 + 3. */
+/* Дөрвөн цэс (11-25b): утсанд доод самбар — файлын төгсгөлийн «4 цэс + дэд таб» блок. */
 @media (max-width: 700px) {
   .sidebar {
     box-sizing: border-box;
@@ -3386,7 +3386,7 @@ ruby.jp-face rt {
   .sidebar .nav-list {
     box-sizing: border-box;
     display: grid;
-    grid-template-columns: repeat(7, minmax(44px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: stretch;
     gap: 2px;
     width: 100%;
@@ -3476,31 +3476,6 @@ ruby.jp-face rt {
 
   .sidebar .nav-list .nav-item .icon {
     color: inherit;
-  }
-}
-
-@media (max-width: 480px) {
-  .sidebar .nav-list {
-    grid-template-columns: repeat(8, minmax(22px, 1fr));
-    gap: 4px;
-    padding-bottom: 8px;
-  }
-
-  .sidebar .nav-list .nav-item {
-    grid-column: span 2;
-    justify-content: center;
-    min-height: 56px;
-    padding: 6px 2px;
-    font-size: 11px;
-  }
-
-  .sidebar .nav-list .nav-item:nth-child(5) {
-    grid-column: 2 / span 2;
-  }
-
-  .sidebar .nav-list .nav-item > span:not([data-icon]):not(.nav-count):not(.notification-dot) {
-    overflow-wrap: normal;
-    word-break: normal;
   }
 }
 
@@ -6000,4 +5975,81 @@ ruby.jp-face rt {
   .n5-mock .primary-btn:active {
     transform: none;
   }
+}
+
+/* ══ 4 цэс + дэд таб (11-25b) — бүтэц ба суурь загвар Claude; Astra хянаж сайжруулна (STATE §4 №59) ══
+   Өнөөдөр · Сурах · Дадлага · Би. Утсанд (≤ 700px) цэс дэлгэцийн ДООР тогтоно; бүлэг доторх хуудсууд (.subnav) агуулгын дээр. */
+.subnav {
+  display: flex;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 0 24px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+}
+
+.subnav[hidden] { display: none; }
+
+.subnav-item {
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.subnav-item:hover { background: var(--soft); }
+
+.subnav-item.active {
+  background: var(--accent-surface);
+  border-color: var(--accent-ink);
+  color: var(--accent-ink);
+}
+
+.subnav-item:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .app-shell { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+
+  .sidebar { padding-bottom: 12px; }
+
+  .sidebar .nav-list {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    gap: 4px;
+    padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: var(--paper);
+  }
+
+  .sidebar .nav-list .nav-item {
+    justify-content: center;
+    min-height: 56px;
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+
+  .subnav { width: 100%; }
+
+  .subnav-item {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-inline: 6px;
+    text-align: center;
+  }
+
+  .toast { bottom: calc(88px + env(safe-area-inset-bottom)); }
 }

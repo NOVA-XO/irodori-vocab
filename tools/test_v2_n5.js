@@ -76,7 +76,7 @@ const getJSON = (p, m) => new Promise((res, rej) => { const q = http.request({ h
   console.log('\n[B] Нүүр хуудас');
   await nav(SITE + '#test');
   const hub = await ev(`await new Promise(r=>setTimeout(r,300));const v=document.getElementById('view-test');
-    return {shown:!v.hidden,nav:!!document.querySelector('.nav-item[data-view=test]'),title:(v.querySelector('.page-title')||{}).textContent,
+    return {shown:!v.hidden,nav:!!document.querySelector('.subnav-item[data-view=test][aria-current=page]')&&!!document.querySelector('.nav-item[data-group=practice][aria-current=page]'),title:(v.querySelector('.page-title')||{}).textContent,
       mock:!!v.querySelector('[data-n5=mock]'),groups:v.querySelectorAll('.n5-group').length,parts:v.querySelectorAll('.n5-part').length,
       disabled:v.querySelectorAll('.n5-part:disabled').length,page:document.getElementById('page-name').textContent};`);
   ok('#test-ээр шууд нээгдэнэ: «Өөрийгөө сорих», бүтэн шалгалтын товч, 3 хэсэг, 14 төрөл, идэвхгүй алга', hub.shown && hub.nav && hub.title === 'Өөрийгөө сорих' && hub.mock && hub.groups === 3 && hub.parts === 14 && hub.disabled === 0 && hub.page === 'Өөрийгөө сорих', JSON.stringify(hub));
@@ -163,7 +163,7 @@ const getJSON = (p, m) => new Promise((res, rej) => { const q = http.request({ h
     return {pg,vw:innerWidth,o,small,nav:[...document.querySelectorAll('.nav-item')].filter(e=>e.getBoundingClientRect().right>innerWidth+1).length};`);
   ok('390: нүүр ба цонх хэвтээ гүйлтгүй, сонголт ≥ 44px, цэс багтана', m390.pg <= m390.vw && m390.o === 0 && m390.small === 0 && m390.nav === 0, JSON.stringify(m390));
   await shot('n5-mid-390');
-  /* 11-25a (Astra-гийн загвар): цэс 4+3; асуулт л гүйж, доод самбар халхлахгүй; 読解-д асуулт эхийн өмнө; ★ нүд нэг мөрөнд. */
+  /* 11-25a (Astra-гийн загвар), 11-25b (4 цэс доор): асуулт л гүйж, доод самбар халхлахгүй; 読解-д асуулт эхийн өмнө; ★ нүд нэг мөрөнд. */
   const ly = await ev(`const W=ms=>new Promise(r=>setTimeout(r,ms)),U=window.KOTO_N5UI,c=()=>document.getElementById('n5-content'),top=e=>Math.round(e.getBoundingClientRect().top);
     const items=[...document.querySelectorAll('.sidebar .nav-list .nav-item')],rows=[...new Set(items.map(top))].map(t=>items.filter(e=>top(e)===t).length);
     const ex=c().querySelector('.n5-exercise'),bot=c().querySelector('.lesson-bottom'),d=document.getElementById('n5-dialog');
@@ -171,7 +171,7 @@ const getJSON = (p, m) => new Promise((res, rej) => { const q = http.request({ h
       qFirst:top(c().querySelector('.n5-q'))<top(c().querySelector('.n5-passage')),botIn:Math.round(bot.getBoundingClientRect().bottom)<=innerHeight};
     c().querySelector('[data-n5=exit]').click();await W(40);U.startPractice('order');await W(100);const st=[...c().querySelectorAll('.n5-slot')].map(top);
     c().querySelector('[data-n5=exit]').click();await W(40);return {rows,mid,slots:st.length===4&&new Set(st).size===1};`);
-  ok('390: цэс 4+3; асуултын хэсэг дотроо гүйж доод самбартай давхцахгүй; уншлагад асуулт эхийн өмнө; ★ 4 нүд нэг мөрөнд', ly.rows.join() === '4,3' && ly.mid.gap >= 0 && ly.mid.scroll && ly.mid.page <= 1 && ly.mid.qFirst && ly.mid.botIn && ly.slots, JSON.stringify(ly));
+  ok('390: 4 цэс нэг мөрөнд; асуултын хэсэг дотроо гүйж доод самбартай давхцахгүй; уншлагад асуулт эхийн өмнө; ★ 4 нүд нэг мөрөнд', ly.rows.join() === '4' && ly.mid.gap >= 0 && ly.mid.scroll && ly.mid.page <= 1 && ly.mid.qFirst && ly.mid.botIn && ly.slots, JSON.stringify(ly));
   await ev(`document.querySelector('#n5-content [data-n5=exit]').click();localStorage.removeItem('koto-n5');return true;`);
 
   console.log('\n[G] Консол');

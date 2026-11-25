@@ -620,6 +620,40 @@ function getJSON(path, method) {
   await size(1400, 900, false);
   await ev(`localStorage.removeItem('koto-irodori-v1');localStorage.removeItem('koto-theme');return true;`);
 
+  /* 11-25b: 7 цэс → 4 бүлэг (Өнөөдөр · Сурах · Дадлага · Би) + дэд таб. Хуучин хаяг хэвээр; цэс сүүлд үзсэн хуудсаа санана. */
+  console.log('\n[G2] 4 цэс ба дэд таб');
+  await nav(SITE + '#learn');
+  const n4 = await ev(`const W=ms=>new Promise(r=>setTimeout(r,ms)),N=[...document.querySelectorAll('.nav-item')],sn=document.getElementById('subnav');
+    const cur=()=>({h:location.hash,g:(document.querySelector('.nav-item[aria-current=page]')||{dataset:{}}).dataset.group,n:document.querySelectorAll('.nav-item[aria-current=page]').length,
+      tabs:[...sn.querySelectorAll('.subnav-item')].map(b=>b.dataset.view+(b.getAttribute('aria-current')==='page'?'*':'')).join(),hid:sn.hidden,shown:[...document.querySelectorAll('.view')].filter(v=>!v.hidden).map(v=>v.id).join()});
+    const out={labels:N.map(b=>b.textContent.trim().replace(/\\s+/g,' ')).join('|'),a:cur()};
+    N[1].click();await W(250);out.b=cur();sn.querySelector('[data-view=kanji]').click();await W(350);out.c=cur();
+    N[2].click();await W(250);out.d=cur();sn.querySelector('[data-view=test]').click();await W(250);out.e=cur();
+    N[1].click();await W(350);out.f=cur();N[2].click();await W(250);out.g=cur();N[3].click();await W(250);out.i=cur();
+    const routes={};for(const v of ['words','review','games','kanji','test','profile','learn']){location.hash=v;await W(300);const c=cur();routes[v]=c.g+':'+c.shown+':'+c.n;}
+    out.routes=routes;location.hash='learn';await W(250);return out;`);
+  ok('4 цэс: Өнөөдөр · Сурах · Дадлага · Би; нэг л цэс идэвхтэй; ганц хуудастай бүлэгт дэд таб нуугдана',
+    n4.labels === 'Өнөөдөр|Сурах|Дадлага|Би' && n4.a.g === 'today' && n4.a.hid && n4.a.n === 1 && n4.i.g === 'me' && n4.i.hid && n4.i.h === '#profile', JSON.stringify([n4.labels, n4.a, n4.i]));
+  ok('«Сурах» → Үгийн сан · Ханз, «Дадлага» → Давтлага · Тоглоом · Сорих; дэд таб хуудсаа сольж, идэвхтэйг тэмдэглэнэ',
+    n4.b.h === '#words' && n4.b.tabs === 'words*,kanji' && n4.c.h === '#kanji' && n4.c.tabs === 'words,kanji*' && n4.c.shown === 'view-kanji' && n4.d.h === '#review' && n4.d.tabs === 'review*,games,test' && n4.e.tabs === 'review,games,test*' && n4.e.shown === 'view-test', JSON.stringify([n4.b, n4.c, n4.d, n4.e]));
+  ok('Цэс тухайн бүлэгт СҮҮЛД үзсэн хуудсыг нээнэ (Сурах → Ханз, Дадлага → Сорих)', n4.f.h === '#kanji' && n4.f.g === 'study' && n4.g.h === '#test' && n4.g.g === 'practice', JSON.stringify([n4.f, n4.g]));
+  ok('Хуучин 7 хаяг бүгд ажиллана, зөв бүлгээ идэвхжүүлнэ',
+    JSON.stringify(n4.routes) === JSON.stringify({ words: 'study:view-words:1', review: 'practice:view-review:1', games: 'practice:view-games:1', kanji: 'study:view-kanji:1', test: 'practice:view-test:1', profile: 'me:view-profile:1', learn: 'today:view-learn:1' }), JSON.stringify(n4.routes));
+  for (const [wd, ht] of [[320, 568], [390, 844]]) {
+    await size(wd, ht, true); await nav(SITE + '#test');
+    const bb = await ev(`const W=ms=>new Promise(r=>setTimeout(r,ms));await W(200);const L=document.querySelector('.nav-list'),N=[...document.querySelectorAll('.nav-item')],r=L.getBoundingClientRect();
+      const tabs=[...document.querySelectorAll('.subnav-item')];window.scrollTo(0,document.documentElement.scrollHeight);await W(150);
+      const f=document.querySelector('.page-footer').getBoundingClientRect(),r2=L.getBoundingClientRect();window.scrollTo(0,0);
+      return {fixed:getComputedStyle(L).position,bottom:Math.round(r.bottom),vh:innerHeight,left:Math.round(r.left),w:Math.round(r.width),vw:innerWidth,rows:new Set(N.map(n=>Math.round(n.getBoundingClientRect().top))).size,
+        minH:Math.min(...N.concat(tabs).map(n=>Math.round(n.getBoundingClientRect().height))),minW:Math.min(...N.map(n=>Math.round(n.getBoundingClientRect().width))),
+        stay:Math.round(r2.bottom)===innerHeight,clear:Math.round(f.bottom)<=Math.round(r2.top),over:document.documentElement.scrollWidth-innerWidth,
+        tabOver:tabs.filter(t=>t.scrollWidth>t.clientWidth+1||t.getBoundingClientRect().right>innerWidth).length};`);
+    ok(wd + ': цэс дэлгэцийн доор тогтоно (нэг мөр, бүтэн өргөн, товч ≥ 44), гүйлгэхэд хэвээр, хуудасны төгсгөлийг халхлахгүй, дэд таб багтана',
+      bb.fixed === 'fixed' && bb.bottom === bb.vh && bb.left === 0 && bb.w === bb.vw && bb.rows === 1 && bb.minH >= 44 && bb.minW >= 44 && bb.stay && bb.clear && bb.over <= 0 && bb.tabOver === 0, JSON.stringify(bb));
+    if (wd === 390) await shot('nav4-390');
+  }
+  await size(1400, 900, false); await nav(SITE + '#learn');
+
   console.log('\n[H] Консол');
   ok('барьсангүй уналт гараагүй (' + errs.length + ')', errs.length === 0, errs.join(' | ').slice(0, 400));
   console.log('\n──────────────\ntsever: ' + good + '   unasan: ' + bad + '\nzurag: ' + OUT);

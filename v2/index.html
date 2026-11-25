@@ -10,22 +10,22 @@
   <title>KOTO — Япон үгээ тогтооё</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='20' fill='%23b8ef58'/%3E%3Ctext x='12' y='47' font-size='44' fill='%231b3024'%3Eこ%3C/text%3E%3C/svg%3E">
   <!-- ?v= — GitHub Pages max-age=600: шинэ сэдэв 10 минут хоцрохгүй -->
-  <link rel="stylesheet" href="styles.css?v=2026-11-25a">
-  <link rel="stylesheet" href="themes.css?v=2026-11-25a">
+  <link rel="stylesheet" href="styles.css?v=2026-11-25b">
+  <link rel="stylesheet" href="themes.css?v=2026-11-25b">
   <!-- defer-ГҮЙ: хоёр CSS ачаалагдсаны дараа, анхны зурахаас өмнө сэдэв/горимыг тавина. -->
-  <script src="theme.js?v=2026-11-25a"></script>
+  <script src="theme.js?v=2026-11-25b"></script>
   <!-- Синкийн тохиргоо нь v1-тэй ЖИШИЛ: нэг Supabase project.
        Хоёр апп ӨӨР хүснэгтэд бичдэг (progress ба koto) тул
        хольцолдохгүй, хэрэглэгч нэг л нууц код санана. -->
   <script src="../sync-config.js" defer></script>
-  <script src="data.js?v=2026-11-25a" defer></script>
-  <script src="kana.js?v=2026-11-25a" defer></script>
-  <script src="sentences.js?v=2026-11-25a" defer></script>
-  <script src="kanji.js?v=2026-11-25a" defer></script>
-  <script src="kanji-pics.js?v=2026-11-25a" defer></script>
-  <script src="app.js?v=2026-11-25a" defer></script>
-  <script src="n5data.js?v=2026-11-25a" defer></script>
-  <script src="n5.js?v=2026-11-25a" defer></script>
+  <script src="data.js?v=2026-11-25b" defer></script>
+  <script src="kana.js?v=2026-11-25b" defer></script>
+  <script src="sentences.js?v=2026-11-25b" defer></script>
+  <script src="kanji.js?v=2026-11-25b" defer></script>
+  <script src="kanji-pics.js?v=2026-11-25b" defer></script>
+  <script src="app.js?v=2026-11-25b" defer></script>
+  <script src="n5data.js?v=2026-11-25b" defer></script>
+  <script src="n5.js?v=2026-11-25b" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">Үндсэн хэсэгт очих</a>
@@ -33,44 +33,28 @@
     <aside class="sidebar" aria-label="Үндсэн цэс">
       <a class="brand" href="#learn" aria-label="KOTO нүүр хуудас"><span class="brand-mark" lang="ja">こ</span><span>koto<span class="brand-dot">.</span></span></a>
       <div class="sidebar-caption">ӨДӨР БҮР НЭГ АЛХАМ</div>
-      <nav class="nav-list" aria-label="Суралцах хэсгүүд">
+      <nav class="nav-list" aria-label="Үндсэн хэсгүүд">
         <button type="button" class="nav-item active"
-          data-view="learn" aria-current="page">
+          data-group="today" data-view="learn" aria-current="page">
           <span data-icon="path" aria-hidden="true"></span>
-          <span>Сурах зам</span>
+          <span>Өнөөдөр</span>
         </button>
-      
-        <button type="button" class="nav-item" data-view="words">
+
+        <button type="button" class="nav-item" data-group="study" data-view="words">
           <span data-icon="book" aria-hidden="true"></span>
-          <span>Үгийн сан</span>
-          <span class="nav-count">432</span>
+          <span>Сурах</span>
         </button>
-      
-        <button type="button" class="nav-item" data-view="review">
+
+        <button type="button" class="nav-item" data-group="practice" data-view="review">
           <span data-icon="repeat" aria-hidden="true"></span>
-          <span>Давтлага</span>
+          <span>Дадлага</span>
           <span id="review-dot" class="notification-dot"
             aria-hidden="true" hidden></span>
         </button>
-      
-        <button type="button" class="nav-item" data-view="games">
-          <span data-icon="game" aria-hidden="true"></span>
-          <span>Тоглоом</span>
-        </button>
 
-        <button type="button" class="nav-item" data-view="test">
-          <span data-icon="target" aria-hidden="true"></span>
-          <span>Сорих</span>
-        </button>
-
-        <button type="button" class="nav-item" data-view="kanji">
-          <span data-icon="kanji" aria-hidden="true"></span>
-          <span>Ханз</span>
-        </button>
-
-        <button type="button" class="nav-item" data-view="profile">
+        <button type="button" class="nav-item" data-group="me" data-view="profile">
           <span data-icon="trophy" aria-hidden="true"></span>
-          <span>Ахиц</span>
+          <span>Би</span>
         </button>
       </nav>
       <button type="button" class="sidebar-footer" id="open-sync" data-action="google-in" aria-label="Google бүртгэлээр нэвтрэх" aria-describedby="sidebar-account-note"><span class="level-dot" aria-hidden="true"></span><span class="sidebar-account-copy"><strong>Нэвтрэх</strong><small id="sidebar-account-note">Google бүртгэлээр</small></span></button>
@@ -81,6 +65,7 @@
         <div class="top-stats"><span class="stat-pill" title="Дараалж хичээллэсэн өдөр"><span data-icon="flame"></span><strong id="streak">0</strong><span class="stat-name">өдөр</span></span><span class="stat-pill" title="Хуримтлуулсан оноо"><span data-icon="spark"></span><strong id="xp">0</strong><span class="stat-name">XP</span></span><button type="button" id="theme-trigger" class="theme-trigger" aria-label="Өнгө солих" aria-expanded="false" aria-controls="theme-popover" title="Өнгө солих"><span class="theme-swatch" aria-hidden="true"></span><svg class="theme-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m4 6 4 4 4-4"/></svg></button><div id="theme-popover" class="theme-popover" role="region" aria-label="Өнгө солих" hidden><fieldset class="theme-group"><legend>Өнгө</legend><div class="theme-palette-grid"><label class="theme-option"><input class="theme-radio" type="radio" name="koto-palette" value="green" checked><span class="theme-choice theme-palette-choice"><span class="theme-swatch" data-swatch="green" aria-hidden="true"></span><span>Ногоон</span><span class="theme-check" aria-hidden="true">✓</span></span></label><label class="theme-option"><input class="theme-radio" type="radio" name="koto-palette" value="pink"><span class="theme-choice theme-palette-choice"><span class="theme-swatch" data-swatch="pink" aria-hidden="true"></span><span>Ягаан</span><span class="theme-check" aria-hidden="true">✓</span></span></label><label class="theme-option"><input class="theme-radio" type="radio" name="koto-palette" value="coffee"><span class="theme-choice theme-palette-choice"><span class="theme-swatch" data-swatch="coffee" aria-hidden="true"></span><span>Кофе</span><span class="theme-check" aria-hidden="true">✓</span></span></label><label class="theme-option"><input class="theme-radio" type="radio" name="koto-palette" value="blue"><span class="theme-choice theme-palette-choice"><span class="theme-swatch" data-swatch="blue" aria-hidden="true"></span><span>Цэнхэр</span><span class="theme-check" aria-hidden="true">✓</span></span></label></div></fieldset><fieldset class="theme-group"><legend>Горим</legend><div class="theme-mode-list"><label class="theme-option"><input class="theme-radio" type="radio" name="koto-mode" value="light"><span class="theme-choice theme-mode-choice"><span>Гэрэлтэй</span><span class="theme-check" aria-hidden="true">✓</span></span></label><label class="theme-option"><input class="theme-radio" type="radio" name="koto-mode" value="dark"><span class="theme-choice theme-mode-choice"><span>Бараан</span><span class="theme-check" aria-hidden="true">✓</span></span></label><label class="theme-option"><input class="theme-radio" type="radio" name="koto-mode" value="auto" aria-labelledby="theme-auto-name" aria-describedby="theme-auto-note" checked><span class="theme-choice theme-mode-choice"><span class="theme-mode-copy"><span id="theme-auto-name">Автомат</span><small id="theme-auto-note">Төхөөрөмжөөр</small></span><span class="theme-check" aria-hidden="true">✓</span></span></label></div></fieldset></div><button type="button" id="open-sync-top" class="avatar account-trigger" data-view="profile" aria-label="Миний ахиц"><span class="avatar-fallback" lang="ja">わ</span></button></div>
       </header>
       <main id="main" class="main-content">
+        <nav id="subnav" class="subnav" aria-label="Энэ хэсгийн хуудсууд" hidden></nav>
         <div id="view-learn" class="view"></div>
         <div id="view-words" class="view" hidden></div>
         <div id="view-review" class="view" hidden></div>

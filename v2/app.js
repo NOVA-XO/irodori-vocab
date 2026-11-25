@@ -52,8 +52,6 @@
      төгсгөлд гарна; бусад үг нь өмнө заагдсан (tools/test_v2_sentences.js). Нэг хичээлд олон бол санамсаргүй нэг. */
   const lessonOfWord={};lessons.forEach(l=>l.words.forEach(w=>{lessonOfWord[w.id]=l.id;}));
   const SENTENCES={};for(const x of window.KOTO_SENTENCES||[]){const id=lessonOfWord[x.w];if(id)(SENTENCES[id]=SENTENCES[id]||[]).push(x);}
-  // Үгийн тоо сэдэв нэмэгдэхэд HTML-д хатуу бичсэнээс зөрөхгүй.
-  document.querySelectorAll('.nav-count').forEach(el=>{el.textContent=allWords.length;});
   const STORAGE_KEY='koto-irodori-v1';
   function emptyState(){return {version:1,xp:0,completed:[],words:{},kana:{},days:{},xpd:{},selectedTopic:0};}
   let storageWorks=true;
@@ -1667,7 +1665,15 @@
   let sideKey=null;
   function paintSide(){const el=$('open-sync');if(!el)return;const u=syncMode()==='user',on=syncOn(),key=u?'u':on?'o':'x';if(key===sideKey)return;sideKey=key;if(u){el.dataset.view='profile';delete el.dataset.action;el.disabled=false;el.removeAttribute('aria-describedby');el.setAttribute('aria-label','Миний бүртгэлийг нээх');}else{delete el.dataset.view;el.dataset.action='google-in';el.disabled=!on;el.setAttribute('aria-describedby','sidebar-account-note');el.setAttribute('aria-label','Google бүртгэлээр нэвтрэх');}el.innerHTML=`<span class="level-dot" aria-hidden="true"></span><span class="sidebar-account-copy"><strong>${u?'Миний бүртгэл':'Нэвтрэх'}</strong><small${u?'':' id="sidebar-account-note"'}>${u?'Нэвтэрсэн':on?'Google бүртгэлээр':'Нэвтрэх үйлчилгээ тохируулагдаагүй.'}</small></span>`;}
   function updateTop(){$('xp').textContent=state.xp;$('streak').textContent=streak();$('review-dot').hidden=!dueWords().length;updateAvatar();paintSide();paintSave();}
-  function switchView(next){view=['learn','words','review','profile','games','kanji','test'].includes(next)?next:'learn';document.querySelectorAll('.view').forEach(el=>el.hidden=el.id!==`view-${view}`);document.querySelectorAll('.nav-item').forEach(el=>{el.classList.toggle('active',el.dataset.view===view);if(el.dataset.view===view)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});$('page-name').textContent={learn:'Миний сурах зам',words:'Миний үгийн сан',review:'Давтах цаг',profile:'Миний ахиц',games:'Тоглоом',kanji:'Ханз',test:'Өөрийгөө сорих'}[view];if(view==='learn')renderHome();if(view==='profile')renderProfile();if(view==='words')renderWords();if(view==='review')renderReview();if(view==='games')renderGames();if(view==='kanji')renderKanji();if(view==='test'&&window.KOTO_N5UI)window.KOTO_N5UI.render($('view-test'));location.hash=view;updateTop();}
+  /* 4 үндсэн цэс (11-25b): Өнөөдөр · Сурах · Дадлага · Би. Хуучин 7 хуудас ба хаяг (#words, #test …) хэвээр — бүлэг доторх
+     дэд таб болсон. Цэс дарахад тухайн бүлэгт СҮҮЛД үзсэн хуудас нээгдэнэ (энэ нээлтийн хугацаанд). */
+  const GROUPS={today:['learn'],study:['words','kanji'],practice:['review','games','test'],me:['profile']};
+  const TAB_NAME={words:'Үгийн сан',kanji:'Ханз',review:'Давтлага',games:'Тоглоом',test:'Сорих'};
+  const lastIn={};
+  const groupOf=v=>Object.keys(GROUPS).find(g=>GROUPS[g].includes(v))||'today';
+  function paintSubnav(group){const el=$('subnav');if(!el)return;const tabs=GROUPS[group];el.hidden=tabs.length<2;
+    el.innerHTML=el.hidden?'':tabs.map(v=>`<button type="button" class="subnav-item${v===view?' active':''}" data-view="${v}"${v===view?' aria-current="page"':''}>${TAB_NAME[v]}</button>`).join('');}
+  function switchView(next){view=['learn','words','review','profile','games','kanji','test'].includes(next)?next:'learn';document.querySelectorAll('.view').forEach(el=>el.hidden=el.id!==`view-${view}`);const group=groupOf(view);lastIn[group]=view;document.querySelectorAll('.nav-item').forEach(el=>{const on=el.dataset.group===group;el.classList.toggle('active',on);if(on)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');});paintSubnav(group);$('page-name').textContent={learn:'Миний сурах зам',words:'Миний үгийн сан',review:'Давтах цаг',profile:'Миний ахиц',games:'Тоглоом',kanji:'Ханз',test:'Өөрийгөө сорих'}[view];if(view==='learn')renderHome();if(view==='profile')renderProfile();if(view==='words')renderWords();if(view==='review')renderReview();if(view==='games')renderGames();if(view==='kanji')renderKanji();if(view==='test'&&window.KOTO_N5UI)window.KOTO_N5UI.render($('view-test'));location.hash=view;updateTop();}
   function weekMarkup(){const d=today();const weekday=new Date(d+'T12:00:00Z').getUTCDay();const monday=shiftDate(d,-((weekday+6)%7));return ['Да','Мя','Лх','Пү','Ба','Бя','Ня'].map((label,i)=>{const date=shiftDate(monday,i),done=Array.isArray(state.days[date])&&state.days[date].length;return `<div class="week-day ${date===d?'today':''} ${done?'done':''}" aria-label="${label}${done?' хичээллэсэн':''}"><span>${done?'✓':label.slice(0,1)}</span>${label}</div>`;}).join('');}
   function renderHome(){
     const t=selectedUnit(),U=UNITS[t],group=topicLessons(t),completed=group.filter(l=>state.completed.includes(l.id)).length,current=group.find(l=>!state.completed.includes(l.id))||group[0];
@@ -2794,6 +2800,7 @@
     const button=event.target.closest('button,a');
     // Картын хоосон хэсэг: текст сонгож байгаа үед (давхар товшилт г.м.) дуудахгүй.
     if(!button){const card=event.target.closest('.say-card');if(card&&!String(getSelection()))sayId(card.dataset.auFor);return;}
+    if(button.dataset.group){switchView(lastIn[button.dataset.group]||button.dataset.view);return;}
     if(button.dataset.view){switchView(button.dataset.view);return;}
     const action=button.dataset.action;if(!action)return;
     if(action==='say'){sayId(button.dataset.auFor);return;}

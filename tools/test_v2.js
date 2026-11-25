@@ -100,7 +100,7 @@ function getJSON(path, method) {
              first: U[0].title, firstTheme: U[0].theme, au: W.filter(w => w.au).length,
              extra: V.extra().length, extraOnPath: V.extra().filter(x => ids.includes(x.id)).length,
              legacy: Object.keys(V.legacy()).length, legacyTargets: [...new Set(Object.values(V.legacy()))].filter(id => !W.some(w => w.id === id && w.level === 'A1')).length,
-             navCount: document.querySelector('.nav-count').textContent,
+             navCount: document.querySelectorAll('.nav-count').length,
              heroUnits: [...document.querySelectorAll('.hero-mini strong')].map(x => x.textContent)[1] };
   `);
   ok('3 түвшин A1 → A2a → A2b, 147 нэгж (55 · 39 · 53), 2994 үг давхардалгүй, 664 хичээл',
@@ -113,7 +113,7 @@ function getJSON(path, method) {
   ok('хуучин 432 байрлалын id бүгд A1-ийн үгэнд очно (ахиц алдагдахгүй)',
     vs && vs.legacy === 432 && vs.legacyTargets === 0, JSON.stringify(vs && { n: vs.legacy, lost: vs.legacyTargets }));
   ok('цэсний тоо = нийт үг, нүүрэнд «147 нэгж»',
-    vs && vs.navCount === String(vs.words) && vs.heroUnits === '147', JSON.stringify(vs && { nav: vs.navCount, hero: vs.heroUnits }));
+    vs && vs.navCount === 0 && vs.heroUnits === '147', JSON.stringify(vs && { nav: vs.navCount, hero: vs.heroUnits }));
 
   /* Ахицын шилжүүлэлт: хуучин `сэдэв:дугаар` түлхүүр → тогтвортой id. 6:25 ба 16:80 (げつようび) нэг үгэнд
      нийлнэ — СҮҮЛД үзсэн нь `weak` тул тэр ялна (kotoMerge-ийн дүрэм). Серверээс ирсэн ч (readFrom) ижил. */
