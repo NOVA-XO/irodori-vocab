@@ -120,11 +120,11 @@
     const last = history()[0];
     const total = SECTIONS.reduce((s, x) => s + x.parts.reduce((t, k) => t + PARTS[k].n, 0), 0), minutes = SECTIONS.reduce((s, x) => s + x.min, 0);
     view.innerHTML = `<div class="eyebrow">JLPT N5</div><h1 class="page-title">Өөрийгөө сорих</h1>
-      <p class="page-subtitle">Японы хэлний түвшин тогтоох шалгалтын N5 хэлбэрээр. Асуулт бүр сангаас санамсаргүй, саяхан гарсныг хойш тавьж сонгогдоно — албан ёсны шалгалтын асуулт биш.</p>
+      <p class="page-subtitle">N5 хэлбэрийн дасгал ба бүтэн шалгалт.<br>Албан ёсны шалгалтын асуулт биш.</p>
       <section class="n5-mock" aria-labelledby="n5-mock-title">
         <div class="n5-mock-body"><h2 id="n5-mock-title">Бүтэн шалгалт</h2>
           <p>${SECTIONS.map(s => `<span class="n5-sec"><span lang="ja">${esc(s.jp)}</span> · ${s.min} мин</span>`).join('')}</p>
-          <p class="n5-mock-meta">${total} асуулт · ${minutes} минут · 180 онооноос 80 бол тэнцэнэ</p>
+          <p class="n5-mock-meta">${total} асуулт · ${minutes} минут · 180 оноо</p>
           ${last ? `<p class="n5-last">Сүүлд: <strong>${last.total}</strong> / 180 · ${last.pass ? 'Тэнцсэн' : 'Тэнцээгүй'} · ${esc(last.date)}</p>` : ''}
         </div>
         <button type="button" class="primary-btn" data-n5="mock">Эхлэх${icon('arrow')}</button>
@@ -133,7 +133,7 @@
         <div class="n5-parts">${s.parts.map(k => {
           const n = pool(k).reduce((t, it) => t + questionsOf(k, it).length, 0);
           return `<button type="button" class="n5-part" data-n5="practice" data-part="${k}"${n ? '' : ' disabled'} aria-label="${esc(PARTS[k].mn)}. ${n} асуулт. Дасгал эхлүүлэх.">
-            <span class="n5-part-jp" lang="ja">${esc(PARTS[k].jp)}</span><span class="n5-part-mn">${esc(PARTS[k].mn)}</span><span class="n5-part-n">${n} асуулт</span></button>`;
+            <span class="n5-part-mn">${esc(PARTS[k].mn)}</span><span class="n5-part-jp" lang="ja">${esc(PARTS[k].jp)}</span><span class="n5-part-n">${n} асуулт</span></button>`;
         }).join('')}</div></section>`).join('')}
       <p class="n5-credit">Бүтэц ба оноо: <a href="https://www.jlpt.jp/guideline/testsections.html" target="_blank" rel="noopener">jlpt.jp</a>. Албан ёсны жишиг асуулт: <a href="https://www.jlpt.jp/samples/forlearners.html" target="_blank" rel="noopener">問題例</a>. Сонсголын дуу: VOICEVOX.</p>`;
   }
@@ -214,13 +214,13 @@
     if (k === 'iikae' || k === 'form') return `<p class="n5-sentence" lang="ja">${ja(it.s).replace(/（\s*）|（　）/g, '<span class="n5-blank">（　　）</span>')}</p>`;
     if (k === 'order') {
       const slots = it.parts.map((_, i) => `<span class="n5-slot${i === it.star ? ' is-star' : ''}">${i === it.star ? '★' : ''}</span>`).join('');
-      return `<p class="n5-sentence n5-order" lang="ja">${esc(it.pre)}${slots}${esc(it.post)}</p>`;
+      return `<p class="n5-sentence n5-order" lang="ja">${esc(it.pre)}<span class="n5-slots">${slots}</span>${esc(it.post)}</p>`;
     }
     if (k === 'text') {
       const t = esc(it.text).replace(/［(\d)］/g, (m, n) => `<span class="n5-gap${Number(n) === q.blank ? ' is-now' : ''}">${n}</span>`).replace(/\n/g, '<br>');
       return `${it.title ? `<h3 class="n5-title" lang="ja">${esc(it.title)}</h3>` : ''}<div class="n5-passage" lang="ja">${t}</div><p class="n5-q">［${q.blank}］</p>`;
     }
-    if (PARTS[k].set) return `<div class="n5-passage${k === 'info' ? ' is-info' : ''}" lang="ja">${ja(it.text)}</div><p class="n5-q" lang="ja">${esc(q.q)}</p>`;
+    if (PARTS[k].set) return `<p class="n5-q" lang="ja">${esc(q.q)}</p><div class="n5-passage${k === 'info' ? ' is-info' : ''}" lang="ja">${ja(it.text)}</div>`;
     if (PARTS[k].audio) {
       const mock = run.mode === 'mock', used = mock && q.played >= 1;
       return `${k === 'speech' ? `<p class="n5-scene"><span lang="ja">${esc(it.scene)}</span><small>${esc(it.sceneMn || '')}</small></p>` : ''}
@@ -254,17 +254,18 @@
     const inSec = mock ? run.qs.filter(x => x.sec === run.sec) : run.qs, pos = inSec.indexOf(q) + 1;
     const last = mock ? run.i === run.qs.length - 1 || run.qs[run.i + 1].sec !== run.sec : run.i === run.qs.length - 1;
     const head = mock ? `${esc(SECTIONS[run.sec].mn)} · ${pos} / ${inSec.length}` : `${esc(P.mn)} · ${pos} / ${inSec.length}`;
-    const fb = !mock && run.checked ? `<div class="feedback ${q.pick === q.ans ? '' : 'incorrect'}" role="status"><span class="feedback-icon">${icon(q.pick === q.ans ? 'check' : 'repeat')}</span><div><strong>${q.pick === q.ans ? 'Зөв байна!' : 'Буруу байна.'}</strong><small lang="ja">Зөв: ${esc(q.opts[q.ans])}</small></div></div><div class="n5-why">${review(q)}</div>` : '';
+    const fb = !mock && run.checked ? `<div class="feedback ${q.pick === q.ans ? '' : 'incorrect'}" role="status"><span class="feedback-icon">${icon(q.pick === q.ans ? 'check' : 'repeat')}</span><div><strong>${q.pick === q.ans ? 'Зөв байна!' : 'Буруу байна.'}</strong><small>Зөв: <span lang="ja">${esc(q.opts[q.ans])}</span></small></div></div><div class="n5-why">${review(q)}</div>` : '';
     const next = mock
       ? `${run.i > 0 && run.qs[run.i - 1].sec === run.sec ? '<button type="button" class="secondary-btn" data-n5="prev">Өмнөх</button>' : ''}<button type="button" class="primary-btn" data-n5="${last ? 'end-sec' : 'next'}">${last ? (run.sec === SECTIONS.length - 1 ? 'Шалгалтаа дуусгах' : 'Дараагийн хэсэг') : 'Дараах'}${icon('arrow')}</button>`
       : run.checked ? `<button type="button" class="primary-btn" data-n5="${last ? 'finish' : 'next'}">${last ? 'Дүгнэх' : 'Дараах'}${icon('arrow')}</button>` : `<button type="button" class="primary-btn" data-n5="check"${q.pick === null ? ' disabled' : ''}>Шалгах${icon('arrow')}</button>`;
-    box().innerHTML = `<div class="lesson-frame n5-frame"><div class="lesson-top"><button type="button" class="icon-button" data-n5="exit" aria-label="Шалгалтаас гарах">${icon('close')}</button>
+    box().innerHTML = `<div class="lesson-frame n5-frame n5-question-frame"><div class="lesson-top"><button type="button" class="icon-button" data-n5="exit" aria-label="Шалгалтаас гарах">${icon('close')}</button>
         <div class="progress-track" aria-hidden="true"><div class="progress-fill" style="width:${Math.round(pos / inSec.length * 100)}%"></div></div>
         ${mock ? `<span class="n5-clock" id="n5-clock" role="timer" aria-label="Хэсгийн үлдсэн хугацаа">--:--</span>` : ''}</div>
       <p class="lesson-meta">${head}</p>
-      <section class="exercise n5-exercise" aria-labelledby="n5-ask">
+      <section class="exercise n5-exercise" aria-labelledby="n5-ask" tabindex="0">
         <div class="exercise-type"><span lang="ja">もんだい ${SECTIONS[P.sec].parts.indexOf(q.part) + 1} · ${esc(P.jp)}</span></div>
-        <h1 id="n5-ask" tabindex="-1"><span lang="ja">${esc(P.ask)}</span><small>${esc(P.hint)}</small></h1>
+        <h1 id="n5-ask" tabindex="-1"><span lang="ja">${esc(P.ask)}</span></h1>
+        <p class="n5-hint">${esc(P.hint)}</p>
         ${stem(q)}${choices(q)}${fb}
       </section>
       <div class="lesson-bottom">${next}</div></div>`;
@@ -272,17 +273,31 @@
     const h = document.getElementById('n5-ask'); if (h) h.focus({ preventScroll: true });
   }
   function resultMock() {
-    const r = run.result, rows = Object.keys(PARTS).map(k => { const l = run.qs.filter(q => q.part === k); return l.length ? `<tr><td><span lang="ja">${esc(PARTS[k].jp)}</span> <small>${esc(PARTS[k].mn)}</small></td><td>${l.filter(q => q.pick === q.ans).length} / ${l.length}</td></tr>` : ''; }).join('');
+    const r = run.result, rows = Object.keys(PARTS).map(k => { const l = run.qs.filter(q => q.part === k); return l.length ? `<tr><td><span>${esc(PARTS[k].mn)}</span><small lang="ja">${esc(PARTS[k].jp)}</small></td><td>${l.filter(q => q.pick === q.ans).length} / ${l.length}</td></tr>` : ''; }).join('');
     const wrong = run.qs.filter(q => q.pick !== q.ans);
     return `<div class="lesson-frame n5-frame"><div class="lesson-top"><button type="button" class="icon-button" data-n5="exit" aria-label="Хаах">${icon('close')}</button></div>
       <section class="n5-result" aria-labelledby="n5-res">
         <div class="eyebrow">БҮТЭН ШАЛГАЛТ · N5</div><h1 id="n5-res" tabindex="-1">${r.pass ? 'Тэнцсэн!' : 'Тэнцээгүй'}</h1>
-        <p class="n5-total"><strong>${r.total}</strong> / 180</p>
-        <div class="result-stats"><div class="result-stat"><strong>${r.lang}</strong><span>ХЭЛНИЙ МЭДЛЭГ · УНШЛАГА / 120 (≥38)</span></div><div class="result-stat"><strong>${r.listen}</strong><span>СОНСГОЛ / 60 (≥19)</span></div></div>
-        <p class="n5-note">Зөв хариултын хувиар тооцсон ойролцоо оноо. Албан ёсны шалгалтад оноог тэнцүүлж тооцдог. Тэнцэхэд нийт 80, хэсэг тус бүрт босго хангах хэрэгтэй.</p>
-        <table class="n5-table"><thead><tr><th>Асуултын төрөл</th><th>Зөв</th></tr></thead><tbody>${rows}</tbody></table>
-        ${wrong.length ? `<h2 class="n5-sub">Алдсан ${wrong.length} асуулт</h2>${wrong.slice(0, 60).map(q => `<details class="n5-miss"><summary><span lang="ja">${esc(PARTS[q.part].jp)}</span> — <span lang="ja">${esc(q.opts[q.ans])}</span></summary>${stem(Object.assign({}, q))}<p lang="ja">Таны хариулт: ${q.pick === null ? '—' : esc(q.opts[q.pick])}</p>${review(q)}</details>`).join('')}` : ''}
+        <p class="n5-total"><strong>${r.total}</strong><span>/ 180</span><small>Босго 80</small></p>
+        <div class="result-stats">
+          <div class="result-stat">
+            <span class="n5-score-label">Хэлний мэдлэг · Уншлага</span>
+            <div class="n5-score-value"><strong>${r.lang}</strong><span>/ 120</span></div>
+            <small>Босго 38</small>
+          </div>
+          <div class="result-stat">
+            <span class="n5-score-label">Сонсгол</span>
+            <div class="n5-score-value"><strong>${r.listen}</strong><span>/ 60</span></div>
+            <small>Босго 19</small>
+          </div>
+        </div>
+        <p class="n5-note">Зөв хариултын хувиар тооцсон ойролцоо оноо.<br>Тэнцэхэд бүх босгыг хангана.</p>
         <div class="n5-actions"><button type="button" class="primary-btn" data-n5="mock">Дахин эхлэх${icon('repeat')}</button><button type="button" class="secondary-btn" data-n5="exit">Хаах</button></div>
+        <details class="n5-breakdown">
+          <summary>Асуултын төрөл</summary>
+          <table class="n5-table"><thead><tr><th>Асуултын төрөл</th><th>Зөв</th></tr></thead><tbody>${rows}</tbody></table>
+        </details>
+        ${wrong.length ? `<details class="n5-review"><summary class="n5-sub">Алдсан ${wrong.length} асуулт</summary>${wrong.slice(0, 60).map(q => `<details class="n5-miss"><summary><span lang="ja">${esc(PARTS[q.part].jp)}</span> — <span lang="ja">${esc(q.opts[q.ans])}</span></summary>${stem(Object.assign({}, q))}<p lang="ja">Таны хариулт: ${q.pick === null ? '—' : esc(q.opts[q.pick])}</p>${review(q)}</details>`).join('')}</details>` : ''}
       </section></div>`;
   }
   function resultPractice() {

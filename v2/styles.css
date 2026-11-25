@@ -3374,7 +3374,7 @@ ruby.jp-face rt {
   text-align: center;
 }
 
-/* Зургаан цэс: нэг мөр; нэр нь товчныхоо дотор мөр шилжинэ. */
+/* Долоон цэс: өргөн дэлгэцэд нэг мөр, утсанд 4 + 3. */
 @media (max-width: 700px) {
   .sidebar {
     box-sizing: border-box;
@@ -3386,7 +3386,7 @@ ruby.jp-face rt {
   .sidebar .nav-list {
     box-sizing: border-box;
     display: grid;
-    grid-template-columns: repeat(6, minmax(44px, 1fr));
+    grid-template-columns: repeat(7, minmax(44px, 1fr));
     align-items: stretch;
     gap: 2px;
     width: 100%;
@@ -3463,13 +3463,45 @@ ruby.jp-face rt {
   }
 }
 
-/* 320–360px: 6 цэсийн нэр ҮГИЙН ДУНДУУР тасрахгүй (11-04 зургаар «Тоглоо/м», «Давтлаг/а»)
-   — Claude; Astra хянана. Багтахгүй бол тест (үг бүр 1 мөр, товчноос хальдаггүй) унана. */
-@media (max-width: 360px) {
-  .sidebar { padding-inline: 4px; }
-  .sidebar .nav-list { gap: 0; }
-  .sidebar .nav-list .nav-item { padding-inline: 1px; font-size: 10px; }
-  .sidebar .nav-list .nav-item > span:not([data-icon]):not(.nav-count):not(.notification-dot) { overflow-wrap: normal; word-break: keep-all; }
+@media (max-width: 700px) {
+  .sidebar .nav-list .nav-item {
+    color: var(--muted);
+  }
+
+  .sidebar .nav-list .nav-item.active {
+    background: var(--accent-surface);
+    border-color: var(--accent-ink);
+    color: var(--accent-ink);
+  }
+
+  .sidebar .nav-list .nav-item .icon {
+    color: inherit;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar .nav-list {
+    grid-template-columns: repeat(8, minmax(22px, 1fr));
+    gap: 4px;
+    padding-bottom: 8px;
+  }
+
+  .sidebar .nav-list .nav-item {
+    grid-column: span 2;
+    justify-content: center;
+    min-height: 56px;
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+
+  .sidebar .nav-list .nav-item:nth-child(5) {
+    grid-column: 2 / span 2;
+  }
+
+  .sidebar .nav-list .nav-item > span:not([data-icon]):not(.nav-count):not(.notification-dot) {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
 }
 
 /* ══ Ханзны үүсэл — Astra (gpt-6-astra, 2026-11-04, 2-р хувилбар: дүрс төвтэй карт); Claude холбосон ══ */
@@ -5297,7 +5329,7 @@ ruby.jp-face rt {
   }
 }
 
-/* ── «Өөрийгөө сорих» — JLPT N5 (11-18, Claude; Astra хянаагүй — Codex ажиллахгүй, STATE №56) ──
+/* ── «Өөрийгөө сорих» — JLPT N5 (11-18 Claude; 11-25 Astra хянаж, доорх «N5: үндсэн өнгө…»-өөс хойшхийг загварчилсан) ──
    Хичээлийн цонх, сонголтын товч, дүнгийн картыг дахин ашиглана; энд зөвхөн шалгалтын онцлог хэсэг. Зөвхөн токен. */
 .n5-mock {
   display: flex;
@@ -5423,9 +5455,549 @@ ruby.jp-face rt {
 .n5-miss .n5-sentence { font-size: 18px; }
 .n5-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 32px; }
 .icon-button.is-warn { background: var(--error-surface); color: var(--error-ink); }
+/* N5: үндсэн өнгө, хүрээ, фокус. */
+.n5-frame,
+.n5-mock,
+.n5-part {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.n5-frame .icon-button:not(.is-warn) {
+  color: var(--muted);
+}
+
+.n5-frame .primary-btn,
+.n5-mock .primary-btn,
+.n5-frame .secondary-btn:not(.is-playing) {
+  border-color: var(--muted);
+}
+
+.n5-frame button:disabled,
+.n5-mock button:disabled {
+  opacity: 1;
+}
+
+.n5-frame :is(button, summary, a):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* Нүүр: богино тайлбар, монгол нэр эхэнд. */
+#view-test > .page-subtitle {
+  max-width: 60ch;
+}
+
+.n5-mock {
+  margin-top: 24px;
+}
+
+.n5-part {
+  min-width: 0;
+  border-bottom-width: 3px;
+}
+
+.n5-part-mn {
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.n5-part-jp {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.n5-part-n {
+  margin-top: 4px;
+}
+
+.n5-credit {
+  max-width: 60ch;
+}
+
+.n5-credit a {
+  display: inline-flex;
+  align-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  vertical-align: middle;
+}
+
+/* Асуулт л гүйнэ; доод үйлдэл агуулгыг халхлахгүй. */
+.n5-question-frame {
+  height: 100dvh;
+  min-height: 0;
+}
+
+.n5-question-frame .lesson-top {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.n5-question-frame .lesson-meta {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 640px;
+  margin-inline: auto;
+  padding: 0 8px;
+}
+
+.n5-question-frame .progress-track {
+  min-width: 0;
+  border: 1px solid var(--muted);
+  background: var(--paper);
+}
+
+.n5-question-frame .progress-fill {
+  background: var(--accent-ink);
+}
+
+.n5-question-frame .n5-exercise {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: 20px 8px 24px;
+  scroll-padding-block: 16px;
+}
+
+.n5-question-frame .n5-exercise:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+.n5-question-frame .lesson-bottom {
+  position: static;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 0;
+  padding-top: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+
+.n5-question-frame .lesson-bottom::before {
+  content: none;
+}
+
+.n5-question-frame .lesson-bottom [data-n5="prev"] {
+  margin-right: auto;
+  flex: 0 0 auto;
+}
+
+.n5-question-frame .lesson-bottom .primary-btn {
+  min-width: 160px;
+  min-height: 48px;
+}
+
+.n5-question-frame .lesson-bottom .primary-btn:disabled {
+  background: var(--paper);
+  color: var(--muted);
+  border-color: var(--muted);
+}
+
+/* Заавар, асуулт, эхийн шатлал. */
+.n5-exercise .exercise-type {
+  margin-bottom: 8px;
+}
+
+.n5-exercise h1 {
+  display: block;
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-wrap: initial;
+  overflow-wrap: anywhere;
+}
+
+.n5-hint {
+  max-width: 60ch;
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.n5-sentence {
+  margin-top: 20px;
+  line-height: 1.8;
+}
+
+.n5-q {
+  margin-top: 20px;
+  font-size: 20px;
+  line-height: 1.7;
+}
+
+.n5-passage {
+  max-height: none;
+  overflow: visible;
+}
+
+.n5-order {
+  display: block;
+}
+
+.n5-slots {
+  display: inline-grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: min(272px, 100%);
+  margin: 4px 0;
+  vertical-align: bottom;
+}
+
+.n5-slots .n5-slot {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Сонголт: хүрээ болон төлөв нь бүх сэдэвт ялгарна. */
+.n5-choices {
+  margin-top: 20px;
+  gap: 12px;
+}
+
+.n5-choices .choice {
+  min-height: 72px;
+  border-color: var(--muted);
+  font-size: 16px;
+}
+
+.n5-choices .choice:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.n5-choices .choice.selected,
+.n5-choices .choice.selected:hover:not(:disabled) {
+  background: var(--accent-surface);
+  color: var(--accent-ink);
+  border-color: var(--accent-ink);
+}
+
+.n5-choices .choice.correct {
+  background: var(--success-surface);
+  color: var(--success-ink);
+  border-color: var(--success-ink);
+}
+
+.n5-choices .choice.incorrect {
+  background: var(--error-surface);
+  color: var(--error-ink);
+  border-color: var(--error-ink);
+}
+
+.n5-choices .choice .choice-index {
+  color: inherit;
+  border-color: currentColor;
+  font-size: 11px;
+}
+
+/* Хариу ба тайлбар. */
+.n5-exercise .feedback {
+  width: 100%;
+  min-width: 0;
+  margin-top: 20px;
+  padding: 16px;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid var(--success-ink);
+  border-radius: 14px;
+  background: var(--success-surface);
+  color: var(--success-ink);
+}
+
+.n5-exercise .feedback.incorrect {
+  border-color: var(--error-ink);
+  background: var(--error-surface);
+  color: var(--error-ink);
+}
+
+.n5-exercise .feedback strong {
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.n5-exercise .feedback small {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: inherit;
+}
+
+.n5-why {
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.n5-why:empty {
+  display: none;
+}
+
+.n5-note {
+  max-width: 60ch;
+  line-height: 1.7;
+}
+
+.n5-tr summary,
+.n5-miss summary {
+  min-height: 44px;
+  padding-block: 10px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* Дүн: оноо, дээд хэмжээ, босгыг тусад нь уншуулна. */
+.n5-result {
+  min-width: 0;
+  padding-top: 8px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+}
+
+.n5-result h1 {
+  margin: 8px 0 0;
+  font-size: clamp(28px, 4vw, 34px);
+  line-height: 1.3;
+}
+
+.n5-total {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 16px 0 20px;
+}
+
+.n5-total strong {
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.n5-total small {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.n5-result .result-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: none;
+  gap: 12px;
+}
+
+.n5-result .result-stat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  text-align: left;
+}
+
+.n5-result .result-stat .n5-score-label {
+  min-height: 44px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.n5-score-value {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.n5-result .result-stat strong {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+.n5-result .n5-score-value span,
+.n5-result .result-stat small {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.n5-result > .n5-note {
+  margin-top: 12px;
+}
+
+.n5-actions {
+  margin: 20px 0;
+}
+
+.n5-breakdown,
+.n5-review {
+  margin-top: 12px;
+  border-top: 1px solid var(--muted);
+}
+
+.n5-breakdown > summary,
+.n5-review > summary {
+  min-height: 48px;
+  margin: 0;
+  padding: 12px 4px;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.n5-table {
+  table-layout: fixed;
+  margin: 0 0 16px;
+}
+
+.n5-table th,
+.n5-table td {
+  padding: 10px 8px;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.n5-table th:last-child,
+.n5-table td:last-child {
+  width: 76px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.n5-table td small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.n5-miss {
+  min-width: 0;
+  padding: 4px 14px 10px;
+}
+
 @media (max-width: 600px) {
-  .n5-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .n5-sentence { font-size: 19px; }
-  .n5-passage { font-size: 16px; max-height: 40vh; }
-  .n5-slot { width: 52px; }
+  .n5-parts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .n5-mock {
+    padding: 20px;
+    gap: 16px;
+  }
+
+  .n5-mock > .primary-btn {
+    width: 100%;
+  }
+
+  .n5-part {
+    padding: 14px 12px;
+  }
+
+  .n5-part-mn {
+    font-size: 15px;
+  }
+
+  .n5-question-frame {
+    padding-inline: 12px;
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .n5-question-frame .lesson-top {
+    gap: 12px;
+  }
+
+  .n5-question-frame .n5-exercise {
+    padding-top: 16px;
+  }
+
+  .n5-question-frame .lesson-bottom .primary-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    padding-inline: 12px;
+    gap: 8px;
+  }
+
+  .n5-exercise h1 {
+    font-size: 18px;
+  }
+
+  .n5-sentence {
+    font-size: 20px;
+  }
+
+  .n5-q {
+    font-size: 18px;
+  }
+
+  .n5-passage {
+    padding: 14px;
+    font-size: 16px;
+  }
+
+  .n5-choices {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .n5-choices .choice {
+    min-height: 60px;
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .n5-result .result-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .n5-result .result-stat {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 12px;
+  }
+
+  .n5-result .result-stat .n5-score-label {
+    grid-row: 1 / span 2;
+    min-height: 0;
+  }
+
+  .n5-score-value {
+    grid-column: 2;
+    justify-content: flex-end;
+  }
+
+  .n5-result .result-stat > small {
+    grid-column: 2;
+    text-align: right;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .n5-frame *,
+  .n5-mock *,
+  .n5-part {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  .n5-frame .primary-btn:active,
+  .n5-mock .primary-btn:active {
+    transform: none;
+  }
 }
